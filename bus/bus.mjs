@@ -176,11 +176,25 @@ function nextRoundNumber(team) {
   return max + 1;
 }
 
+/**
+ * 로드맵이 지금 가리키는 마일스톤. 어디가 현재인지는 로드맵이 정한다.
+ *
+ * 이게 없으면 라운드가 직전 라운드의 번호를 물려받아, 로드맵은 3번을 하고 있는데
+ * 라운드는 1번이라고 말하는 상태가 된다. 감사역이 무엇을 기준으로 볼지 알 수 없어진다.
+ */
+function nowMilestone(team) {
+  const ms = readRoadmap(team).milestones ?? [];
+  const now = ms.find((m) => m.status === 'now');
+  if (now) return now.n;
+  const wait = ms.find((m) => m.status !== 'pass');
+  return wait ? wait.n : null;
+}
+
 export function startRound(team, { topic = null, milestone = null } = {}) {
   const prev = readState(team);
   const next = writeState(team, {
     round: nextRoundNumber(team),
-    milestone: milestone ?? prev.milestone ?? 1,
+    milestone: milestone ?? nowMilestone(team) ?? prev.milestone ?? 1,
     phase: 'running',
     topic: topic ?? prev.topic,
     attempt: 0,
