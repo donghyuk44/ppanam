@@ -18,13 +18,25 @@ node bus/round.mjs context --team "$(cat state/active-team 2>/dev/null || echo m
 
 바깥눈: !`node bus/outside.mjs --status 2>&1 || true`
 
+이 팀의 감사역:
+
+```!
+T=$(cat state/active-team 2>/dev/null || echo marketing)
+for r in review outside; do
+  if [ -f ".claude/agents/$T-$r.md" ]; then echo "$r → $T-$r"; else echo "$r → $r (팀 전용 없음, 공용 사용)"; fi
+done
+```
+
 ---
 
 감사를 돌린다. 대상: **$ARGUMENTS**
 
-1. **되짚기**(`review` 서브에이전트)를 부른다. 산출물 경로와 이번 마일스톤의
+**부를 서브에이전트 이름은 위 목록을 그대로 쓴다.** 팀 전용이 있으면 그것을 부르고,
+없으면 공용 `review` / `outside` 를 부른다. 이름을 지어내지 않는다.
+
+1. **되짚기**(`review` 쪽 서브에이전트)를 부른다. 산출물 경로와 이번 마일스톤의
    통과 조건을 함께 넘긴다.
-2. 되짚기가 `PASS` 를 냈으면 **바깥눈**(`outside` 서브에이전트)도 부른다.
+2. 되짚기가 `PASS` 를 냈으면 **바깥눈**(`outside` 쪽 서브에이전트)도 부른다.
    클로드 둘이 합의한 지점이야말로 바깥 렌즈가 필요한 곳이기 때문이다.
    되짚기가 `REVISE` 를 냈으면 바깥눈은 건너뛰고 고치는 게 먼저다.
 3. 두 판정을 종합한다.

@@ -1,1 +1,9 @@
-{ "round": 0, "milestone": 0, "phase": "idle", "topic": null, "attempt": 0, "startedAt": null, "endedAt": null }
+{
+  "round": 5,
+  "milestone": 1,
+  "phase": "idle",
+  "topic": "팀별 캐스트 검증",
+  "attempt": 0,
+  "startedAt": "2026-09-01T07:16:20.159Z",
+  "endedAt": "2026-09-01T07:17:19.587Z"
+}

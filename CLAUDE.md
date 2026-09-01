@@ -7,7 +7,7 @@
 - 무엇을 만들고 있는지 → `docs/plan.md`
 - 채팅방에 나타나는 것의 계약 → `docs/event-schema.md`
 - 이번 팀의 목적지와 마일스톤 → `teams/<팀>/roadmap.json`
-- 감사 기준 → `.claude/agents/review.md`, `.claude/agents/outside.md`
+- 감사 기준 → `.claude/agents/<팀>-review.md`, `<팀>-outside.md` (없으면 공용)
 
 ## 캐스트
 

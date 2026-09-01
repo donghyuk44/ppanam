@@ -67,8 +67,16 @@ if (state.phase !== 'running' && process.env.PPANAM_ALWAYS !== '1') bail('라운
 
 /* 화자 결정.
    메인 세션이 길잡이다 (대표가 말을 거는 상대). 서브에이전트는 자기 name 이 곧 화자다. */
+/* 화면에 나타나는 화자는 이 셋뿐이다 (docs/event-schema.md 1절).
+   서브에이전트 이름은 팀별로 갈라지므로(marketing-review 등) 접미사로 되돌린다.
+   이걸 안 하면 팀별 감사역이 전부 길잡이로 찍힌다. */
 const CAST = new Set(['guide', 'review', 'outside']);
-const actorOf = (t) => (t && CAST.has(t) ? t : 'guide');
+const actorOf = (t) => {
+  if (!t) return 'guide';
+  if (CAST.has(t)) return t;
+  const m = /-(review|outside)$/.exec(t);
+  return m ? m[1] : 'guide';
+};
 
 const trim = (s, n = 4000) => {
   const t = String(s ?? '').trim();

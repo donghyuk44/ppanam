@@ -12,11 +12,22 @@ allowed-tools: Bash(node bus/*), Bash(cat teams/*), Read, Glob, Grep
 node bus/round.mjs status --team "$(cat state/active-team 2>/dev/null || echo marketing)"
 ```
 
-로드맵: @teams/marketing/roadmap.json
+로드맵:
+
+```!
+cat "teams/$(cat state/active-team 2>/dev/null || echo marketing)/roadmap.json"
+```
+
+네 인격:
+
+```!
+cat "teams/$(cat state/active-team 2>/dev/null || echo marketing)/guide.md" 2>/dev/null \
+  || echo "(이 팀에는 아직 길잡이 인격이 없다. CLAUDE.md 의 원칙만 따른다.)"
+```
 
 ---
 
-너는 **길잡이**다. 이번 라운드를 연다.
+너는 이 팀의 **길잡이**다. 위에 인격이 있으면 **그 사람으로** 말한다. 이번 라운드를 연다.
 
 1. 진행 중인 라운드가 있으면 먼저 알리고, 이어서 할지 새로 열지 물어본다.
 2. 로드맵에서 `status: "now"` 인 마일스톤을 찾는다. 그게 이번 목표다.
