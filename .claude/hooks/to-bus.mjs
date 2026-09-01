@@ -54,11 +54,20 @@ if (DEBUG) {
   );
 }
 
-/* 어느 작전실인가 */
+/* 어느 작전실인가.
+ *
+ * 방을 명시하지 않은 세션은 아무 방에도 기록하지 않는다. 기본값으로 떨어뜨리면
+ * 이 저장소에서 도는 모든 세션이 남의 방에 남는다 — 하네스를 고치는 세션의
+ * 발언이 실무의 말로 둔갑한다. 실제로 그렇게 오염됐다.
+ *
+ *   PPANAM_TEAM        서버가 방마다 세션을 띄우며 넣는다 (정상 경로)
+ *   state/active-team  터미널에서 직접 한 방에 들어갈 때만 만든다 (opt-in)
+ */
 const teamFile = path.join(ROOT, 'state', 'active-team');
 let team = process.env.PPANAM_TEAM;
-if (!team) { try { team = fs.readFileSync(teamFile, 'utf8').trim(); } catch { /* 없으면 기본값 */ } }
-if (!team || !bus.teamExists(team)) team = bus.defaultTeam();
+if (!team) { try { team = fs.readFileSync(teamFile, 'utf8').trim(); } catch { /* 안 들어간 것이다 */ } }
+if (!team) bail('방이 지정되지 않은 세션');
+if (!bus.teamExists(team)) bail('없는 방: ' + team);
 
 /* 작전실은 라운드가 돌고 있을 때만 기록한다.
    그러지 않으면 이 저장소에서 하는 모든 잡담이 작전실에 흘러든다.
