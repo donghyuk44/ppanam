@@ -45,9 +45,9 @@
 - 최종적으로는 부서별 팀을 여러 개 두고, 영상 ④의 커리큘럼 구조를
   **프로젝트 마일스톤 로드맵**으로 쓴다.
 
-> ⚠️ **환경 주의**: 이 원격 컨테이너에는 `codex` CLI가 없다(`which codex` → 없음).
-> codex는 사용자의 로컬 PC에 있다. 따라서 **바깥눈 어댑터는 여기서 완결 테스트가
-> 불가능**하며, 인터페이스만 만들고 실제 연결 검증은 로컬에서 해야 한다.
+> ✅ **연결됨** (로컬, 2026-09-01 확인). `codex-cli 0.151.0` · 저장된 로그인 ·
+> 모델 `gpt-5.6-sol`. 왕복 9초. 설계 당시 이 계획을 쓴 원격 컨테이너에는 codex가
+> 없어 인터페이스까지만 만들었고, 실제 연결 검증은 로컬에서 끝냈다.
 
 ---
 
@@ -297,7 +297,9 @@ docs/event-schema.md       채팅방에 나타나는 것의 전체 목록
 | `type: "mcp_tool"` 훅 | GPT를 훅 레이어의 감시자로 직접 배치 | 2순위로 병행 |
 | codex CLI 자식 프로세스 | 영상 ① 방식과 동일 | 대안으로 남김 |
 
-- ⚠️ 이 컨테이너에 `codex`가 없다. **인터페이스까지만 만들고 실제 연결은 로컬에서 검증**한다.
+- ✅ 로컬에서 연결 검증 완료. `npm run outside -- --check` 가 실제 답을 돌려준다.
+  호출 형태는 `codex exec --ephemeral --skip-git-repo-check -o <파일> -` 이고,
+  프롬프트는 stdin 으로 넘기되 **파이프를 닫아야** 한다(부록 B).
 - GPT가 없으면 자동 비활성 → 클로드 2인으로 라운드가 돌게 한다(graceful degradation).
 - 참고: 서브에이전트끼리는 **`SendMessage`** 로 직접 대화할 수 있다. 단 sibling roster는
   **서브에이전트 시작 시점의 스냅샷**이라, 서로를 보게 하려면 **대화 시작 전에 참여자를
@@ -328,9 +330,10 @@ docs/event-schema.md       채팅방에 나타나는 것의 전체 목록
   기록이 `rounds/` 에 남는지 확인한다.
 - **Phase 3**: 실제 작업 하나를 라운드로 돌려, 에이전트 발언이 **훅에 의해 자동으로**
   채팅방에 흐르는지 확인한다. 수동 호출 없이 흘러야 통과.
-- **Phase 4**: codex가 없는 상태에서 라운드가 **깨지지 않고** 클로드 2인으로 완주하는지 확인.
-  실제 교차검증은 사용자 로컬에서: 클로드 둘이 통과시킨 산출물을 codex가 반려하는 사례를
-  1건 만든다. 이 케이스가 나와야 교차검증이 작동한다는 증거다.
+- **Phase 4**: 양쪽을 다 본다. ✅ 연결된 상태에서 실제 답이 오는 것, 그리고 PATH 에서
+  codex를 뺐을 때 **판정하지 않고** "설정 안 됨"으로 물러나며 exit 1 하는 것 — 둘 다 확인했다.
+  남은 것: 클로드 둘이 통과시킨 산출물을 codex가 반려하는 사례를 1건 만든다.
+  이 케이스가 나와야 교차검증이 실제로 작동한다는 증거다.
 - **Phase 5**: `/kickoff` 로 마케팅 프로젝트 하나의 로드맵을 뽑고, 5단계 결정이 모두
   채워졌는지, **cut list가 비어 있지 않은지** 확인한다.
 - **Phase 6**: 마일스톤 하나를 라운드로 완주 — PASS 또는 REVISE 판정이 실제로 나오는지.
@@ -351,26 +354,80 @@ docs/event-schema.md       채팅방에 나타나는 것의 전체 목록
 
 ---
 
-## 부록 A — 구현 직전 재확인이 필요한 항목
+## 부록 A — 실물 검증 결과
 
-공식 문서(`code.claude.com/docs/en`)에서 **확인된 사실**은 위 본문에 반영했다.
-아래는 문서에서 **확인하지 못해** 구현 직전에 실물로 검증해야 하는 것들이다.
-검증 방법은 간단하다 — 훅을 하나 걸고 stdin JSON을 그대로 파일에 덤프해서 필드를 눈으로 본다.
+문서에서 확정하지 못했던 것들을 로컬에서 훅을 걸어 stdin JSON 을 덤프해 확인했다
+(`PPANAM_HOOK_DEBUG=1` → `.claude/hooks/payload-<이벤트>.json`).
+검증 환경: macOS / Claude Code / codex-cli 0.151.0.
 
-1. `PostToolUse` 의 **툴 결과 필드명** (`tool_response` 로 추정되나 미확인).
-   `tool_name` / `tool_input` / `tool_use_id` 는 확인됨.
-2. `UserPromptSubmit` 의 **프롬프트 텍스트 필드명** (`prompt` 로 추정되나 미확인).
-3. `SubagentStart` 의 **전체 payload 스키마**. 이벤트 존재와 matcher(에이전트 타입)만 확인됨.
-4. JSON 출력의 `continue` 필드 — 미확인. 확인된 제어 필드는
+### 확인 완료 — 추측이 맞았다
+
+**1. `PostToolUse` 의 툴 결과 필드명 = `tool_response`** ✔
+단, **문자열이 아니라 객체**다. 모양은 도구마다 다르다. `Read` 의 경우:
+
+```json
+"tool_response": { "type": "text",
+  "file": { "filePath": "…", "content": "…", "numLines": 1, "startLine": 1, "totalLines": 87 } }
+```
+
+같은 payload 에 `duration_ms` 도 함께 온다.
+
+**2. `UserPromptSubmit` 의 프롬프트 텍스트 필드명 = `prompt`** ✔
+동봉 필드: `session_id` / `transcript_path` / `cwd` / `prompt_id` / `permission_mode` /
+`hook_event_name`.
+
+**3. `SubagentStart` 전체 스키마** ✔ — 7개뿐이다.
+`session_id` / `transcript_path` / `cwd` / `prompt_id` / `agent_id` / `agent_type` /
+`hook_event_name`. 발언 본문은 없다(당연히 아직 말하기 전이다).
+`SubagentStop` 은 여기에 `permission_mode` / `effort` / `stop_hook_active` /
+`agent_transcript_path` / `last_assistant_message` / `background_tasks` / `session_crons`
+가 더 붙는다. **`agent_id` 가 시작과 종료에서 동일**하므로 스레드 키로 쓸 수 있다.
+
+### 아직 미확인 (실물로 확인할 기회가 없었다)
+
+4. JSON 출력의 `continue` 필드. 확인된 제어 필드는
    `decision` / `reason` / `stopReason` / `suppressOutput` / `permissionDecision` /
    `additionalContext` / `systemMessage` / `updatedInput` / `retry`.
-5. `stream-json` 의 **전체 메시지 타입 목록**. 확인된 것: `stream_event`, `system/init`,
-   `system/api_retry`, `result`, `assistant`, `user`, `hook_started`/`hook_progress`/`hook_response`.
+5. `stream-json` 의 전체 메시지 타입 목록. 확인된 것: `stream_event`, `system/init`,
+   `system/api_retry`, `result`, `assistant`, `user`,
+   `hook_started`/`hook_progress`/`hook_response`.
 
-**함정으로 기록해 둘 것 (문서 확인됨):**
+---
+
+## 부록 B — 함정
+
+### `async: true` 를 종료 훅에 쓰면 마지막 발언이 사라진다 ★ 실물로 당함
+
+`Stop` 훅에 `"async": true` 를 걸면 **길잡이의 마지막 발언이 대화록에 남지 않는다.**
+`claude -p` 세션 7회 중 6회 유실했다. 남은 1회는 맨 처음 세션이라, 간헐이 아니라
+**경합에서 거의 항상 지는 쪽**으로 보는 게 맞다. 고친 뒤에는 4회 중 4회 기록됐다.
+
+증상이 고약한 이유는 훅이 **실패한 것처럼 보이지 않기** 때문이다.
+payload 덤프는 정상적으로 파일에 쓰이고, `bail()` 도 타지 않는다. 훅 프로세스가
+덤프 직후 `bus.emit()` 에 닿기 전에 회수된다. 세션은 조용히 끝나고 대화록만 비어 있다.
+같은 payload 를 손으로 먹이면 정확히 emit 되므로 스크립트를 아무리 봐도 원인이 안 보인다.
+
+fire-and-forget 훅은 세션이 살아 있는 동안에만 안전하다. 그래서 이렇게 나눈다.
+
+| 훅 | 시점 | 설정 |
+| --- | --- | --- |
+| `UserPromptSubmit` · `SubagentStart` · `PostToolUse` | 세션 중간 | `async: true` — 세션을 막지 않는다 |
+| `Stop` · `SubagentStop` | 종료 경계 | **동기 + `timeout: 10`** |
+
+`Stop` 은 라운드의 결론을, `SubagentStop` 은 감사 판정을 나른다. 이 둘이 유실되면
+`/verdict` 가 감사할 대상 자체가 대화록에 없다. 동기로 돌리되, 훅이 멈춰도 세션이
+잠기지 않도록 짧은 `timeout` 을 명시한다(기본값은 600초라 지정하지 않으면 위험하다).
+
+### 그 밖
+
 - 슬래시 커맨드 인자는 **0-based**다. `$0`이 첫 번째, `$1`이 **두 번째**. bash 관례와 다르다.
 - 훅 스크립트에서 셸 프로필(`.bashrc`)의 `echo` 출력이 stdout 앞에 섞이면
   JSON이 통째로 무시된다. 출력이 `{` 로 시작하지 않으면 plain text로 처리된다.
 - `SessionEnd` 훅은 **공유 1.5초 예산**이다. 종료 시 flush하려면 `timeout`을 명시적으로 올려야 한다.
 - 커스텀 슬래시 커맨드는 **Skills로 통합**됐다. `.claude/commands/*.md` 는 계속 동작하지만
   frontmatter 스키마는 SKILL.md 와 같다.
+- `claude --bare` 는 훅을 **아예 로드하지 않는다.** 문서가 이것을 `-p` 의 미래 기본값으로
+  예고했으므로, Claude Code 버전을 올릴 때마다 훅 실동작을 재확인한다.
+- `codex exec` 에 프롬프트를 stdin 으로 넘길 때 **파이프를 반드시 닫아야 한다.**
+  `execFile` 로 부르면 stdin 이 열린 채라 codex 가 입력을 영원히 기다린다
+  (`bus/outside.mjs` 는 `spawn` + `stdin.end()` 로 처리).

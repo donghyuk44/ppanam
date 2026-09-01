@@ -11,7 +11,7 @@
     "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"], "async": true }
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"], "timeout": 10 }
         ]
       }
     ],
@@ -27,7 +27,7 @@
       {
         "matcher": "review|outside",
         "hooks": [
-          { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"], "async": true }
+          { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"], "timeout": 10 }
         ]
       }
     ],
