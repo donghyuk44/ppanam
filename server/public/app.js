@@ -82,7 +82,7 @@ function renderRail() {
     }
     b.appendChild(badge);
 
-    b.addEventListener('click', () => selectTeam(t.id));
+    b.addEventListener('click', () => pickTeam(t.id));
     nav.appendChild(b);
   }
 }
@@ -329,9 +329,10 @@ function append(events) {
 /* ── 팀 전환 ── */
 
 async function selectTeam(id) {
+  // 주소는 여기서 건드리지 않는다. 팀과 화면이 같이 정해진 뒤에 한 번만 쓴다 —
+  // 중간에 쓰면 히스토리에 지나가는 상태가 한 칸씩 남아 뒤로가기가 어긋난다.
   active = id;
   unread[id] = 0;
-  location.hash = id;
   const r = await fetch(`/api/team?team=${encodeURIComponent(id)}`).then((x) => x.json());
   cast = r.cast; roadmap = r.roadmap; summary = r.summary;
   oldest = r.events[0]?.id ?? null;
@@ -341,6 +342,14 @@ async function selectTeam(id) {
   renderRail(); renderHead(); renderSide();
   app.dataset.side = '0';
   $('scrim').hidden = true;
+}
+
+/** 레일에서 팀을 눌렀을 때. 관제탑이면 그 방으로 들어가고, 분석이면 그 팀 분석으로 갈아탄다. */
+async function pickTeam(id) {
+  await selectTeam(id);
+  if (view === 'tower') return setView('room');
+  if (view === 'analysis') loadAnalysis();
+  syncHash();
 }
 
 $('loadMoreBtn').addEventListener('click', async () => {
@@ -384,6 +393,12 @@ function connect() {
       summaries = msg.summaries ?? {};
       summary = summaries[active] ?? summary;
       renderRail(); renderHead(); renderSide();
+      if (view === 'tower') renderTower();
+      // 분석은 값이 실제로 움직였을 때만 다시 불러온다. 250ms 마다 받아올 이유가 없다.
+      if (view === 'analysis') {
+        const s = summaries[active] ?? {};
+        if (`${s.round}:${s.logCount}:${s.phase}` !== anMark) loadAnalysis();
+      }
       return;
     }
     if (msg.kind === 'events') {
@@ -479,6 +494,341 @@ $('sideToggle').addEventListener('click', () => openSide(app.dataset.side !== '1
 $('sideClose').addEventListener('click', () => openSide(false));
 $('scrim').addEventListener('click', () => openSide(false));
 
+/* ══ 화면 전환 ══ */
+
+let view = 'room';
+const VIEWS = new Set(['room', 'tower', 'analysis']);
+
+// 주소에 팀과 화면을 함께 남긴다 (#marketing/tower). 새로고침해도, 뒤로 가도 보던 곳으로 돌아온다.
+// 우리가 쓴 해시는 되읽지 않는다 — 안 그러면 화면을 바꿀 때마다 한 번 더 바꾸려 든다.
+let hashByUs = false;
+
+const syncHash = () => {
+  if (!active) return;
+  const h = view === 'room' ? active : `${active}/${view}`;
+  if (location.hash.slice(1) === h) return;
+  hashByUs = true;
+  location.hash = h;
+};
+
+window.addEventListener('hashchange', async () => {
+  if (hashByUs) { hashByUs = false; return; }
+  const [t, v] = location.hash.slice(1).split('/');
+  if (t && t !== active && teams.some((x) => x.id === t)) await selectTeam(t);
+  setView(v ?? 'room');
+});
+
+function setView(v) {
+  if (!VIEWS.has(v)) v = 'room';
+  view = v;
+  app.dataset.view = v;
+  syncHash();
+  for (const b of $('views').querySelectorAll('button')) {
+    b.setAttribute('aria-current', String(b.dataset.view === v));
+  }
+  if (v === 'tower') renderTower();
+  if (v === 'analysis') loadAnalysis();
+}
+
+for (const b of $('views').querySelectorAll('button')) {
+  b.addEventListener('click', () => setView(b.dataset.view));
+}
+
+/* ══ 관제탑 ══ */
+
+// 카드는 요약이 바뀔 때마다 다시 그려진다. 쓰던 글이 날아가지 않게 팀별로 붙들어 둔다.
+const draft = {};
+
+const ago = (ts) => {
+  if (!ts) return '';
+  const s = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (s < 60) return '방금';
+  if (s < 3600) return `${Math.floor(s / 60)}분 전`;
+  if (s < 86400) return `${Math.floor(s / 3600)}시간 전`;
+  return `${Math.floor(s / 86400)}일 전`;
+};
+
+function renderTower() {
+  const grid = $('towerGrid');
+  const focus = document.activeElement;
+  const keep = focus?.classList?.contains('tcard__in')
+    ? { team: focus.dataset.team, pos: focus.selectionStart } : null;
+
+  grid.replaceChildren();
+
+  for (const t of teams) {
+    const s = summaries[t.id] ?? {};
+    const agents = s.cast ?? {};
+    const running = s.phase === 'running' && s.round;
+
+    const card = el('div', 'tcard');
+    card.dataset.alert = s.needsBoss ? '1' : '0';
+
+    // 이름과 상태
+    const top = el('div', 'tcard__top');
+    const name = el('span', 'tcard__name', t.room ?? t.name);
+    name.title = '이 작전실 열기';
+    name.addEventListener('click', async () => { await selectTeam(t.id); setView('room'); });
+    top.appendChild(name);
+    const flag = el('span', 'tcard__flag',
+      s.needsBoss ? '대표 호출' : running ? '진행 중' : '대기');
+    flag.dataset.k = s.needsBoss ? 'boss' : running ? 'run' : 'idle';
+    top.appendChild(flag);
+    card.appendChild(top);
+
+    // 라운드와 마일스톤
+    const ms = el('div', 'tcard__ms');
+    ms.appendChild(el('b', null, s.round ? `R${s.round}` : 'R—'));
+    ms.append(' ');
+    ms.append(s.round
+      ? `마일스톤 ${s.milestone}${s.milestoneTitle ? ' · ' + s.milestoneTitle : ''}`
+      : '진행 중인 라운드 없음');
+    card.appendChild(ms);
+
+    const total = s.milestonesTotal ?? 0;
+    const done = s.milestonesDone ?? 0;
+    const bar = el('div', 'bar2');
+    const fill = el('i');
+    fill.style.width = total ? `${Math.round((done / total) * 100)}%` : '0%';
+    bar.appendChild(fill);
+    card.appendChild(bar);
+
+    const meta = el('div', 'tcard__meta');
+    meta.append(total ? `마일스톤 ${done}/${total}` : '로드맵 없음');
+    const g = el('div', 'gauge');
+    for (let i = 1; i <= 3; i++) g.appendChild(el('div', i <= (s.attempt ?? 0) ? 'on' : ''));
+    meta.appendChild(g);
+    meta.append(`대화록 ${s.logCount ?? 0}건`);
+    if (s.session?.busy) meta.appendChild(el('span', 'rwork', '일하는 중'));
+    card.appendChild(meta);
+
+    // 마지막 발언
+    const last = el('div', 'tcard__last');
+    if (s.lastText) {
+      const a = agents[s.lastActor] ?? FALLBACK;
+      const av = el('div', 'chip', a.initial ?? '?');
+      av.style.background = a.color ?? FALLBACK.color;
+      av.title = a.name ?? s.lastActor;
+      last.appendChild(av);
+      const body = el('div', 'tcard__lastt');
+      body.appendChild(el('div', null, s.lastText.replace(/\s+/g, ' ').slice(0, 160)));
+      body.appendChild(el('div', 'tcard__quiet', ago(s.lastAt)));
+      last.appendChild(body);
+    } else {
+      last.appendChild(el('div', 'tcard__quiet', '아직 아무 말도 오가지 않았습니다.'));
+    }
+    card.appendChild(last);
+
+    // 지시 · 라운드. 입력창 하나가 두 가지로 쓰인다 —
+    // 라운드가 없으면 주제를 받아 열고, 열려 있으면 지시를 받는다.
+    const err = el('div', 'tcard__err');
+    err.hidden = true;
+
+    const row = el('div', 'tcard__do');
+    const box = el('input', 'tcard__in');
+    box.type = 'text';
+    box.autocomplete = 'off';
+    box.dataset.team = t.id;
+    box.value = draft[t.id] ?? '';
+    box.placeholder = running ? '지시하기' : '라운드 주제를 쓰고 열기';
+    box.addEventListener('input', () => { draft[t.id] = box.value; });
+
+    const fail = (m) => { err.textContent = m; err.hidden = false; };
+
+    const doSay = async () => {
+      const text = box.value.trim();
+      if (!text) return;
+      err.hidden = true;
+      box.value = ''; draft[t.id] = '';
+      const r = await post('/api/say', { team: t.id, text });
+      if (!r.ok) { box.value = text; draft[t.id] = text; fail(r.data.error ?? '전달하지 못했습니다.'); }
+    };
+
+    const doRound = async () => {
+      err.hidden = true;
+      if (running) {
+        if (!confirm(`${t.name}팀 라운드 ${s.round} 을 닫습니다.\n\n대화록은 그대로 남습니다.`)) return;
+        const r = await post('/api/round', { team: t.id, action: 'end' });
+        if (!r.ok) fail(r.data.error ?? '닫지 못했습니다.');
+        return;
+      }
+      const topic = box.value.trim();
+      const r = await post('/api/round', { team: t.id, action: 'start', topic: topic || null });
+      if (!r.ok) return fail(r.data.error ?? '열지 못했습니다.');
+      box.value = ''; draft[t.id] = '';
+    };
+
+    box.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      running ? doSay() : doRound();
+    });
+
+    const btn = el('button', 'tcard__r', running ? '라운드 닫기' : '라운드 열기');
+    btn.type = 'button';
+    btn.addEventListener('click', doRound);
+
+    row.appendChild(box);
+    row.appendChild(btn);
+    card.appendChild(row);
+    card.appendChild(err);
+
+    grid.appendChild(card);
+  }
+
+  if (keep) {
+    const back = grid.querySelector(`.tcard__in[data-team="${keep.team}"]`);
+    if (back) { back.focus(); try { back.setSelectionRange(keep.pos, keep.pos); } catch { /* 무시 */ } }
+  }
+}
+
+/* ══ 분석 ══ */
+
+let anMark = '';
+
+async function loadAnalysis() {
+  if (!active) return;
+  const s = summaries[active] ?? {};
+  anMark = `${s.round}:${s.logCount}:${s.phase}`;
+  const t = teams.find((x) => x.id === active);
+  $('anTitle').textContent = `분석 — ${t?.name ?? active}`;
+  const r = await fetch(`/api/analysis?team=${encodeURIComponent(active)}`).then((x) => x.json());
+  if (r.error) return;
+  renderAnalysis(r);
+}
+
+function tile(k, v, note) {
+  const n = el('div', 'tile');
+  n.appendChild(el('div', 'tile__k', k));
+  n.appendChild(el('div', 'tile__v', v));
+  if (note) n.appendChild(el('div', 'tile__n', note));
+  return n;
+}
+
+function panel(title) {
+  const p = el('section', 'panel');
+  p.appendChild(el('h2', null, title));
+  return p;
+}
+
+function renderAnalysis(r) {
+  const body = $('anBody');
+  body.replaceChildren();
+  const st = r.stats, agents = r.cast?.agents ?? {};
+
+  // 한눈에
+  const tiles = el('div', 'tiles');
+  tiles.appendChild(tile('끝난 라운드', String(st.roundsDone), st.roundsDone ? `평균 반박 ${st.attemptAvg}회` : '아직 없음'));
+  tiles.appendChild(tile('통과', String(st.verdicts.PASS), `되돌림 ${st.verdicts.REVISE} · 중단 ${st.verdicts.FAIL}`));
+  tiles.appendChild(tile('마일스톤',
+    `${r.summary.milestonesDone ?? 0}/${r.summary.milestonesTotal ?? 0}`,
+    r.roadmap.destination ? '목적지 있음' : '로드맵 없음'));
+  tiles.appendChild(tile('대화록', String(st.logCount), st.lastAt ? `마지막 ${ago(st.lastAt)}` : '비어 있음'));
+  tiles.appendChild(tile('산출물', String(r.out.length), r.out.length ? 'teams/' + r.team + '/out/' : '아직 없음'));
+  body.appendChild(tiles);
+
+  // 라운드 이력 — rounds.jsonl 이 이걸 위해 있는 색인이다
+  const rp = panel('라운드 이력');
+  if (r.rounds.length) {
+    const tb = el('table', 'tbl');
+    const hr = el('tr');
+    for (const [h, c] of [['라운드', 'num'], ['M', 'num'], ['판정', ''], ['주제', 'wrap'], ['반박', 'num'], ['건수', 'num']]) {
+      hr.appendChild(el('th', c, h));
+    }
+    tb.appendChild(hr);
+    for (const x of r.rounds) {
+      const tr = el('tr');
+      tr.appendChild(el('td', 'num', `R${x.round}`));
+      tr.appendChild(el('td', 'num', x.milestone ? String(x.milestone) : '—'));
+      const vd = el('td', 'nw');
+      if (x.verdict) { const g = el('span', 'vtag', x.verdict); g.dataset.v = x.verdict; vd.appendChild(g); }
+      else vd.appendChild(el('span', 'tcard__quiet', '판정 없음'));
+      tr.appendChild(vd);
+      tr.appendChild(el('td', 'wrap', x.topic || x.summary || '—'));
+      tr.appendChild(el('td', 'num', `${x.attempts ?? 0}/3`));
+      tr.appendChild(el('td', 'num', String(x.eventCount ?? 0)));
+      tb.appendChild(tr);
+    }
+    rp.appendChild(tb);
+  } else {
+    rp.appendChild(el('div', 'panel__note', '끝난 라운드가 없습니다. 라운드를 닫으면 여기에 한 줄씩 쌓입니다.'));
+  }
+  body.appendChild(rp);
+
+  // 누가 얼마나 말했나
+  const sp = panel('발언 비중');
+  const total = Object.values(st.byActor).reduce((a, b) => a + b, 0);
+  if (total) {
+    const bars = el('div', 'bars');
+    for (const [id, n] of Object.entries(st.byActor).sort((a, b) => b[1] - a[1])) {
+      const a = agents[id] ?? { ...FALLBACK, name: id };
+      const row = el('div', 'bars__row');
+      row.appendChild(el('div', null, a.name ?? id));
+      const bar = el('div', 'bar2');
+      const fill = el('i');
+      fill.style.width = `${Math.round((n / total) * 100)}%`;
+      fill.style.background = a.color ?? FALLBACK.color;
+      bar.appendChild(fill);
+      row.appendChild(bar);
+      row.appendChild(el('div', 'bars__n', String(n)));
+      bars.appendChild(row);
+    }
+    sp.appendChild(bars);
+    sp.appendChild(el('div', 'panel__note', `말풍선·판정 ${total}건 · 도구 사용 ${st.tools}건은 따로 셉니다.`));
+  } else {
+    sp.appendChild(el('div', 'panel__note', '아직 발언이 없습니다.'));
+  }
+  body.appendChild(sp);
+
+  // 마일스톤
+  const mp = panel('마일스톤');
+  if (r.roadmap.destination) {
+    const d = el('div', 'dest');
+    d.appendChild(el('div', 'dest__k', 'DESTINATION'));
+    d.appendChild(el('div', 'dest__v', r.roadmap.destination));
+    mp.appendChild(d);
+  }
+  if (r.roadmap.milestones?.length) {
+    const list = el('div', 'ms');
+    for (const m of r.roadmap.milestones) {
+      const row = el('div', `ms__row${m.status === 'wait' ? ' wait' : ''}`);
+      row.appendChild(el('div', `ms__n ${m.status ?? ''}`.trim(), String(m.n)));
+      const t2 = el('div', 'ms__t');
+      t2.appendChild(el('div', 'ms__title', m.title));
+      if (m.deliverable) t2.appendChild(el('div', 'ms__out', m.deliverable));
+      row.appendChild(t2);
+      list.appendChild(row);
+    }
+    mp.appendChild(list);
+  } else {
+    mp.appendChild(el('div', 'panel__note', '로드맵이 없습니다. /kickoff 로 5단계 결정을 뽑으세요.'));
+  }
+  body.appendChild(mp);
+
+  // 산출물 — 통과 조건은 완료율이 아니라 제출 가능한 물건이다
+  const op = panel('산출물');
+  if (r.out.length) {
+    const tb = el('table', 'tbl');
+    const hr = el('tr');
+    hr.appendChild(el('th', 'wrap', '파일'));
+    hr.appendChild(el('th', 'num', '크기'));
+    hr.appendChild(el('th', 'num', '마지막'));
+    tb.appendChild(hr);
+    for (const f of r.out) {
+      const tr = el('tr');
+      tr.appendChild(el('td', 'wrap', f.name));
+      tr.appendChild(el('td', 'num', f.size < 1024 ? `${f.size}B` : `${Math.round(f.size / 1024)}KB`));
+      tr.appendChild(el('td', 'num', ago(f.at)));
+      tb.appendChild(tr);
+    }
+    op.appendChild(tb);
+  } else {
+    op.appendChild(el('div', 'panel__note',
+      '아직 없습니다. 라운드의 통과 조건은 완료율이 아니라 제출 가능한 물건입니다.'));
+  }
+  body.appendChild(op);
+}
+
 /* ── 시작 ── */
 
 const boot = await fetch('/api/boot').then((r) => r.json());
@@ -486,6 +836,7 @@ teams = boot.teams;
 summaries = boot.summaries ?? {};
 for (const t of teams) unread[t.id] = 0;
 connect();
-await selectTeam(
-  teams.some((t) => t.id === location.hash.slice(1)) ? location.hash.slice(1) : boot.defaultTeam,
-);
+
+const [hashTeam, hashView] = location.hash.slice(1).split('/');
+await selectTeam(teams.some((t) => t.id === hashTeam) ? hashTeam : boot.defaultTeam);
+setView(hashView ?? 'room');

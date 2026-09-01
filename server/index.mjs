@@ -15,7 +15,7 @@ import { WebSocketServer } from 'ws';
 import {
   paths, listTeams, defaultTeam, teamExists, teamSummary,
   readCast, readRoadmap, readTail, listRounds, parseJSONL,
-  readState, startRound, endRound,
+  readState, startRound, endRound, readLog,
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 
@@ -41,9 +41,41 @@ const json = (res, code, body) => {
   res.end(buf);
 };
 
-const summaries = () => Object.fromEntries(
-  listTeams().map((t) => [t.id, { ...teamSummary(t.id), session: session.status(t.id) }]),
-);
+/**
+ * 팀별 요약. 왼쪽 레일과 관제탑이 같은 값을 읽는다.
+ *
+ * 관제탑은 안 보고 있는 팀까지 한 화면에 놓으므로, 그 팀의 캐스트 이름과
+ * 지금 마일스톤 제목까지 함께 실어야 카드가 말이 된다.
+ */
+const summaries = () => Object.fromEntries(listTeams().map((t) => {
+  const s = teamSummary(t.id);
+  const roadmap = readRoadmap(t.id);
+  const now = roadmap.milestones?.find((m) => m.n === s.milestone) ?? null;
+  return [t.id, {
+    ...s,
+    session: session.status(t.id),
+    milestoneTitle: now?.title ?? null,
+    deliverable: now?.deliverable ?? null,
+    cast: readCast(t.id).agents ?? {},
+  }];
+}));
+
+/** teams/<팀>/out/ 의 산출물. 라운드의 통과 조건은 완료율이 아니라 제출 가능한 물건이다. */
+function listOut(team) {
+  const dir = paths(team).out;
+  let names;
+  try { names = fs.readdirSync(dir); } catch { return []; }
+  const out = [];
+  for (const name of names) {
+    if (name.startsWith('.')) continue;
+    try {
+      const st = fs.statSync(path.join(dir, name));
+      if (!st.isFile()) continue;
+      out.push({ name, size: st.size, at: st.mtime.toISOString() });
+    } catch { /* 읽는 사이에 사라졌다면 넘어간다 */ }
+  }
+  return out.sort((a, b) => b.at.localeCompare(a.at));
+}
 
 /** POST 본문을 JSON 으로 읽는다. 64KB 를 넘으면 끊는다. */
 function readBody(req, res, done) {
@@ -86,6 +118,52 @@ const server = http.createServer((req, res) => {
       limit: Number(q.get('limit')) || PAGE,
       before: q.get('before') || null,
     }));
+  }
+
+  // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.
+  if (url.pathname === '/api/analysis') {
+    if (!teamExists(team)) return json(res, 404, { error: '그런 팀이 없습니다.' });
+
+    const rounds = listRounds(team);          // 최신순
+    const log = readLog(team);
+    const roadmap = readRoadmap(team);
+
+    // 판정 분포. rounds.jsonl 이 이걸 위해 있는 색인이다.
+    const verdicts = { PASS: 0, REVISE: 0, FAIL: 0, none: 0 };
+    let attemptSum = 0;
+    for (const r of rounds) {
+      const v = r.verdict && verdicts[r.verdict] !== undefined ? r.verdict : 'none';
+      verdicts[v] += 1;
+      attemptSum += r.attempts ?? 0;
+    }
+
+    // 누가 얼마나 말했나. 도구 로그는 발언이 아니므로 따로 센다.
+    const byActor = {};
+    let tools = 0;
+    for (const e of log) {
+      if (e.type === 'tool') { tools += 1; continue; }
+      if (e.type !== 'message' && e.type !== 'verdict') continue;
+      byActor[e.actor] = (byActor[e.actor] ?? 0) + 1;
+    }
+
+    return json(res, 200, {
+      team,
+      cast: readCast(team),
+      roadmap,
+      summary: teamSummary(team),
+      rounds: rounds.slice(0, 60),
+      out: listOut(team),
+      stats: {
+        roundsDone: rounds.length,
+        verdicts,
+        attemptAvg: rounds.length ? Math.round((attemptSum / rounds.length) * 10) / 10 : 0,
+        byActor,
+        tools,
+        logCount: log.length,
+        firstAt: log[0]?.ts ?? null,
+        lastAt: log[log.length - 1]?.ts ?? null,
+      },
+    });
   }
 
   // 지시. 대표가 쓴 말이 길잡이 세션으로 들어간다.
