@@ -13,3 +13,4 @@ state/active-team
 .claude/hooks/debug.log
 .claude/hooks/payload-*.json
 state/sessions.json
+state/outside-sessions.json
