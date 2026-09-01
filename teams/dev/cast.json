@@ -1,24 +1,24 @@
 {
   "agents": {
     "guide": {
-      "name": "실무",
-      "initial": "길",
-      "color": "#2f4f7a",
-      "role": "실행 · 로드맵 · 스코프 방어",
+      "name": "테라",
+      "initial": "테",
+      "color": "#4a5d3a",
+      "role": "실무 · 만들고 고친다",
       "model": "claude"
     },
-    "review": {
-      "name": "내부감사",
-      "initial": "되",
-      "color": "#a8541f",
-      "role": "감사 · 이해 갭 진단 · 전달 품질",
+    "ops": {
+      "name": "솔라",
+      "initial": "솔",
+      "color": "#2f6b7a",
+      "role": "개발·운영 · 만들고 굴러가게 한다",
       "model": "claude"
     },
     "outside": {
-      "name": "외부감사",
-      "initial": "바",
-      "color": "#5b3a63",
-      "role": "교차검증 · 기술감사 · 외부 시각",
+      "name": "레오",
+      "initial": "레",
+      "color": "#9c3b2f",
+      "role": "외부감사 · 실제로 돌려본다",
       "model": "gpt"
     },
     "boss": {

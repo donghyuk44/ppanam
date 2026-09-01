@@ -18,11 +18,14 @@ node bus/round.mjs context --team "$(cat state/active-team 2>/dev/null || echo m
 
 외부감사: !`node bus/outside.mjs --status 2>&1 || true`
 
-이 팀의 내부감사:
+이 팀의 감사역:
 
 ```!
 T=$(cat state/active-team 2>/dev/null || echo marketing)
-if [ -f ".claude/agents/$T-review.md" ]; then echo "$T-review"; else echo "review (팀 전용 없음, 공용 사용)"; fi
+if [ -f ".claude/agents/$T-review.md" ]; then echo "내부감사 → $T-review"
+elif node -e "const a=require('./teams/'+process.argv[1]+'/cast.json').agents; process.exit(a.review?0:1)" "$T" 2>/dev/null; then echo "내부감사 → review (공용)"
+else echo "내부감사 → **없음.** 이 팀은 외부감사만으로 판정한다"; fi
+echo "외부감사 → node bus/outside.mjs --team $T --ask ..."
 ```
 
 ---

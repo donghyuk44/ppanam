@@ -24,7 +24,7 @@
     ],
     "SubagentStart": [
       {
-        "matcher": "(^|-)(review|outside)$",
+        "matcher": "(^|-)(review|outside|ops)$",
         "hooks": [
           { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"], "async": true }
         ]
@@ -32,7 +32,7 @@
     ],
     "SubagentStop": [
       {
-        "matcher": "(^|-)(review|outside)$",
+        "matcher": "(^|-)(review|outside|ops)$",
         "hooks": [
           { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"], "timeout": 10 }
         ]

@@ -81,7 +81,7 @@ if (!office && state.phase !== 'running' && process.env.PPANAM_ALWAYS !== '1') b
 /* 화면에 나타나는 화자는 이 셋뿐이다 (docs/event-schema.md 1절).
    서브에이전트 이름은 팀별로 갈라지므로(marketing-review 등) 접미사로 되돌린다.
    이걸 안 하면 팀별 감사역이 전부 실무로 찍힌다. */
-const CAST = new Set(['guide', 'review', 'outside', 'chief']);
+const CAST = new Set(['guide', 'review', 'outside', 'chief', 'ops']);
 
 /** 메인 세션은 그 방의 주인이다 — 작전실이면 실무, 총괄실이면 총괄. */
 const OWNER = office ? 'chief' : 'guide';
@@ -89,7 +89,7 @@ const OWNER = office ? 'chief' : 'guide';
 const actorOf = (t) => {
   if (!t) return OWNER;
   if (CAST.has(t)) return t;
-  const m = /-(review|outside)$/.exec(t);
+  const m = /-(review|outside|ops)$/.exec(t);
   return m ? m[1] : OWNER;
 };
 
