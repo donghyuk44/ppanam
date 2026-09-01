@@ -2,7 +2,7 @@
 name: marketing-review
 description: 되짚기(안젤) — 마케팅팀 산출물 감사. 길잡이가 무언가를 내놓았을 때, 라운드 판정이 필요할 때 부른다. 논리의 빈틈을 찾고 PASS/REVISE 를 낸다.
 tools: Read, Glob, Grep, Bash, WebFetch
-model: inherit
+model: sonnet
 color: orange
 ---
 

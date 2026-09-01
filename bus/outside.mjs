@@ -25,6 +25,10 @@ const run = promisify(execFile);
 const TIMEOUT = Number(process.env.PPANAM_OUTSIDE_TIMEOUT || 180_000);
 const API_MODEL = process.env.PPANAM_OUTSIDE_MODEL || 'gpt-5.1';
 
+// codex 는 모델이 아니라 CLI 다. 그 안에서 도는 모델을 여기서 못 박는다.
+// 기본값에 얹어두면 어느 엔진이 판정했는지 기록에 남지 않는다 — 감사역 자리에서는 안 된다.
+const CODEX_MODEL = process.env.PPANAM_CODEX_MODEL || 'gpt-5.6-sol';
+
 const SYSTEM = [
   '너는 다른 회사 모델이 만든 산출물을 교차검증하는 감사역이다.',
   '합의를 만들려 하지 마라. 이견이 없으면 없다고 하고, 있으면 근거와 함께 말해라.',
@@ -52,9 +56,11 @@ async function hasCodex() {
  */
 function viaCodexSpawn(input, outPath) {
   return new Promise((resolve, reject) => {
-    const child = spawn('codex', ['exec', '--ephemeral', '--skip-git-repo-check', '-o', outPath, '-'], {
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    const child = spawn('codex', [
+      'exec', '--ephemeral', '--skip-git-repo-check',
+      '-m', CODEX_MODEL,
+      '-o', outPath, '-',
+    ], { stdio: ['pipe', 'pipe', 'pipe'] });
 
     let stdout = '', stderr = '';
     let done = false;
@@ -123,7 +129,7 @@ async function status() {
   if (codex) {
     let v = '';
     try { v = (await run('codex', ['--version'], { timeout: 15_000 })).stdout.trim(); } catch { /* 무시 */ }
-    lines.push(`codex CLI 있음${v ? ` (${v})` : ''}` +
+    lines.push(`codex CLI 있음${v ? ` (${v})` : ''} · 모델 ${CODEX_MODEL}` +
       (process.env.CODEX_API_KEY ? ' · CODEX_API_KEY 설정됨' : ' · 저장된 로그인 사용'));
   }
   if (process.env.OPENAI_API_KEY) lines.push(`OpenAI API 있음 (모델 ${API_MODEL})`);
@@ -191,4 +197,5 @@ if (!answer) {
   process.exit(1);
 }
 
-console.log(`[${via}] ${answer}`);
+// 어느 엔진이 말했는지 답과 함께 남긴다. 나중에 "이건 누가 본 건가"에 답할 수 있어야 한다.
+console.log(`[${via === 'codex' ? `codex · ${CODEX_MODEL}` : `openai · ${API_MODEL}`}] ${answer}`);

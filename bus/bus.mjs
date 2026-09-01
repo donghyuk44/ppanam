@@ -65,6 +65,22 @@ export function teamExists(id) {
   return listTeams().some((t) => t.id === id);
 }
 
+/**
+ * 방의 종류.
+ *
+ * 'team'   — 작전실. 라운드로 돌고, 로드맵과 마일스톤이 있다.
+ * 'office' — 총괄실. 대표와 1:1 이라 라운드가 없다. 항상 열려 있다.
+ *
+ * 라운드가 없다는 건 훅의 기록 조건도 다르다는 뜻이다. 작전실은 라운드가 열려
+ * 있을 때만 기록하지만(안 그러면 잡담이 다 흘러든다), 총괄실은 그 방 자체가
+ * 대표와의 대화라 늘 기록한다.
+ */
+export function kindOf(id) {
+  return listTeams().find((t) => t.id === id)?.kind ?? 'team';
+}
+
+export const isOffice = (id) => kindOf(id) === 'office';
+
 export function paths(team) {
   const dir = path.join(ROOT, 'teams', team);
   return {

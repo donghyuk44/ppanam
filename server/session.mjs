@@ -14,7 +14,7 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, emit } from '../bus/bus.mjs';
+import { ROOT, emit, listTeams, isOffice, paths } from '../bus/bus.mjs';
 
 const STORE = path.join(ROOT, 'state', 'sessions.json');
 
@@ -51,9 +51,28 @@ function rememberId(team, id) {
 
 /* ── 기동 ── */
 
+/**
+ * 이 방 주인의 인격.
+ *
+ * 길잡이와 총괄은 서브에이전트가 아니라 메인 세션이라 .md frontmatter 가 없다.
+ * CLAUDE.md 는 다섯 방이 공용이므로 방별 인격은 teams/<방>/ 에 두고 여기서 붙인다.
+ * 대화록에는 안 남는다 — 시스템 프롬프트지 발언이 아니다.
+ */
+function personaOf(team) {
+  const file = path.join(paths(team).dir, isOffice(team) ? 'chief.md' : 'guide.md');
+  try { return fs.readFileSync(file, 'utf8').trim() || null; } catch { return null; }
+}
+
 function spawnFor(team) {
   const prior = readStore()[team];
   const args = prior ? [...ARGS, '--resume', prior] : [...ARGS];
+
+  // 방마다 다른 모델을 쓸 수 있다 (state/teams.json 의 model).
+  const model = listTeams().find((t) => t.id === team)?.model;
+  if (model) args.push('--model', model);
+
+  const persona = personaOf(team);
+  if (persona) args.push('--append-system-prompt', persona);
 
   const child = spawn('claude', args, {
     cwd: ROOT,

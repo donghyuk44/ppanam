@@ -60,10 +60,12 @@ let team = process.env.PPANAM_TEAM;
 if (!team) { try { team = fs.readFileSync(teamFile, 'utf8').trim(); } catch { /* 없으면 기본값 */ } }
 if (!team || !bus.teamExists(team)) team = bus.defaultTeam();
 
-/* 라운드가 돌고 있을 때만 기록한다.
-   그러지 않으면 이 저장소에서 하는 모든 잡담이 작전실에 흘러든다. */
+/* 작전실은 라운드가 돌고 있을 때만 기록한다.
+   그러지 않으면 이 저장소에서 하는 모든 잡담이 작전실에 흘러든다.
+   총괄실은 방 자체가 대표와의 1:1 이라 라운드가 없다. 늘 기록한다. */
+const office = bus.isOffice(team);
 const state = bus.readState(team);
-if (state.phase !== 'running' && process.env.PPANAM_ALWAYS !== '1') bail('라운드 대기 중');
+if (!office && state.phase !== 'running' && process.env.PPANAM_ALWAYS !== '1') bail('라운드 대기 중');
 
 /* 화자 결정.
    메인 세션이 길잡이다 (대표가 말을 거는 상대). 서브에이전트는 자기 name 이 곧 화자다. */
