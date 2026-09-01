@@ -67,11 +67,20 @@ node bus/say.mjs --as guide "안녕"     # 한 마디
 이 자리는 다른 회사 모델이 앉아야 한다. 둘 중 하나면 된다.
 
 ```bash
-node bus/outside.mjs --status     # 지금 무엇이 잡히는지
+npm run outside -- --setup      # 연결하는 법
+npm run outside -- --status     # 지금 무엇이 잡히는지
+npm run outside -- --check "2 더하기 2는 5인가?"
 ```
 
-- `codex` CLI 가 PATH 에 있으면 그걸 쓴다
-- 아니면 `OPENAI_API_KEY` 환경변수
+**codex CLI** (권장 — 저장소 파일을 직접 읽고 판단한다)
+
+```bash
+npm install -g @openai/codex
+codex login                     # 또는 export CODEX_API_KEY=...
+```
+
+**또는 OpenAI API** — `export OPENAI_API_KEY=sk-...` (간단하지만 저장소를 못 읽는다)
 
 둘 다 없으면 바깥눈은 판정하지 않고 "설정 안 됨"이라고 말한다.
-클로드가 바깥눈인 척하면 이 자리의 의미가 사라지기 때문이다.
+클로드가 바깥눈인 척하면 감사역 셋이 전부 같은 회사 모델이 되어,
+**함께 틀리는 지점을 아무도 보지 못한다.**

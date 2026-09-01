@@ -4,12 +4,15 @@
   "private": true,
   "type": "module",
   "description": "부서별 AI 팀 오케스트레이션과 실시간 단톡방",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node server/index.mjs",
     "say": "node bus/say.mjs",
     "round": "node bus/round.mjs",
-    "demo": "node bus/demo.mjs"
+    "demo": "node bus/demo.mjs",
+    "outside": "node bus/outside.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"
