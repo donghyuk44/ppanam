@@ -1,0 +1,17 @@
+{
+  "destination": "6주 뒤, 새 캠페인 하나를 기획부터 랜딩 배포까지 외주 없이 팀 안에서 굴릴 수 있다.",
+  "baseline": "기존 랜딩 2벌, 2025 상반기 캠페인 리포트, 디자이너 1명 파트타임. 카피라이터 없음.",
+  "milestones": [
+    { "n": 1, "title": "타깃과 약속 확정", "deliverable": "한 문장 포지셔닝 + 근거 리포트", "status": "pass" },
+    { "n": 2, "title": "캠페인 헤드라인",   "deliverable": "헤드라인 1안 + 서브카피 2줄",   "status": "pass" },
+    { "n": 3, "title": "랜딩 상세 카피",   "deliverable": "섹션 5개 초안 1벌",             "status": "now"  },
+    { "n": 4, "title": "채널별 소재",     "deliverable": "배너 3종 + SNS 카피 5벌",        "status": "wait" },
+    { "n": 5, "title": "랜딩 배포",       "deliverable": "실제 페이지 URL",               "status": "wait" },
+    { "n": 6, "title": "1주차 성과 리뷰",  "deliverable": "지표 리포트 + 다음 액션 3개",     "status": "wait" }
+  ],
+  "cutList": [
+    "영상 소재 제작 — 6주 안에 못 끝냄",
+    "CRM 연동 — 마일스톤 5 이후로",
+    "브랜드 아이덴티티 재정비 — 별건"
+  ]
+}

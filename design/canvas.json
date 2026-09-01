@@ -1,0 +1,21 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",    "x": 0,    "y": 0, "w": 460, "h": 940, "title": "1 · 작전실 기본", "page": "page-1" },
+    { "file": "Verdict.dc.html", "x": 560,  "y": 0, "w": 460, "h": 940, "title": "2 · 판정 REVISE", "page": "page-1" },
+    { "file": "Reset.dc.html",   "x": 1120, "y": 0, "w": 460, "h": 940, "title": "3 · 라운드 전환", "page": "page-1" },
+    { "file": "Roadmap.dc.html", "x": 1680, "y": 0, "w": 460, "h": 940, "title": "4 · 로드맵", "page": "page-1" },
+    { "file": "AltConsole.dc.html", "x": 0,   "y": 0, "w": 440, "h": 620, "title": "대안 A · 관제 콘솔", "page": "page-2" },
+    { "file": "AltReview.dc.html",  "x": 540, "y": 0, "w": 440, "h": 620, "title": "대안 B · 문서 리뷰", "page": "page-2" }
+  ],
+  "annotations": [
+    { "id": "note-brief", "x": 0, "y": -150, "w": 460, "page": "page-1",
+      "text": "방향: 공문서 작전실\n말풍선 구조는 iMessage에서, 성격은 결재 서류에서.\n종이 바탕 + 고운바탕/IBM Plex Sans KR + 판정은 도장처럼.\n표시 강도: 판정 > 말풍선 > 배너 > 등장 > 도구로그" },
+    { "id": "note-alts", "x": 0, "y": -130, "w": 440, "page": "page-2",
+      "text": "채택하지 않은 두 방향. 지금 쓰는 건 1페이지입니다.\nA는 대화를 관제 로그로 봅니다 - 밀도는 최고, 사람이 끼어들 자리가 좁습니다.\nB는 대화를 문서 리뷰로 봅니다 - 감사 흐름이 제일 잘 읽히지만 실시간감이 약합니다." }
+  ],
+  "pages": [
+    { "id": "page-1", "name": "작전실" },
+    { "id": "page-2", "name": "다른 방향" }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

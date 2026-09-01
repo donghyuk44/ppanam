@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #7fd1c1; } a:hover { color: #a8e3d7; }
+    .app { width: 440px; height: 620px; background: #14181c; color: #c8d0d6; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.6; display: flex; flex-direction: column; overflow: hidden; }
+    .hd { flex: none; padding: 11px 14px; border-bottom: 1px solid #262d33; display: flex; justify-content: space-between; align-items: center; }
+    .hd b { font-weight: 600; letter-spacing: .06em; font-size: 12px; }
+    .hd .r { color: #6d7982; font-size: 10.5px; }
+    .crew { flex: none; display: flex; border-bottom: 1px solid #262d33; }
+    .crew div { flex: 1; padding: 8px 12px; border-right: 1px solid #262d33; font-size: 10px; }
+    .crew div:last-child { border-right: none; }
+    .crew .n { color: #8d979f; letter-spacing: .05em; }
+    .crew .s { margin-top: 2px; font-size: 10px; }
+    .log { flex: 1; padding: 12px 14px; display: flex; flex-direction: column; gap: 7px; overflow: hidden; }
+    .l { display: flex; gap: 9px; }
+    .l .t { flex: none; color: #55606a; font-size: 10.5px; padding-top: 1px; }
+    .l .w { flex: none; width: 52px; font-size: 10.5px; letter-spacing: .04em; padding-top: 1px; }
+    .l .m { flex: 1; font-family: 'IBM Plex Sans KR', sans-serif; font-size: 12.5px; color: #b6bfc6; }
+    .rev { margin: 4px 0; border-left: 2px solid #d4574c; background: #1e1719; padding: 8px 12px; }
+    .rev .k { color: #d4574c; letter-spacing: .14em; font-size: 11px; font-weight: 600; }
+    .rev .b { font-family: 'IBM Plex Sans KR', sans-serif; font-size: 12px; color: #c3aaa6; margin-top: 3px; }
+    .ft { flex: none; padding: 9px 14px; border-top: 1px solid #262d33; color: #4d5760; font-size: 10.5px; }
+  </style>
+</helmet>
+<div class="app">
+  <div class="hd"><b>PPANAM :: 작전실</b><span class="r">R3 · M2 · 2/6</span></div>
+  <div class="crew">
+    <div><div class="n" style="color:#7aa2d6">GUIDE</div><div class="s" style="color:#6d7982">실행중</div></div>
+    <div><div class="n" style="color:#d69a6a">REVIEW</div><div class="s" style="color:#6d7982">감사 대기</div></div>
+    <div><div class="n" style="color:#b18cc4">OUTSIDE</div><div class="s" style="color:#6d7982">유휴</div></div>
+  </div>
+  <div class="log">
+    <div class="l"><span class="t">14:14</span><span class="w" style="color:#7aa2d6">guide</span><span class="m">헤드라인 3안 뽑았습니다.</span></div>
+    <div class="l"><span class="t">14:15</span><span class="w" style="color:#55606a">tool</span><span class="m" style="color:#6d7982; font-family:'IBM Plex Mono',monospace; font-size:11px">Read 2025-09-report.md</span></div>
+    <div class="l"><span class="t">14:16</span><span class="w" style="color:#d69a6a">review</span><span class="m">2안이 약속을 두 개 하고 있습니다.</span></div>
+    <div class="rev"><div class="k">REVISE</div><div class="b">근거 없는 수치 1건 · 반박 2/3</div></div>
+    <div class="l"><span class="t">14:19</span><span class="w" style="color:#b18cc4">outside</span><span class="m">3안의 "업계 최초"는 문서에 없습니다.</span></div>
+    <div class="l"><span class="t">14:20</span><span class="w" style="color:#c9b45e">boss</span><span class="m">3안 빼고 1안으로 가자</span></div>
+  </div>
+  <div class="ft">&gt; _</div>
+</div>
+</x-dc>
+</body>
+</html>

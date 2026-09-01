@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #0f5b52; } a:hover { color: #0a3f38; }
+    .app { width: 460px; height: 940px; display: flex; flex-direction: column; background: #f4efe4; color: #1c1a17; font-family: 'IBM Plex Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.55; overflow: hidden; }
+    .bar { flex: none; padding: 16px 20px 13px; background: #fdfbf7; border-bottom: 1px solid #d6cdbb; }
+    .bar h1 { margin: 0; font-family: 'Gowun Batang', serif; font-size: 20px; }
+    .bar .sub { font-size: 11.5px; color: #7a7266; margin-top: 2px; }
+
+    .body { flex: 1; overflow: hidden; padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 15px; }
+
+    .dest { background: #0f5b52; color: #eef3f0; border-radius: 8px; padding: 13px 15px; }
+    .dest__k { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .12em; opacity: .7; margin-bottom: 5px; }
+    .dest__v { font-size: 13.5px; line-height: 1.5; }
+
+    .sec__k { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .12em; color: #8a8175; margin-bottom: 8px; }
+
+    .ms { display: flex; flex-direction: column; }
+    .ms__row { display: flex; gap: 11px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid #e2dacb; }
+    .ms__row:last-child { border-bottom: none; }
+    .ms__n {
+      flex: none; width: 22px; height: 22px; border-radius: 6px; margin-top: 1px;
+      display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      background: #ddd4c2; color: #6b6459;
+    }
+    .ms__n.done { background: #1b5e34; color: #eaf2ec; }
+    .ms__n.now { background: #b3261e; color: #f7e9e6; }
+    .ms__t { flex: 1; min-width: 0; }
+    .ms__title { font-size: 13.5px; font-weight: 500; }
+    .ms__out { font-size: 11.5px; color: #7a7266; margin-top: 2px; }
+    .ms__s { flex: none; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .05em; padding-top: 3px; }
+    .ms__row.wait .ms__title, .ms__row.wait .ms__out { color: #a09786; }
+
+    .cut { background: #efe6e4; border: 1px solid #e0cdc9; border-radius: 8px; padding: 12px 15px; }
+    .cut__k { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .12em; color: #a8776f; margin-bottom: 7px; }
+    .cut ul { margin: 0; padding-left: 16px; font-size: 12.5px; color: #6b5651; }
+    .cut li { margin-bottom: 3px; }
+    .cut li:last-child { margin-bottom: 0; }
+  </style>
+</helmet>
+
+<div class="app">
+  <header class="bar">
+    <h1>로드맵 — 마케팅팀</h1>
+    <div class="sub">6주 · 킥오프 인터뷰 25문항으로 뽑음</div>
+  </header>
+
+  <div class="body">
+    <div class="dest">
+      <div class="dest__k">DESTINATION</div>
+      <div class="dest__v">6주 뒤, 새 캠페인 하나를 기획부터 랜딩 배포까지 <b>외주 없이 팀 안에서</b> 굴릴 수 있다.</div>
+    </div>
+
+    <div>
+      <div class="sec__k">MILESTONES — 통과 조건은 제출 가능한 물건</div>
+      <div class="ms">
+        <div class="ms__row">
+          <div class="ms__n done">1</div>
+          <div class="ms__t">
+            <div class="ms__title">타깃과 약속 확정</div>
+            <div class="ms__out">한 문장 포지셔닝 + 근거 리포트</div>
+          </div>
+          <div class="ms__s" style="color: #1b5e34">PASS</div>
+        </div>
+        <div class="ms__row">
+          <div class="ms__n done">2</div>
+          <div class="ms__t">
+            <div class="ms__title">캠페인 헤드라인</div>
+            <div class="ms__out">헤드라인 1안 + 서브카피 2줄</div>
+          </div>
+          <div class="ms__s" style="color: #1b5e34">PASS</div>
+        </div>
+        <div class="ms__row">
+          <div class="ms__n now">3</div>
+          <div class="ms__t">
+            <div class="ms__title">랜딩 상세 카피</div>
+            <div class="ms__out">섹션 5개 초안 1벌</div>
+          </div>
+          <div class="ms__s" style="color: #b3261e">R4</div>
+        </div>
+        <div class="ms__row wait">
+          <div class="ms__n">4</div>
+          <div class="ms__t">
+            <div class="ms__title">채널별 소재</div>
+            <div class="ms__out">배너 3종 + SNS 카피 5벌</div>
+          </div>
+          <div class="ms__s" style="color: #a09786">대기</div>
+        </div>
+        <div class="ms__row wait">
+          <div class="ms__n">5</div>
+          <div class="ms__t">
+            <div class="ms__title">랜딩 배포</div>
+            <div class="ms__out">실제 페이지 URL</div>
+          </div>
+          <div class="ms__s" style="color: #a09786">대기</div>
+        </div>
+        <div class="ms__row wait">
+          <div class="ms__n">6</div>
+          <div class="ms__t">
+            <div class="ms__title">1주차 성과 리뷰</div>
+            <div class="ms__out">지표 리포트 + 다음 액션 3개</div>
+          </div>
+          <div class="ms__s" style="color: #a09786">대기</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cut">
+      <div class="cut__k">CUT LIST — 이번엔 하지 않는다</div>
+      <ul>
+        <li>영상 소재 제작 — 6주 안에 못 끝냄</li>
+        <li>CRM 연동 — 마일스톤 5 이후로</li>
+        <li>브랜드 아이덴티티 재정비 — 별건</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

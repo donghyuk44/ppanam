@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #0f5b52; } a:hover { color: #0a3f38; }
+    .app {
+      width: 460px; height: 940px; display: flex; flex-direction: column;
+      background: #e7e0d3; color: #1c1a17;
+      font-family: 'IBM Plex Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.55; overflow: hidden;
+    }
+    .bar { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 12px; background: #fdfbf7; border-bottom: 1px solid #d6cdbb; }
+    .room h1 { margin: 0; font-family: 'Gowun Batang', serif; font-size: 21px; }
+    .who { font-size: 11.5px; color: #7a7266; margin-top: 1px; }
+    .crew { display: flex; gap: 5px; align-items: center; }
+    .chip { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-family: 'Gowun Batang', serif; font-size: 13px; color: #fdfbf7; }
+    .roundbar { flex: none; display: flex; align-items: center; gap: 9px; padding: 8px 18px; background: #f7e9e6; border-bottom: 1px solid #e0c4bd; font-size: 12.5px; }
+    .rnum { font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 11px; background: #b3261e; color: #f7e9e6; padding: 2px 7px; border-radius: 4px; letter-spacing: .04em; }
+    .rtitle { flex: 1; color: #7a463f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rprog { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #a8776f; }
+    .feed { flex: 1; display: flex; flex-direction: column; gap: 11px; padding: 16px 16px 20px; overflow: hidden; }
+    .row { display: flex; gap: 9px; align-items: flex-start; }
+    .av { flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; font-family: 'Gowun Batang', serif; font-size: 15px; color: #fdfbf7; margin-top: 15px; }
+    .stack { display: flex; flex-direction: column; max-width: 318px; min-width: 0; }
+    .name { font-size: 11.5px; color: #7a7266; margin: 0 0 3px 2px; }
+    .name b { font-weight: 600; color: #514a41; }
+    .bub { background: #fdfbf7; border: 1px solid #ded5c4; border-radius: 3px 14px 14px 14px; padding: 9px 13px; white-space: pre-wrap; word-break: break-word; }
+    .tool { align-self: center; max-width: 340px; width: 100%; display: flex; align-items: center; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #948b7d; border: 1px dashed #cec4b1; border-radius: 6px; padding: 3px 9px; }
+    .tool span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .stamp {
+      align-self: center; width: 100%; max-width: 360px; margin: 5px 0;
+      background: #fdf6f4; border: 2px solid #b3261e; border-radius: 4px; padding: 14px 16px 15px;
+      position: relative;
+    }
+    .stamp__top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+    .stamp__label {
+      font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 17px; letter-spacing: .1em;
+      color: #b3261e;
+    }
+    .stamp__meta { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #b3261e; opacity: .75; }
+    .stamp__who { font-size: 11.5px; color: #8a6560; margin-bottom: 7px; }
+    .stamp__body { color: #2a2320; font-size: 13.5px; }
+    .stamp__body ol { margin: 7px 0 0; padding-left: 17px; }
+    .stamp__body li { margin-bottom: 3px; }
+    .stamp__foot {
+      margin-top: 11px; padding-top: 9px; border-top: 1px dashed #ddb3ad;
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #a8776f;
+    }
+    .ticks { display: flex; gap: 4px; align-items: center; }
+    .tick { width: 16px; height: 4px; border-radius: 2px; background: #e6cdc9; }
+    .tick.on { background: #b3261e; }
+    .note { align-self: center; font-size: 11.5px; color: #8a8175; text-align: center; }
+  </style>
+</helmet>
+
+<div class="app">
+  <header class="bar">
+    <div class="room">
+      <h1>작전실</h1>
+      <div class="who">마케팅팀 · 길잡이, 되짚기, 바깥눈</div>
+    </div>
+    <div class="crew">
+      <div class="chip" style="background: #2f4f7a">길</div>
+      <div class="chip" style="background: #a8541f">되</div>
+      <div class="chip" style="background: #5b3a63">바</div>
+      <div style="width: 7px; height: 7px; border-radius: 50%; background: #2f7d4f; margin-left: 6px"></div>
+    </div>
+  </header>
+
+  <div class="roundbar">
+    <span class="rnum">R3</span>
+    <span class="rtitle">되짚기가 되돌려보냈습니다 · 반박 2회차</span>
+    <span class="rprog">2 / 6</span>
+  </div>
+
+  <main class="feed">
+    <div class="row">
+      <div class="av" style="background: #2f4f7a">길</div>
+      <div class="stack">
+        <div class="name"><b>길잡이</b> 오후 2:28</div>
+        <div class="bub">수정본 올렸습니다. 헤드라인 1안 확정, 서브카피 2줄로 줄였고 근거는 9월 리포트로 통일했습니다.</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg>
+      <span>Write · milestones/02-headline.md</span>
+    </div>
+
+    <div class="stamp">
+      <div class="stamp__top">
+        <div class="stamp__label">REVISE</div>
+        <div class="stamp__meta">되짚기 → 길잡이</div>
+      </div>
+      <div class="stamp__who">산출물이 마일스톤 2의 통과 조건을 아직 못 채웁니다.</div>
+      <div class="stamp__body">
+        <ol>
+          <li>서브카피 2번째 줄의 "30% 절감"에 출처가 없습니다.</li>
+          <li>9월 리포트 12쪽과 수치가 다릅니다. 27%입니다.</li>
+        </ol>
+      </div>
+      <div class="stamp__foot">
+        <span>반박 2 / 3</span>
+        <div class="ticks">
+          <div class="tick on"></div>
+          <div class="tick on"></div>
+          <div class="tick"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="av" style="background: #5b3a63">바</div>
+      <div class="stack">
+        <div class="name"><b>바깥눈</b> 오후 2:31</div>
+        <div class="bub">되짚기 말이 맞습니다. 덧붙이면 27%도 단서 조건이 붙은 수치입니다. "동일 조건 기준"을 빼면 그것도 걸립니다.</div>
+      </div>
+    </div>
+
+    <div class="note">한 번 더 반려되면 자동으로 FAIL — 대표 호출</div>
+  </main>
+
+  <footer style="flex: none; display: flex; gap: 9px; padding: 12px 16px 16px; background: #fdfbf7; border-top: 1px solid #d6cdbb">
+    <div style="flex: 1; background: #f0ebe0; border: 1px solid #ded5c4; border-radius: 18px; padding: 8px 14px; color: #9a9184; font-size: 13.5px">대표로 한마디 끼어들기…</div>
+    <div style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: #0f5b52; color: #f2ede2; display: grid; place-items: center">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </div>
+  </footer>
+</div>
+</x-dc>
+</body>
+</html>

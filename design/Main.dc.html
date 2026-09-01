@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #0f5b52; } a:hover { color: #0a3f38; }
+    .app {
+      width: 460px; height: 940px; display: flex; flex-direction: column;
+      background: #e7e0d3; color: #1c1a17;
+      font-family: 'IBM Plex Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.55;
+      overflow: hidden;
+    }
+    .bar {
+      flex: none; display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px 12px; background: #fdfbf7; border-bottom: 1px solid #d6cdbb;
+    }
+    .room h1 { margin: 0; font-family: 'Gowun Batang', serif; font-size: 21px; letter-spacing: .01em; }
+    .who { font-size: 11.5px; color: #7a7266; margin-top: 1px; }
+    .crew { display: flex; gap: 5px; align-items: center; }
+    .chip {
+      width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+      font-family: 'Gowun Batang', serif; font-size: 13px; color: #fdfbf7;
+    }
+    .live { width: 7px; height: 7px; border-radius: 50%; background: #2f7d4f; margin-left: 6px; }
+
+    .roundbar {
+      flex: none; display: flex; align-items: center; gap: 9px;
+      padding: 8px 18px; background: #f4efe4; border-bottom: 1px solid #d6cdbb; font-size: 12.5px;
+    }
+    .rnum {
+      font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 11px;
+      background: #0f5b52; color: #f4efe4; padding: 2px 7px; border-radius: 4px; letter-spacing: .04em;
+    }
+    .rtitle { flex: 1; color: #4a443b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rprog { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8a8175; }
+
+    .feed { flex: 1; display: flex; flex-direction: column; gap: 11px; padding: 16px 16px 20px; overflow: hidden; }
+
+    .banner {
+      align-self: center; text-align: center; font-size: 12px; padding: 5px 15px;
+      border-radius: 999px; background: #d9d0be; color: #4a443b;
+    }
+    .banner.start { background: #0f5b52; color: #f2ede2; font-weight: 600; letter-spacing: .01em; }
+    .pill { align-self: center; font-size: 11.5px; color: #8a8175; }
+
+    .row { display: flex; gap: 9px; align-items: flex-start; }
+    .row.me { flex-direction: row-reverse; }
+    .av {
+      flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center;
+      font-family: 'Gowun Batang', serif; font-size: 15px; color: #fdfbf7; margin-top: 15px;
+    }
+    .stack { display: flex; flex-direction: column; max-width: 318px; min-width: 0; }
+    .row.me .stack { align-items: flex-end; }
+    .name { font-size: 11.5px; color: #7a7266; margin: 0 0 3px 2px; }
+    .name b { font-weight: 600; color: #514a41; }
+    .bub {
+      background: #fdfbf7; border: 1px solid #ded5c4; border-radius: 3px 14px 14px 14px;
+      padding: 9px 13px; white-space: pre-wrap; word-break: break-word;
+    }
+    .row.me .bub { background: #ecc85e; border-color: #d9b23f; border-radius: 14px 3px 14px 14px; }
+
+    .tool {
+      align-self: center; max-width: 340px; width: 100%; display: flex; align-items: center; gap: 6px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #948b7d;
+      border: 1px dashed #cec4b1; border-radius: 6px; padding: 3px 9px;
+    }
+    .tool span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  </style>
+</helmet>
+
+<div class="app">
+  <header class="bar">
+    <div class="room">
+      <h1>작전실</h1>
+      <div class="who">마케팅팀 · 길잡이, 되짚기, 바깥눈</div>
+    </div>
+    <div class="crew">
+      <div class="chip" style="background: #2f4f7a">길</div>
+      <div class="chip" style="background: #a8541f">되</div>
+      <div class="chip" style="background: #5b3a63">바</div>
+      <div class="live"></div>
+    </div>
+  </header>
+
+  <div class="roundbar">
+    <span class="rnum">R3</span>
+    <span class="rtitle">마일스톤 2 — 9월 캠페인 헤드라인 3안</span>
+    <span class="rprog">2 / 6</span>
+  </div>
+
+  <main class="feed">
+    <div class="banner start">라운드 3 시작 · 마일스톤 2</div>
+    <div class="pill">되짚기 님이 들어왔습니다</div>
+
+    <div class="row">
+      <div class="av" style="background: #2f4f7a">길</div>
+      <div class="stack">
+        <div class="name"><b>길잡이</b> 오후 2:14</div>
+        <div class="bub">헤드라인 3안 뽑았습니다. 작년 9월 캠페인 리포트와 이번 분기 검색량을 근거로 썼고, 셋 다 같은 약속 하나만 말하도록 맞췄습니다.</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg>
+      <span>Read · teams/marketing/2025-09-report.md</span>
+    </div>
+
+    <div class="row">
+      <div class="av" style="background: #a8541f">되</div>
+      <div class="stack">
+        <div class="name"><b>되짚기</b> 오후 2:16</div>
+        <div class="bub">2안이 약속을 두 개 하고 있습니다. "빠르게"와 "저렴하게" 중 어느 쪽이 이번 캠페인의 약속입니까?</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 6l6 6-6 6"/></svg>
+      <span>WebFetch · 경쟁사 9월 랜딩 3건</span>
+    </div>
+
+    <div class="row">
+      <div class="av" style="background: #5b3a63">바</div>
+      <div class="stack">
+        <div class="name"><b>바깥눈</b> 오후 2:19</div>
+        <div class="bub">둘 다 놓친 게 있습니다. 3안의 "업계 최초"는 근거 문서에 없는 표현입니다. 출처를 못 대면 표시광고 심사에서 걸립니다.</div>
+      </div>
+    </div>
+
+    <div class="row me">
+      <div class="stack">
+        <div class="bub">3안 빼고 1안으로 가자</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="av" style="background: #2f4f7a">길</div>
+      <div class="stack">
+        <div class="name"><b>길잡이</b> 오후 2:21</div>
+        <div class="bub">1안으로 확정하고 2안의 중복 약속은 잘라내겠습니다.</div>
+      </div>
+    </div>
+  </main>
+
+  <footer style="flex: none; display: flex; gap: 9px; padding: 12px 16px 16px; background: #fdfbf7; border-top: 1px solid #d6cdbb">
+    <div style="flex: 1; background: #f0ebe0; border: 1px solid #ded5c4; border-radius: 18px; padding: 8px 14px; color: #9a9184; font-size: 13.5px">대표로 한마디 끼어들기…</div>
+    <div style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: #0f5b52; color: #f2ede2; display: grid; place-items: center">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </div>
+  </footer>
+</div>
+</x-dc>
+</body>
+</html>

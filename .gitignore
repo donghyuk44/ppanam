@@ -1,0 +1,11 @@
+node_modules/
+*.log
+
+# 대화록과 라운드 기록은 각자의 것이다 — 저장소에 넣지 않는다.
+teams/*/log.jsonl
+teams/*/rounds.jsonl
+teams/*/out/
+
+# /design 이 조립한 캔버스 결과물. .dc.html 원본에서 다시 만들 수 있다 (2MB).
+design/*.html
+!design/*.dc.html
