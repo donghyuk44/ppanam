@@ -167,7 +167,7 @@ body {
 .app[data-alert="1"] .rnum { background: var(--bad); color: var(--bad-bg); }
 .app[data-alert="1"] .rtitle { color: var(--bad-dim); }
 
-/* 길잡이가 일하는 중. 숨을 쉬듯 흐려졌다 진해진다 — 도는 아이콘보다 조용하다. */
+/* 실무가 일하는 중. 숨을 쉬듯 흐려졌다 진해진다 — 도는 아이콘보다 조용하다. */
 .rwork {
   flex: none; font-size: 11.5px; color: var(--ink-3);
   animation: breathe 1.6s ease-in-out infinite;

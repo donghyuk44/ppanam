@@ -109,11 +109,11 @@ function renderHead() {
   $('rprog').textContent = summary.attempt > 0 ? `반박 ${summary.attempt}/3` : '';
   app.dataset.alert = summary.attempt > 0 || summary.needsBoss ? '1' : '0';
 
-  // 길잡이가 지금 일하는 중인가. 줄 서 있는 지시가 있으면 개수도 함께.
+  // 실무가 지금 일하는 중인가. 줄 서 있는 지시가 있으면 개수도 함께.
   const sess = summary.session ?? {};
   const work = $('rwork');
   work.hidden = !(summary.round && sess.busy);
-  work.textContent = sess.queued ? `길잡이가 일하는 중 · 대기 ${sess.queued}` : '길잡이가 일하는 중';
+  work.textContent = sess.queued ? `실무가 일하는 중 · 대기 ${sess.queued}` : '실무가 일하는 중';
 
   const rb = $('roundBtn');
   rb.hidden = office;
@@ -125,7 +125,7 @@ function renderHead() {
   input.disabled = !office && !summary.round;
   input.placeholder = office
     ? '톰에게 지시하기'
-    : summary.round ? '길잡이에게 지시하기' : '라운드를 열면 지시할 수 있습니다';
+    : summary.round ? '실무에게 지시하기' : '라운드를 열면 지시할 수 있습니다';
 
   const crew = $('crew');
   crew.replaceChildren();

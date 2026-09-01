@@ -1,5 +1,5 @@
 ---
-description: 되짚기와 바깥눈을 불러 이번 라운드 산출물을 감사한다
+description: 내부감사와 외부감사를 불러 이번 라운드 산출물을 감사한다
 argument-hint: [감사할 산출물 경로 또는 설명]
 allowed-tools: Bash(node bus/*), Read, Glob, Grep
 ---
@@ -16,9 +16,9 @@ node bus/round.mjs status --team "$(cat state/active-team 2>/dev/null || echo ma
 node bus/round.mjs context --team "$(cat state/active-team 2>/dev/null || echo marketing)"
 ```
 
-바깥눈: !`node bus/outside.mjs --status 2>&1 || true`
+외부감사: !`node bus/outside.mjs --status 2>&1 || true`
 
-이 팀의 되짚기:
+이 팀의 내부감사:
 
 ```!
 T=$(cat state/active-team 2>/dev/null || echo marketing)
@@ -29,21 +29,21 @@ if [ -f ".claude/agents/$T-review.md" ]; then echo "$T-review"; else echo "revie
 
 감사를 돌린다. 대상: **$ARGUMENTS**
 
-**되짚기는 서브에이전트, 바깥눈은 CLI 다.** 바깥눈은 다른 회사 모델이라
+**내부감사는 서브에이전트, 외부감사는 CLI 다.** 외부감사는 다른 회사 모델이라
 서브에이전트로 띄울 수 없다 — 별도 프로세스로 돌고 자기 말을 직접 작전실에 남긴다.
-**네가 바깥눈의 답을 옮겨 적지 마라.** 옮기는 순간 그건 다시 클로드의 말이 된다.
+**네가 외부감사의 답을 옮겨 적지 마라.** 옮기는 순간 그건 다시 클로드의 말이 된다.
 
-1. **되짚기**를 Agent 툴로 부른다(이름은 위 참조). 산출물 경로와 이번 마일스톤의
+1. **내부감사**를 Agent 툴로 부른다(이름은 위 참조). 산출물 경로와 이번 마일스톤의
    통과 조건을 함께 넘긴다.
-2. 되짚기가 `PASS` 를 냈으면 **바깥눈**을 부른다.
+2. 내부감사가 `PASS` 를 냈으면 **외부감사**을 부른다.
 
    ```bash
    node bus/outside.mjs --ask "<검증할 것. 산출물 경로와 통과 조건을 함께>"
    ```
 
-   바깥눈이 판정을 첫 줄에 내면 그대로 대화록에 기록된다. 네가 할 일은 없다.
-   클로드 둘이 합의한 지점이야말로 바깥 렌즈가 필요한 곳이기 때문이다.
-   되짚기가 `REVISE` 를 냈으면 바깥눈은 건너뛰고 고치는 게 먼저다.
+   외부감사가 판정을 첫 줄에 내면 그대로 대화록에 기록된다. 네가 할 일은 없다.
+   클로드 둘이 합의한 지점이야말로 외부 시각가 필요한 곳이기 때문이다.
+   내부감사가 `REVISE` 를 냈으면 외부감사는 건너뛰고 고치는 게 먼저다.
 3. 두 판정을 종합한다.
    - 둘 다 `PASS` → 라운드를 닫는다.
 
@@ -59,5 +59,5 @@ if [ -f ".claude/agents/$T-review.md" ]; then echo "$T-review"; else echo "revie
 ## 지킬 것
 
 - 감사역이 낸 판정을 네가 뒤집지 않는다. 이견이 있으면 근거를 더 대서 다시 받는다.
-- 바깥눈이 "설정 안 됨"이라고 하면 **그 사실을 작전실에 남긴다.**
+- 외부감사가 "설정 안 됨"이라고 하면 **그 사실을 작전실에 남긴다.**
   교차검증 없이 통과시켰다는 기록이 남아야 한다.

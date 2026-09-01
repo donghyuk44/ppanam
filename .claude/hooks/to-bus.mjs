@@ -68,13 +68,13 @@ const state = bus.readState(team);
 if (!office && state.phase !== 'running' && process.env.PPANAM_ALWAYS !== '1') bail('라운드 대기 중');
 
 /* 화자 결정.
-   메인 세션이 길잡이다 (대표가 말을 거는 상대). 서브에이전트는 자기 name 이 곧 화자다. */
+   메인 세션이 실무다 (대표가 말을 거는 상대). 서브에이전트는 자기 name 이 곧 화자다. */
 /* 화면에 나타나는 화자는 이 셋뿐이다 (docs/event-schema.md 1절).
    서브에이전트 이름은 팀별로 갈라지므로(marketing-review 등) 접미사로 되돌린다.
-   이걸 안 하면 팀별 감사역이 전부 길잡이로 찍힌다. */
+   이걸 안 하면 팀별 감사역이 전부 실무로 찍힌다. */
 const CAST = new Set(['guide', 'review', 'outside', 'chief']);
 
-/** 메인 세션은 그 방의 주인이다 — 작전실이면 길잡이, 총괄실이면 총괄. */
+/** 메인 세션은 그 방의 주인이다 — 작전실이면 실무, 총괄실이면 총괄. */
 const OWNER = office ? 'chief' : 'guide';
 
 const actorOf = (t) => {
@@ -94,9 +94,27 @@ let out = null;
 
 switch (ev) {
   case 'UserPromptSubmit': {
-    // 문서에서 필드명을 확정하지 못했다. 있을 법한 것을 순서대로 본다.
-    const text = hook.prompt ?? hook.user_prompt ?? hook.message ?? hook.text;
-    if (text) out = { actor: 'boss', type: 'message', text: trim(text) };
+    const text = hook.prompt;
+    if (!text) break;
+
+    // 이미 대화록에 있는 말을 귀에 넣어준 것이다. 말한 사람이 이미 남겼다.
+    if (bus.isQuietRelay(text)) bail('들려주기 — 기록 안 함');
+
+    // 총괄이 배달한 봉투면 원문과 배분을 갈라 두 건으로 남긴다.
+    // 한 말풍선에 두 블록으로 두면 언젠가 섞이고, 섞이면 원문이 사라진다.
+    const relay = bus.splitRelay(text);
+    if (relay) {
+      bus.emit(team, {
+        actor: 'boss', type: 'message', text: trim(relay.origin),
+        meta: { via: 'chief' },   // 대표가 이 방에서 직접 한 말은 아니다
+      });
+      if (relay.assign) {
+        out = { actor: 'chief', type: 'message', text: trim(relay.assign) };
+      }
+      break;
+    }
+
+    out = { actor: 'boss', type: 'message', text: trim(text) };
     break;
   }
 

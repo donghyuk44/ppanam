@@ -1,8 +1,32 @@
 {
   "agents": {
-    "chief":   { "name": "톰",   "initial": "톰", "color": "#1f5f4f", "role": "총괄 · 대표 지시를 팀에 배분", "model": "claude" },
-    "outside": { "name": "제리", "initial": "제", "color": "#7a3b52", "role": "대조 · 원문과 배분을 맞춰본다", "model": "gpt" },
-    "boss":    { "name": "대표", "initial": "대", "color": "#8a7320", "role": "사람", "model": null },
-    "system":  { "name": "시스템", "initial": "·", "color": "#8a8175", "role": "훅 · CLI", "model": null }
+    "chief": {
+      "name": "톰",
+      "initial": "톰",
+      "color": "#1f5f4f",
+      "role": "총괄 · 대표 지시를 팀에 배분",
+      "model": "claude"
+    },
+    "outside": {
+      "name": "제리",
+      "initial": "제",
+      "color": "#7a3b52",
+      "role": "대조 · 원문과 배분을 맞춰본다",
+      "model": "gpt"
+    },
+    "boss": {
+      "name": "함동혁(댄)",
+      "initial": "댄",
+      "color": "#8a7320",
+      "role": "대표 · 사람",
+      "model": null
+    },
+    "system": {
+      "name": "시스템",
+      "initial": "·",
+      "color": "#8a8175",
+      "role": "훅 · CLI",
+      "model": null
+    }
   }
 }

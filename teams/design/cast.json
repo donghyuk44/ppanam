@@ -1,9 +1,39 @@
 {
   "agents": {
-    "guide":   { "name": "길잡이", "initial": "길", "color": "#2f4f7a", "role": "실행 · 로드맵 · 스코프 방어", "model": "claude" },
-    "review":  { "name": "되짚기", "initial": "되", "color": "#a8541f", "role": "감사 · 이해 갭 진단 · 전달 품질", "model": "claude" },
-    "outside": { "name": "바깥눈", "initial": "바", "color": "#5b3a63", "role": "교차검증 · 기술감사 · 바깥 렌즈", "model": "gpt" },
-    "boss":    { "name": "대표",   "initial": "대", "color": "#8a7320", "role": "사람", "model": null },
-    "system":  { "name": "시스템", "initial": "·",  "color": "#8a8175", "role": "훅 · CLI", "model": null }
+    "guide": {
+      "name": "실무",
+      "initial": "길",
+      "color": "#2f4f7a",
+      "role": "실행 · 로드맵 · 스코프 방어",
+      "model": "claude"
+    },
+    "review": {
+      "name": "내부감사",
+      "initial": "되",
+      "color": "#a8541f",
+      "role": "감사 · 이해 갭 진단 · 전달 품질",
+      "model": "claude"
+    },
+    "outside": {
+      "name": "외부감사",
+      "initial": "바",
+      "color": "#5b3a63",
+      "role": "교차검증 · 기술감사 · 외부 시각",
+      "model": "gpt"
+    },
+    "boss": {
+      "name": "함동혁(댄)",
+      "initial": "댄",
+      "color": "#8a7320",
+      "role": "대표 · 사람",
+      "model": null
+    },
+    "system": {
+      "name": "시스템",
+      "initial": "·",
+      "color": "#8a8175",
+      "role": "훅 · CLI",
+      "model": null
+    }
   }
 }

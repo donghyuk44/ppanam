@@ -18,7 +18,7 @@ const beat = Number(process.env.BEAT ?? 1400);
 
 const script = [
   () => startRound(team, { topic: '9월 캠페인 헤드라인 3안', milestone: 3 }),
-  () => emit(team, { type: 'enter', actor: 'system', text: '길잡이, 되짚기, 바깥눈 님이 들어왔습니다' }),
+  () => emit(team, { type: 'enter', actor: 'system', text: '실무, 내부감사, 외부감사 님이 들어왔습니다' }),
   () => emit(team, { type: 'message', actor: 'guide', text: '헤드라인 3안 뽑았습니다. 작년 9월 리포트와 이번 분기 검색량을 근거로 썼고, 셋 다 같은 약속 하나만 말하도록 맞췄습니다.' }),
   () => emit(team, { type: 'tool', actor: 'guide', text: 'teams/marketing/out/2025-09-report.md', meta: { tool: 'Read' } }),
   () => emit(team, { type: 'message', actor: 'review', text: '2안이 약속을 두 개 하고 있습니다. "빠르게"와 "저렴하게" 중 어느 쪽이 이번 캠페인의 약속입니까?' }),

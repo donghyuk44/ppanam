@@ -1,6 +1,6 @@
-// 팀별 길잡이 세션.
+// 팀별 실무 세션.
 //
-// 작전실 입력창에 쓴 지시가 여기를 통해 길잡이에게 간다.
+// 작전실 입력창에 쓴 지시가 여기를 통해 실무에게 간다.
 // 터미널을 열지 않고도 라운드가 돌게 하는 것이 이 파일의 전부다.
 //
 // 팀마다 claude 프로세스를 하나씩 살려둔다. stdin 을 열어둔 채 stream-json 을
@@ -54,7 +54,7 @@ function rememberId(team, id) {
 /**
  * 이 방 주인의 인격.
  *
- * 길잡이와 총괄은 서브에이전트가 아니라 메인 세션이라 .md frontmatter 가 없다.
+ * 실무와 총괄은 서브에이전트가 아니라 메인 세션이라 .md frontmatter 가 없다.
  * CLAUDE.md 는 다섯 방이 공용이므로 방별 인격은 teams/<방>/ 에 두고 여기서 붙인다.
  * 대화록에는 안 남는다 — 시스템 프롬프트지 발언이 아니다.
  */
@@ -98,7 +98,7 @@ function spawnFor(team) {
     s.stderr = (s.stderr + d).slice(-4000);
   });
 
-  child.on('error', (e) => die(s, `길잡이를 띄우지 못했습니다 — ${e.message}`));
+  child.on('error', (e) => die(s, `실무를 띄우지 못했습니다 — ${e.message}`));
   child.on('close', (code) => {
     // 우리가 부른 게 아니라 스스로 죽었다면 대표에게 알린다.
     if (sessions.get(team) === s) {
@@ -106,7 +106,7 @@ function spawnFor(team) {
       clearTimeout(s.timer);
       if (code !== 0) {
         const why = s.stderr.trim().split('\n').slice(-2).join(' ').slice(0, 200);
-        note(team, `길잡이 세션이 끊겼습니다 (code ${code})${why ? ' — ' + why : ''}. 다음 지시에 다시 붙습니다.`);
+        note(team, `실무 세션이 끊겼습니다 (code ${code})${why ? ' — ' + why : ''}. 다음 지시에 다시 붙습니다.`);
       }
     }
   });
@@ -148,7 +148,7 @@ function drain(s) {
       clearTimeout(s.timer);
       s.busy = false;
       if (msg.subtype && msg.subtype !== 'success') {
-        note(s.team, `길잡이가 이번 지시를 끝내지 못했습니다 (${msg.subtype}).`);
+        note(s.team, `실무가 이번 지시를 끝내지 못했습니다 (${msg.subtype}).`);
       }
       next(s);
     }
@@ -161,7 +161,7 @@ function write(s, text) {
   s.busy = true;
   clearTimeout(s.timer);
   s.timer = setTimeout(() => {
-    die(s, `길잡이가 ${Math.round(TURN_TIMEOUT / 60_000)}분 동안 응답하지 않아 세션을 닫았습니다.`);
+    die(s, `실무가 ${Math.round(TURN_TIMEOUT / 60_000)}분 동안 응답하지 않아 세션을 닫았습니다.`);
   }, TURN_TIMEOUT);
 
   s.child.stdin.write(JSON.stringify({
@@ -195,7 +195,7 @@ export function send(team, text) {
   return { queued: 0 };
 }
 
-/** 작전실 상단의 "길잡이가 일하는 중" 표시가 읽는 값. */
+/** 작전실 상단의 "실무가 일하는 중" 표시가 읽는 값. */
 export function status(team) {
   const s = sessions.get(team);
   if (!s) return { alive: false, busy: false, queued: 0, sessionId: readStore()[team] ?? null };

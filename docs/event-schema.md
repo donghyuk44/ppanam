@@ -30,9 +30,9 @@ teams/<팀>/
 
 | actor | 한글 이름 | 실체 | 화면 위치 | 비고 |
 | --- | --- | --- | --- | --- |
-| `guide` | 길잡이 | Claude 서브에이전트 | 왼쪽 | 실행 주무. Advisor + Librarian |
-| `review` | 되짚기 | Claude 서브에이전트 | 왼쪽 | 감사. Tutor + Editor |
-| `outside` | 바깥눈 | 외부 GPT | 왼쪽 | 교차검증. Roommate + 기술감사 |
+| `guide` | 실무 | Claude 서브에이전트 | 왼쪽 | 실행 주무. Advisor + Librarian |
+| `review` | 내부감사 | Claude 서브에이전트 | 왼쪽 | 감사. Tutor + Editor |
+| `outside` | 외부감사 | 외부 GPT | 왼쪽 | 교차검증. Roommate + 기술감사 |
 | `boss` | 대표 | 사람 | **오른쪽** | 사람이 직접 끼어든 발언 |
 | `system` | — | 훅 / CLI | **가운데** | 말풍선이 아니라 배너 |
 
@@ -86,7 +86,7 @@ teams/<팀>/
 
 ### `enter` — 등장 배너
 에이전트가 라운드에 합류. 가운데 작은 알약 모양.
-> 되짚기 님이 들어왔습니다.
+> 내부감사 님이 들어왔습니다.
 
 - **출처**: `SubagentStart` 훅
 
@@ -123,7 +123,7 @@ teams/<팀>/
 - `meta.index` / `meta.total` / `meta.title` / `meta.deliverable`
 
 ### `note` — 시스템 안내
-그 외 알림 (바깥눈 비활성, 반박 상한 도달 등). 가운데, 가장 약한 표시.
+그 외 알림 (외부감사 비활성, 반박 상한 도달 등). 가운데, 가장 약한 표시.
 
 ---
 

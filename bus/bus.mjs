@@ -26,6 +26,47 @@ export const VERDICTS = new Set(['PASS', 'REVISE', 'FAIL']);
 /** 라운드당 허용되는 반박 횟수. 넘으면 자동 FAIL — 사람을 부른다. */
 export const MAX_ATTEMPTS = 3;
 
+/* ── 총괄 배달 ──
+ *
+ * 총괄이 대표의 지시를 팀에 옮길 때, 요약만 보내면 팀에는 근거가 남지 않는다.
+ * 나중에 감사역이 "이 지시의 근거가 어디 있냐"고 물었을 때 답할 것이 총괄의
+ * 요약뿐이면 그건 근거가 아니다. 요약은 반드시 무언가를 떨어뜨린다.
+ *
+ * 그래서 원문과 해석을 한 봉투에 넣되, 훅이 받는 즉시 두 개의 이벤트로 가른다.
+ * 한 말풍선 안에 두 블록으로 두면 언젠가 섞인다. 스키마가 강제해야 한다.
+ */
+export const RELAY_ORIGIN = '⟦대표 원문 — 손대지 않음⟧';
+export const RELAY_ASSIGN = '⟦총괄 배분⟧';
+
+/**
+ * 이미 대화록에 있는 말을 다른 세션의 귀에 넣을 때 붙이는 표시.
+ *
+ * 외부감사가 한 말은 그가 직접 대화록에 남긴다. 그 말을 실무가 들으려면 실무
+ * 세션에도 넣어줘야 하는데, 그대로 넣으면 훅이 대표 말풍선으로 또 남긴다.
+ * 이 표시가 붙은 것은 훅이 기록하지 않는다 — 말한 사람이 이미 남겼기 때문이다.
+ *
+ * 이게 없으면 둘은 서로의 말을 못 듣는다. 대화가 아니라 각자 독백이 된다.
+ */
+export const RELAY_QUIET = '⟦들려주기 — 기록하지 않음⟧';
+
+export const isQuietRelay = (text) => String(text ?? '').startsWith(RELAY_QUIET);
+export const quiet = (text) => `${RELAY_QUIET}\n${text}`;
+
+/**
+ * 배달 봉투를 원문과 배분으로 가른다.
+ * 봉투가 아니면 null 을 돌려준다 (보통의 지시는 그대로 대표 말풍선이 된다).
+ */
+export function splitRelay(text) {
+  const s = String(text ?? '');
+  const i = s.indexOf(RELAY_ORIGIN);
+  const j = s.indexOf(RELAY_ASSIGN);
+  if (i < 0 || j < 0 || j < i) return null;
+  const origin = s.slice(i + RELAY_ORIGIN.length, j).trim();
+  const assign = s.slice(j + RELAY_ASSIGN.length).trim();
+  if (!origin) return null;
+  return { origin, assign };
+}
+
 /* ── 파일 ── */
 
 function readJSON(file, fallback) {
@@ -259,7 +300,7 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
     endedAt: new Date().toISOString(),
   }) + '\n');
 
-  // 바깥눈도 이 방의 참여자라 자기 세션을 갖는다. 라운드가 끝나면 같이 비운다 —
+  // 외부감사도 이 방의 참여자라 자기 세션을 갖는다. 라운드가 끝나면 같이 비운다 —
   // 비워지는 건 AI 컨텍스트뿐이라는 규칙은 다른 회사 모델에도 똑같이 적용된다.
   // (대화록은 그대로 남는다. 위 emit 이 이미 구분선을 그었다.)
   const outStore = path.join(ROOT, 'state', 'outside-sessions.json');

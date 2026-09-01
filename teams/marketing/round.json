@@ -1,9 +1,9 @@
 {
-  "round": 8,
+  "round": 9,
   "milestone": 3,
-  "phase": "idle",
-  "topic": "바깥눈 권한 재검증",
-  "attempt": 1,
-  "startedAt": "2026-09-01T07:56:03.024Z",
-  "endedAt": "2026-09-01T08:53:43.279Z"
+  "phase": "running",
+  "topic": "다니엘 생존 확인 — 외부감사 첫 턴",
+  "attempt": 0,
+  "startedAt": "2026-09-01T09:08:45.233Z",
+  "endedAt": null
 }

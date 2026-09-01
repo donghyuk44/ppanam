@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 바깥눈 — 다른 회사 모델이 이 방의 참여자로 앉는다.
+// 외부감사 — 다른 회사 모델이 이 방의 참여자로 앉는다.
 //
 //   node bus/outside.mjs --status
 //   node bus/outside.mjs --team marketing --ask "이 산출물의 근거가 실재하는가"
@@ -14,7 +14,7 @@
 // 옮기는 순간 그건 다시 클로드의 말이 된다. 그래서 여기서 직접 대화록에 남긴다.
 // 클로드는 부르기만 하고 본문에 손대지 않는다.
 //
-// 세션은 방마다 하나씩 유지된다 (codex exec resume). 바깥눈도 대화를 기억한다.
+// 세션은 방마다 하나씩 유지된다 (codex exec resume). 외부감사도 대화를 기억한다.
 // 라운드가 끝나면 버린다 — 비워지는 건 AI 컨텍스트뿐이라는 규칙은 여기에도 같다.
 
 import { execFile, spawn } from 'node:child_process';
@@ -50,10 +50,16 @@ function writeStore(all) {
   fs.writeFileSync(STORE, JSON.stringify(all, null, 2) + '\n');
 }
 
-function remember(team, id) {
+/** 예전 형식({팀: "세션id"})도 읽는다. */
+function slotOf(team) {
+  const v = readStore()[team];
+  if (!v) return null;
+  return typeof v === 'string' ? { id: v, lastSeen: null } : v;
+}
+
+function remember(team, id, lastSeen) {
   const all = readStore();
-  if (all[team] === id) return;
-  all[team] = id;
+  all[team] = { id, lastSeen: lastSeen ?? slotOf(team)?.lastSeen ?? null };
   writeStore(all);
 }
 
@@ -119,7 +125,7 @@ function runCodex(input, { resume = null } = {}) {
 
 /* ── 참여자로서 말하기 ── */
 
-const DEFAULT_PERSONA = `너는 이 팀의 **바깥눈**이다. 다른 회사 모델이고, 그래서 여기 있다.
+const DEFAULT_PERSONA = `너는 이 팀의 **외부감사**이다. 다른 회사 모델이고, 그래서 여기 있다.
 클로드끼리 합의한 지점이야말로 네가 봐야 하는 곳이다.
 
 본다: 인용된 수치·날짜·링크가 실재하는가. 코드라면 경계 조건과 멱등성.
@@ -134,15 +140,23 @@ function personaOf(team) {
 }
 
 /**
- * 이 방에서 오간 말. 바깥눈도 대화를 따라와야 참여자다.
+ * 이 방에서 오간 말. 외부감사도 대화를 따라와야 참여자다.
  *
  * 작전실은 이번 라운드만 본다(라운드마다 컨텍스트를 비운다는 규칙).
  * 총괄실은 라운드가 없어서 readContext 가 늘 비어 있으므로 최근 대화를 쓴다 —
  * 이걸 안 하면 제리가 대표 원문을 못 보고 대조하는 척만 하게 된다.
  */
-function contextOf(team) {
+function contextOf(team, { since = null } = {}) {
   const cast = readCast(team).agents ?? {};
-  const events = isOffice(team) ? readTail(team, { limit: 40 }).events : readContext(team);
+  let events = isOffice(team) ? readTail(team, { limit: 40 }).events : readContext(team);
+
+  // 이어지는 턴에는 지난번 이후에 새로 오간 말만 넘긴다.
+  // 이게 없으면 첫 턴 이후로 방에서 무슨 말이 오갔는지 모른 채 답하게 된다.
+  if (since) {
+    const i = events.findIndex((e) => e.id === since);
+    events = i >= 0 ? events.slice(i + 1) : events.slice(-10);
+  }
+
   const lines = [];
   for (const e of events) {
     if (e.type === 'tool') continue;
@@ -151,6 +165,31 @@ function contextOf(team) {
     lines.push(`${who}${tag}: ${e.text.replace(/\s+/g, ' ').slice(0, 600)}`);
   }
   return lines.slice(-40).join('\n');
+}
+
+/** 이 방에서 지금까지 남은 마지막 이벤트. 다음 턴에 "그 뒤로 새로 온 말"의 기준이 된다. */
+function lastEventId(team) {
+  const { events } = readTail(team, { limit: 1 });
+  return events[0]?.id ?? null;
+}
+
+/**
+ * 방금 한 말을 상대 세션의 귀에 넣는다.
+ *
+ * 외부감사의 말은 그가 직접 대화록에 남겼다. 그런데 실무 세션은 대화록을 읽지
+ * 않으므로, 넣어주지 않으면 못 듣는다. 그러면 대화가 아니라 각자 독백이 된다.
+ * 훅은 이 표시를 보고 기록하지 않는다 — 말한 사람이 이미 남겼기 때문이다.
+ */
+async function tell(team, name, text) {
+  const base = process.env.PPANAM_SERVER || 'http://localhost:4321';
+  try {
+    const r = await fetch(`${base}/api/say`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ team, quiet: true, text: `${name}: ${text}` }),
+    });
+    return r.ok;
+  } catch { return false; }   // 서버가 안 떠 있으면 대화록에는 남았으니 그걸로 족하다
 }
 
 /**
@@ -168,30 +207,25 @@ async function ask(team, question) {
   if (!await hasCodex()) {
     emit(team, {
       actor: 'outside', type: 'note',
-      text: '바깥 모델이 연결되어 있지 않습니다. 교차검증 없이 진행합니다.',
+      text: '외부 모델이 연결되어 있지 않습니다. 교차검증 없이 진행합니다.',
     });
-    console.error('바깥눈 설정 안 됨 — node bus/outside.mjs --setup');
+    console.error('외부감사 설정 안 됨 — node bus/outside.mjs --setup');
     return 1;
   }
 
-  const prior = readStore()[team] ?? null;
-  const name = readCast(team).agents?.outside?.name ?? '바깥눈';
+  const slot = slotOf(team);
+  const prior = slot?.id ?? null;
+  const name = readCast(team).agents?.outside?.name ?? '외부감사';
 
-  let input;
-  if (prior) {
-    input = question;
-  } else {
-    // 첫 턴에만 인격과 지금까지의 대화를 넘긴다. 이후는 세션이 기억한다.
-    const ctx = contextOf(team);
-    input = [
-      personaOf(team),
-      '',
-      '---',
-      '',
-      ctx ? `지금까지 이 방에서 오간 말:\n\n${ctx}\n\n---\n` : '',
-      question,
-    ].filter(Boolean).join('\n');
-  }
+  // 첫 턴에는 인격과 지금까지의 대화 전부. 이어지는 턴에는 지난번 이후 새로 온 말만.
+  // 자기 세션이 앞의 대화는 이미 기억하고 있으니, 못 들은 부분만 채워주면 된다.
+  const ctx = contextOf(team, { since: prior ? slot.lastSeen : null });
+  const input = [
+    prior ? null : personaOf(team),
+    prior ? null : '\n---\n',
+    ctx ? `그동안 이 방에서 오간 말:\n\n${ctx}\n\n---\n` : null,
+    question,
+  ].filter(Boolean).join('\n');
 
   let res;
   try {
@@ -201,19 +235,25 @@ async function ask(team, question) {
     if (prior) forget(team);
     emit(team, {
       actor: 'outside', type: 'note',
-      text: `바깥 모델을 부르지 못했습니다 — ${String(e.message).split('\n')[0].slice(0, 200)}`,
+      text: `외부 모델을 부르지 못했습니다 — ${String(e.message).split('\n')[0].slice(0, 200)}`,
     });
     console.error('실패: ' + e.message);
     return 1;
   }
 
-  if (res.sessionId) remember(team, res.sessionId);
   if (!prior) emit(team, { actor: 'system', type: 'enter', text: `${name} 님이 들어왔습니다` });
 
   const { verdict, body } = splitVerdict(res.answer || '(빈 답)');
   const rec = verdict
     ? recordVerdict(team, { actor: 'outside', verdict, text: body, target: 'guide' })
     : emit(team, { actor: 'outside', type: 'message', text: body, meta: { engine: ENGINE } });
+
+  // 방금 남긴 것까지가 "이미 본 것"이다. 다음 턴에는 이 뒤로 새로 온 말만 받는다.
+  if (res.sessionId) remember(team, res.sessionId, rec.id);
+
+  // 같은 방에 있는데 못 들으면 대화가 아니다. 이 방 주인의 귀에 넣는다.
+  const heard = await tell(team, name, verdict ? `[${verdict}] ${body}` : body);
+  if (!heard) console.error('(서버가 없어 상대에게 들려주지 못했습니다. 대화록에는 남았습니다.)');
 
   console.log(`[${ENGINE}] ${team} · ${rec.type}${verdict ? ' ' + rec.meta.verdict : ''}`);
   console.log(body);
@@ -263,7 +303,7 @@ async function status() {
   return { ok: codex || !!process.env.OPENAI_API_KEY, lines };
 }
 
-const SETUP = `바깥눈을 연결하는 법.
+const SETUP = `외부감사를 연결하는 법.
 
  1) codex CLI  (권장. 저장소를 직접 읽고, 세션을 유지한다)
 
@@ -306,12 +346,12 @@ if (mode === 'setup') { console.log(SETUP); process.exit(0); }
 
 if (mode === 'status') {
   const s = await status();
-  console.log(s.ok ? s.lines.join('\n') : '바깥눈 설정 안 됨 — node bus/outside.mjs --setup');
+  console.log(s.ok ? s.lines.join('\n') : '외부감사 설정 안 됨 — node bus/outside.mjs --setup');
   process.exit(s.ok ? 0 : 1);
 }
 
 if (mode === 'reset') {
-  console.log(forget(team) ? `[${team}] 바깥눈 세션을 버렸습니다.` : `[${team}] 열린 세션이 없습니다.`);
+  console.log(forget(team) ? `[${team}] 외부감사 세션을 버렸습니다.` : `[${team}] 열린 세션이 없습니다.`);
   process.exit(0);
 }
 
@@ -333,7 +373,7 @@ if (mode === 'check') {
       }
     } catch (e) { errors.push(`${name}: ${String(e.message).split('\n')[0].slice(0, 200)}`); }
   }
-  console.log('바깥눈 설정 안 됨 — 교차검증 없이 진행한다는 사실을 작전실에 남기세요.');
+  console.log('외부감사 설정 안 됨 — 교차검증 없이 진행한다는 사실을 작전실에 남기세요.');
   if (errors.length) console.log('\n시도한 것:\n  ' + errors.join('\n  '));
   console.log('\n' + SETUP);
   process.exit(1);

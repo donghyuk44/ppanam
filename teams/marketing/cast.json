@@ -1,9 +1,39 @@
 {
   "agents": {
-    "guide":   { "name": "하영",   "initial": "하", "color": "#2f4f7a", "role": "길잡이 · 실행과 로드맵, 스코프 방어", "model": "claude" },
-    "review":  { "name": "안젤",   "initial": "안", "color": "#a8541f", "role": "되짚기 · 논리와 구조 감사", "model": "claude" },
-    "outside": { "name": "다니엘", "initial": "다", "color": "#5b3a63", "role": "바깥눈 · 교차검증, 다른 회사 모델", "model": "gpt" },
-    "boss":    { "name": "대표",   "initial": "대", "color": "#8a7320", "role": "사람", "model": null },
-    "system":  { "name": "시스템", "initial": "·",  "color": "#8a8175", "role": "훅 · CLI", "model": null }
+    "guide": {
+      "name": "하영",
+      "initial": "하",
+      "color": "#2f4f7a",
+      "role": "실무 · 실행과 로드맵, 스코프 방어",
+      "model": "claude"
+    },
+    "review": {
+      "name": "안젤",
+      "initial": "안",
+      "color": "#a8541f",
+      "role": "내부감사 · 논리와 구조 감사",
+      "model": "claude"
+    },
+    "outside": {
+      "name": "다니엘",
+      "initial": "다",
+      "color": "#5b3a63",
+      "role": "외부감사 · 교차검증, 다른 회사 모델",
+      "model": "gpt"
+    },
+    "boss": {
+      "name": "함동혁(댄)",
+      "initial": "댄",
+      "color": "#8a7320",
+      "role": "대표 · 사람",
+      "model": null
+    },
+    "system": {
+      "name": "시스템",
+      "initial": "·",
+      "color": "#8a8175",
+      "role": "훅 · CLI",
+      "model": null
+    }
   }
 }

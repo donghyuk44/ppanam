@@ -15,13 +15,13 @@ import { WebSocketServer } from 'ws';
 import {
   paths, listTeams, defaultTeam, teamExists, teamSummary,
   readCast, readRoadmap, readTail, listRounds, parseJSONL,
-  readState, startRound, endRound, readLog, isOffice,
+  readState, startRound, endRound, readLog, isOffice, quiet,
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
 
-// 기본은 이 PC 안에서만. 입력창에 쓴 지시가 길잡이에게 그대로 가기 때문에,
+// 기본은 이 PC 안에서만. 입력창에 쓴 지시가 실무에게 그대로 가기 때문에,
 // 열어두면 같은 네트워크의 누구나 이 PC 에서 파일을 읽고 명령을 실행할 수 있다.
 // 폰에서 보려면 VPN(Tailscale) 안에서 HOST=0.0.0.0 을 명시한다.
 const HOST = process.env.HOST || '127.0.0.1';
@@ -166,12 +166,12 @@ const server = http.createServer((req, res) => {
     });
   }
 
-  // 지시. 대표가 쓴 말이 길잡이 세션으로 들어간다.
+  // 지시. 대표가 쓴 말이 실무 세션으로 들어간다.
   //
   // 여기서 말풍선을 만들지 않는다 — 프롬프트가 세션에 들어가면 UserPromptSubmit
   // 훅이 대표 말풍선을 남긴다. 여기서 또 남기면 같은 말이 두 번 뜬다.
   if (url.pathname === '/api/say' && req.method === 'POST') {
-    readBody(req, res, ({ text, team: t }) => {
+    readBody(req, res, ({ text, team: t, quiet: q }) => {
       if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
       const say = String(text ?? '').trim();
       if (!say) return json(res, 400, { error: '빈 지시입니다.' });
@@ -183,9 +183,10 @@ const server = http.createServer((req, res) => {
       }
 
       try {
-        json(res, 200, { ok: true, ...session.send(t, say) });
+        // quiet 는 이미 대화록에 있는 말을 세션의 귀에만 넣는 것이다.
+        json(res, 200, { ok: true, ...session.send(t, q ? quiet(say) : say) });
       } catch (e) {
-        json(res, 500, { error: `길잡이에게 전달하지 못했습니다 — ${e.message}` });
+        json(res, 500, { error: `실무에게 전달하지 못했습니다 — ${e.message}` });
       }
     });
     return;
