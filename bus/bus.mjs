@@ -50,6 +50,40 @@ export const RELAY_ASSIGN = '⟦총괄 배분⟧';
 export const RELAY_QUIET = '⟦들려주기 — 기록하지 않음⟧';
 
 export const isQuietRelay = (text) => String(text ?? '').startsWith(RELAY_QUIET);
+
+/**
+ * 하네스가 세션에 밀어넣는 블록을 걷어낸다.
+ *
+ * 백그라운드 작업 완료 알림 같은 것은 대표가 한 말이 아닌데, 프롬프트로 들어오기
+ * 때문에 UserPromptSubmit 훅이 대표 발언으로 남긴다. 그러면 감사역이 그걸
+ * 대표 지시로 읽는다. 사람이 쓴 부분만 남기고, 남는 게 없으면 빈 문자열이다.
+ */
+export function stripSystemBlocks(text) {
+  return String(text ?? '')
+    .replace(/<task-notification>[\s\S]*?<\/task-notification>/g, '')
+    .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '')
+    .replace(/<ip_reminder>[\s\S]*?<\/ip_reminder>/g, '')
+    .trim();
+}
+
+/**
+ * 이 말이 누구를 향한 것인가.
+ *
+ * 대화가 대화이려면 "질문에는 답이 온다"가 성립해야 한다. 지금 구조에서는
+ * 다니엘이 안젤에게 물어도 안젤에게 차례가 가지 않아 각자 독백이 된다.
+ * 첫머리에 이름이 나오면 그 사람에게 차례를 넘긴다.
+ *
+ * 서브에이전트는 스스로 등장할 수 없으므로, 실제로는 실무에게 "누가 답해야
+ * 하는지"를 알려주는 방식으로 쓴다.
+ */
+export function addressee(text, cast, { except = null } = {}) {
+  const head = String(text ?? '').trim().slice(0, 24);
+  for (const [id, a] of Object.entries(cast ?? {})) {
+    if (id === except || id === 'system' || !a?.name) continue;
+    if (new RegExp('^' + a.name + '\\s*(씨|님)?\\s*[,，、:·]').test(head)) return id;
+  }
+  return null;
+}
 export const quiet = (text) => `${RELAY_QUIET}\n${text}`;
 
 /**

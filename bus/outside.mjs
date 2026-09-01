@@ -25,7 +25,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readCast,
-  defaultTeam, teamExists, isOffice, paths, VERDICTS,
+  defaultTeam, teamExists, isOffice, paths, VERDICTS, addressee,
 } from './bus.mjs';
 
 const run = promisify(execFile);
@@ -167,6 +167,9 @@ function contextOf(team, { since = null } = {}) {
   return lines.slice(-40).join('\n');
 }
 
+/** 방 주인 — 작전실이면 실무, 총괄실이면 총괄. 그에게 말한 건 따로 넘길 필요가 없다. */
+const OWNER_OF = (team) => (isOffice(team) ? 'chief' : 'guide');
+
 /** 이 방에서 지금까지 남은 마지막 이벤트. 다음 턴에 "그 뒤로 새로 온 말"의 기준이 된다. */
 function lastEventId(team) {
   const { events } = readTail(team, { limit: 1 });
@@ -252,7 +255,17 @@ async function ask(team, question) {
   if (res.sessionId) remember(team, res.sessionId, rec.id);
 
   // 같은 방에 있는데 못 들으면 대화가 아니다. 이 방 주인의 귀에 넣는다.
-  const heard = await tell(team, name, verdict ? `[${verdict}] ${body}` : body);
+  //
+  // 그리고 이 말이 누구를 향한 것인지도 함께 알린다. 질문에 답이 오지 않으면
+  // 대화가 아니라 독백이다. 감사역은 스스로 등장할 수 없으므로, 방 주인이
+  // 그를 불러 답하게 해야 한다.
+  const cast = readCast(team).agents ?? {};
+  const to = addressee(body, cast, { except: 'outside' });
+  const route = to && to !== OWNER_OF(team)
+    ? `\n\n(이 말은 ${cast[to]?.name ?? to} 에게 한 것입니다. 그를 불러 답하게 하세요.)`
+    : '';
+
+  const heard = await tell(team, name, (verdict ? `[${verdict}] ` : '') + body + route);
   if (!heard) console.error('(서버가 없어 상대에게 들려주지 못했습니다. 대화록에는 남았습니다.)');
 
   console.log(`[${ENGINE}] ${team} · ${rec.type}${verdict ? ' ' + rec.meta.verdict : ''}`);

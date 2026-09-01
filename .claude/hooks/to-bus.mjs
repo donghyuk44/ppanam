@@ -109,6 +109,11 @@ switch (ev) {
     // 이미 대화록에 있는 말을 귀에 넣어준 것이다. 말한 사람이 이미 남겼다.
     if (bus.isQuietRelay(text)) bail('들려주기 — 기록 안 함');
 
+    // 하네스가 세션에 넣는 알림(백그라운드 작업 완료 등)은 대표가 한 말이 아니다.
+    // 그대로 두면 대표 말풍선으로 남고, 감사역이 그걸 대표 지시로 읽는다.
+    const human = bus.stripSystemBlocks(text);
+    if (!human) bail('하네스 알림 — 대표 발언 아님');
+
     // 총괄이 배달한 봉투면 원문과 배분을 갈라 두 건으로 남긴다.
     // 한 말풍선에 두 블록으로 두면 언젠가 섞이고, 섞이면 원문이 사라진다.
     const relay = bus.splitRelay(text);
@@ -123,7 +128,7 @@ switch (ev) {
       break;
     }
 
-    out = { actor: 'boss', type: 'message', text: trim(text) };
+    out = { actor: 'boss', type: 'message', text: trim(human) };
     break;
   }
 
@@ -168,6 +173,10 @@ switch (ev) {
   default:
     bail('다루지 않는 이벤트 ' + ev);
 }
+
+// 방에 남길 말이 없다는 표시. 진행 중계와 이미 한 말의 재요약을 막는다.
+// 턴은 반드시 끝나야 하고 끝나면 훅이 기록하므로, 침묵할 방법을 따로 줘야 한다.
+if (out && /^\(?패스\)?[.·\s]*$/.test(String(out.text).trim())) bail('패스 — 남길 말 없음');
 
 if (!out) bail('내용 없음');
 
