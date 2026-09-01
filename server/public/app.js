@@ -104,6 +104,19 @@ function renderHead() {
   $('rprog').textContent = summary.attempt > 0 ? `반박 ${summary.attempt}/3` : '';
   app.dataset.alert = summary.attempt > 0 || summary.needsBoss ? '1' : '0';
 
+  // 길잡이가 지금 일하는 중인가. 줄 서 있는 지시가 있으면 개수도 함께.
+  const sess = summary.session ?? {};
+  const work = $('rwork');
+  work.hidden = !(summary.round && sess.busy);
+  work.textContent = sess.queued ? `길잡이가 일하는 중 · 대기 ${sess.queued}` : '길잡이가 일하는 중';
+
+  $('roundBtn').textContent = summary.round ? '라운드 닫기' : '라운드 열기';
+
+  // 라운드 밖에서는 훅이 기록하지 않는다. 쓸 수 있게 두면 고장으로 보인다.
+  const input = $('input');
+  input.disabled = !summary.round;
+  input.placeholder = summary.round ? '길잡이에게 지시하기' : '라운드를 열면 지시할 수 있습니다';
+
   const crew = $('crew');
   crew.replaceChildren();
   for (const [id, a] of Object.entries(cast.agents ?? {})) {
@@ -384,7 +397,57 @@ function connect() {
   };
 }
 
-/* ── 대표 발언 ── */
+/* ── 라운드 열고 닫기 ── */
+
+const post = (path, body) => fetch(path, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify(body),
+}).then(async (r) => ({ ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) }));
+
+let msgTimer = null;
+function say(text, ms = 6000) {
+  const box = $('composerMsg');
+  clearTimeout(msgTimer);
+  if (!text) { box.hidden = true; return; }
+  box.textContent = text;
+  box.hidden = false;
+  msgTimer = setTimeout(() => { box.hidden = true; }, ms);
+}
+
+const showOpen = (on) => {
+  $('roundOpen').hidden = !on;
+  if (on) { $('roundTopic').value = ''; $('roundMs').value = ''; $('roundTopic').focus(); }
+};
+
+$('roundBtn').addEventListener('click', async () => {
+  if (!active) return;
+  if (!summary.round) return showOpen($('roundOpen').hidden);
+
+  // 판정은 감사역이 낸다. 여기서 닫는 건 판정 없이 라운드를 접는 것이다.
+  if (!confirm(`라운드 ${summary.round} 을 닫습니다.\n\n대화록은 그대로 남고, 다음 라운드는 새 컨텍스트로 시작합니다.`)) return;
+  const r = await post('/api/round', { team: active, action: 'end' });
+  if (!r.ok) say(r.data.error ?? '라운드를 닫지 못했습니다.');
+});
+
+$('roundCancel').addEventListener('click', () => showOpen(false));
+
+$('roundOpen').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!active) return;
+  const topic = $('roundTopic').value.trim();
+  const ms = $('roundMs').value.trim();
+  const r = await post('/api/round', {
+    team: active, action: 'start',
+    topic: topic || null,
+    milestone: ms === '' ? null : Number(ms),
+  });
+  if (!r.ok) return say(r.data.error ?? '라운드를 열지 못했습니다.');
+  showOpen(false);
+  $('input').focus();
+});
+
+/* ── 지시 ── */
 
 $('composer').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -392,13 +455,21 @@ $('composer').addEventListener('submit', async (e) => {
   const text = input.value.trim();
   if (!text || !active) return;
   input.value = '';
+  say(null);
+
+  // 말풍선은 여기서 그리지 않는다. 지시가 세션에 들어가면 훅이 남긴다.
+  let r;
   try {
-    await fetch('/api/say', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ text, team: active }),
-    });
-  } catch { input.value = text; }
+    r = await post('/api/say', { text, team: active });
+  } catch {
+    input.value = text;
+    return say('서버에 닿지 못했습니다.');
+  }
+  if (!r.ok) {
+    input.value = text;
+    say(r.data.error ?? '지시를 전달하지 못했습니다.');
+    if (r.data.needsRound) showOpen(true);
+  }
 });
 
 /* ── 상황판 서랍 (좁은 화면) ── */
