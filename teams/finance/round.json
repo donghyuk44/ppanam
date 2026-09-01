@@ -1,1 +1,9 @@
-{ "round": 0, "milestone": 0, "phase": "idle", "topic": null, "attempt": 0, "startedAt": null, "endedAt": null }
+{
+  "round": 1,
+  "milestone": 1,
+  "phase": "running",
+  "topic": "4분기 예산 재배분",
+  "attempt": 3,
+  "startedAt": "2026-09-01T06:31:46.260Z",
+  "endedAt": null
+}

@@ -1,9 +1,9 @@
 {
-  "round": 5,
-  "milestone": 1,
+  "round": 8,
+  "milestone": 3,
   "phase": "idle",
-  "topic": "팀별 캐스트 검증",
-  "attempt": 0,
-  "startedAt": "2026-09-01T07:16:20.159Z",
-  "endedAt": "2026-09-01T07:17:19.587Z"
+  "topic": "바깥눈 권한 재검증",
+  "attempt": 1,
+  "startedAt": "2026-09-01T07:56:03.024Z",
+  "endedAt": "2026-09-01T08:53:43.279Z"
 }

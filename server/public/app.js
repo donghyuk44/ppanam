@@ -97,10 +97,15 @@ function renderHead() {
     .map(([, a]) => a.name).join(', ');
   document.title = summary.round ? `R${summary.round} · ${t?.name ?? '작전실'}` : (t?.room ?? '작전실');
 
-  $('rnum').textContent = summary.round ? `R${summary.round}` : '—';
-  $('rtitle').textContent = summary.round
-    ? (summary.topic ? `마일스톤 ${summary.milestone} — ${summary.topic}` : `마일스톤 ${summary.milestone}`)
-    : '대기 중 — 라운드를 시작하세요';
+  // 총괄실은 대표와의 1:1 이라 라운드가 없다. 늘 열려 있다.
+  const office = t?.kind === 'office';
+
+  $('rnum').textContent = office ? '1:1' : summary.round ? `R${summary.round}` : '—';
+  $('rtitle').textContent = office
+    ? '늘 열려 있습니다 — 지시하면 톰이 팀에 나눕니다'
+    : summary.round
+      ? (summary.topic ? `마일스톤 ${summary.milestone} — ${summary.topic}` : `마일스톤 ${summary.milestone}`)
+      : '대기 중 — 라운드를 시작하세요';
   $('rprog').textContent = summary.attempt > 0 ? `반박 ${summary.attempt}/3` : '';
   app.dataset.alert = summary.attempt > 0 || summary.needsBoss ? '1' : '0';
 
@@ -110,12 +115,17 @@ function renderHead() {
   work.hidden = !(summary.round && sess.busy);
   work.textContent = sess.queued ? `길잡이가 일하는 중 · 대기 ${sess.queued}` : '길잡이가 일하는 중';
 
-  $('roundBtn').textContent = summary.round ? '라운드 닫기' : '라운드 열기';
+  const rb = $('roundBtn');
+  rb.hidden = office;
+  rb.textContent = summary.round ? '라운드 닫기' : '라운드 열기';
+  if (office) $('roundOpen').hidden = true;
 
-  // 라운드 밖에서는 훅이 기록하지 않는다. 쓸 수 있게 두면 고장으로 보인다.
+  // 작전실은 라운드 밖에서 훅이 기록하지 않는다. 쓸 수 있게 두면 고장으로 보인다.
   const input = $('input');
-  input.disabled = !summary.round;
-  input.placeholder = summary.round ? '길잡이에게 지시하기' : '라운드를 열면 지시할 수 있습니다';
+  input.disabled = !office && !summary.round;
+  input.placeholder = office
+    ? '톰에게 지시하기'
+    : summary.round ? '길잡이에게 지시하기' : '라운드를 열면 지시할 수 있습니다';
 
   const crew = $('crew');
   crew.replaceChildren();
@@ -559,7 +569,8 @@ function renderTower() {
   for (const t of teams) {
     const s = summaries[t.id] ?? {};
     const agents = s.cast ?? {};
-    const running = s.phase === 'running' && s.round;
+    const office = t.kind === 'office';       // 총괄실은 라운드가 없다. 늘 열려 있다
+    const running = office || (s.phase === 'running' && s.round);
 
     const card = el('div', 'tcard');
     card.dataset.alert = s.needsBoss ? '1' : '0';
@@ -571,18 +582,20 @@ function renderTower() {
     name.addEventListener('click', async () => { await selectTeam(t.id); setView('room'); });
     top.appendChild(name);
     const flag = el('span', 'tcard__flag',
-      s.needsBoss ? '대표 호출' : running ? '진행 중' : '대기');
+      s.needsBoss ? '대표 호출' : office ? '1:1' : running ? '진행 중' : '대기');
     flag.dataset.k = s.needsBoss ? 'boss' : running ? 'run' : 'idle';
     top.appendChild(flag);
     card.appendChild(top);
 
     // 라운드와 마일스톤
     const ms = el('div', 'tcard__ms');
-    ms.appendChild(el('b', null, s.round ? `R${s.round}` : 'R—'));
+    ms.appendChild(el('b', null, office ? '1:1' : s.round ? `R${s.round}` : 'R—'));
     ms.append(' ');
-    ms.append(s.round
-      ? `마일스톤 ${s.milestone}${s.milestoneTitle ? ' · ' + s.milestoneTitle : ''}`
-      : '진행 중인 라운드 없음');
+    ms.append(office
+      ? '대표와 톰. 여기서 지시하면 팀에 나눠집니다'
+      : s.round
+        ? `마일스톤 ${s.milestone}${s.milestoneTitle ? ' · ' + s.milestoneTitle : ''}`
+        : '진행 중인 라운드 없음');
     card.appendChild(ms);
 
     const total = s.milestonesTotal ?? 0;
@@ -630,7 +643,7 @@ function renderTower() {
     box.autocomplete = 'off';
     box.dataset.team = t.id;
     box.value = draft[t.id] ?? '';
-    box.placeholder = running ? '지시하기' : '라운드 주제를 쓰고 열기';
+    box.placeholder = office ? '톰에게 지시하기' : running ? '지시하기' : '라운드 주제를 쓰고 열기';
     box.addEventListener('input', () => { draft[t.id] = box.value; });
 
     const fail = (m) => { err.textContent = m; err.hidden = false; };
@@ -661,11 +674,12 @@ function renderTower() {
     box.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter') return;
       e.preventDefault();
-      running ? doSay() : doRound();
+      (office || running) ? doSay() : doRound();
     });
 
     const btn = el('button', 'tcard__r', running ? '라운드 닫기' : '라운드 열기');
     btn.type = 'button';
+    btn.hidden = office;
     btn.addEventListener('click', doRound);
 
     row.appendChild(box);

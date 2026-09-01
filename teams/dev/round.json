@@ -1,1 +1,9 @@
-{ "round": 0, "milestone": 0, "phase": "idle", "topic": null, "attempt": 0, "startedAt": null, "endedAt": null }
+{
+  "round": 1,
+  "milestone": 2,
+  "phase": "running",
+  "topic": "결제 실패 재시도 로직",
+  "attempt": 1,
+  "startedAt": "2026-09-01T06:31:46.260Z",
+  "endedAt": null
+}

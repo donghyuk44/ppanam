@@ -1,5 +1,12 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(node bus/say.mjs:*)",
+      "Bash(node bus/round.mjs:*)",
+      "Bash(node bus/outside.mjs:*)"
+    ]
+  },
   "hooks": {
     "UserPromptSubmit": [
       {

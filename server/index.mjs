@@ -15,7 +15,7 @@ import { WebSocketServer } from 'ws';
 import {
   paths, listTeams, defaultTeam, teamExists, teamSummary,
   readCast, readRoadmap, readTail, listRounds, parseJSONL,
-  readState, startRound, endRound, readLog,
+  readState, startRound, endRound, readLog, isOffice,
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 
@@ -176,9 +176,9 @@ const server = http.createServer((req, res) => {
       const say = String(text ?? '').trim();
       if (!say) return json(res, 400, { error: '빈 지시입니다.' });
 
-      // 라운드 밖에서는 훅이 기록하지 않는다. 지시해도 화면에 아무것도 안 뜨니,
-      // 고장으로 보이기 전에 여기서 막는다.
-      if (readState(t).phase !== 'running') {
+      // 작전실은 라운드 밖에서 훅이 기록하지 않는다. 지시해도 화면에 아무것도
+      // 안 뜨니, 고장으로 보이기 전에 여기서 막는다. 총괄실은 라운드가 없다.
+      if (!isOffice(t) && readState(t).phase !== 'running') {
         return json(res, 409, { error: '라운드를 먼저 여세요.', needsRound: true });
       }
 
@@ -195,6 +195,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/api/round' && req.method === 'POST') {
     readBody(req, res, ({ team: t, action, topic, milestone, verdict, summary }) => {
       if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
+      if (isOffice(t)) return json(res, 400, { error: '총괄실에는 라운드가 없습니다. 늘 열려 있습니다.' });
       try {
         if (action === 'start') {
           return json(res, 200, startRound(t, {
