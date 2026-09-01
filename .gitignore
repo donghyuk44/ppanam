@@ -9,3 +9,6 @@ teams/*/out/
 # /design 이 조립한 캔버스 결과물. .dc.html 원본에서 다시 만들 수 있다 (2MB).
 design/*.html
 !design/*.dc.html
+state/active-team
+.claude/hooks/debug.log
+.claude/hooks/payload-*.json

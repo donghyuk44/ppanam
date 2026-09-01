@@ -158,10 +158,28 @@ export function listRounds(team) {
   return parseJSONL(safeRead(paths(team).rounds)).reverse();
 }
 
+/**
+ * 다음 라운드 번호.
+ *
+ * round.json 만 믿지 않는다. 그 파일이 지워지거나 되돌려지면 번호가 1로 돌아가
+ * 대화록에 이미 있는 라운드와 충돌하기 때문이다. 기록에 남은 최대값도 함께 본다.
+ */
+function nextRoundNumber(team) {
+  let max = readState(team).round || 0;
+  for (const r of parseJSONL(safeRead(paths(team).rounds))) {
+    if (typeof r.round === 'number' && r.round > max) max = r.round;
+  }
+  const log = readLog(team);
+  for (let i = log.length - 1; i >= 0; i--) {
+    if (typeof log[i].round === 'number' && log[i].round > max) max = log[i].round;
+  }
+  return max + 1;
+}
+
 export function startRound(team, { topic = null, milestone = null } = {}) {
   const prev = readState(team);
   const next = writeState(team, {
-    round: (prev.round || 0) + 1,
+    round: nextRoundNumber(team),
     milestone: milestone ?? prev.milestone ?? 1,
     phase: 'running',
     topic: topic ?? prev.topic,
