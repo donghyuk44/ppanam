@@ -659,6 +659,27 @@ function renderTower() {
     if (s.session?.busy) meta.appendChild(el('span', 'rwork', '일하는 중'));
     card.appendChild(meta);
 
+    // 중간 상황 — teams/<팀>/progress.json. 로드맵이 목적지라면 이건 지금 위치다.
+    // 대표가 돌아와 30초 안에 "어디까지 왔고 무엇이 막혔나"를 보는 자리 (M5 의 조각).
+    if (s.progress) {
+      const p = s.progress;
+      const prog = el('details', 'tcard__prog');
+      const n = (k) => (p[k]?.length ?? 0);
+      prog.appendChild(el('summary', null,
+        `상황 · 하는 중 ${n('doing')} · 한 것 ${n('done')} · 남은 것 ${n('left')}` + (n('issues') ? ` · 이슈 ${n('issues')}` : '')));
+      for (const [k, label] of [['doing', '하는 중'], ['issues', '이슈'], ['done', '한 것'], ['left', '남은 것']]) {
+        const items = p[k] ?? [];
+        if (!items.length) continue;
+        const h = el('div', 'tcard__progk', label); h.dataset.k = k;
+        prog.appendChild(h);
+        const ul = el('ul');
+        for (const it of items) ul.appendChild(el('li', null, it));
+        prog.appendChild(ul);
+      }
+      if (p.at) prog.appendChild(el('div', 'tcard__quiet', `${ago(p.at)}${p.by ? ' · ' + p.by : ''}`));
+      card.appendChild(prog);
+    }
+
     // 마지막 발언
     const last = el('div', 'tcard__last');
     if (s.lastText) {

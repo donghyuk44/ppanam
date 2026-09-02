@@ -19,6 +19,7 @@ import {
   listApprovals, decideApproval, APPROVAL_GRADES,
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
+import { runExecutor } from './executor.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
 
@@ -57,6 +58,7 @@ const summaries = () => Object.fromEntries(listTeams().map((t) => {
     session: session.status(t.id),
     milestoneTitle: now?.title ?? null,
     deliverable: now?.deliverable ?? null,
+    progress: readProgress(t.id),
     cast: readCast(t.id).agents ?? {},
     approvals: {
       pending: listApprovals({ team: t.id, status: 'pending' }).length,
@@ -65,6 +67,16 @@ const summaries = () => Object.fromEntries(listTeams().map((t) => {
     },
   }];
 }));
+
+/**
+ * teams/<팀>/progress.json — 지금 어디까지 왔나. 로드맵이 목적지라면 이건 현재 위치다.
+ * 한 것 · 하는 중 · 남은 것 · 이슈. 로드맵(C 등급)과 분리해 두므로 누구든 갱신할 수 있다.
+ * 없으면 null — 카드는 그 블록을 그리지 않는다.
+ */
+function readProgress(team) {
+  try { return JSON.parse(fs.readFileSync(path.join(paths(team).dir, 'progress.json'), 'utf8')); }
+  catch { return null; }
+}
 
 /** teams/<팀>/out/ 의 산출물. 라운드의 통과 조건은 완료율이 아니라 제출 가능한 물건이다. */
 function listOut(team) {
@@ -296,6 +308,9 @@ setInterval(() => {
     const events = pollTeam(t.id);
     if (events.length) broadcast({ kind: 'events', team: t.id, events });
   }
+  // 통과한 B 푸시를 서버가 대신 민다. 한 번에 하나씩, 겹치지 않게.
+  runExecutor();
+
   // 레일의 계기판 값이 바뀌었을 때만 보낸다.
   const s = summaries();
   const raw = JSON.stringify(s);

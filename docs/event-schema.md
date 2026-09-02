@@ -239,6 +239,23 @@ teams/<방>/
 제리는 codex 샌드박스 안이라 파일을 못 쓴다 — 그녀의 첫 줄 PASS/REVISE 를 `outside.mjs` 가
 그녀 이름으로 큐에 남긴다. 그 프로세스가 곧 그녀다.
 
+**통과한 B 를 실행하는 것은 서버다.** `git push` 는 어느 세션의 허용 목록에도 없다 — 실무가
+스스로 밀 수 있으면 톰·제리를 우회하는 길이 생긴다. `server/executor.mjs` 가 폴링 틱마다
+통과한 B 중 `action.type === 'push'` 인 것을 찾아 대신 민다. 실행 흔적은 `state/executor.json`
+(gitignore) 에 남아 재시작해도 두 번 밀지 않는다.
+
+`action` 은 `approve.mjs --request B --push` 로 요청할 때 그 순간의
+`{ type: 'push', remote: 'origin', branch, sha }` 가 요청 레코드에 박힌 것이다.
+실행자는 **이 값만 믿는다.** 자유 텍스트를 정규식으로 훑어 푸시인지 짐작하지 않는다 —
+그렇게 하던 첫 판은 레오가 FAIL 냈다 (2026-09-02: `detail` 의 push 도, "푸시하지 마라" 도 걸렸다).
+실행 시점에 HEAD 의 브랜치·SHA 가 승인된 것과 하나라도 다르면 밀지 않고 `executed: 'stale'`
+note 를 내며 "다시 요청하세요" 라고 한다 — 톰·제리는 그 SHA 를 통과시킨 것이지 지금 HEAD 가 아니다.
+같을 때만 `git push origin <sha>:refs/heads/<branch>` 로 **승인된 SHA 를 못 박아** 민다 — 대조와 푸시
+사이에 브랜치가 움직여도 origin 에는 톰·제리가 본 커밋만 간다 (레오 2차 감사가 재현한 틈).
+총괄실에 들려주는 요청문에도 `대상: origin/<branch> @ <sha8>` 이 실린다. 결과는 요청한 방과 총괄실 둘 다에
+`note` 로 남는다 (`meta.executed`: `pushed` · `push-failed` · `stale`).
+`--push` 없는 B(다음 마일스톤 착수 등)는 통과 자체가 진행 신호라 실행자가 할 일이 없다.
+
 ## 7. 무엇이 비워지고 무엇이 남는가
 
 **세 가지가 서로 다르다.** 이걸 섞으면 설계가 무너진다.

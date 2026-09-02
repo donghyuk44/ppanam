@@ -158,7 +158,7 @@ export function listApprovals({ team = null, status = null } = {}) {
   return out;
 }
 
-export function requestApproval(team, { by = 'guide', grade, what, detail = '' }) {
+export function requestApproval(team, { by = 'guide', grade, what, detail = '', action = null }) {
   const g = String(grade || '').toUpperCase();
   if (!APPROVAL_GRADES[g]) throw new Error(`등급은 A / B / C 중 하나여야 합니다.`);
   if (!what?.trim()) throw new Error('무엇을 승인받을지가 비어 있습니다.');
@@ -166,6 +166,9 @@ export function requestApproval(team, { by = 'guide', grade, what, detail = '' }
     kind: 'request', id: 'apr_' + crypto.randomBytes(4).toString('hex'),
     ts: new Date().toISOString(), team, by, grade: g, what: what.trim(), detail: String(detail ?? '').trim(),
     round: readState(team).round || 0,
+    // 실행 대상을 요청에 묶는다. 푸시라면 그때의 브랜치·SHA 다. 실행자는 이 값만 믿는다 —
+    // 자유 텍스트를 정규식으로 훑어 "푸시인가"를 짐작하지 않는다 (레오 감사, 2026-09-02).
+    ...(action ? { action } : {}),
   };
   appendApproval(rec);
   // 방에도 남긴다 — 화면에서 가장 약한 줄이지만, 나중에 "언제 요청했나"를 찾을 수 있어야 한다.
