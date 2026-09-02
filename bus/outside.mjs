@@ -25,7 +25,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readCast,
-  defaultTeam, teamExists, isOffice, paths, VERDICTS, addressee,
+  defaultTeam, teamExists, isOffice, paths, VERDICTS, addressee, decideApproval,
 } from './bus.mjs';
 
 const run = promisify(execFile);
@@ -247,9 +247,18 @@ async function ask(team, question) {
   if (!prior) emit(team, { actor: 'system', type: 'enter', text: `${name} 님이 들어왔습니다` });
 
   const { verdict, body } = splitVerdict(res.answer || '(빈 답)');
-  const rec = verdict
+
+  // 승인 대조였으면 그 판정을 외부감사 이름으로 큐에 남긴다.
+  // codex 샌드박스는 파일을 못 쓰므로 그녀 대신 이 프로세스가 쓴다 — 이 프로세스가 곧 그녀다.
+  const apr = /apr_[0-9a-f]{8}/.exec(question)?.[0];
+  if (apr && verdict && verdict !== 'FAIL') {
+    try { decideApproval(apr, { by: 'outside', decision: verdict, reason: body.split('\n')[0].slice(0, 200) }); }
+    catch (e) { emit(team, { actor: 'system', type: 'note', text: `${name} 의 승인 판정을 못 남겼습니다 — ${e.message}` }); }
+  }
+
+  const rec = verdict && !apr
     ? recordVerdict(team, { actor: 'outside', verdict, text: body, target: 'guide' })
-    : emit(team, { actor: 'outside', type: 'message', text: body, meta: { engine: ENGINE } });
+    : emit(team, { actor: 'outside', type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...(apr ? { approval: apr } : {}) } });
 
   // 방금 남긴 것까지가 "이미 본 것"이다. 다음 턴에는 이 뒤로 새로 온 말만 받는다.
   if (res.sessionId) remember(team, res.sessionId, rec.id);

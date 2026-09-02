@@ -17,9 +17,28 @@
 // 통과·반려가 나면 요청한 방의 귀에 넣는다. 사람이 중간에 옮기지 않는다.
 
 import {
-  requestApproval, decideApproval, listApprovals, APPROVAL_GRADES,
-  defaultTeam, teamExists, listTeams, readCast, quiet,
+  requestApproval, decideApproval, voidApproval, listApprovals, APPROVAL_GRADES,
+  defaultTeam, teamExists, listTeams, readCast, quiet, isOffice,
 } from './bus.mjs';
+
+/**
+ * 누가 말하는지는 --as 가 아니라 환경이 정한다.
+ *
+ * 서버가 세션을 띄우며 PPANAM_TEAM 을 넣고, outside.mjs 가 codex 를 띄우며 PPANAM_ACTOR 를
+ * 넣는다. 아무 셸에서나 --as chief 를 쓸 수 있으면 판정 기록이 위조된다 — 실제로 하네스를
+ * 고치던 세션의 테스트가 톰의 판정으로 기록됐고, 톰이 그걸 잡아냈다.
+ *
+ * 세션은 Bash 허용 목록 때문에 `PPANAM_TEAM=hq node ...` 같은 접두를 못 쓴다.
+ * 그래서 환경 검사만으로도 충분히 막힌다. 대표는 화면(API)으로만 판정한다.
+ */
+function whoAmI() {
+  const actor = process.env.PPANAM_ACTOR;
+  const team = process.env.PPANAM_TEAM;
+  if (actor) return { actor, team };
+  if (team) return { actor: isOffice(team) ? 'chief' : 'guide', team };
+  return null;
+}
+const me = whoAmI();
 
 const BASE = process.env.PPANAM_SERVER || 'http://localhost:4321';
 
@@ -39,6 +58,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--list' || a === '-l') o.mode = 'list';
   else if (a === '--all') o.all = true;
   else if (a === '--show' || a === '-s') { o.mode = 'show'; o.id = argv[++i]; }
+  else if (a === '--void') { o.mode = 'void'; o.id = argv[++i]; }
   else if (a === '-h' || a === '--help') { usage(); process.exit(0); }
   else words.push(a);
 }
@@ -50,6 +70,7 @@ function usage() {
   --decide <id> --as <chief|outside|boss> <PASS|REVISE> "<이유>"
   --list [--all]        대기 중인 것 (--all 이면 전부)
   --show <id>
+  --void <id> "<이유>"   잘못 들어온 요청을 무효로 (총괄실만)
 
 등급
 ${Object.entries(APPROVAL_GRADES).map(([g, x]) => `  ${g} ${x.label.padEnd(3)} ${x.needs.length ? x.needs.join('+') : '실무 혼자'}  — ${x.desc}`).join('\n')}`);
@@ -76,7 +97,7 @@ const nameOf = (team, actor) => {
 
 const fmt = (r) => {
   const who = nameOf(r.team, r.by);
-  const st = { pending: '대기', passed: '통과', revised: '반려' }[r.status] ?? r.status;
+  const st = { pending: '대기', passed: '통과', revised: '반려', void: '무효' }[r.status] ?? r.status;
   const dec = r.decisions.map((d) => `${nameOf(r.team, d.by)}:${d.decision}`).join(' ');
   return `${r.id}  [${r.grade}] ${st.padEnd(2)}  ${r.team.padEnd(9)} ${who.padEnd(4)} ${r.what}${dec ? '  (' + dec + ')' : ''}`;
 };
@@ -97,10 +118,19 @@ if (o.mode === 'show') {
   process.exit(0);
 }
 
+if (o.mode === 'void') {
+  // 잘못 들어온 요청을 무효로 한다. 지우지 않고 한 줄 더 쓴다. 총괄실만.
+  if (!me || me.team !== 'hq') { console.error('오류: 무효 처리는 총괄실에서만 합니다.'); process.exit(1); }
+  try { console.log(fmt(voidApproval(o.id, words.join(' ')))); } catch (e) { console.error('오류: ' + e.message); process.exit(1); }
+  process.exit(0);
+}
+
 if (o.mode === 'request') {
   const team = o.team ?? process.env.PPANAM_TEAM ?? defaultTeam();
   if (!teamExists(team)) { console.error(`없는 팀: ${team} (${listTeams().map((t) => t.id).join(', ')})`); process.exit(1); }
-  const by = o.as ?? (process.env.PPANAM_ACTOR || 'guide');
+  if (!me) { console.error('오류: 방이 지정되지 않은 셸에서는 요청할 수 없습니다. 세션 안에서 부르세요.'); process.exit(1); }
+  if (o.as && o.as !== me.actor) { console.error(`오류: 너는 '${me.actor}' 다. '${o.as}' 로 요청할 수 없다.`); process.exit(1); }
+  const by = me.actor;
   const what = words.join(' ').trim();
   let r;
   try { r = requestApproval(team, { by, grade: o.grade, what, detail: o.detail }); }
@@ -128,10 +158,11 @@ if (o.mode === 'request') {
 }
 
 if (o.mode === 'decide') {
-  const by = o.as ?? process.env.PPANAM_ACTOR;
+  if (!me) { console.error('오류: 방이 지정되지 않은 셸에서는 판정할 수 없습니다. 대표는 관제탑 화면에서 판정합니다.'); process.exit(1); }
+  if (o.as && o.as !== me.actor) { console.error(`오류: 너는 '${me.actor}' 다. '${o.as}' 로 판정할 수 없다.`); process.exit(1); }
+  const by = me.actor;
   const decision = words[0];
   const reason = words.slice(1).join(' ');
-  if (!by) { console.error('오류: --as <chief|outside|boss> 가 필요합니다.'); process.exit(1); }
   let r;
   try { r = decideApproval(o.id, { by, decision, reason }); }
   catch (e) { console.error('오류: ' + e.message); process.exit(1); }

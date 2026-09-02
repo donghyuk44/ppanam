@@ -135,6 +135,12 @@ export function listApprovals({ team = null, status = null } = {}) {
       byId.set(l.id, { ...l, decisions: [], status: l.grade === 'A' ? 'passed' : 'pending', decidedAt: l.grade === 'A' ? l.ts : null });
       continue;
     }
+    if (l.kind === 'void') {
+      // 지우지 않는다. 무효라고 한 줄 더 쓴다 — 대화록과 같은 원칙.
+      const r = byId.get(l.id);
+      if (r) { r.status = 'void'; r.decidedAt = l.ts; r.voidReason = l.reason ?? ''; }
+      continue;
+    }
     if (l.kind === 'decision') {
       const r = byId.get(l.id);
       if (!r || r.status !== 'pending') continue;
@@ -169,6 +175,13 @@ export function requestApproval(team, { by = 'guide', grade, what, detail = '' }
     meta: { approval: rec.id, grade: g },
   });
   return listApprovals().find((r) => r.id === rec.id);
+}
+
+export function voidApproval(id, reason = '') {
+  const r = listApprovals().find((x) => x.id === id);
+  if (!r) throw new Error(`그런 요청이 없습니다: ${id}`);
+  appendApproval({ kind: 'void', id, reason: String(reason ?? '').trim(), ts: new Date().toISOString() });
+  return listApprovals().find((x) => x.id === id);
 }
 
 export function decideApproval(id, { by, decision, reason = '' }) {

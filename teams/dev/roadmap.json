@@ -1,1 +1,20 @@
-{ "destination": null, "baseline": null, "milestones": [], "cutList": [] }
+{
+  "destination": "이 작전실이 진짜 커맨드센터가 된다. 대표가 자리를 비워도 팀들이 승인 등급 안에서 스스로 달리고, 돌아온 대표는 관제탑 첫 화면 30초로 무엇이 통과하고 무엇이 막혔는지 안다. 인격은 세션이 죽어도 리셋되지 않는다.",
+  "baseline": "웹에서 지시 → 실무 세션 → 훅 → 대화록 → 화면까지 터미널 없이 한 바퀴 돈다. 총괄실(톰·제리)과 마케팅(하영·안젤·다니엘)·개발(테라·솔라·레오)이 있다. 외부감사는 codex 별도 프로세스. 승인 체인 M1 은 들어갔으나 세션에서 approve.mjs 를 부를 권한이 없다. 재시도·폴백은 0. 에이전트 개인 기억은 없다.",
+  "milestones": [
+    { "n": 1, "title": "승인 체인", "deliverable": "state/approvals.jsonl · bus/approve.mjs · 등급 A/B/C · 관제탑 승인 카드 — 대표 없이 B 가 톰+제리로 통과하는 실물 1건", "status": "now" },
+    { "n": 2, "title": "기억 3층", "deliverable": "teams/<팀>/journal/<actor>.md 가 라운드마다 한 문단 늘고, 세션이 죽었다 살아나도 어제 일을 인용한다. decisions.md 에 대표 원문과 해석이 분리 표기된다. 자정 마감 한 장", "status": "wait" },
+    { "n": 3, "title": "실패 수습", "deliverable": "codex 를 강제로 죽여도 1회 재시도 후 note + 큐. 세션이 죽으면 자동 재개. 부분 성공(판정은 났는데 산출물이 비었을 때)이 통과로 위장되지 않는다", "status": "wait" },
+    { "n": 4, "title": "파일 업로드", "deliverable": "teams/<팀>/in/ 에 올린 파일 경로가 지시에 붙어 실무가 바로 읽는다. 작전실·관제탑 양쪽", "status": "wait" },
+    { "n": 5, "title": "HQ 첫 화면", "deliverable": "관제탑이 '승인 대기 N · 오늘 통과 M · 막힌 것' 으로 시작한다. 대표가 30초 안에 파악한다", "status": "wait" },
+    { "n": 6, "title": "비용 티어", "deliverable": "state/teams.json 모델 조정(실무 sonnet, ops haiku) · 유휴 정지 · state/budget.json 일일 상한 초과 시 톰이 큐에 올리고 멈춘다", "status": "wait" }
+  ],
+  "cutList": [
+    "디자인·경영·CS 팀 신설 — 책: 공백이 보일 때 추가. 총괄+개발+마케팅이 한 달 돌고 나서",
+    "오케스트레이션 프레임워크(CrewAI 등) — bus/ 가 이미 역할 기반 팀. 부족해지면 그때",
+    "배포·관리자 로그인·Supabase — Tailscale 결정 유지",
+    "웹에서 페르소나·로드맵 편집 — 배경 설정은 파일",
+    "마케팅 라운드 — 대표 문서 전까지 열지 않는다"
+  ],
+  "note": "이 로드맵은 /kickoff 인터뷰가 아니라 대표가 2026-09-02 에 승인한 설계 점검(plans/iterative-singing-pebble.md)에서 그대로 옮긴 것이다. 대표 원문은 decisions.md 에 있다. 개발팀의 프로젝트가 ppanam 자체라는 것은 대표 결정."
+}
