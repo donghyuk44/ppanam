@@ -206,7 +206,16 @@ function splitVerdict(text) {
   return { verdict: null, body: text };
 }
 
-async function ask(team, question) {
+/**
+ * talk — 판정이 아니라 대화다.
+ *
+ * 외부감사가 대화를 안 하는 이유는 성격이 아니라 통로였다. --ask 는 한 번 돌고 첫 줄에
+ * PASS/REVISE 를 강제하니 무슨 말을 해도 판정이 된다. 방에서 "레오, 이거 어때" 하고
+ * 불러도 아무 일이 안 일어난다 — 클로드 세션에는 이름이 불리면 다음 화자가 되는 장치가
+ * 있는데 codex 에는 그 방아쇠가 없었다. talk 는 그 방아쇠의 반대쪽 끝이다: 서버가 이름이
+ * 불린 걸 보고 --talk 로 깨우면, 그는 판정 없이 사람에게 답한다. 대표 지적 (2026-09-02).
+ */
+async function ask(team, question, { talk = false, lull = false } = {}) {
   if (!await hasCodex()) {
     emit(team, {
       actor: 'outside', type: 'note',
@@ -223,11 +232,18 @@ async function ask(team, question) {
   // 첫 턴에는 인격과 지금까지의 대화 전부. 이어지는 턴에는 지난번 이후 새로 온 말만.
   // 자기 세션이 앞의 대화는 이미 기억하고 있으니, 못 들은 부분만 채워주면 된다.
   const ctx = contextOf(team, { since: prior ? slot.lastSeen : null });
+  // 이 턴이 들은 마지막 말. 커서를 여기 둔다 — 자기 발언 id 로 두면 생각하는 동안(최대 5분)
+  // 도착한 말이 since 밖으로 떨어져 영영 못 듣는다 (Fable 감사, 2026-09-02).
+  const seenId = lastEventId(team);
   const input = [
     prior ? null : personaOf(team),
     prior ? null : '\n---\n',
     ctx ? `그동안 이 방에서 오간 말:\n\n${ctx}\n\n---\n` : null,
-    question,
+    lull
+      ? '방이 잠시 조용하다. 아무도 너에게 말한 건 아니다. 그동안 오간 말에 보탤 것이 있을 때만 한두 문장 — 없으면 (패스) 한 마디만. 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라.'
+      : talk
+        ? `방에서 누가 너에게 한 말이다. 판정이 아니라 대화로 답해라 — 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라. 상대 이름으로 시작해 한두 문장. 모르면 모른다고, 돌려봐야 알면 돌려보겠다고 해라.\n\n${question}`
+        : question,
   ].filter(Boolean).join('\n');
 
   let res;
@@ -246,14 +262,25 @@ async function ask(team, question) {
 
   if (!prior) emit(team, { actor: 'system', type: 'enter', text: `${name} 님이 들어왔습니다` });
 
-  const { verdict, body } = splitVerdict(res.answer || '(빈 답)');
+  let { verdict, body } = splitVerdict(res.answer || '(빈 답)');
+  // 대화에서는 판정이 없다. 습관처럼 첫 줄에 PASS 를 썼어도 떼고 본문만 남긴다.
+  if (talk) verdict = null;
 
   // 승인 대조였으면 그 판정을 외부감사 이름으로 큐에 남긴다.
   // codex 샌드박스는 파일을 못 쓰므로 그녀 대신 이 프로세스가 쓴다 — 이 프로세스가 곧 그녀다.
-  const apr = /apr_[0-9a-f]{8}/.exec(question)?.[0];
+  // 대화(talk)는 승인을 건드리지 않는다 — 대조는 --ask 로만 시킨다.
+  const apr = talk ? null : /apr_[0-9a-f]{8}/.exec(question)?.[0];
   if (apr && verdict && verdict !== 'FAIL') {
-    try { decideApproval(apr, { by: 'outside', decision: verdict, reason: body.split('\n')[0].slice(0, 200) }); }
+    try { decideApproval(apr, { by: 'outside', decision: verdict, reason: body.split('\n')[0].slice(0, 200), team }); }
     catch (e) { emit(team, { actor: 'system', type: 'note', text: `${name} 의 승인 판정을 못 남겼습니다 — ${e.message}` }); }
+  }
+
+  // 대화에서 할 말이 없으면 (패스). 기록하지도 들려주지도 않는다 — 클로드 세션과 같은 약속.
+  // 커서만 앞으로 옮겨 다음 차례에 같은 말을 또 듣지 않게 한다.
+  if (talk && /^(?:[^\s,，、:·]{1,12}\s*[,，、:·]\s*)?\(?\s*패스\s*\)?[.。]?$/.test(body.trim())) {
+    if (res.sessionId) remember(team, res.sessionId, seenId);
+    console.log(`[${ENGINE}] ${team} · (패스)`);
+    return 0;
   }
 
   const rec = verdict && !apr
@@ -261,7 +288,7 @@ async function ask(team, question) {
     : emit(team, { actor: 'outside', type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...(apr ? { approval: apr } : {}) } });
 
   // 방금 남긴 것까지가 "이미 본 것"이다. 다음 턴에는 이 뒤로 새로 온 말만 받는다.
-  if (res.sessionId) remember(team, res.sessionId, rec.id);
+  if (res.sessionId) remember(team, res.sessionId, seenId);
 
   // 같은 방에 있는데 못 들으면 대화가 아니다. 이 방 주인의 귀에 넣는다.
   //
@@ -352,6 +379,8 @@ for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a === '--team' || a === '-t') team = argv[++i];
   else if (a === '--ask' || a === '-a') { mode = 'ask'; question = argv[++i]; }
+  else if (a === '--talk') { mode = 'talk'; question = argv[++i]; }
+  else if (a === '--lull') { mode = 'lull'; question = '(조용한 틈)'; }
   else if (a === '--check' || a === '-c') { mode = 'check'; question = argv[++i]; }
   else if (a === '--reset') mode = 'reset';
   else if (a === '--status') mode = 'status';
@@ -378,7 +407,8 @@ if (mode === 'reset') {
 }
 
 if (!question) {
-  console.error('사용법: outside.mjs --team <팀> --ask "물어볼 것"');
+  console.error('사용법: outside.mjs --team <팀> --ask "물어볼 것"        판정 (첫 줄 PASS/REVISE)');
+  console.error('        outside.mjs --team <팀> --talk "방에서 한 말"     대화 (판정 없음. 서버가 이름 불리면 자동으로 부른다)');
   console.error('        outside.mjs --check "한 번만 물어볼 것"');
   console.error('        outside.mjs --setup');
   process.exit(2);
@@ -401,4 +431,4 @@ if (mode === 'check') {
   process.exit(1);
 }
 
-process.exit(await ask(team, question));
+process.exit(await ask(team, question, { talk: mode === 'talk' || mode === 'lull', lull: mode === 'lull' }));

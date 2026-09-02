@@ -187,7 +187,7 @@ export function voidApproval(id, reason = '') {
   return listApprovals().find((x) => x.id === id);
 }
 
-export function decideApproval(id, { by, decision, reason = '' }) {
+export function decideApproval(id, { by, decision, reason = '', team = null }) {
   const r = listApprovals().find((x) => x.id === id);
   if (!r) throw new Error(`그런 요청이 없습니다: ${id}`);
   if (r.status !== 'pending') throw new Error(`이미 끝난 요청입니다 (${r.status}).`);
@@ -195,6 +195,12 @@ export function decideApproval(id, { by, decision, reason = '' }) {
   if (!['PASS', 'REVISE'].includes(d)) throw new Error('판정은 PASS 또는 REVISE 입니다.');
   const needs = APPROVAL_GRADES[r.grade].needs;
   if (!needs.includes(by)) throw new Error(`등급 ${r.grade} 는 ${needs.join('·')} 이(가) 판정합니다. '${by}' 는 아닙니다.`);
+  // B 의 chief·outside 는 총괄실 사람이다 — 톰과 제리. 'outside' 라는 자리 이름은 방마다 있어서
+  // 개발팀의 레오가 제리 몫의 대조를 기록할 수 있었다 (Fable 감사가 격리 실행으로 뚫었다, 2026-09-02).
+  // 판정하는 프로세스가 자기 방을 같이 대야 한다. 대표(boss)는 방이 없다.
+  if ((by === 'chief' || by === 'outside') && team !== 'hq') {
+    throw new Error(`등급 ${r.grade} 의 ${by} 판정은 총괄실에서만 합니다 (지금 방: ${team ?? '없음'}).`);
+  }
   if (r.decisions.some((x) => x.by === by)) throw new Error(`${by} 는 이미 판정했습니다.`);
   appendApproval({ kind: 'decision', id, by, decision: d, reason: String(reason ?? '').trim(), ts: new Date().toISOString() });
   const after = listApprovals().find((x) => x.id === id);
@@ -469,7 +475,10 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide' }) 
   let attempt = state.attempt || 0;
   let final = v;
 
-  if (v === 'REVISE') {
+  // 반박 카운터는 라운드의 것이다. 총괄실은 라운드가 없어 endRound 로 리셋될 길이 없는데
+  // 제리의 대조 REVISE 가 여기 쌓여 총괄실이 대표 호출로 잠길 뻔했다 (Fable 감사, 2026-09-02).
+  // 총괄실의 REVISE 는 그냥 REVISE 다 — 세지 않는다.
+  if (v === 'REVISE' && !isOffice(team)) {
     attempt += 1;
     writeState(team, { attempt });
     if (attempt >= MAX_ATTEMPTS) final = 'FAIL';

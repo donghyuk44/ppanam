@@ -40,8 +40,9 @@ function gitTarget() {
 /**
  * 누가 말하는지는 --as 가 아니라 환경이 정한다.
  *
- * 서버가 세션을 띄우며 PPANAM_TEAM 을 넣고, outside.mjs 가 codex 를 띄우며 PPANAM_ACTOR 를
- * 넣는다. 아무 셸에서나 --as chief 를 쓸 수 있으면 판정 기록이 위조된다 — 실제로 하네스를
+ * 서버가 세션을 띄우며 PPANAM_TEAM 을 넣는다. codex(제리·레오)는 이 파일을 안 부른다 —
+ * outside.mjs 가 자기 --team 을 대고 decideApproval 을 직접 부르며, bus 가 그 방을 검사한다.
+ * 아무 셸에서나 --as chief 를 쓸 수 있으면 판정 기록이 위조된다 — 실제로 하네스를
  * 고치던 세션의 테스트가 톰의 판정으로 기록됐고, 톰이 그걸 잡아냈다.
  *
  * 세션은 Bash 허용 목록 때문에 `PPANAM_TEAM=hq node ...` 같은 접두를 못 쓴다.
@@ -187,7 +188,7 @@ if (o.mode === 'decide') {
   const decision = words[0];
   const reason = words.slice(1).join(' ');
   let r;
-  try { r = decideApproval(o.id, { by, decision, reason }); }
+  try { r = decideApproval(o.id, { by, decision, reason, team: me.team }); }
   catch (e) { console.error('오류: ' + e.message); process.exit(1); }
 
   console.log(fmt(r));
