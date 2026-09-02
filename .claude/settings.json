@@ -4,21 +4,45 @@
     "allow": [
       "Bash(node bus/say.mjs:*)",
       "Bash(node bus/round.mjs:*)",
-      "Bash(node bus/outside.mjs:*)"
+      "Bash(node bus/outside.mjs:*)",
+      "Bash(node bus/approve.mjs:*)",
+      "Bash(node bus/dispatch.mjs:*)",
+      "Bash(node --check:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Write",
+      "Edit"
     ]
   },
   "hooks": {
     "UserPromptSubmit": [
       {
         "hooks": [
-          { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"], "async": true }
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"
+            ],
+            "async": true
+          }
         ]
       }
     ],
     "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"], "timeout": 10 }
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"
+            ],
+            "timeout": 10
+          }
         ]
       }
     ],
@@ -26,7 +50,14 @@
       {
         "matcher": "(^|-)(review|outside|ops)$",
         "hooks": [
-          { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"], "async": true }
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"
+            ],
+            "async": true
+          }
         ]
       }
     ],
@@ -34,7 +65,14 @@
       {
         "matcher": "(^|-)(review|outside|ops)$",
         "hooks": [
-          { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"], "timeout": 10 }
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"
+            ],
+            "timeout": 10
+          }
         ]
       }
     ],
@@ -42,7 +80,14 @@
       {
         "matcher": "Write|Edit|NotebookEdit|WebFetch|Read",
         "hooks": [
-          { "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"], "async": true }
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/to-bus.mjs"
+            ],
+            "async": true
+          }
         ]
       }
     ]
