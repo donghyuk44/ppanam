@@ -417,6 +417,37 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
 }
 
+/* ── 승인 대기 — 대표가 돌아왔을 때 제일 먼저 보는 것 ── */
+
+.approvals {
+  margin: 16px 16px 0; padding: 14px 16px;
+  background: var(--panel); border: 1px solid var(--me-line); border-radius: 12px;
+}
+.approvals[hidden] { display: none; }
+.approvals__k {
+  font-family: 'Gowun Batang', serif; font-size: 14.5px;
+  padding-bottom: 9px; margin-bottom: 10px; border-bottom: 1px solid var(--line-2);
+}
+.apr { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line-2); font-size: 12.5px; }
+.apr:first-of-type { border-top: none; }
+.apr__g {
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500;
+  padding: 2px 7px; border-radius: 4px; background: var(--sunk); color: var(--ink-2);
+}
+.apr__g[data-g="C"] { background: var(--me); color: var(--me-ink); }
+.apr__g[data-g="B"] { background: var(--seal); color: var(--seal-ink); }
+.apr__team { font-size: 11px; color: var(--ink-4); white-space: nowrap; }
+.apr__what { min-width: 0; color: var(--ink); }
+.apr__what small { display: block; font-size: 11px; color: var(--ink-4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.apr__act { display: flex; gap: 5px; flex: none; }
+.apr__act button {
+  font: inherit; font-size: 11.5px; padding: 3px 9px; border-radius: 5px; cursor: pointer;
+  border: 1px solid var(--line); background: transparent; color: var(--ink-2);
+}
+.apr__act button[data-d="PASS"] { border-color: var(--good-line); background: var(--good-bg); color: var(--good); }
+.apr__act button[data-d="REVISE"] { border-color: var(--bad-line); background: var(--bad-bg); color: var(--bad); }
+.apr__wait { font-size: 11px; color: var(--ink-4); white-space: nowrap; }
+
 /* ── 관제탑 카드 ── */
 
 .tcard {

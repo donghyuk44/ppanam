@@ -16,6 +16,7 @@ import {
   paths, listTeams, defaultTeam, teamExists, teamSummary,
   readCast, readRoadmap, readTail, listRounds, parseJSONL,
   readState, startRound, endRound, readLog, isOffice, quiet,
+  listApprovals, decideApproval, APPROVAL_GRADES,
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 
@@ -57,6 +58,11 @@ const summaries = () => Object.fromEntries(listTeams().map((t) => {
     milestoneTitle: now?.title ?? null,
     deliverable: now?.deliverable ?? null,
     cast: readCast(t.id).agents ?? {},
+    approvals: {
+      pending: listApprovals({ team: t.id, status: 'pending' }).length,
+      passedToday: listApprovals({ team: t.id, status: 'passed' })
+        .filter((r) => (r.decidedAt ?? '').slice(0, 10) === new Date().toISOString().slice(0, 10)).length,
+    },
   }];
 }));
 
@@ -97,7 +103,23 @@ const server = http.createServer((req, res) => {
       teams: listTeams(),
       defaultTeam: defaultTeam(),
       summaries: summaries(),
+      approvals: listApprovals({ status: 'pending' }),
+      grades: APPROVAL_GRADES,
     });
+  }
+
+  // 승인 큐. 대표는 화면에서 C 등급을 판정한다. B 는 톰·제리가 CLI 로 한다.
+  if (url.pathname === '/api/approvals' && req.method === 'GET') {
+    return json(res, 200, { pending: listApprovals({ status: 'pending' }), all: listApprovals() });
+  }
+  if (url.pathname === '/api/approvals' && req.method === 'POST') {
+    readBody(req, res, ({ id, decision, reason }) => {
+      try {
+        // 화면에서 오는 판정은 대표의 것이다. 이 서버는 이 PC 안에서만 열려 있다.
+        return json(res, 200, decideApproval(id, { by: 'boss', decision, reason }));
+      } catch (e) { return json(res, 400, { error: e.message }); }
+    });
+    return;
   }
 
   if (url.pathname === '/api/team') {

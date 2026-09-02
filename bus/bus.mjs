@@ -101,6 +101,97 @@ export function splitRelay(text) {
   return { origin, assign };
 }
 
+/* ── 승인 ──
+ *
+ * 대표가 자리를 비워도 팀이 달리려면 "무엇을 누가 승인하는가"가 등급으로 정해져 있어야 한다.
+ * 책(에이전틱 코딩 15장)의 원칙 5 — 사람의 감독 지점은 병목이 아니라 큰 대가를 치르는
+ * 실수를 막는 품질 게이트다. 아키텍처 결정·보안 변경·통합 지점·최종 검증은 사람 몫.
+ *
+ *   A 자동   실무 혼자.        브랜치 안 커밋, 산출물 쓰기, 라운드 열고 닫기, 감사역 부르기
+ *   B 총괄   톰 결정 + 제리 대조. 둘 다 PASS 여야 한다.
+ *                              원격 푸시, 다음 마일스톤 착수, 다른 팀에 일 넘기기, 세션 재시작
+ *   C 대표   대표만.           메인 병합, 컷리스트·로드맵 변경, 비용 상한, 외부 발송, 인격 파일 수정
+ *
+ * 큐는 append-only 다 (state/approvals.jsonl). 요청 한 줄, 판정 한 줄씩 쌓이고 읽을 때 접는다.
+ * 대화록과 같은 원칙 — 지우지 않는다.
+ */
+export const APPROVAL_GRADES = {
+  A: { label: '자동', needs: [],                   desc: '브랜치 안 커밋 · 산출물 쓰기 · 라운드 열고 닫기 · 감사역 부르기' },
+  B: { label: '총괄', needs: ['chief', 'outside'], desc: '원격 푸시 · 다음 마일스톤 착수 · 다른 팀에 일 넘기기 · 세션 재시작' },
+  C: { label: '대표', needs: ['boss'],             desc: '메인 병합 · 컷리스트·로드맵 변경 · 비용 상한 · 외부 발송 · 인격 파일 수정' },
+};
+export const APPROVALS_PATH = path.join(ROOT, 'state', 'approvals.jsonl');
+
+function appendApproval(line) {
+  fs.mkdirSync(path.dirname(APPROVALS_PATH), { recursive: true });
+  fs.appendFileSync(APPROVALS_PATH, JSON.stringify(line) + '\n');
+}
+
+/** 요청과 판정 줄을 접어서 요청 하나당 상태 하나로 만든다. */
+export function listApprovals({ team = null, status = null } = {}) {
+  const byId = new Map();
+  for (const l of parseJSONL(safeRead(APPROVALS_PATH))) {
+    if (l.kind === 'request') {
+      byId.set(l.id, { ...l, decisions: [], status: l.grade === 'A' ? 'passed' : 'pending', decidedAt: l.grade === 'A' ? l.ts : null });
+      continue;
+    }
+    if (l.kind === 'decision') {
+      const r = byId.get(l.id);
+      if (!r || r.status !== 'pending') continue;
+      r.decisions.push(l);
+      const needs = APPROVAL_GRADES[r.grade]?.needs ?? [];
+      if (l.decision === 'REVISE') { r.status = 'revised'; r.decidedAt = l.ts; }
+      else if (needs.every((who) => r.decisions.some((d) => d.by === who && d.decision === 'PASS'))) {
+        r.status = 'passed'; r.decidedAt = l.ts;
+      }
+    }
+  }
+  let out = [...byId.values()];
+  if (team) out = out.filter((r) => r.team === team);
+  if (status) out = out.filter((r) => r.status === status);
+  return out;
+}
+
+export function requestApproval(team, { by = 'guide', grade, what, detail = '' }) {
+  const g = String(grade || '').toUpperCase();
+  if (!APPROVAL_GRADES[g]) throw new Error(`등급은 A / B / C 중 하나여야 합니다.`);
+  if (!what?.trim()) throw new Error('무엇을 승인받을지가 비어 있습니다.');
+  const rec = {
+    kind: 'request', id: 'apr_' + crypto.randomBytes(4).toString('hex'),
+    ts: new Date().toISOString(), team, by, grade: g, what: what.trim(), detail: String(detail ?? '').trim(),
+    round: readState(team).round || 0,
+  };
+  appendApproval(rec);
+  // 방에도 남긴다 — 화면에서 가장 약한 줄이지만, 나중에 "언제 요청했나"를 찾을 수 있어야 한다.
+  emit(team, {
+    actor: by, type: 'note',
+    text: `승인 요청 [${g}] ${rec.what}${g === 'A' ? ' — 자동 통과' : ''}`,
+    meta: { approval: rec.id, grade: g },
+  });
+  return listApprovals().find((r) => r.id === rec.id);
+}
+
+export function decideApproval(id, { by, decision, reason = '' }) {
+  const r = listApprovals().find((x) => x.id === id);
+  if (!r) throw new Error(`그런 요청이 없습니다: ${id}`);
+  if (r.status !== 'pending') throw new Error(`이미 끝난 요청입니다 (${r.status}).`);
+  const d = String(decision || '').toUpperCase();
+  if (!['PASS', 'REVISE'].includes(d)) throw new Error('판정은 PASS 또는 REVISE 입니다.');
+  const needs = APPROVAL_GRADES[r.grade].needs;
+  if (!needs.includes(by)) throw new Error(`등급 ${r.grade} 는 ${needs.join('·')} 이(가) 판정합니다. '${by}' 는 아닙니다.`);
+  if (r.decisions.some((x) => x.by === by)) throw new Error(`${by} 는 이미 판정했습니다.`);
+  appendApproval({ kind: 'decision', id, by, decision: d, reason: String(reason ?? '').trim(), ts: new Date().toISOString() });
+  const after = listApprovals().find((x) => x.id === id);
+  if (after.status !== 'pending') {
+    emit(r.team, {
+      actor: 'system', type: 'note',
+      text: `승인 ${after.status === 'passed' ? '통과' : '반려'} [${r.grade}] ${r.what}${reason ? ' — ' + reason : ''}`,
+      meta: { approval: id, grade: r.grade, status: after.status },
+    });
+  }
+  return after;
+}
+
 /* ── 파일 ── */
 
 function readJSON(file, fallback) {

@@ -14,6 +14,8 @@ let cast = { agents: {} };
 let roadmap = { milestones: [], cutList: [] };
 let summary = {};
 let summaries = {};
+let approvals = [];          // 대기 중인 승인 — 관제탑 맨 위
+let grades = {};
 let oldest = null;          // 더 불러올 기준점
 let hasMore = false;
 let unread = {};            // team → 안 읽은 건수
@@ -403,7 +405,9 @@ function connect() {
       summaries = msg.summaries ?? {};
       summary = summaries[active] ?? summary;
       renderRail(); renderHead(); renderSide();
-      if (view === 'tower') renderTower();
+      if (view === 'tower') {
+        fetch('/api/approvals').then((r) => r.json()).then((a) => { approvals = a.pending ?? []; renderTower(); }).catch(() => renderTower());
+      }
       // 분석은 값이 실제로 움직였을 때만 다시 불러온다. 250ms 마다 받아올 이유가 없다.
       if (view === 'analysis') {
         const s = summaries[active] ?? {};
@@ -558,7 +562,46 @@ const ago = (ts) => {
   return `${Math.floor(s / 86400)}일 전`;
 };
 
+/* 승인 대기. 대표가 돌아왔을 때 200발언을 읽지 않고 이것부터 본다. */
+function renderApprovals() {
+  const box = $('approvals');
+  box.replaceChildren();
+  if (!approvals.length) { box.hidden = true; return; }
+  box.hidden = false;
+  box.appendChild(el('div', 'approvals__k', `승인 대기 ${approvals.length}건`));
+  for (const r of approvals) {
+    const row = el('div', 'apr');
+    const g = el('span', 'apr__g', r.grade); g.dataset.g = r.grade; g.title = grades[r.grade]?.desc ?? '';
+    row.appendChild(g);
+    const t = teams.find((x) => x.id === r.team);
+    row.appendChild(el('span', 'apr__team', `${t?.name ?? r.team} · ${(summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by}`));
+    const w = el('div', 'apr__what', r.what);
+    if (r.detail) w.appendChild(el('small', null, r.detail));
+    row.appendChild(w);
+    if (r.grade === 'C') {
+      const act = el('div', 'apr__act');
+      for (const d of ['PASS', 'REVISE']) {
+        const b = el('button', null, d === 'PASS' ? '승인' : '반려'); b.type = 'button'; b.dataset.d = d;
+        b.addEventListener('click', async () => {
+          const reason = d === 'REVISE' ? (prompt('반려 이유') ?? '') : '';
+          if (d === 'REVISE' && !reason) return;
+          const res = await post('/api/approvals', { id: r.id, decision: d, reason });
+          if (!res.ok) alert(res.data.error ?? '판정하지 못했습니다.');
+          else { approvals = approvals.filter((x) => x.id !== r.id); renderApprovals(); }
+        });
+        act.appendChild(b);
+      }
+      row.appendChild(act);
+    } else {
+      const done = r.decisions.map((x) => x.by).join('·');
+      row.appendChild(el('span', 'apr__wait', done ? `${done} 판정함 · 나머지 대기` : '톰·제리 판정 중'));
+    }
+    box.appendChild(row);
+  }
+}
+
 function renderTower() {
+  renderApprovals();
   const grid = $('towerGrid');
   const focus = document.activeElement;
   const keep = focus?.classList?.contains('tcard__in')
@@ -612,6 +655,7 @@ function renderTower() {
     for (let i = 1; i <= 3; i++) g.appendChild(el('div', i <= (s.attempt ?? 0) ? 'on' : ''));
     meta.appendChild(g);
     meta.append(`대화록 ${s.logCount ?? 0}건`);
+    if (s.approvals?.pending) meta.appendChild(el('span', 'rwork', `승인 대기 ${s.approvals.pending}`));
     if (s.session?.busy) meta.appendChild(el('span', 'rwork', '일하는 중'));
     card.appendChild(meta);
 
@@ -848,6 +892,8 @@ function renderAnalysis(r) {
 const boot = await fetch('/api/boot').then((r) => r.json());
 teams = boot.teams;
 summaries = boot.summaries ?? {};
+approvals = boot.approvals ?? [];
+grades = boot.grades ?? {};
 for (const t of teams) unread[t.id] = 0;
 connect();
 
