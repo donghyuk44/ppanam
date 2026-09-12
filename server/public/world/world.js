@@ -23,7 +23,7 @@ const cur = () => S.map.scenes[S.scene];             // 지금 보는 장면
 const sceneOf = (a) => S.map.scenes[a.scene];
 const placeOf = (name) => S.map.places[name] ?? null;
 // 재생 상태. 한 번에 한 방만 재생한다. 그 방의 실시간 사건은 재생이 끝날 때까지 무시한다.
-const R = { team: null, round: null, events: [], i: 0, timer: 0, playing: false, speed: 2 };
+const R = { team: null, round: null, events: [], i: 0, timer: 0, playing: false, speed: 2, held: [] };   // held: 재생 중 도착한 같은 방의 실시간 사건
 
 /* ── 불러오기 ── */
 
@@ -403,7 +403,7 @@ async function play() {
 export function replay(team, events, round = events[0]?.round ?? null) {
   if (!S.map || !events?.length) return;
   stop(true);
-  R.team = team; R.round = round; R.events = [...events]; R.i = 0; R.playing = true;
+  R.team = team; R.round = round; R.events = [...events]; R.i = 0; R.playing = true; R.held = [];
   for (const a of S.actors.values()) if (a.team === team) teleport(a, a.home);
   clearBubbles(team);
   $('wvPlay').textContent = '일시정지'; $('wvStop').hidden = false;
@@ -431,9 +431,12 @@ function pause() {
   if (R.playing) step();
 }
 function stop(quiet) {
-  clearTimeout(R.timer); R.playing = false; R.events = []; R.i = 0; R.team = null;
+  clearTimeout(R.timer); R.playing = false; R.events = []; R.i = 0;
+  const team = R.team, held = R.held; R.team = null; R.held = [];
   $('wvPlay').textContent = '재생'; $('wvStop').hidden = true;
   if (!quiet) status('');
+  // 재생하는 동안 이 방에 실제로 오간 말 — 이제 들려준다
+  if (team && held.length) { for (const e of held) handle(team, e); status(`재생 중 도착한 실시간 사건 ${held.length}건을 이어서 보여줍니다`); }
 }
 
 /* ── 대표 조작 ── */
@@ -536,6 +539,14 @@ export async function open({ teams } = {}) {
   await S.ready;
   if (!S.open) return;
   if (!S.raf) { S.last = performance.now(); S.raf = requestAnimationFrame(frame); }
+  // 검증용: ?fixture=marketing-r14 로 열면 fixtures/ 의 사건 배열을 그 방에서 재생한다 (통과 조건 "R14 재생" 을 누구나 재현)
+  const fx = new URLSearchParams(location.search).get('fixture');
+  if (fx && !S.fixtureDone) {
+    S.fixtureDone = true;
+    fetch(`/world/fixtures/${encodeURIComponent(fx)}.json`).then((r) => r.json())
+      .then((ev) => { const team = ev[0]?.team; if (team) { $('wvTeam').value = team; replay(team, ev, ev[0]?.round ?? null); } })
+      .catch(() => status('픽스처를 못 읽었습니다'));
+  }
 }
 export function close() {
   S.open = false;
@@ -545,7 +556,8 @@ export function close() {
 /** 소켓으로 온 새 사건. 탭이 열려 있을 때만 연출한다 — 닫혀 있으면 대화록이 기록이고, 다시 열면 모두 자리에 있다. */
 export function onEvents(team, events) {
   if (!S.open || !S.map) return;
-  if (R.playing && R.team === team) return;
+  // 재생 중인 방의 실시간 사건은 버리지 않고 모아 둔다 — 재생이 끝나면 그때 연출한다 (레오 W1 감사)
+  if (R.team === team && R.events.length) { R.held.push(...events); return; }
   for (const e of events) handle(team, e);
 }
 export function onSummaries() { /* W2: 자리 상태(자는 중·말하는 중)를 여기서 받는다 */ }

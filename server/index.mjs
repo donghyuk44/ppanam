@@ -186,7 +186,10 @@ const server = http.createServer((req, res) => {
     if (!teamExists(team)) return json(res, 404, { error: 'no such team' });
     // 라운드 하나를 통째로. 마을 탭이 재생할 때 쓴다 — 페이지네이션이 아니라 한 판이 단위다.
     if (q.get('round') != null) {
+      // 양의 정수만. 'abc' 나 빈 값이 NaN·0 으로 조용히 빈 배열이 되면 재생이 "기록 없음" 으로 보인다 (레오 W1 감사)
+      if (!/^[1-9]\d*$/.test(q.get('round'))) return json(res, 400, { error: 'round 는 1 이상의 정수입니다.' });
       const n = Number(q.get('round'));
+      // readLog 는 파일 크기·수정시각 캐시(readJSONLCached)라 매 요청 파싱이 아니라 필터만 돈다
       const events = readLog(team).filter((e) => e.round === n);
       return json(res, 200, { events, more: false, total: events.length });
     }

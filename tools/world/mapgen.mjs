@@ -218,9 +218,22 @@ const out = {
   places, cast,
   labels: Object.fromEntries(teams.map((t) => [t.id, t.name])),
 };
-fs.writeFileSync(OUT, JSON.stringify(out));
-console.log('wrote', OUT, fs.statSync(OUT).size, 'bytes;', Object.keys(places).length, 'places');
+// 검증이 먼저다 — 통과해야 쓴다. 실패한 지도가 파일에 남으면 화면이 조용히 틀린다 (레오 W1 감사)
 const scenes = { village: V, castle: C };
-const bad = Object.entries(places).filter(([, p]) => scenes[p.scene].blocked(p.x, p.y));
-if (bad.length) { console.error('막힌 자리:', bad.map(([k]) => k).join(', ')); process.exit(1); }
-for (const sc of [V, C]) for (const p of sc.portals) { if (sc.blocked(p.x, p.y)) { console.error('막힌 포탈', sc.name, p); process.exit(1); } if (!places[p.to]) { console.error('없는 포탈 목적지', p.to); process.exit(1); } }
+const covered = (sc, x, y) => { const i = y * sc.w + x; return sc.layers.objects[i] !== 0 || sc.layers.wall[i] !== 0; };
+const problems = [];
+for (const [name, p] of Object.entries(places)) {
+  const sc = scenes[p.scene];
+  if (sc.blocked(p.x, p.y)) problems.push(`막힌 자리 ${name}`);
+  // 집 문(home.*)은 집 그림의 문 칸에 서는 것이 의도다 — 사람이 문 그림 앞에 그려진다. 나머지 자리는 아무것도 덮이면 안 된다
+  if (!name.startsWith('home.') && covered(sc, p.x, p.y)) problems.push(`덮인 자리 ${name} (${p.x},${p.y}) — 물건이나 벽이 그 칸에 그려진다`);
+}
+for (const sc of [V, C]) for (const p of sc.portals) {
+  if (sc.blocked(p.x, p.y)) problems.push(`막힌 포탈 ${sc.name} (${p.x},${p.y})`);
+  if (!places[p.to]) problems.push(`없는 포탈 목적지 ${p.to}`);
+  // 포탈 칸은 성문 아치처럼 그림 위에 있어도 된다. 대신 건너편 자리는 덮이면 안 된다
+  const to = places[p.to]; if (to && covered(scenes[to.scene], to.x, to.y)) problems.push(`포탈 ${p.to} 의 건너편이 덮여 있다`);
+}
+if (problems.length) { console.error('지도 검증 실패:\n - ' + problems.join('\n - ')); process.exit(1); }
+fs.writeFileSync(OUT, JSON.stringify(out));
+console.log('wrote', OUT, fs.statSync(OUT).size, 'bytes;', Object.keys(places).length, 'places; 검증 통과');
