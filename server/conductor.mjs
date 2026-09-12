@@ -175,7 +175,8 @@ function giveTurn(team, actor, kind) {
   const instruction = kind === 'verdict' ? VERDICT_INSTRUCTION(target, nameOf(team, session.ownerOf(team))) : INSTRUCTION[kind];
   const body = (lines.length ? `그동안 이 방에서 오간 말:\n\n${lines.join('\n')}\n\n---\n` : '') + instruction;
   if (last) setCursor(team, actor, last);
-  session.send(team, quiet(body), actor, kind === 'verdict' ? { kind: 'verdict', extra: target.slice(0, 200) } : {});
+  const sent = session.send(team, quiet(body), actor, kind === 'verdict' ? { kind: 'verdict', extra: target.slice(0, 200) } : {});
+  if (sent?.refused) note(team, `${nameOf(team, actor)}의 차례를 주지 못했습니다 — ${sent.reason}`);
 }
 
 /** 차례를 예약한다. 같은 자리에 쌓이면 더 센 종류로 합친다. */
@@ -192,6 +193,14 @@ function dispatch(team) {
   const r = room(team);
   const state = readState(team);
   if (!isOffice(team) && state.phase !== 'running') { r.pending.clear(); return; }
+  // 라운드가 닫히는 중이다(일지를 받는 동안). 쌓인 차례는 닫히는 라운드의 것이라 버리되, 조용히 버리지 않는다 (레오 감사).
+  if (session.isClosing(team)) {
+    if (r.pending.size) {
+      note(team, `라운드가 닫히는 중이라 차례 ${r.pending.size}건(${[...r.pending.keys()].map((a) => nameOf(team, a)).join('·')})을 버립니다.`);
+      r.pending.clear();
+    }
+    return;
+  }
   for (const [actor, p] of [...r.pending]) {
     if (busy(team, actor)) continue;
     r.pending.delete(actor);

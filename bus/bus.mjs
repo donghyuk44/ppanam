@@ -74,16 +74,25 @@ export function writeTurn(team, actor, kind, extra = '', sid = null) {
   fs.writeFileSync(turnFile(team, actor, sid), extra ? `${kind}:${extra}` : kind);
 }
 export function takeTurn(team, actor, sid = null) {
-  for (const f of sid ? [turnFile(team, actor, sid), turnFile(team, actor, null)] : [turnFile(team, actor, null)]) {
-    let s = null;
-    try { s = fs.readFileSync(f, 'utf8').trim(); } catch { continue; }
-    try { fs.unlinkSync(f); } catch { /* 없으면 그만 */ }
-    // 같은 턴을 서버와 훅이 둘 다 적었을 수 있다 — 나머지도 치운다
-    if (sid) { try { fs.unlinkSync(turnFile(team, actor, null)); } catch { /* 없다 */ } try { fs.unlinkSync(turnFile(team, actor, sid)); } catch { /* 없다 */ } }
-    const i = s.indexOf(':');
-    return i < 0 ? { kind: s, extra: '' } : { kind: s.slice(0, i), extra: s.slice(i + 1) };
+  const parse = (s) => { const i = s.indexOf(':'); return i < 0 ? { kind: s, extra: '' } : { kind: s.slice(0, i), extra: s.slice(i + 1) }; };
+  const read = (f) => { try { return fs.readFileSync(f, 'utf8').trim(); } catch { return null; } };
+  const drop = (f) => { try { fs.unlinkSync(f); } catch { /* 없다 */ } };
+  const plainFile = turnFile(team, actor, null);
+  if (sid) {
+    const f = turnFile(team, actor, sid);
+    const s = read(f);
+    if (s != null) {
+      drop(f);
+      // 서버가 세션 id 를 아직 모를 때(첫 턴) 적은 일반 마커가 같은 턴의 것이면 같이 치운다. 내용이 다르면 남의 것이다 —
+      // 무조건 지우면 다른 세션의 마커가 사라진다 (레오 감사, 2026-09-12).
+      if (read(plainFile) === s) drop(plainFile);
+      return parse(s);
+    }
   }
-  return null;
+  const s = read(plainFile);
+  if (s == null) return null;
+  drop(plainFile);
+  return parse(s);
 }
 
 /** 판정의 첫 줄 규약. PASS/REVISE/FAIL 한 단어면 그 판정, 아니면 null. */

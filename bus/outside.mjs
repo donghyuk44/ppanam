@@ -308,7 +308,8 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
     }
   } else {
     // 판정 차례였는데 첫 줄에 판정이 없다 — 말로 남기되 표시한다. 사회자가 한 번 더 묻고, 두 번이면 멈춘다 (레오 감사).
-    const missed = turn === 'verdict' && !verdict;
+    // --ask 도 판정 경로다(첫 줄 규약). 의견을 물은 것이면 표시가 붙어도 사회자는 기다리는 자리가 아니라 무시한다.
+    const missed = !talk && !apr && !verdict;
     rec = emit(team, { round, actor: 'outside', type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...(apr ? { approval: apr } : {}), ...(missed ? { noVerdict: true } : {}) } });
   }
 
