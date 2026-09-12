@@ -24,7 +24,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {
-  ROOT, emit, recordVerdict, readContext, readTail, readCast,
+  ROOT, emit, recordVerdict, readContext, readTail, readCast, readState,
   defaultTeam, teamExists, isOffice, paths, VERDICTS, addressee, decideApproval,
 } from './bus.mjs';
 
@@ -228,6 +228,8 @@ async function ask(team, question, { talk = false, lull = false } = {}) {
   const slot = slotOf(team);
   const prior = slot?.id ?? null;
   const name = readCast(team).agents?.outside?.name ?? '외부감사';
+  // 지금 라운드를 잡아둔다. 생각하는 5분 사이 라운드가 바뀌면 답은 이 번호로 남고 판정으로 세지 않는다.
+  const round = readState(team).round;
 
   // 첫 턴에는 인격과 지금까지의 대화 전부. 이어지는 턴에는 지난번 이후 새로 온 말만.
   // 자기 세션이 앞의 대화는 이미 기억하고 있으니, 못 들은 부분만 채워주면 된다.
@@ -260,7 +262,7 @@ async function ask(team, question, { talk = false, lull = false } = {}) {
     return 1;
   }
 
-  if (!prior) emit(team, { actor: 'system', type: 'enter', text: `${name} 님이 들어왔습니다` });
+  if (!prior) emit(team, { round, actor: 'system', type: 'enter', text: `${name} 님이 들어왔습니다` });
 
   let { verdict, body } = splitVerdict(res.answer || '(빈 답)');
   // 대화에서는 판정이 없다. 습관처럼 첫 줄에 PASS 를 썼어도 떼고 본문만 남긴다.
@@ -292,8 +294,8 @@ async function ask(team, question, { talk = false, lull = false } = {}) {
   }
 
   const rec = verdict && !apr
-    ? recordVerdict(team, { actor: 'outside', verdict, text: body, target: 'guide' })
-    : emit(team, { actor: 'outside', type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...(apr ? { approval: apr } : {}) } });
+    ? recordVerdict(team, { actor: 'outside', verdict, text: body, target: 'guide', round })
+    : emit(team, { round, actor: 'outside', type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...(apr ? { approval: apr } : {}) } });
 
   // 방금 남긴 것까지가 "이미 본 것"이다. 다음 턴에는 이 뒤로 새로 온 말만 받는다.
   if (res.sessionId) remember(team, res.sessionId, seenId);
@@ -396,9 +398,6 @@ for (let i = 0; i < argv.length; i++) {
   else if (!question && !a.startsWith('-')) question = a;
 }
 
-if (!team) {
-  try { team = fs.readFileSync(path.join(ROOT, 'state', 'active-team'), 'utf8').trim(); } catch { /* 기본값 */ }
-}
 if (!team || !teamExists(team)) team = defaultTeam();
 
 if (mode === 'setup') { console.log(SETUP); process.exit(0); }

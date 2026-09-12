@@ -7,13 +7,13 @@ allowed-tools: Bash(node bus/*), Read, Glob, Grep
 현재 상태:
 
 ```!
-node bus/round.mjs status --team "$(cat state/active-team 2>/dev/null || echo marketing)"
+node bus/round.mjs status --team "${PPANAM_TEAM:?방이 지정되지 않은 세션 — 서버가 띄운 세션에서만 쓴다}"
 ```
 
 이번 라운드 컨텍스트:
 
 ```!
-node bus/round.mjs context --team "$(cat state/active-team 2>/dev/null || echo marketing)"
+node bus/round.mjs context --team "${PPANAM_TEAM:?방이 지정되지 않은 세션 — 서버가 띄운 세션에서만 쓴다}"
 ```
 
 외부감사: !`node bus/outside.mjs --status 2>&1 || true`
@@ -21,7 +21,7 @@ node bus/round.mjs context --team "$(cat state/active-team 2>/dev/null || echo m
 이 팀의 감사역:
 
 ```!
-T=$(cat state/active-team 2>/dev/null || echo marketing)
+T=${PPANAM_TEAM:?방이 지정되지 않은 세션 — 서버가 띄운 세션에서만 쓴다}
 if [ -f ".claude/agents/$T-review.md" ]; then echo "내부감사 → $T-review"
 elif node -e "const a=require('./teams/'+process.argv[1]+'/cast.json').agents; process.exit(a.review?0:1)" "$T" 2>/dev/null; then echo "내부감사 → review (공용)"
 else echo "내부감사 → **없음.** 이 팀은 외부감사만으로 판정한다"; fi

@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..');
+const AGENTS_DIR = path.join(ROOT, 'state', 'agents');   // 서브에이전트 등장 시각 (gitignore)
 const DEBUG = process.env.PPANAM_HOOK_DEBUG === '1';
 
 // 훅이 죽어도 세션은 계속 가야 한다. 무슨 일이 있어도 조용히 0으로 끝낸다.
@@ -60,12 +61,10 @@ if (DEBUG) {
  * 이 저장소에서 도는 모든 세션이 남의 방에 남는다 — 하네스를 고치는 세션의
  * 발언이 실무의 말로 둔갑한다. 실제로 그렇게 오염됐다.
  *
- *   PPANAM_TEAM        서버가 방마다 세션을 띄우며 넣는다 (정상 경로)
- *   state/active-team  터미널에서 직접 한 방에 들어갈 때만 만든다 (opt-in)
+ * 방은 서버가 세션을 띄우며 넣는 PPANAM_TEAM 하나로 정해진다. 예전의 state/active-team(터미널 opt-in)은
+ * 이 저장소의 모든 세션을 한 방에 기록하는 전역 스위치라 없앴다 (Fable 재점검, 2026-09-12).
  */
-const teamFile = path.join(ROOT, 'state', 'active-team');
-let team = process.env.PPANAM_TEAM;
-if (!team) { try { team = fs.readFileSync(teamFile, 'utf8').trim(); } catch { /* 안 들어간 것이다 */ } }
+const team = process.env.PPANAM_TEAM;
 if (!team) bail('방이 지정되지 않은 세션');
 if (!bus.teamExists(team)) bail('없는 방: ' + team);
 
@@ -136,6 +135,13 @@ switch (ev) {
     const a = actorOf(hook.agent_type);
     const cast = bus.readCast(team);
     const name = cast.agents?.[a]?.name ?? a;
+    // 언제 들어왔는지 남긴다. 나갈 때 "그동안 방에 말했나" 를 보기 위해서다.
+    if (hook.agent_id) {
+      try {
+        fs.mkdirSync(AGENTS_DIR, { recursive: true });
+        fs.writeFileSync(path.join(AGENTS_DIR, String(hook.agent_id)), new Date().toISOString());
+      } catch { /* 못 남기면 나갈 때 그냥 기록한다 */ }
+    }
     out = { actor: 'system', type: 'enter', text: `${name} 님이 들어왔습니다` };
     break;
   }
@@ -144,13 +150,21 @@ switch (ev) {
   case 'SubagentStop': {
     // 문서가 transcript 파싱 대신 이 필드를 쓰라고 명시한다.
     const text = hook.last_assistant_message;
-    if (text) {
-      out = {
-        actor: ev === 'Stop' ? OWNER : actorOf(hook.agent_type),
-        type: 'message',
-        text: trim(text),
-      };
+    if (!text) break;
+    const actor = ev === 'Stop' ? OWNER : actorOf(hook.agent_type);
+
+    // 서브에이전트의 마지막 말은 실무에게 돌려주는 보고다. 그가 그동안 bus/say.mjs 로 방에 이미 말했으면
+    // 그 보고는 같은 지적의 재요약이라 두 번 뜬다 (마케팅 R14, 2026-09-01). "(패스) 로 끝내라" 는 인격 문장은
+    // 잊힌다 — 훅이 정한다: 들어온 뒤 방에 message/verdict 를 남겼으면 최종 보고는 기록하지 않는다.
+    if (ev === 'SubagentStop' && hook.agent_id) {
+      const marker = path.join(AGENTS_DIR, String(hook.agent_id));
+      let since = null;
+      try { since = fs.readFileSync(marker, 'utf8').trim(); fs.unlinkSync(marker); } catch { /* 들어온 기록이 없다 */ }
+      if (since && bus.readLog(team).some((e) => e.actor === actor && (e.type === 'message' || e.type === 'verdict') && e.ts >= since)) {
+        bail('방에 이미 말함 — 최종 보고는 기록하지 않음');
+      }
     }
+    out = { actor, type: 'message', text: trim(text) };
     break;
   }
 

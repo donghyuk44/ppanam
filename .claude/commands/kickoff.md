@@ -4,7 +4,7 @@ argument-hint: [프로젝트 한 줄 설명]
 allowed-tools: Bash(node bus/*), Read, Write, Glob, Grep
 ---
 
-활성 팀: !`cat state/active-team 2>/dev/null || echo marketing`
+이 방: !`echo "${PPANAM_TEAM:-(없음 — 서버가 띄운 세션이 아니다. 이 커맨드는 그 세션에서만 쓴다)}"`
 
 ---
 

@@ -429,6 +429,10 @@ function nowMilestone(team) {
 
 export function startRound(team, { topic = null, milestone = null } = {}) {
   const prev = readState(team);
+  // 열린 라운드 위에 또 열면 앞 라운드는 round_end 도 rounds.jsonl 색인도 없이 사라진다.
+  if (prev.phase === 'running' || prev.phase === 'blocked') {
+    throw new Error(`이미 라운드 ${prev.round} 이 열려 있습니다. 먼저 닫으세요.`);
+  }
   const next = writeState(team, {
     round: nextRoundNumber(team),
     milestone: milestone ?? nowMilestone(team) ?? prev.milestone ?? 1,
@@ -456,7 +460,9 @@ export function startRound(team, { topic = null, milestone = null } = {}) {
  */
 export function endRound(team, { verdict = null, summary = null } = {}) {
   const state = readState(team);
-  if (!state.round) throw new Error('진행 중인 라운드가 없습니다.');
+  // round 번호가 아니라 phase 로 본다. 번호는 닫힌 뒤에도 남아 있어서, 번호만 보면 같은 라운드를
+  // 두 번 닫고 배너·색인·세션 리셋이 두 번 난다 (Fable 재점검, 2026-09-12).
+  if (!state.round || state.phase === 'idle') throw new Error('진행 중인 라운드가 없습니다.');
 
   emit(team, {
     type: 'round_end',
@@ -500,11 +506,22 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
  * 감사 판정.
  * REVISE 는 반박 횟수를 올리고, 상한에 닿으면 FAIL 로 승격해 사람을 부른다.
  */
-export function recordVerdict(team, { actor, verdict, text, target = 'guide' }) {
+export function recordVerdict(team, { actor, verdict, text, target = 'guide', round = null }) {
   const v = String(verdict || '').toUpperCase();
   if (!VERDICTS.has(v)) throw new Error(`판정은 ${[...VERDICTS].join(' / ')} 중 하나여야 합니다.`);
 
   const state = readState(team);
+
+  // 판정을 시작할 때의 라운드를 알고 왔는데 그 사이 라운드가 바뀌었다 — 외부감사가 5분 생각하는 동안
+  // 라운드가 닫히고 다음이 열린 경우. 새 라운드의 반박 횟수를 올리면 안 되고, 새 라운드에 찍혀도 안 된다.
+  // 자기 라운드 번호로 남기되 판정으로 세지 않는다.
+  if (round != null && round !== state.round) {
+    return emit(team, {
+      round, type: 'verdict', actor, text,
+      meta: { verdict: v, target, attempt: 0, max: MAX_ATTEMPTS, stale: true },
+    });
+  }
+
   let attempt = state.attempt || 0;
   let final = v;
 

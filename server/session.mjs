@@ -14,7 +14,7 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, emit, listTeams, isOffice, paths } from '../bus/bus.mjs';
+import { ROOT, emit, listTeams, isOffice, paths, endRound } from '../bus/bus.mjs';
 
 const STORE = path.join(ROOT, 'state', 'sessions.json');
 
@@ -77,7 +77,7 @@ function spawnFor(team) {
   const child = spawn('claude', args, {
     cwd: ROOT,
     stdio: ['pipe', 'pipe', 'pipe'],
-    // 훅이 이 값을 state/active-team 보다 먼저 본다. 팀별 세션이 각자 팀
+    // 훅은 이 값으로 방을 정한다. 팀별 세션이 각자 팀
     // 대화록에 기록되는 것은 전적으로 이 한 줄 덕분이다.
     env: { ...process.env, PPANAM_TEAM: team },
   });
@@ -91,6 +91,10 @@ function spawnFor(team) {
     stderr: '',
     timer: null,
     startedAt: new Date().toISOString(),
+    resumed: !!prior,   // --resume 으로 떴다. 첫 턴이 성공하기 전에 죽으면 그 id 가 문제다
+    firstOk: false,     // 이 프로세스에서 턴이 한 번이라도 끝났나
+    inflight: null,     // 지금 보내진 지시 — 프로세스가 죽으면 한 번 다시 보낼 수 있게
+    closeAfter: null,   // 턴이 끝나면 라운드를 닫고 세션을 비운다 ({ verdict, summary })
   };
 
   child.stdout.on('data', (d) => { s.buf += d; drain(s); });
@@ -106,8 +110,21 @@ function spawnFor(team) {
       clearTimeout(s.timer);
       if (code !== 0) {
         const why = s.stderr.trim().split('\n').slice(-2).join(' ').slice(0, 200);
+        // 저장된 id 로 이어붙이려다 첫 턴도 못 끝내고 죽었다 — 그 id 가 썩은 것이다. 버리고 새 세션으로
+        // 같은 지시를 한 번 다시 보낸다. 안 그러면 id 가 영영 남아 그 뒤 모든 지시가 같은 이유로 죽는다.
+        if (s.resumed && !s.firstOk && s.inflight) {
+          forgetId(team);
+          note(team, `저장된 세션을 이어붙이지 못했습니다 (code ${code})${why ? ' — ' + why : ''}. 새 세션으로 다시 보냅니다.`);
+          const fresh = spawnFor(team);
+          fresh.queue.push(...s.queue);
+          write(fresh, s.inflight);
+          return;
+        }
         note(team, `실무 세션이 끊겼습니다 (code ${code})${why ? ' — ' + why : ''}. 다음 지시에 다시 붙습니다.`);
+        dropped(s);
       }
+      // 닫기가 예약돼 있었는데 턴을 못 끝내고 죽었다 — 그래도 닫는다. 대표가 닫으라고 했다.
+      if (s.closeAfter) finishClose(s);
     }
   });
 
@@ -122,6 +139,30 @@ function die(s, message) {
   clearTimeout(s.timer);
   try { s.child.kill('SIGKILL'); } catch { /* 이미 죽음 */ }
   note(s.team, message);
+  dropped(s);
+  if (s.closeAfter) finishClose(s);
+}
+
+/** 줄 서 있던 지시가 버려졌으면 말한다. 조용히 사라지는 것이 가장 나쁘다. */
+function dropped(s) {
+  if (s.queue.length) note(s.team, `대기 중이던 지시 ${s.queue.length}건을 버렸습니다. 다시 보내세요.`);
+  s.queue = [];
+}
+
+function forgetId(team) {
+  const all = readStore();
+  if (!(team in all)) return;
+  delete all[team];
+  fs.mkdirSync(path.dirname(STORE), { recursive: true });
+  fs.writeFileSync(STORE, JSON.stringify(all, null, 2) + '\n');
+}
+
+/** 예약된 닫기를 실행한다 — 라운드를 닫고 이 방의 세션 컨텍스트를 비운다. */
+function finishClose(s) {
+  const o = s.closeAfter;
+  s.closeAfter = null;
+  try { endRound(s.team, o); } catch (e) { note(s.team, `라운드를 닫지 못했습니다 — ${e.message}`); }
+  reset(s.team);
 }
 
 /** 시스템 안내. 화면에서 가장 약하게 표시되는 줄이다 (event-schema 3절). */
@@ -147,9 +188,13 @@ function drain(s) {
     if (msg.type === 'result') {
       clearTimeout(s.timer);
       s.busy = false;
+      s.inflight = null;
+      s.firstOk = true;
       if (msg.subtype && msg.subtype !== 'success') {
         note(s.team, `실무가 이번 지시를 끝내지 못했습니다 (${msg.subtype}).`);
       }
+      // 턴이 끝나면 닫기로 했다. 줄 서 있던 지시는 닫히는 라운드의 것이라 버린다 — 말하고 버린다.
+      if (s.closeAfter) { dropped(s); finishClose(s); return; }
       next(s);
     }
   }
@@ -159,6 +204,7 @@ function drain(s) {
 
 function write(s, text) {
   s.busy = true;
+  s.inflight = text;
   clearTimeout(s.timer);
   s.timer = setTimeout(() => {
     die(s, `실무가 ${Math.round(TURN_TIMEOUT / 60_000)}분 동안 응답하지 않아 세션을 닫았습니다.`);
@@ -204,14 +250,35 @@ export function status(team) {
 
 /**
  * 세션을 닫는다. 세션 id 는 남겨두므로 다음 지시에 --resume 으로 이어붙는다.
- * 라운드 도중 프로세스가 죽었을 때 쓴다.
+ *
+ * stdin 만 닫고 잊으면 안 된다. 턴을 마저 끝내는 고아가 남고, 그 사이 새 지시가 오면 같은 팀에
+ * 프로세스가 둘이 된다. 끝나기를 기다리고, 30초 안에 안 끝나면 SIGTERM, 10초 더 지나면 SIGKILL.
  */
 export function stop(team) {
   const s = sessions.get(team);
   if (!s) return false;
   sessions.delete(team);
   clearTimeout(s.timer);
-  try { s.child.stdin.end(); } catch { /* 이미 닫힘 */ }
+  const c = s.child;
+  try { c.stdin.end(); } catch { /* 이미 닫힘 */ }
+  if (c.exitCode === null && c.signalCode === null) {
+    const t1 = setTimeout(() => { try { c.kill('SIGTERM'); } catch { /* 이미 죽음 */ } }, 30_000);
+    const t2 = setTimeout(() => { try { c.kill('SIGKILL'); } catch { /* 이미 죽음 */ } }, 40_000);
+    c.once('close', () => { clearTimeout(t1); clearTimeout(t2); });
+  }
+  return true;
+}
+
+/**
+ * 실무가 일하는 중이면 지금 닫지 않는다. 턴이 끝난 뒤 라운드를 닫고 세션을 비운다.
+ * 지금 닫으면 그 턴의 마지막 발언이 훅에서 버려진다(phase 가 이미 idle). 대표가 닫으라고 한 뒤에
+ * 나온 말이지만, 실무의 마무리 보고는 그 라운드의 것이다.
+ * 일하는 중이 아니면 false — 부른 쪽이 바로 닫는다.
+ */
+export function closeWhenIdle(team, opts = {}) {
+  const s = sessions.get(team);
+  if (!s || !s.busy) return false;
+  s.closeAfter = { verdict: opts.verdict ?? null, summary: opts.summary ?? null };
   return true;
 }
 
@@ -223,11 +290,7 @@ export function stop(team) {
  */
 export function reset(team) {
   stop(team);
-  const all = readStore();
-  if (!(team in all)) return;
-  delete all[team];
-  fs.mkdirSync(path.dirname(STORE), { recursive: true });
-  fs.writeFileSync(STORE, JSON.stringify(all, null, 2) + '\n');
+  forgetId(team);
 }
 
 export function stopAll() {

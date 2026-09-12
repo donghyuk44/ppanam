@@ -4,24 +4,24 @@ argument-hint: [이번 라운드에서 할 일]
 allowed-tools: Bash(node bus/*), Bash(cat teams/*), Read, Glob, Grep
 ---
 
-활성 팀: !`cat state/active-team 2>/dev/null || node -e "import('./bus/bus.mjs').then(m=>console.log(m.defaultTeam()))"`
+이 방: !`echo "${PPANAM_TEAM:-(없음 — 서버가 띄운 세션이 아니다. 이 커맨드는 그 세션에서만 쓴다)}"`
 
 현재 상태:
 
 ```!
-node bus/round.mjs status --team "$(cat state/active-team 2>/dev/null || echo marketing)"
+node bus/round.mjs status --team "${PPANAM_TEAM:?방이 지정되지 않은 세션 — 서버가 띄운 세션에서만 쓴다}"
 ```
 
 로드맵:
 
 ```!
-cat "teams/$(cat state/active-team 2>/dev/null || echo marketing)/roadmap.json"
+cat "teams/${PPANAM_TEAM:?방이 지정되지 않은 세션 — 서버가 띄운 세션에서만 쓴다}/roadmap.json"
 ```
 
 네 인격:
 
 ```!
-cat "teams/$(cat state/active-team 2>/dev/null || echo marketing)/guide.md" 2>/dev/null \
+cat "teams/${PPANAM_TEAM:?방이 지정되지 않은 세션 — 서버가 띄운 세션에서만 쓴다}/guide.md" 2>/dev/null \
   || echo "(이 팀에는 아직 실무 인격이 없다. CLAUDE.md 의 원칙만 따른다.)"
 ```
 

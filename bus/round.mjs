@@ -34,16 +34,52 @@ if (cmd !== 'status' && !teamExists(team)) {
 }
 const phrase = words.join(' ').trim() || null;
 
+/**
+ * 서버에 부탁한다. 라운드를 닫는 정본은 서버다 — 실무가 일하는 중이면 턴이 끝난 뒤 닫고, 그 방의
+ * 세션 컨텍스트를 비운다. 세션 안에서 직접 닫으면 그 턴의 마무리 보고가 훅에서 버려지고(phase 가
+ * 이미 idle), 세션 id 가 남아 다음 라운드가 지난 컨텍스트를 안고 뜬다 (Fable 재점검, 2026-09-12).
+ * 서버가 안 떠 있으면 null — 그때는 직접 닫는다.
+ */
+async function viaServer(body) {
+  const base = process.env.PPANAM_SERVER || 'http://localhost:4321';
+  let r;
+  try {
+    r = await fetch(`${base}/api/round`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body), signal: AbortSignal.timeout(5000),
+    });
+  } catch { return null; }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) { console.error('오류: ' + (data.error ?? r.status)); process.exit(1); }
+  return data;
+}
+
 switch (cmd) {
   case 'start': {
-    const s = startRound(team, { topic: phrase, milestone: o.milestone });
-    console.log(`[${team}] 라운드 ${s.round} 시작 · 마일스톤 ${s.milestone}${s.topic ? ' — ' + s.topic : ''}`);
+    try {
+      const s = startRound(team, { topic: phrase, milestone: o.milestone });
+      console.log(`[${team}] 라운드 ${s.round} 시작 · 마일스톤 ${s.milestone}${s.topic ? ' — ' + s.topic : ''}`);
+    } catch (e) {
+      console.error('오류: ' + e.message);
+      process.exit(1);
+    }
     break;
   }
   case 'end': {
+    const r = await viaServer({ team, action: 'end', verdict: o.verdict, summary: phrase });
+    if (r) {
+      if (r.deferred) {
+        console.log(`[${team}] 실무 턴이 끝나면 라운드 ${r.round} 이 닫힙니다. 세션 컨텍스트도 그때 비워집니다.`);
+      } else {
+        console.log(`[${team}] 라운드 ${r.round} 종료${o.verdict ? ' · ' + o.verdict : ''}`);
+        console.log('대화록은 그대로 남습니다. 다음 라운드부터 AI 컨텍스트만 새로 시작합니다.');
+      }
+      break;
+    }
+    // 서버가 없다. 직접 닫는다 — 세션 컨텍스트는 다음에 서버가 뜰 때 정리된다.
     try {
       const n = endRound(team, { verdict: o.verdict, summary: phrase });
-      console.log(`[${team}] 라운드 ${n} 종료${o.verdict ? ' · ' + o.verdict : ''}`);
+      console.log(`[${team}] 라운드 ${n} 종료${o.verdict ? ' · ' + o.verdict : ''} (서버 없이 직접 닫음)`);
       console.log('대화록은 그대로 남습니다. 다음 라운드부터 AI 컨텍스트만 새로 시작합니다.');
     } catch (e) {
       console.error('오류: ' + e.message);

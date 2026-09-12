@@ -457,6 +457,7 @@ $('roundBtn').addEventListener('click', async () => {
   if (!confirm(`라운드 ${summary.round} 을 닫습니다.\n\n대화록은 그대로 남고, 다음 라운드는 새 컨텍스트로 시작합니다.`)) return;
   const r = await post('/api/round', { team: active, action: 'end' });
   if (!r.ok) say(r.data.error ?? '라운드를 닫지 못했습니다.');
+  else if (r.data.deferred) say('실무가 일하는 중입니다. 이 턴이 끝나면 닫힙니다.', 10000);
 });
 
 $('roundCancel').addEventListener('click', () => showOpen(false));
@@ -728,6 +729,7 @@ function renderTower() {
         if (!confirm(`${t.name}팀 라운드 ${s.round} 을 닫습니다.\n\n대화록은 그대로 남습니다.`)) return;
         const r = await post('/api/round', { team: t.id, action: 'end' });
         if (!r.ok) fail(r.data.error ?? '닫지 못했습니다.');
+        else if (r.data.deferred) fail('실무가 일하는 중입니다. 이 턴이 끝나면 닫힙니다.');
         return;
       }
       const topic = box.value.trim();

@@ -253,10 +253,15 @@ const server = http.createServer((req, res) => {
         }
         if (action === 'end') {
           // 판정은 감사역이 낸다. 여기서는 verdict 없이 닫는 것이 기본이다.
-          const n = endRound(t, {
+          const opts = {
             verdict: verdict ? String(verdict).toUpperCase() : null,
             summary: summary ? String(summary).trim() : null,
-          });
+          };
+          const st = readState(t);
+          if (!st.round || st.phase === 'idle') return json(res, 409, { error: '진행 중인 라운드가 없습니다.' });
+          // 실무가 일하는 중이면 턴이 끝난 뒤 닫는다. 지금 닫으면 마지막 발언이 훅에서 버려진다.
+          if (session.closeWhenIdle(t, opts)) return json(res, 202, { deferred: true, round: st.round });
+          const n = endRound(t, opts);
           session.reset(t); // 비워지는 건 AI 컨텍스트뿐이다. 대화록은 그대로 남는다
           return json(res, 200, { round: n });
         }
