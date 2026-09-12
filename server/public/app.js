@@ -50,7 +50,8 @@ function bubble(text) {
   const blocks = [];
   // 코드블록과 표(연속된 | 줄)를 떼어 접는다
   let body = src.replace(/```[^\n]*\n([\s\S]*?)```/g, (_, code) => { blocks.push(['코드', code]); return `\u0000${blocks.length - 1}\u0000`; });
-  body = body.replace(/(?:^|\n)((?:[ \t]*\|[^\n]*\n?){2,})/g, (m, tbl) => { blocks.push(['표', tbl.trim()]); return `\n\u0000${blocks.length - 1}\u0000`; });
+  // 표는 머리줄 + 구분선(|---|) 이 있어야 표다. '|' 로 시작하는 줄 둘만으로 판정하면 일반 문장을 잡아먹는다 (레오 감사, 2026-09-12).
+  body = body.replace(/(?:^|\n)([ \t]*\|[^\n]*\n[ \t]*\|?[ \t]*:?-{3,}[ \t|:-]*(?:\n(?:[ \t]*\|[^\n]*(?:\n|$))*)?)/g, (m, tbl) => { blocks.push(['표', tbl.trim()]); return `\n\u0000${blocks.length - 1}\u0000`; });
   let html = escapeHtml(body)
     .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
     .replace(/`([^`\n]+)`/g, '<code>$1</code>')
