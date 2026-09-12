@@ -4,7 +4,15 @@
 //   node bus/say.mjs --as guide "헤드라인 3안 뽑았습니다."
 //   node bus/say.mjs --team dev --as review --verdict REVISE "테스트가 없습니다."
 //   node bus/say.mjs --as guide --tool Read "teams/marketing/report.md"
-//   echo "긴 내용" | node bus/say.mjs --as outside --stdin
+//   echo "긴 내용" | node bus/say.mjs --as review --stdin
+//
+// 누가 말하는지는 --as 가 아니라 환경이 정한다 (docs/event-schema.md 6절).
+//   - 서버가 띄운 세션에는 PPANAM_TEAM 이 있다. 그 방에만 말할 수 있고, --as 는 guide · review · ops · system 뿐이다.
+//     실무가 --as outside --verdict PASS 로 자기 판정을 외부감사 이름으로 남길 수 있었다 (Fable 재점검, 2026-09-12).
+//     outside 는 bus/outside.mjs 가, boss 는 화면이, chief 는 총괄실 세션의 훅이 각자 남긴다 — 여기서는 못 쓴다.
+//   - 판정(--verdict)은 review 만 낸다. 만든 사람은 판정하지 않는다. ops 도 감사역이 아니다.
+//   - PPANAM_ACTOR 가 있으면(서버가 자리별 세션을 띄울 때 넣는다) --as 는 그 값이어야 한다.
+//   - 환경이 없는 셸은 대표의 터미널이다. 방을 --team 으로 고르되, 위의 화자 제한은 같다.
 
 import { emit, readCast, recordVerdict, EVENT_TYPES, VERDICTS, defaultTeam, teamExists, listTeams } from './bus.mjs';
 
@@ -26,7 +34,7 @@ for (let i = 0; i < argv.length; i++) {
     console.log(`사용법: say.mjs --as <화자> [옵션] "할 말"
 
   --team    ${listTeams().map((t) => t.id).join(' | ')}   (기본 ${defaultTeam()})
-  --as      guide | review | outside | boss | system
+  --as      guide | review | ops | system   (outside 는 outside.mjs, boss 는 화면, chief 는 총괄실 훅)
   --type    ${[...EVENT_TYPES].join(' | ')}
   --verdict ${[...VERDICTS].join(' | ')}   (type 을 verdict 로 만듦)
   --target  판정 대상 (기본 guide)
@@ -36,11 +44,18 @@ for (let i = 0; i < argv.length; i++) {
   } else rest.push(a);
 }
 
-const team = o.team ?? process.env.PPANAM_TEAM ?? defaultTeam();
+const envTeam = process.env.PPANAM_TEAM ?? null;
+const envActor = process.env.PPANAM_ACTOR ?? null;
+const team = o.team ?? envTeam ?? defaultTeam();
 if (!teamExists(team)) {
   console.error(`오류: '${team}' 팀이 없습니다. 있는 팀: ${listTeams().map((t) => t.id).join(', ')}`);
   process.exit(1);
 }
+if (envTeam && team !== envTeam) {
+  console.error(`오류: 너는 '${envTeam}' 방 사람이다. '${team}' 방에는 말할 수 없다.`);
+  process.exit(1);
+}
+if (!o.actor && envActor) o.actor = envActor;
 
 async function readStdin() {
   const chunks = [];
@@ -51,6 +66,19 @@ async function readStdin() {
 const text = (o.stdin ? (await readStdin()).trimEnd() : (o.text ?? rest.join(' '))).trim();
 
 if (!o.actor) { console.error('오류: --as <화자> 가 필요합니다. 예) --as guide'); process.exit(1); }
+const SAYABLE = new Set(['guide', 'review', 'ops', 'system']);
+if (!SAYABLE.has(o.actor)) {
+  console.error(`오류: '${o.actor}' 는 여기서 말할 수 없다. outside 는 bus/outside.mjs 가, boss 는 화면이, chief 는 총괄실 세션이 남긴다.`);
+  process.exit(1);
+}
+if (envActor && o.actor !== envActor) {
+  console.error(`오류: 너는 '${envActor}' 다. '${o.actor}' 로 말할 수 없다.`);
+  process.exit(1);
+}
+if (o.type === 'verdict' && o.actor !== 'review') {
+  console.error('오류: 판정은 review 만 낸다. 만든 사람은 판정하지 않는다. 외부감사 판정은 bus/outside.mjs 로.');
+  process.exit(1);
+}
 if (!text) { console.error('오류: 할 말이 비어 있습니다.'); process.exit(1); }
 
 const cast = readCast(team);

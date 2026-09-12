@@ -269,8 +269,16 @@ async function ask(team, question, { talk = false, lull = false } = {}) {
   // 승인 대조였으면 그 판정을 외부감사 이름으로 큐에 남긴다.
   // codex 샌드박스는 파일을 못 쓰므로 그녀 대신 이 프로세스가 쓴다 — 이 프로세스가 곧 그녀다.
   // 대화(talk)는 승인을 건드리지 않는다 — 대조는 --ask 로만 시킨다.
+  //
+  // 그리고 시키는 쪽도 본다. --team 은 다른 방의 외부감사를 빌려 묻는 데 쓰라고 열어둔 것인데(룸메이트 렌즈),
+  // 개발팀 세션이 --team hq --ask "승인 요청 apr_x 대조" 로 제리에게 자기 요청의 대조를 기록하게 할 수 있었다
+  // (Fable 재점검, 2026-09-12). 서버가 띄운 세션은 PPANAM_TEAM 을 갖는다 — 총괄실이 아니면 대조는 없다.
+  // 환경이 없는 셸은 대표의 터미널이라 막지 않는다.
   const apr = talk ? null : /apr_[0-9a-f]{8}/.exec(question)?.[0];
-  if (apr && verdict && verdict !== 'FAIL') {
+  const caller = process.env.PPANAM_TEAM ?? null;
+  if (apr && caller && caller !== 'hq') {
+    emit(team, { actor: 'system', type: 'note', text: `${apr} 대조 요청을 무시했습니다 — 총괄실 밖(${caller})에서는 대조를 시킬 수 없습니다.` });
+  } else if (apr && verdict && verdict !== 'FAIL') {
     try { decideApproval(apr, { by: 'outside', decision: verdict, reason: body.split('\n')[0].slice(0, 200), team }); }
     catch (e) { emit(team, { actor: 'system', type: 'note', text: `${name} 의 승인 판정을 못 남겼습니다 — ${e.message}` }); }
   }

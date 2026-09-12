@@ -41,6 +41,26 @@ function isPush(r) {
   return r.grade === 'B' && r.status === 'passed' && r.action?.type === 'push';
 }
 
+/** 실행자가 밀지 않는 브랜치. 메인 병합은 C 등급이다 — B 요청에 main 이 박혀 있어도 안 민다. */
+const PROTECTED = new Set(['main', 'master']);
+
+/** 몇 번 터지면 포기하나. 실패를 done 에 안 남기면 250ms 마다 영원히 다시 시도해 총괄실을 도배한다. */
+const MAX_TRIES = 3;
+
+/**
+ * action 이 실행해도 되는 모양인가. 큐 파일은 사람도 세션도 쓸 수 있으므로 실행 직전에 다시 본다.
+ * 틀리면 이유를 돌려주고, 실행자는 그 요청을 done 에 남기고 지나간다.
+ */
+function invalidAction(a) {
+  if (!a || typeof a !== 'object') return 'action 없음';
+  if (typeof a.sha !== 'string' || !/^[0-9a-f]{40}$/.test(a.sha)) return 'sha 가 40자 hex 가 아님';
+  if (typeof a.branch !== 'string' || !a.branch || a.branch === 'HEAD') return '브랜치 없음';
+  if (/^-|\.\.|[\s~^:?*[\\]/.test(a.branch) || a.branch.endsWith('/') || a.branch.endsWith('.lock')) return '브랜치 이름이 이상함';
+  if (PROTECTED.has(a.branch)) return `'${a.branch}' 는 C 등급(메인 병합)이라 실행자가 밀지 않음`;
+  if (a.remote != null && (typeof a.remote !== 'string' || !/^[A-Za-z0-9_.-]+$/.test(a.remote))) return '원격 이름이 이상함';
+  return null;
+}
+
 /** 지금의 브랜치·HEAD. 승인된 것과 대조하려고 읽는다. */
 function head() {
   const g = (a) => execFileSync('git', a, { cwd: REPO, encoding: 'utf8' }).trim();
@@ -75,6 +95,17 @@ export async function runExecutor() {
   busy = true;
   try {
     const want = target.action; // {type,remote,branch,sha}
+
+    const bad = invalidAction(want);
+    if (bad) {
+      store.done[target.id] = { at: new Date().toISOString(), ok: false, out: `invalid: ${bad}` };
+      writeStore(store);
+      const meta = { approval: target.id, grade: 'B', executed: 'invalid' };
+      emit(target.team, { actor: 'system', type: 'note', text: `승인 ${target.id} — 실행할 수 없는 요청입니다 (${bad}). 밀지 않았습니다. 다시 요청하세요.`, meta });
+      if (target.team !== 'hq') emit('hq', { actor: 'system', type: 'note', text: `${target.team} 팀 승인 ${target.id} 실행 불가 — ${bad}`, meta });
+      return;
+    }
+
     const now = head();
 
     // 승인 이후 커밋이 바뀌었으면 낡은 승인이다. 톰·제리는 그 SHA 를 통과시킨 것이지
@@ -103,8 +134,23 @@ export async function runExecutor() {
       emit('hq', { actor: 'system', type: 'note', text: `${target.team} 팀 승인 ${target.id} ${head_}${tail}`, meta });
     }
   } catch (e) {
-    // 실행 자체가 터졌으면 done 에 남기지 않는다 — 다음 틱에 다시 시도한다.
-    emit('hq', { actor: 'system', type: 'note', text: `승인 ${target.id} 실행 중 오류 — ${String(e.message).slice(0, 200)}` });
+    // 실행 자체가 터졌다(git 이 안 뜨거나 index.lock 등). 몇 번은 다시 해보되, 계속 터지면 done 에 남기고 포기한다.
+    // 안 그러면 250ms 마다 영원히 다시 시도하며 총괄실에 같은 note 를 쌓는다 (Fable 재점검, 2026-09-12).
+    const s = readStore();
+    s.tries = s.tries ?? {};
+    const n = (s.tries[target.id] ?? 0) + 1;
+    s.tries[target.id] = n;
+    const why = String(e.message).split('\n')[0].slice(0, 200);
+    if (n >= MAX_TRIES) {
+      s.done[target.id] = { at: new Date().toISOString(), ok: false, out: `error x${n}: ${why}` };
+      delete s.tries[target.id];
+    }
+    writeStore(s);
+    if (n === 1 || n >= MAX_TRIES) {
+      const meta = { approval: target.id, grade: 'B', executed: n >= MAX_TRIES ? 'error' : 'retrying' };
+      emit('hq', { actor: 'system', type: 'note', text: `승인 ${target.id} 실행 중 오류 (${n}/${MAX_TRIES}) — ${why}${n >= MAX_TRIES ? '. 포기합니다. 원인을 고치고 다시 요청하세요.' : ''}`, meta });
+      if (n >= MAX_TRIES && target.team !== 'hq') emit(target.team, { actor: 'system', type: 'note', text: `승인 ${target.id} — 실행 오류로 밀지 못했습니다 (${why}). 다시 요청하세요.`, meta });
+    }
   } finally {
     busy = false;
   }

@@ -57,6 +57,14 @@ function usage() {
 
 const assign = words.join('\n').trim();
 
+// 배달은 총괄의 일이다. 서버가 띄운 세션은 PPANAM_TEAM 을 갖는데, 총괄실이 아니면 여기서 막는다 —
+// 아무 방의 세션이나 다른 방에 "대표 원문" 말풍선을 만들 수 있었다 (Fable 재점검, 2026-09-12).
+// 환경이 없는 셸은 대표의 터미널이라 막지 않는다.
+if (process.env.PPANAM_TEAM && process.env.PPANAM_TEAM !== 'hq') {
+  console.error(`오류: 배달은 총괄실에서만 합니다 (지금 방: ${process.env.PPANAM_TEAM}).`);
+  process.exit(1);
+}
+
 if (!o.to.length) { console.error('오류: --to 로 보낼 팀을 지정하세요.\n'); usage(); process.exit(2); }
 
 const bad = o.to.filter((t) => !teamExists(t));
