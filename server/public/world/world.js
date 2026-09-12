@@ -20,7 +20,9 @@ const S = {
   scene: 'castle', caches: {},                       // 보고 있는 장면, 장면별 정적 층 캐시
   canvas: null, ctx: null,
   bubbles: new Set(), cam: true, raf: 0, last: 0,
+  world: null,                                       // 세상의 시계 — 서버가 준 { hour, mode, actors } (W2)
 };
+const MODE_LABEL = { work: '근무', lunch: '점심', evening: '퇴근', night: '밤', rest: '휴식' };
 const cur = () => S.map.scenes[S.scene];             // 지금 보는 장면
 const sceneOf = (a) => S.map.scenes[a.scene];
 const placeOf = (name) => S.map.places[name] ?? null;
@@ -112,6 +114,7 @@ async function load() {
   setScene(bd.scene);
   window.addEventListener('keydown', onKey);
   lookAt(S.boss, true);
+  if (S.world) applyWorld(S.world);
 }
 
 /** 장면을 바꾼다. 정적 층은 장면·배율마다 한 번만 그려 둔다. */
@@ -209,6 +212,10 @@ function walkTo(a, p, done) {
 
 function tick(dt) {
   for (const a of everyone()) {
+    if (a.act === 'typing' && !a.hidden) {
+      const cur = [...S.bubbles].find((b) => b.a === a && b.kind === 'tool');
+      if (cur) cur.until = performance.now() + 1500; else speak(a, '', { kind: 'tool', cls: 'wb--tool', ms: 1500 });
+    }
     if (!a.path.length) continue;
     const [tx, ty] = a.path[0]; const gx = tx * TP, gy = ty * TP;
     const dx = gx - a.px, dy = gy - a.py, dist = Math.hypot(dx, dy), step = WALK * TP * dt;
@@ -223,6 +230,44 @@ function tick(dt) {
 }
 
 const everyone = () => [...S.actors.values(), S.boss].filter(Boolean);
+
+/* ── 세상의 시계 → 자리 (W2) ── */
+
+/** 광장 같은 넓은 자리는 사람마다 다른 칸을 준다. 막힌 칸이면 근처를 찾는다. */
+function spreadIn(roomId, i) {
+  const sc = S.map.scenes.village, r = sc.rooms[roomId]; if (!r) return null;
+  const cand = [];
+  for (let k = 0; k < 12; k++) cand.push([r.x + 1 + ((i * 5 + k * 3) % Math.max(1, r.w - 2)), r.y + 2 + ((i * 3 + k) % Math.max(1, r.h - 3))]);
+  for (const [x, y] of cand) if (free(sc, x, y)) return { scene: 'village', x, y, dir: 'down' };
+  return null;
+}
+function routinePlace(a, name, i) {
+  if (name === 'plaza') return spreadIn('plaza', i) ?? a.home;
+  return placeOf(name) ?? a.home;
+}
+/** 서버의 시계가 준 자리로 걸어간다. 재생 중인 방은 건드리지 않는다. 대표는 사람이라 움직이지 않는다. */
+function applyWorld(w) {
+  if (!S.map || !w?.actors) return;
+  let i = 0;
+  for (const a of S.actors.values()) {
+    const t = w.actors[a.key]; i += 1;
+    if (!t) continue;
+    a.act = t.act;
+    if (R.team === a.team && R.events.length) continue;
+    if (a.routine !== t.place) {
+      a.routine = t.place;
+      const p = routinePlace(a, t.place, i);
+      if (p) walkTo(a, p);
+    }
+    const zzz = [...S.bubbles].find((b) => b.a === a && b.kind === 'zzz');
+    if (t.act === 'sleep' && !zzz) speak(a, 'z z z', { kind: 'zzz', cls: 'wb--zzz', ms: 1e9 });
+    if (t.act !== 'sleep' && zzz) removeBubble(zzz);
+  }
+  const el = $('wvClock');
+  if (el) { const h = Math.floor(w.hour), m = Math.round((w.hour - h) * 60); el.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} · ${MODE_LABEL[w.mode] ?? w.mode}${w.debug ? ' (시험)' : ''}`; }
+  const sel = $('wvHour'); if (sel && document.activeElement !== sel) sel.value = w.debug ? String(Math.round(w.hour)) : '';
+}
+export function onWorld(w) { S.world = w; applyWorld(w); }
 
 /** 댄이 포탈 칸에 올라섰다 — 건너편에 나타나고 화면도 따라간다. */
 function usePortal(a) {
@@ -293,6 +338,10 @@ function render() {
   }
   band(h);
   x.drawImage(S.over, 0, 0);
+  // 세상의 시각 — 밤엔 어둡고 저녁엔 붉다. 마을이 시계를 따른다는 것이 한눈에 보이게.
+  const mode = S.world?.mode;
+  if (mode === 'night') { x.fillStyle = 'rgba(8, 10, 32, 0.55)'; x.fillRect(0, 0, S.canvas.width, S.canvas.height); }
+  else if (mode === 'evening') { x.fillStyle = 'rgba(80, 40, 10, 0.18)'; x.fillRect(0, 0, S.canvas.width, S.canvas.height); }
   x.font = `${z >= 2 ? 15 : 12}px Galmuri11, 'IBM Plex Sans KR', sans-serif`; x.textAlign = 'center'; x.textBaseline = 'bottom';
   x.lineWidth = 3; x.lineJoin = 'round'; x.strokeStyle = '#1c1a17cc';
   for (const a of list) {
@@ -325,7 +374,7 @@ function speak(a, text, { kind = 'say', who = a.name, cls = '', ms } = {}) {
   while (mine.length >= 3) removeBubble(mine.shift());          // 한 사람에 최대 셋
   S.bubbles.add(b); $('wvBubbles').appendChild(el);
   a.lastSpoke = performance.now();
-  if (S.cam && kind !== 'tool') lookAt(a);
+  if (S.cam && kind !== 'tool' && kind !== 'zzz') lookAt(a);
   return b;
 }
 function removeBubble(b) {
@@ -574,6 +623,10 @@ function initToolbar() {
   R.speed = Number($('wvSpeed').value) || 2;
   $('wvZoom').addEventListener('change', (e) => { S.z = Number(e.target.value) || 2; rebuild(); });
   $('wvCam').addEventListener('change', (e) => { S.cam = e.target.checked; });
+  $('wvHour')?.addEventListener('change', (e) => {
+    fetch('/api/world', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ debugHour: e.target.value === '' ? null : Number(e.target.value) }) })
+      .then((r) => r.json()).then((r) => { if (r.world) onWorld(r.world); }).catch(() => toast('시각을 바꾸지 못했습니다.'));
+  });
   $('wvTalk').addEventListener('submit', submitTalk);
   $('wvTalkX').addEventListener('click', closeTalk);
   // 장면 전환과 이동 목록
@@ -623,14 +676,15 @@ export function onEvents(team, events) {
   if (R.team === team && R.events.length) { R.held.push(...events); return; }
   for (const e of events) handle(team, e);
 }
-export function onSummaries() { /* W2: 자리 상태(자는 중·말하는 중)를 여기서 받는다 */ }
+export function onSummaries() { /* 자리 상태는 world 메시지로 온다 (onWorld) */ }
 /** 시험용 — 장면·자리·말풍선 수. 화면을 보지 않고도 재생이 맞는지 확인할 수 있다. */
 export function snapshot() {
   return {
     scene: S.scene,
-    actors: everyone().map((a) => ({ key: a.key, name: a.name, scene: a.scene, x: a.x, y: a.y, hidden: a.hidden, walking: a.path.length > 0, sheet: !!a.sheet })),
+    actors: everyone().map((a) => ({ key: a.key, name: a.name, scene: a.scene, x: a.x, y: a.y, hidden: a.hidden, walking: a.path.length > 0, sheet: !!a.sheet, routine: a.routine ?? null, act: a.act ?? null })),
     cast: S.cast ? { cell: S.cast.cell, sheets: Object.keys(S.cast.sheets) } : null,
     bubbles: [...S.bubbles].map((b) => ({ who: b.a.key, kind: b.kind, text: b.el.textContent.slice(0, 40) })),
     replay: { team: R.team, round: R.round, i: R.i, n: R.events.length, playing: R.playing },
+    world: S.world ? { hour: S.world.hour, mode: S.world.mode, debug: S.world.debug } : null,
   };
 }

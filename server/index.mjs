@@ -21,7 +21,8 @@ import {
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
-import { noticeEvents, startVerdict, snapshot } from './conductor.mjs';
+import { noticeEvents, startVerdict, snapshot, setClock } from './conductor.mjs';
+import * as world from './world.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
 
@@ -298,6 +299,18 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 세상의 시계. GET 은 지금 자리, POST { debugHour } 는 시험용 시각 고정(null 이면 실제 시각).
+  if (url.pathname === '/api/world' && req.method === 'GET') return json(res, 200, world.snapshot());
+  if (url.pathname === '/api/world' && req.method === 'POST') {
+    readBody(req, res, ({ debugHour }) => {
+      const c = world.setDebugHour(debugHour);
+      const w = world.snapshot();
+      lastWorld = JSON.stringify(w); broadcast({ kind: 'world', world: w });
+      json(res, 200, { config: c, world: w });
+    });
+    return;
+  }
+
   // 라운드 열기·닫기. 이게 없으면 지시하려고 결국 터미널로 돌아가야 한다.
   if (url.pathname === '/api/round' && req.method === 'POST') {
     readBody(req, res, ({ team: t, action, topic, milestone, verdict, summary }) => {
@@ -344,6 +357,9 @@ const server = http.createServer((req, res) => {
   });
 });
 
+// 세상의 시계가 사회자의 침묵 차례를 켜고 끈다 — 밤·휴식엔 아무도 깨우지 않는다 (W2).
+setClock(() => world.clock().mode);
+
 const wss = new WebSocketServer({ server, path: '/ws' });
 const broadcast = (msg) => {
   const s = JSON.stringify(msg);
@@ -381,6 +397,7 @@ function pollTeam(id) {
 }
 
 let lastSummaries = '';
+let lastWorld = '';
 
 setInterval(() => {
   for (const t of listTeams()) {
@@ -403,10 +420,14 @@ setInterval(() => {
     lastSummaries = raw;
     broadcast({ kind: 'summaries', summaries: s });
   }
+  // 마을의 시계와 자리 — 분이 바뀌거나 누가 일하기 시작할 때만 보낸다.
+  const w = world.snapshot();
+  const rawW = JSON.stringify(w);
+  if (rawW !== lastWorld) { lastWorld = rawW; broadcast({ kind: 'world', world: w }); }
 }, POLL_MS);
 
 wss.on('connection', (ws) => {
-  ws.send(JSON.stringify({ kind: 'hello', summaries: summaries() }));
+  ws.send(JSON.stringify({ kind: 'hello', summaries: summaries(), world: world.snapshot() }));
 });
 
 // 기동 시 이미 쌓여 있던 대화록의 끝으로 커서를 옮긴다 (다시 밀지 않기 위해).

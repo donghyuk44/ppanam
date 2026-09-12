@@ -495,6 +495,8 @@ function connect() {
       }
       return;
     }
+    if (msg.kind === 'world') { World.onWorld(msg.world); return; }   // 세상의 시계 — 자리·루틴 (W2)
+    if (msg.kind === 'hello' && msg.world) World.onWorld(msg.world);
     if (msg.kind === 'events') {
       World.onEvents(msg.team, msg.events);          // 마을은 모든 방을 한 화면에 본다
       if (msg.team === active) {
