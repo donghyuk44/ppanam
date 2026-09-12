@@ -184,6 +184,12 @@ const server = http.createServer((req, res) => {
 
   if (url.pathname === '/api/log') {
     if (!teamExists(team)) return json(res, 404, { error: 'no such team' });
+    // 라운드 하나를 통째로. 마을 탭이 재생할 때 쓴다 — 페이지네이션이 아니라 한 판이 단위다.
+    if (q.get('round') != null) {
+      const n = Number(q.get('round'));
+      const events = readLog(team).filter((e) => e.round === n);
+      return json(res, 200, { events, more: false, total: events.length });
+    }
     return json(res, 200, readTail(team, {
       limit: Number(q.get('limit')) || PAGE,
       before: q.get('before') || null,

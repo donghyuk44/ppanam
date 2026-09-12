@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/world/world.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>💬</text></svg>">
 </head>
 <body>
@@ -23,6 +24,7 @@
       <button type="button" data-view="room">작전실</button>
       <button type="button" data-view="tower">관제탑</button>
       <button type="button" data-view="analysis">분석</button>
+      <button type="button" data-view="world">마을</button>
     </nav>
     <nav class="rail__list" id="teams" aria-label="팀"></nav>
   </aside>
@@ -97,6 +99,40 @@
       <p>왼쪽에서 팀을 고르면 그 작전실의 이력을 봅니다.</p>
     </header>
     <div class="an__body" id="anBody"></div>
+  </section>
+
+  <!-- 마을: 도트 마을에서 캐릭터와 말풍선으로 본다 -->
+  <section class="world" id="world">
+    <header class="world__bar">
+      <div><h1>마을</h1><span class="world__hint">방향키로 댄을 움직이고, 누군가의 옆에서 Enter 를 누르면 말을 겁니다. 말풍선을 누르면 전문이 보입니다.</span></div>
+      <div class="world__ctl">
+        <span class="world__scene" id="wvScene"><button type="button" data-scene="village">마을</button><button type="button" data-scene="castle">회사</button></span>
+        <select id="wvGo" aria-label="어디로"></select>
+        <button type="button" id="wvGoBtn">이동</button>
+        <span class="world__sep"></span>
+        <select id="wvTeam" aria-label="재생할 팀"></select>
+        <select id="wvRound" aria-label="재생할 라운드"></select>
+        <button type="button" id="wvPlay">재생</button>
+        <button type="button" id="wvStop" hidden>멈춤</button>
+        <select id="wvSpeed" aria-label="재생 속도"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option></select>
+        <select id="wvZoom" aria-label="배율"><option value="1">작게</option><option value="2" selected>보통</option><option value="3">크게</option></select>
+        <label><input type="checkbox" id="wvCam" checked> 말하는 쪽으로 따라가기</label>
+        <span class="world__status" id="wvStatus"></span>
+      </div>
+    </header>
+    <div class="world__view" id="wvView">
+      <div class="world__inner" id="wvInner">
+        <canvas id="wvCanvas"></canvas>
+        <div class="world__labels" id="wvLabels"></div>
+        <div class="world__bubbles" id="wvBubbles"></div>
+      </div>
+      <form class="world__talk" id="wvTalk" hidden>
+        <input id="wvTalkIn" type="text" autocomplete="off">
+        <button type="submit">말하기</button>
+        <button type="button" id="wvTalkX">닫기</button>
+      </form>
+      <div class="world__toast" id="wvToast" hidden></div>
+    </div>
   </section>
 
   <!-- 오른쪽: 상황판 -->

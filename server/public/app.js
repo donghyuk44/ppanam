@@ -3,6 +3,8 @@
 // 대화록은 지워지지 않는다. 라운드 경계는 구분선일 뿐이고,
 // 위로 스크롤하면 지난 라운드가 계속 나온다.
 
+import * as World from '/world/world.js';
+
 const $ = (id) => document.getElementById(id);
 const app = $('app'), feed = $('feed'), stream = $('stream');
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -481,6 +483,7 @@ function connect() {
     if (msg.kind === 'summaries') {
       summaries = msg.summaries ?? {};
       summary = summaries[active] ?? summary;
+      World.onSummaries(summaries);
       renderRail(); renderHead(); renderSide();
       if (view === 'tower') {
         fetch('/api/approvals').then((r) => r.json()).then((a) => { approvals = a.pending ?? []; told = a.told ?? told; renderTower(); }).catch(() => renderTower());
@@ -493,6 +496,7 @@ function connect() {
       return;
     }
     if (msg.kind === 'events') {
+      World.onEvents(msg.team, msg.events);          // 마을은 모든 방을 한 화면에 본다
       if (msg.team === active) {
         append(msg.events);
       } else {
@@ -591,7 +595,7 @@ $('scrim').addEventListener('click', () => openSide(false));
 /* ══ 화면 전환 ══ */
 
 let view = 'room';
-const VIEWS = new Set(['room', 'tower', 'analysis']);
+const VIEWS = new Set(['room', 'tower', 'analysis', 'world']);
 
 // 주소에 팀과 화면을 함께 남긴다 (#marketing/tower). 새로고침해도, 뒤로 가도 보던 곳으로 돌아온다.
 // 우리가 쓴 해시는 되읽지 않는다 — 안 그러면 화면을 바꿀 때마다 한 번 더 바꾸려 든다.
@@ -622,6 +626,8 @@ function setView(v) {
   }
   if (v === 'tower') renderTower();
   if (v === 'analysis') loadAnalysis();
+  // 마을은 열려 있을 때만 그린다. 닫히면 rAF 를 멈춘다 — 관람은 공짜여야 한다.
+  if (v === 'world') World.open({ teams }).catch(() => {}); else World.close();
 }
 
 for (const b of $('views').querySelectorAll('button')) {

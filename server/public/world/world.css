@@ -1,0 +1,91 @@
+/* 마을 탭 — 도트 마을 위에 캐릭터와 말풍선. 그림은 캔버스, 글은 DOM. */
+
+.world { display: none; flex-direction: column; min-height: 0; background: var(--ground); }
+.app[data-view="world"] .world { display: flex; }
+.app[data-view="world"] .room, .app[data-view="world"] .side { display: none; }
+.app[data-view="world"] { grid-template-columns: 224px minmax(0, 1fr); }
+
+.world__bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.world__bar h1 { font: 700 15px 'Gowun Batang', serif; margin: 0; }
+.world__hint { font-size: 12px; color: var(--ink-3); margin-left: 10px; }
+.world__ctl { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; }
+.world__ctl select, .world__ctl button {
+  font: inherit; font-size: 12px; color: var(--ink); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 7px;
+}
+.world__ctl button { cursor: pointer; }
+.world__ctl button:hover { border-color: var(--ink-4); }
+.world__ctl label { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); }
+.world__status { color: var(--ink-3); min-width: 80px; }
+.world__scene { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.world__scene button { border: 0; border-radius: 0; background: var(--panel-2); }
+.world__scene button[aria-current="true"] { background: var(--seal); color: var(--seal-ink); }
+.world__sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
+
+.world__view { flex: 1; min-height: 0; overflow: auto; background: #2a3a2a; position: relative; }
+/* 가장자리 말풍선이 잘리지 않게 지도 둘레에 여백을 둔다. 캔버스와 글 층은 같은 원점을 쓴다. */
+.world__inner { position: relative; --pad-x: 120px; --pad-y: 110px; }
+.world__inner canvas { position: absolute; left: var(--pad-x); top: var(--pad-y); image-rendering: pixelated; image-rendering: crisp-edges; }
+.world__bubbles, .world__labels { position: absolute; left: var(--pad-x); top: var(--pad-y); width: 0; height: 0; pointer-events: none; overflow: visible; }
+
+/* 방 이름표 */
+.wv-room {
+  position: absolute; transform: translate(-50%, -100%);
+  font: 600 11px 'IBM Plex Sans KR', sans-serif; color: #f4efe4; background: #1c1a17cc;
+  padding: 1px 7px; border-radius: 4px; white-space: nowrap; pointer-events: none;
+}
+.wv-banner {
+  position: absolute; transform: translate(-50%, -100%);
+  font: 500 11px 'IBM Plex Sans KR', sans-serif; color: #23200f; background: #ecc85e;
+  border: 1px solid #d9b23f; padding: 2px 8px; border-radius: 5px; white-space: nowrap;
+  animation: wv-pop .18s ease-out;
+}
+
+/* 말풍선. 꼬리는 아래 가운데. */
+.wb {
+  position: absolute; transform: translate(-50%, -100%);
+  max-width: 220px; min-width: 40px; pointer-events: auto; cursor: pointer;
+  background: #fdfbf7; color: #1c1a17; border: 1px solid #b8ad98; border-radius: 9px;
+  padding: 4px 8px 5px; font: 12px/1.4 'IBM Plex Sans KR', sans-serif;
+  box-shadow: 0 2px 0 #1c1a1740; animation: wv-pop .18s ease-out; word-break: keep-all; overflow-wrap: anywhere;
+}
+.wb::after {
+  content: ''; position: absolute; left: 50%; bottom: -6px; width: 9px; height: 9px;
+  background: inherit; border-right: 1px solid #b8ad98; border-bottom: 1px solid #b8ad98;
+  transform: translateX(-50%) rotate(45deg);
+}
+.wb__who { display: block; font-size: 10px; font-weight: 600; color: #7a7266; margin-bottom: 1px; }
+.wb--boss { background: #ecc85e; border-color: #d9b23f; }
+.wb--boss::after { border-color: #d9b23f; }
+.wb--boss .wb__who { color: #6b5a12; }
+.wb--verdict { border-width: 2px; }
+.wb--PASS { border-color: #1b5e34; } .wb--PASS .wb__who { color: #1b5e34; }
+.wb--REVISE { border-color: #b8741e; } .wb--REVISE .wb__who { color: #b8741e; }
+.wb--FAIL { border-color: #b3261e; } .wb--FAIL .wb__who { color: #b3261e; }
+.wb--tool { min-width: 0; padding: 1px 6px; font-size: 11px; color: #7a7266; background: #f4efe4; }
+.wb--tool::after { display: none; }
+.wb--gone { animation: wv-fade .25s ease-in forwards; }
+.wb--full { max-width: 360px; white-space: pre-wrap; }
+
+@keyframes wv-pop { from { opacity: 0; transform: translate(-50%, -100%) scale(.9); } to { opacity: 1; transform: translate(-50%, -100%) scale(1); } }
+@keyframes wv-fade { to { opacity: 0; } }
+
+/* 대표가 말 걸기 */
+.world__talk {
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 3;
+  display: flex; gap: 6px; padding: 8px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: 0 8px 24px #0004; width: min(520px, 90%);
+}
+.world__talk[hidden], .world__toast[hidden] { display: none; }
+.world__talk input { flex: 1; font: inherit; font-size: 13px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); color: var(--ink); }
+.world__talk button { font: inherit; font-size: 12px; padding: 6px 12px; border: 0; border-radius: 7px; background: var(--seal); color: var(--seal-ink); cursor: pointer; }
+.world__toast {
+  position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 3;
+  font-size: 12px; padding: 6px 12px; border-radius: 7px; background: #1c1a17; color: #f4efe4;
+}
+
+@media (max-width: 1179px) { .app[data-view="world"] { grid-template-columns: 210px minmax(0, 1fr); } }
+@media (max-width: 819px) { .app[data-view="world"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); } .world__hint { display: none; } }
