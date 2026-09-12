@@ -100,7 +100,7 @@ function forgetId(team, actor) {
  * 인격 파일. teams/<팀>/<자리>.md — 없으면 공용 .claude/agents/<자리>.md 의 본문(frontmatter 제거).
  * 실무·총괄은 서브에이전트가 아니라 frontmatter 가 없고, 내부감사·운영도 이제 같다.
  */
-function personaOf(team, actor) {
+export function personaOf(team, actor) {
   try { const s = fs.readFileSync(path.join(paths(team).dir, `${actor}.md`), 'utf8').trim(); if (s) return s; } catch { /* 없다 */ }
   try {
     const s = fs.readFileSync(path.join(ROOT, '.claude', 'agents', `${actor}.md`), 'utf8');
@@ -125,12 +125,27 @@ function decisionsOf(team) {
 }
 
 /** 일지의 최근 문단들. teams/<팀>/journal/<자리>.md — 최신이 맨 위다. 없으면 null. */
-function journalOf(team, actor, n = JOURNAL_PARAS) {
+export function journalOf(team, actor, n = JOURNAL_PARAS) {
   let s;
   try { s = fs.readFileSync(path.join(paths(team).dir, 'journal', `${actor}.md`), 'utf8'); } catch { return null; }
   const paras = s.split(/\n(?=## )/).map((p) => p.trim()).filter((p) => p.startsWith('## '));
   if (!paras.length) return null;
   return { text: paras.slice(0, n).join('\n\n'), total: paras.length };
+}
+
+/**
+ * 마을의 캐릭터 카드가 보여줄 만큼만 — 인격 파일의 첫 줄(누구인가)과 "## 너라는 사람"(codex 는 "당신이라는 사람") 절.
+ * 감사 기준·절차는 싣지 않는다. 카드는 사람을 보여주는 것이지 매뉴얼이 아니다.
+ */
+export function personaCard(team, actor) {
+  const src = personaOf(team, actor);
+  if (!src) return null;
+  const body = src.replace(/^---[\s\S]*?\n---\n/, '');
+  const title = (/^# (.+)$/m.exec(body)?.[1] ?? '').trim();
+  const identity = (/^(?:너는|당신은) [^\n]+$/m.exec(body)?.[0] ?? '').replace(/\*\*/g, '').trim();
+  const sec = /\n## (?:너|당신)(?:이)?라는 사람\n([\s\S]*?)(?=\n## |$)/.exec(body);
+  const who = sec ? sec[1].trim() : null;
+  return { title, identity, who };
 }
 
 /**

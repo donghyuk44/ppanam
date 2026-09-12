@@ -250,6 +250,9 @@ body {
 }
 
 .row { display: flex; gap: 9px; align-items: flex-start; }
+/* 마을에서 건너온 발언 — 잠깐 빛난다 */
+[data-id].is-hit { animation: hit 2s ease-out; border-radius: 10px; }
+@keyframes hit { 0%, 55% { box-shadow: 0 0 0 3px var(--me-line); background: color-mix(in srgb, var(--me) 28%, transparent); } 100% { box-shadow: 0 0 0 3px transparent; background: transparent; } }
 .row.me { flex-direction: row-reverse; }
 .av {
   flex: none; width: 32px; height: 32px; border-radius: 9px; margin-top: 15px;

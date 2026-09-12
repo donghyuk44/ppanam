@@ -300,6 +300,26 @@ const server = http.createServer((req, res) => {
   }
 
   // 세상의 시계. GET 은 지금 자리, POST { debugHour } 는 시험용 시각 고정(null 이면 실제 시각).
+  // 마을에서 캐릭터를 눌렀을 때 — 누구인가(인격 파일의 "너라는 사람"), 어제(일지 맨 위 문단), 최근 발언, 지금 상태.
+  if (url.pathname === '/api/actor') {
+    if (!teamExists(team)) return json(res, 404, { error: '그런 팀이 없습니다.' });
+    const actor = q.get('actor') ?? '';
+    const cast = castOf(team).agents ?? {};
+    if (!/^[a-z]+$/.test(actor) || !cast[actor] || actor === 'boss' || actor === 'system') return json(res, 404, { error: '그런 자리가 없습니다.' });   // 대표는 사람, system 은 하네스 — 카드가 없다
+    const a = cast[actor];
+    const persona = session.personaCard(team, actor);
+    const journal = session.journalOf(team, actor, 1);
+    const recent = readLog(team)
+      .filter((e) => e.actor === actor && (e.type === 'message' || e.type === 'verdict') && !/^\(패스\)/.test(String(e.text ?? '').trim()))
+      .slice(-8)
+      .map((e) => ({ id: e.id, ts: e.ts, type: e.type, round: e.round ?? null, verdict: e.meta?.verdict ?? null, text: String(e.text ?? '').slice(0, 300) }));
+    const st = a.model === 'gpt' ? { engine: 'codex' } : session.status(team, actor);
+    return json(res, 200, {
+      team, actor, name: a.name ?? actor, role: a.role ?? null, color: a.color ?? null, model: a.model ?? null,
+      persona, journal: journal ? { latest: journal.text.slice(0, 900), total: journal.total } : null,
+      recent, status: st, world: world.snapshot().actors?.[`${team}:${actor}`] ?? null,
+    });
+  }
   if (url.pathname === '/api/world' && req.method === 'GET') return json(res, 200, world.snapshot());
   if (url.pathname === '/api/world' && req.method === 'POST') {
     readBody(req, res, ({ debugHour }) => {

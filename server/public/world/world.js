@@ -112,6 +112,7 @@ async function load() {
   };
 
   S.canvas = $('wvCanvas'); S.ctx = S.canvas.getContext('2d');
+  S.canvas.addEventListener('click', onCanvasClick);
   initToolbar();
   setScene(bd.scene);
   window.addEventListener('keydown', onKey);
@@ -413,13 +414,18 @@ function frame(t) {
 
 /* ── 말풍선 ── */
 
-function speak(a, text, { kind = 'say', who = a.name, cls = '', ms } = {}) {
+function speak(a, text, { kind = 'say', who = a.name, cls = '', ms, id = null, team = a.team } = {}) {
   const full = String(text ?? '').trim();
   if (!full && kind !== 'tool') return null;
   const el = document.createElement('div'); el.className = `wb ${cls}`;
   if (kind !== 'tool') { const w = document.createElement('span'); w.className = 'wb__who'; w.textContent = who; el.appendChild(w); }
   const short = full.length > 80 ? full.slice(0, 80) + '…' : full;
   const body = document.createElement('span'); body.textContent = kind === 'tool' ? '⌨ 작업 중' : short; el.appendChild(body);
+  if (id && team && S.jump) {                       // 기록된 발언이면 작전실의 그 자리로 건너갈 수 있다 (W3)
+    const go = document.createElement('button'); go.type = 'button'; go.className = 'wb__go'; go.textContent = '↗'; go.title = '작전실에서 보기';
+    go.addEventListener('click', (ev) => { ev.stopPropagation(); S.jump(team, id); });
+    el.appendChild(go);
+  }
   const b = { el, a, kind, until: performance.now() + (ms ?? clamp(3000 + full.length * 70, 4000, 14000)), expanded: false };
   el.addEventListener('click', () => {
     b.expanded = !b.expanded; body.textContent = b.expanded ? full : short; el.classList.toggle('wb--full', b.expanded);
@@ -496,7 +502,7 @@ function handle(team, e) {
         const b = S.boss;
         // 대표가 직접 움직이고 있으면 그 자리에서 말한다. 아니면 그 방 문(총괄실은 대표실 문)에 나타난다.
         if (!b.controlled || performance.now() - b.controlled > 10 * 60 * 1000) teleport(b, P[team === 'hq' ? 'hq.bossdoor' : `${team}.door`] ?? P['boss.desk']);
-        speak(b, e.text, { cls: 'wb--boss' });
+        speak(b, e.text, { cls: 'wb--boss', id: e.id, team });
         return;
       }
       if (e.actor === 'system') { banner(team, e.text); return; }
@@ -507,14 +513,14 @@ function handle(team, e) {
       if (tt && tt.key === a.key && performance.now() - tt.at < 4 * 60 * 1000 && a.scene === S.boss.scene) {
         S.talkTarget = null;
         const spot = nearFree({ scene: S.boss.scene, x: S.boss.x, y: S.boss.y }, 0, 1);
-        detour(a, spot, 20000, () => { face(a, S.boss); speak(a, e.text); });
+        detour(a, spot, 20000, () => { face(a, S.boss); speak(a, e.text, { id: e.id }); });
         return;
       }
       // 호명이면 상대를 바라본다
       const m = /^\s*([^,，\s]{1,12})\s*[,，]/.exec(String(e.text ?? ''));
       const to = m ? [...S.actors.values()].find((x) => x.team === team && x.name === m[1]) : null;
       if (to && to.scene === a.scene) face(a, to);
-      speak(a, e.text);
+      speak(a, e.text, { id: e.id });
       return;
     }
     case 'verdict': {
@@ -523,7 +529,7 @@ function handle(team, e) {
       if (a.hidden) teleport(a, a.home);
       // 감사역이 판정 대상의 자리로 걸어가 도장을 찍는다 (W3). 대상은 실무(guide)다.
       const target = e.meta?.target && actorFor(team, e.meta.target) || actorFor(team, 'guide');
-      const say = () => speak(a, e.text || v, { cls: `wb--verdict wb--${v}`, who: `${a.name} · ${v || '판정'}` });
+      const say = () => speak(a, e.text || v, { cls: `wb--verdict wb--${v}`, who: `${a.name} · ${v || '판정'}`, id: e.id });
       if (target && target !== a && target.scene === a.scene && !target.hidden) {
         const spot = nearFree({ scene: target.scene, x: target.x, y: target.y }, 0, 1);
         detour(a, spot, 12000, () => { face(a, target); face(target, a); say(); });
@@ -670,7 +676,7 @@ function onKey(ev) {
     if (!a) return toast('방향키로 누군가의 옆까지 가서 Enter 를 누르세요.');
     openTalk(a);
   }
-  if (ev.key === 'Escape') closeTalk();
+  if (ev.key === 'Escape') { closeTalk(); closeCard(); }
 }
 function openTalk(a) {
   talkTo = a;
@@ -691,6 +697,88 @@ async function submitTalk(ev) {
   else toast(r.data.needsRound ? `${a.team} 방의 라운드를 먼저 여세요(작전실에서).` : (r.data.error ?? '전하지 못했습니다.'), 5000);
   closeTalk();
 }
+
+/* ── 캐릭터 카드 — 누구인가·어제·최근 발언 (W3) ── */
+
+/** 클릭한 화면 좌표(캔버스 CSS px)에 선 캐릭터. 앞(아래)에 선 사람이 이긴다. 댄은 카드가 없다. */
+function actorAt(cx, cy) {
+  const z = S.z, x = cx / z, y = cy / z;
+  return everyone()
+    .filter((a) => a.key !== 'boss' && a.scene === S.scene && !a.hidden && x >= a.px - 4 && x <= a.px + TP + 4 && y >= topOf(a) - 4 && y <= a.py + TP)
+    .sort((p, q) => q.py - p.py)[0] ?? null;
+}
+function onCanvasClick(ev) {
+  const a = actorAt(ev.offsetX, ev.offsetY);
+  if (a) openCard(a); else closeCard();
+}
+const ACT_LABEL = { typing: '작업 중', sleep: '자는 중', idle: '듣는 중', talking: '말하는 중', walking: '이동 중' };
+let cardKey = null;
+async function openCard(a) {
+  const box = $('wvCard'); cardKey = a.key;
+  box.hidden = false; box.replaceChildren(node('div', 'wc__sec', `${a.name} — 불러오는 중…`));
+  let r;
+  try { r = await fetch(`/api/actor?team=${encodeURIComponent(a.team)}&actor=${encodeURIComponent(a.id)}`).then((x) => x.json()); }
+  catch { r = null; }
+  if (cardKey !== a.key) return;                    // 그새 다른 사람을 눌렀다
+  box.replaceChildren();
+  if (!r || r.error) { box.appendChild(node('div', 'wc__sec', r?.error ?? '카드를 못 불러왔습니다.')); return; }
+  const team = S.teams.find((t) => t.id === a.team);
+  const head = node('div', 'wc__head');
+  const av = node('span', 'wc__av'); av.style.background = r.color ?? a.color ?? '#888'; head.appendChild(av);
+  const nm = node('div'); nm.appendChild(node('div', 'wc__name', r.name));
+  nm.appendChild(node('div', 'wc__sub', [r.persona?.title?.split(' — ')[1] ?? r.role ?? a.id, team?.room ?? team?.name ?? a.team, r.model === 'gpt' ? '다른 회사 모델' : null].filter(Boolean).join(' · ')));
+  head.appendChild(nm);
+  const x = node('button', 'wc__x', '×'); x.type = 'button'; x.title = '닫기'; x.addEventListener('click', closeCard); head.appendChild(x);
+  box.appendChild(head);
+
+  // 지금
+  const w = r.world ?? S.world?.actors?.[a.key] ?? null;
+  const st = r.status ?? {};
+  const now = [w?.place ? `${LABEL(w.place)}에서` : null, st.busy ? '말하는 중' : (ACT_LABEL[w?.act] ?? (st.alive ? '듣는 중' : st.engine === 'codex' ? '부르면 온다' : '자리 비움'))].filter(Boolean).join(' ');
+  const s0 = node('div', 'wc__sec'); s0.appendChild(node('div', 'wc__h', '지금')); s0.appendChild(node('div', 'wc__state', now || '—')); box.appendChild(s0);
+
+  // 누구
+  const s1 = node('div', 'wc__sec'); s1.appendChild(node('div', 'wc__h', '누구'));
+  if (r.persona?.identity) s1.appendChild(node('p', 'wc__p', r.persona.identity));
+  if (r.persona?.who) {
+    for (const para of r.persona.who.split(/\n{2,}/)) {
+      const lines = para.split('\n');
+      if (lines.every((l) => /^\s{4}/.test(l))) for (const l of lines) s1.appendChild(node('div', 'wc__q', l.trim()));
+      else s1.appendChild(node('p', 'wc__p', para.replace(/\*\*/g, '')));
+    }
+  } else if (!r.persona?.identity) s1.appendChild(node('div', 'wc__empty', '인격 파일이 없다 — 대표가 정한다.'));
+  box.appendChild(s1);
+
+  // 어제 — 일지 맨 위 문단
+  const s2 = node('div', 'wc__sec'); s2.appendChild(node('div', 'wc__h', r.journal ? `일지 · ${r.journal.total}문단 중 최근` : '일지'));
+  if (r.journal?.latest) {
+    const [h, ...rest] = r.journal.latest.split('\n');
+    s2.appendChild(node('div', 'wc__state', h.replace(/^## /, '')));
+    s2.appendChild(node('p', 'wc__p', rest.join('\n').trim()));
+  } else s2.appendChild(node('div', 'wc__empty', '아직 라운드를 마친 적이 없다.'));
+  box.appendChild(s2);
+
+  // 최근 발언 — 누르면 작전실의 그 자리로
+  const s3 = node('div', 'wc__sec'); s3.appendChild(node('div', 'wc__h', '최근 발언'));
+  if (r.recent?.length) {
+    for (const m of [...r.recent].reverse()) {
+      const b = node('button', 'wc__msg'); b.type = 'button';
+      const t = new Date(m.ts); b.appendChild(node('span', 'wc__t', `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}${m.round ? ' R' + m.round : ''}`));
+      if (m.verdict) { const v = node('span', 'wc__v', m.verdict); v.dataset.v = m.verdict; b.appendChild(v); }
+      b.appendChild(document.createTextNode(m.text.length > 90 ? m.text.slice(0, 90) + '…' : m.text));
+      b.addEventListener('click', () => S.jump?.(a.team, m.id));
+      s3.appendChild(b);
+    }
+  } else s3.appendChild(node('div', 'wc__empty', '아직 한 말이 없다.'));
+  box.appendChild(s3);
+
+  const foot = node('div', 'wc__foot');
+  const talk = node('button', 'primary', '말 걸기'); talk.type = 'button'; talk.addEventListener('click', () => { closeCard(); openTalk(a); }); foot.appendChild(talk);
+  const room = node('button', null, '작전실로'); room.type = 'button'; room.addEventListener('click', () => S.jump?.(a.team, null)); foot.appendChild(room);
+  box.appendChild(foot);
+}
+function closeCard() { const box = $('wvCard'); if (box) { box.hidden = true; box.replaceChildren(); } cardKey = null; }
+function node(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
 
 /* ── 도구막대 ── */
 
@@ -731,9 +819,10 @@ function initToolbar() {
 /* ── 바깥에서 부르는 것 ── */
 
 /** 마을 탭이 열렸다. 처음이면 지도·시트·캐스트를 읽는다. */
-export async function open({ teams } = {}) {
+export async function open({ teams, jump } = {}) {
   S.open = true;
   if (teams) S.teams = teams;
+  if (jump) S.jump = jump;
   if (!S.ready) S.ready = load().catch((e) => { S.ready = null; status(`마을을 못 불러왔습니다 — ${e.message}`); throw e; });
   await S.ready;
   if (!S.open) return;
@@ -750,7 +839,7 @@ export async function open({ teams } = {}) {
 export function close() {
   S.open = false;
   if (S.raf) { cancelAnimationFrame(S.raf); S.raf = 0; }
-  closeTalk();
+  closeTalk(); closeCard();
 }
 /** 소켓으로 온 새 사건. 탭이 열려 있을 때만 연출한다 — 닫혀 있으면 대화록이 기록이고, 다시 열면 모두 자리에 있다. */
 export function onEvents(team, events) {

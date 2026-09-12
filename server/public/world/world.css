@@ -93,3 +93,36 @@
 /* 세상의 시계 (W2) */
 .world__clock { font: 12px Galmuri11, 'IBM Plex Sans KR', sans-serif; color: var(--ink-2, #6b6357); margin-left: 8px; white-space: nowrap; }
 .wb--zzz { opacity: .85; font-style: italic; }
+
+/* 말풍선 → 작전실 (W3) */
+.wb__go { margin-left: 6px; border: 0; background: none; cursor: pointer; color: #7a7266; font: 11px/1 Galmuri9, sans-serif; padding: 0 2px; vertical-align: baseline; }
+.wb__go:hover { color: #0f5b52; }
+
+/* 캐릭터 카드 — 누구인가·어제·최근 발언 (W3) */
+.world__card {
+  position: absolute; right: 14px; top: 14px; z-index: 4; width: min(320px, calc(100% - 28px)); max-height: calc(100% - 28px); overflow: auto;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px #0004;
+  font: 12px/1.45 'IBM Plex Sans KR', system-ui, sans-serif;
+}
+.world__card[hidden] { display: none; }
+.wc__head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); }
+.wc__av { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.wc__name { font: 14px Galmuri11, 'IBM Plex Sans KR', sans-serif; }
+.wc__sub { color: var(--ink-3); font-size: 11px; }
+.wc__x { margin-left: auto; border: 0; background: none; cursor: pointer; color: var(--ink-3); font-size: 15px; line-height: 1; }
+.wc__sec { padding: 8px 12px; border-bottom: 1px solid var(--line-2); }
+.wc__h { font: 10px Galmuri9, sans-serif; color: var(--ink-3); letter-spacing: .04em; margin-bottom: 4px; }
+.wc__p { margin: 0 0 5px; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+.wc__p:last-child { margin-bottom: 0; }
+.wc__q { margin: 2px 0 2px 4px; padding-left: 8px; border-left: 2px solid var(--me-line); color: var(--ink-2); }
+.wc__state { color: var(--ink-2); font-size: 11px; }
+.wc__msg { display: block; width: 100%; text-align: left; border: 0; background: var(--panel-2); border-radius: 7px; padding: 5px 8px; margin: 3px 0; cursor: pointer; color: var(--ink); font: inherit; line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; }
+.wc__msg:hover { background: var(--sunk); }
+.wc__t { color: var(--ink-4); font-size: 10px; margin-right: 6px; }
+.wc__v { font: 10px Galmuri9, sans-serif; margin-right: 6px; }
+.wc__v[data-v="PASS"] { color: #1b5e34; } .wc__v[data-v="REVISE"] { color: #b8741e; } .wc__v[data-v="FAIL"] { color: #b3261e; }
+.wc__empty { color: var(--ink-4); }
+.wc__foot { display: flex; gap: 6px; padding: 10px 12px; }
+.wc__foot button { font: inherit; font-size: 12px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); color: var(--ink); cursor: pointer; }
+.wc__foot button.primary { background: var(--seal); color: var(--seal-ink); border-color: var(--seal); }
+.world__view canvas { cursor: pointer; }

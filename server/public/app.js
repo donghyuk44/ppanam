@@ -372,7 +372,9 @@ function drawWithDay(e, frag) {
     lastActor = null;
     frag.appendChild(el('div', 'daymark', d));
   }
-  frag.appendChild(draw(e));
+  const n = draw(e);
+  if (e.id) n.dataset.id = e.id;                    // 마을의 말풍선 ↗ 가 여기로 건너온다
+  frag.appendChild(n);
 }
 
 function emptyView() {
@@ -437,11 +439,12 @@ async function pickTeam(id) {
   syncHash();
 }
 
-$('loadMoreBtn').addEventListener('click', async () => {
-  if (!hasMore || !oldest) return;
+/** 위쪽 한 페이지를 더 불러온다. 불러온 게 있으면 true. */
+async function loadOlder() {
+  if (!hasMore || !oldest) return false;
   const keepH = feed.scrollHeight, keepT = feed.scrollTop;
   const r = await fetch(`/api/log?team=${encodeURIComponent(active)}&before=${oldest}`).then((x) => x.json());
-  if (!r.events.length) { hasMore = false; $('loadMore').hidden = true; return; }
+  if (!r.events.length) { hasMore = false; $('loadMore').hidden = true; return false; }
 
   // 위쪽에 끼워넣고 스크롤 위치를 유지한다.
   const frag = document.createDocumentFragment();
@@ -455,7 +458,25 @@ $('loadMoreBtn').addEventListener('click', async () => {
   hasMore = r.more;
   $('loadMore').hidden = !hasMore;
   feed.scrollTop = keepT + (feed.scrollHeight - keepH);
-});
+  return true;
+}
+$('loadMoreBtn').addEventListener('click', loadOlder);
+
+/**
+ * 마을 → 작전실. 그 팀 방을 열고 발언 하나를 가운데로 데려와 잠깐 빛낸다.
+ * 화면에 없는 오래된 발언이면 위쪽을 더 불러오며 찾는다(최대 30쪽).
+ */
+async function jumpTo(team, id) {
+  if (team && team !== active && teams.some((x) => x.id === team)) await selectTeam(team);
+  setView('room');
+  if (!id) return;
+  const find = () => stream.querySelector(`[data-id="${CSS.escape(id)}"]`);
+  let n = find();
+  for (let i = 0; !n && i < 30; i++) { if (!(await loadOlder())) break; n = find(); }
+  if (!n) return;
+  n.scrollIntoView({ block: 'center' });
+  n.classList.remove('is-hit'); void n.offsetWidth; n.classList.add('is-hit');
+}
 
 /* ── 연결 ── */
 
@@ -629,7 +650,7 @@ function setView(v) {
   if (v === 'tower') renderTower();
   if (v === 'analysis') loadAnalysis();
   // 마을은 열려 있을 때만 그린다. 닫히면 rAF 를 멈춘다 — 관람은 공짜여야 한다.
-  if (v === 'world') World.open({ teams }).catch(() => {}); else World.close();
+  if (v === 'world') World.open({ teams, jump: jumpTo }).catch(() => {}); else World.close();
 }
 
 for (const b of $('views').querySelectorAll('button')) {
