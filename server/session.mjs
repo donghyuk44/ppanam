@@ -95,6 +95,8 @@ function spawnFor(team) {
     firstOk: false,     // 이 프로세스에서 턴이 한 번이라도 끝났나
     inflight: null,     // 지금 보내진 지시 — 프로세스가 죽으면 한 번 다시 보낼 수 있게
     closeAfter: null,   // 턴이 끝나면 라운드를 닫고 세션을 비운다 ({ verdict, summary })
+    closing: false,     // stop() 이 불렸다. 프로세스가 끝날 때까지 맵에 남는다 — 그 사이 온 지시는 아래에
+    pendingAfterClose: [],
   };
 
   child.stdout.on('data', (d) => { s.buf += d; drain(s); });
@@ -104,6 +106,8 @@ function spawnFor(team) {
 
   child.on('error', (e) => die(s, `실무를 띄우지 못했습니다 — ${e.message}`));
   child.on('close', (code) => {
+    // 우리가 닫은 것이다 — 끝나기를 기다리고 있었다.
+    if (s.closing) { onClosed(s); return; }
     // 우리가 부른 게 아니라 스스로 죽었다면 대표에게 알린다.
     if (sessions.get(team) === s) {
       sessions.delete(team);
@@ -141,6 +145,22 @@ function die(s, message) {
   note(s.team, message);
   dropped(s);
   if (s.closeAfter) finishClose(s);
+}
+
+/**
+ * 닫히던 프로세스가 끝났다. 이제야 맵에서 뺀다. 닫히는 동안 온 지시가 있으면 그제야 새 프로세스를 띄운다 —
+ * 전에는 stop() 이 맵에서 바로 빼고 돌아와, 새 지시가 오면 옛 프로세스가 30~40초 살아 있는 채 둘째가 떴다
+ * (레오 감사, 2026-09-12).
+ */
+function onClosed(s) {
+  if (sessions.get(s.team) === s) sessions.delete(s.team);
+  const pend = s.pendingAfterClose ?? [];
+  s.pendingAfterClose = [];
+  if (pend.length) {
+    const fresh = spawnFor(s.team);
+    fresh.queue.push(...pend.slice(1));
+    write(fresh, pend[0]);
+  }
 }
 
 /** 줄 서 있던 지시가 버려졌으면 말한다. 조용히 사라지는 것이 가장 나쁘다. */
@@ -231,6 +251,8 @@ function next(s) {
  */
 export function send(team, text) {
   let s = sessions.get(team);
+  // 닫히는 중이다. 옛 프로세스가 끝나면 새로 띄워 보낸다 — 한 팀에 프로세스는 하나다.
+  if (s?.closing) { s.pendingAfterClose.push(text); return { queued: s.pendingAfterClose.length, closing: true }; }
   if (!s || s.child.exitCode !== null || s.child.signalCode !== null) s = spawnFor(team);
 
   if (s.busy) {
@@ -245,6 +267,7 @@ export function send(team, text) {
 export function status(team) {
   const s = sessions.get(team);
   if (!s) return { alive: false, busy: false, queued: 0, sessionId: readStore()[team] ?? null };
+  if (s.closing) return { alive: false, closing: true, busy: false, queued: s.pendingAfterClose.length, sessionId: readStore()[team] ?? null };
   return { alive: true, busy: s.busy, queued: s.queue.length, sessionId: s.id, startedAt: s.startedAt };
 }
 
@@ -256,16 +279,15 @@ export function status(team) {
  */
 export function stop(team) {
   const s = sessions.get(team);
-  if (!s) return false;
-  sessions.delete(team);
+  if (!s || s.closing) return false;
+  s.closing = true;             // 맵에 남긴다. send() 가 이걸 보고 기다린다
   clearTimeout(s.timer);
   const c = s.child;
   try { c.stdin.end(); } catch { /* 이미 닫힘 */ }
-  if (c.exitCode === null && c.signalCode === null) {
-    const t1 = setTimeout(() => { try { c.kill('SIGTERM'); } catch { /* 이미 죽음 */ } }, 30_000);
-    const t2 = setTimeout(() => { try { c.kill('SIGKILL'); } catch { /* 이미 죽음 */ } }, 40_000);
-    c.once('close', () => { clearTimeout(t1); clearTimeout(t2); });
-  }
+  if (c.exitCode !== null || c.signalCode !== null) { onClosed(s); return true; }
+  const t1 = setTimeout(() => { try { c.kill('SIGTERM'); } catch { /* 이미 죽음 */ } }, 30_000);
+  const t2 = setTimeout(() => { try { c.kill('SIGKILL'); } catch { /* 이미 죽음 */ } }, 40_000);
+  c.once('close', () => { clearTimeout(t1); clearTimeout(t2); });   // onClosed 는 위의 close 핸들러가 부른다
   return true;
 }
 

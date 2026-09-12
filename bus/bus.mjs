@@ -521,18 +521,19 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
   if (!VERDICTS.has(v)) throw new Error(`판정은 ${[...VERDICTS].join(' / ')} 중 하나여야 합니다.`);
 
   const state = readState(team);
-  if (state.phase === 'blocked') {
-    throw new Error(`대표 판단 대기 중입니다 (라운드 ${state.round}, FAIL). 대표가 이 방에 말하면 풀립니다. 그 전엔 판정을 낼 수 없습니다.`);
-  }
 
   // 판정을 시작할 때의 라운드를 알고 왔는데 그 사이 라운드가 바뀌었다 — 외부감사가 5분 생각하는 동안
   // 라운드가 닫히고 다음이 열린 경우. 새 라운드의 반박 횟수를 올리면 안 되고, 새 라운드에 찍혀도 안 된다.
-  // 자기 라운드 번호로 남기되 판정으로 세지 않는다.
+  // 자기 라운드 번호로 남기되 판정으로 세지 않는다. 지금 방이 막혀 있어도 마찬가지다 — 이건 옛 라운드의 말이다
+  // (레오 감사, 2026-09-12: blocked 검사가 앞에 있어 예외가 났다).
   if (round != null && round !== state.round) {
     return emit(team, {
       round, type: 'verdict', actor, text,
       meta: { verdict: v, target, attempt: 0, max: MAX_ATTEMPTS, stale: true },
     });
+  }
+  if (state.phase === 'blocked') {
+    throw new Error(`대표 판단 대기 중입니다 (라운드 ${state.round}, FAIL). 대표가 이 방에 말하면 풀립니다. 그 전엔 판정을 낼 수 없습니다.`);
   }
 
   let attempt = state.attempt || 0;

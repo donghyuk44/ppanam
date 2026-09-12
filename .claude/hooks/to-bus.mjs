@@ -73,7 +73,19 @@ if (!bus.teamExists(team)) bail('없는 방: ' + team);
    총괄실은 방 자체가 대표와의 1:1 이라 라운드가 없다. 늘 기록한다. */
 const office = bus.isOffice(team);
 const state = bus.readState(team);
-if (!office && state.phase !== 'running' && process.env.PPANAM_ALWAYS !== '1') bail('라운드 대기 중');
+const ev = hook.hook_event_name;
+
+// 서브에이전트 등장 마커는 나갈 때 무조건 거둔다 — 기록하든 말든. 빈 최종 보고나 닫힌 방에서 나가면
+// 아래 어딘가에서 bail 하므로, 여기서 먼저 읽고 지운다 (레오 감사, 2026-09-12).
+let enteredAt = null;
+if (ev === 'SubagentStop' && hook.agent_id) {
+  const marker = path.join(AGENTS_DIR, String(hook.agent_id));
+  try { enteredAt = fs.readFileSync(marker, 'utf8').trim(); } catch { /* 들어온 기록이 없다 */ }
+  try { fs.unlinkSync(marker); } catch { /* 없으면 그만 */ }
+}
+
+// 막힌 방(FAIL, 대표 판단 대기)도 열린 라운드다 — FAIL 직후 실무의 "무엇이 막혔는지" 보고가 남아야 한다.
+if (!office && state.phase === 'idle' && process.env.PPANAM_ALWAYS !== '1') bail('라운드 대기 중');
 
 /* 화자 결정.
    메인 세션이 실무다 (대표가 말을 거는 상대). 서브에이전트는 자기 name 이 곧 화자다. */
@@ -97,7 +109,6 @@ const trim = (s, n = 4000) => {
   return t.length > n ? t.slice(0, n) + '…' : t;
 };
 
-const ev = hook.hook_event_name;
 let out = null;
 
 switch (ev) {
@@ -156,11 +167,8 @@ switch (ev) {
     // 서브에이전트의 마지막 말은 실무에게 돌려주는 보고다. 그가 그동안 bus/say.mjs 로 방에 이미 말했으면
     // 그 보고는 같은 지적의 재요약이라 두 번 뜬다 (마케팅 R14, 2026-09-01). "(패스) 로 끝내라" 는 인격 문장은
     // 잊힌다 — 훅이 정한다: 들어온 뒤 방에 message/verdict 를 남겼으면 최종 보고는 기록하지 않는다.
-    if (ev === 'SubagentStop' && hook.agent_id) {
-      const marker = path.join(AGENTS_DIR, String(hook.agent_id));
-      let since = null;
-      try { since = fs.readFileSync(marker, 'utf8').trim(); fs.unlinkSync(marker); } catch { /* 들어온 기록이 없다 */ }
-      if (since && bus.readLog(team).some((e) => e.actor === actor && (e.type === 'message' || e.type === 'verdict') && e.ts >= since)) {
+    if (ev === 'SubagentStop' && enteredAt) {
+      if (bus.readLog(team).some((e) => e.actor === actor && (e.type === 'message' || e.type === 'verdict') && e.ts >= enteredAt)) {
         bail('방에 이미 말함 — 최종 보고는 기록하지 않음');
       }
     }
