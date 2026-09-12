@@ -41,6 +41,10 @@ const ARGS = [
 
 const sessions = new Map();   // "team:actor" → session
 const closing = new Map();    // team → { verdict, summary } — 이 방의 모든 자리가 놀면 닫는다
+const turnEndListeners = [];  // (team, actor) → void — 사회자가 다음 차례를 주려고 듣는다
+
+/** 어느 자리의 턴이 끝나면 부른다. 사회자가 쌓인 차례를 그때 준다. */
+export function onTurnEnd(fn) { turnEndListeners.push(fn); }
 
 const keyOf = (team, actor) => `${team}:${actor}`;
 
@@ -235,9 +239,10 @@ function spawnFor(team, actor) {
         return;
       }
       note(team, `${name(s)} 세션이 끊겼습니다 (code ${code})${why ? ' — ' + why : ''}. 다음 차례에 다시 붙습니다.`);
-      s.inflight?.resolve?.(null);
-      dropped(s);
     }
+    // 종료 코드와 무관하게 — result 없이 조용히 끝나도(code 0) 기다리던 답과 줄 선 턴을 정리한다.
+    // 안 그러면 sendAndWait 가 영원히 기다린다 (레오 감사, 2026-09-12).
+    settle(s);
     maybeFinishClose(team);
   });
 
@@ -254,14 +259,23 @@ function die(s, message) {
   clearTimeout(s.timer);
   try { s.child.kill('SIGKILL'); } catch { /* 이미 죽음 */ }
   note(s.team, message);
-  s.inflight?.resolve?.(null);
-  dropped(s);
+  settle(s);
   maybeFinishClose(s.team);
+}
+
+/** 프로세스가 어떤 식으로든 끝났다. 기다리던 답은 null 로 풀고, 줄 선 턴은 버린다(말하고 버린다). */
+function settle(s) {
+  const done = s.inflight;
+  s.inflight = null;
+  s.busy = false;
+  done?.resolve?.(null);
+  dropped(s);
 }
 
 /** 닫히던 프로세스가 끝났다. 이제야 맵에서 뺀다. 닫히는 동안 온 턴이 있으면 그제야 새 프로세스를 띄운다. */
 function onClosed(s) {
   if (sessions.get(keyOf(s.team, s.actor)) === s) sessions.delete(keyOf(s.team, s.actor));
+  settle(s);
   const pend = s.pendingAfterClose ?? [];
   s.pendingAfterClose = [];
   if (pend.length) {
@@ -310,6 +324,7 @@ function drain(s) {
       done?.resolve?.(typeof msg.result === 'string' ? msg.result : '');
       if (closing.has(s.team)) { dropped(s); maybeFinishClose(s.team); return; }
       next(s);
+      if (!s.busy) for (const fn of turnEndListeners) { try { fn(s.team, s.actor); } catch { /* 듣는 쪽 사정 */ } }
     }
   }
 }
