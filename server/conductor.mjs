@@ -348,7 +348,13 @@ export function noticeEvents(team, events) {
   for (const e of events) {
     if (e.type === 'tool') { if (r.lullTimer) armLull(team); continue; }     // 누가 일하는 중 — 조용함이 아니다
     if (e.type !== 'message' && e.type !== 'verdict') continue;
-    if (e.actor === 'system') continue;
+    if (e.actor === 'system') {
+      // 시스템 발언은 차례 계산에서 빠지되, 첫머리에 이름을 불렀으면 그 사람을 깨운다 — 하네스가 "결과 도착" 을
+      // 시스템 화자로 남겼는데 아무도 안 깨어 20분 멈춘 일(2026-09-12). codex 자리도 같다.
+      const to = addressee(e.text, cast);
+      if (to && to !== 'boss' && participants(team).includes(to)) { enqueue(team, to, 'called'); armLull(team); }
+      continue;
+    }
 
     r.recent.push(e.actor);
     r.recent = r.recent.slice(-MAX_EXCHANGE * 4);
