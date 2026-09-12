@@ -288,6 +288,21 @@ note 를 내며 "다시 요청하세요" 라고 한다 — 톰·제리는 그 SH
 지난 라운드의 결론이 필요하면 대화록 전체가 아니라 `rounds.jsonl` 의 요약이나
 `out/` 의 산출물을 읽는다. 파일을 지우는 방식이 아니라 **읽는 범위를 좁히는 방식**이다.
 
+### 라운드의 상태 — `phase`
+
+`round.json` 의 `phase` 는 셋 중 하나다. 파일이 없으면 대화록에서 되살린다(`deriveState`).
+
+| `phase` | 뜻 | 누가 바꾸나 |
+| --- | --- | --- |
+| `idle` | 라운드 없음. 훅이 기록하지 않는다 | `endRound` |
+| `running` | 진행 중 | `startRound` · `resumeRound` |
+| `blocked` | **FAIL — 대표 판단 대기.** 판정을 낼 수 없다(`recordVerdict` 거부, 외부감사 답은 말로만 남는다). 레일·관제탑에 "대표 호출" | `recordVerdict`(반박 3회 또는 FAIL) |
+
+막힌 방은 **대표가 그 방에 말하면 풀린다** — 입력창은 대표의 것이고 그 말이 곧 판단이다. 서버가 `/api/say` 에서
+`resumeRound` 를 불러 `running`·반박 0 으로 되돌리고 `note`(`meta.resumed`)를 남긴다. 들려주기(quiet)는 풀지 않는다.
+닫고 싶으면 "라운드 닫기". 총괄실은 라운드가 없어 막히지 않는다 — 거기서 FAIL 은 한 마디일 뿐이다.
+`needsBoss` 는 마지막 판정이 아니라 이 상태다. (전에는 FAIL 뒤 PASS 가 오면 경고가 꺼졌다 — 개발팀 09-02.)
+
 ### 라운드를 닫는 정본은 서버다
 
 라운드는 `POST /api/round {action:'end'}` 로 닫힌다. `bus/round.mjs end` 도 서버가 떠 있으면 서버에 부탁하고,

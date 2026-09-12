@@ -315,14 +315,20 @@ export function deriveState(team) {
   if (e.type === 'round_end') {
     return { ...BLANK_STATE, round: e.round ?? 0, milestone: e.milestone ?? 0, phase: 'idle', endedAt: e.ts };
   }
-  let attempt = 0;
+  let attempt = 0, phase = 'running';
   for (let j = i + 1; j < log.length; j++) {
-    if (log[j].type === 'verdict' && typeof log[j].meta?.attempt === 'number') attempt = Math.max(attempt, log[j].meta.attempt);
+    const x = log[j];
+    if (x.type === 'verdict' && !x.meta?.stale) {
+      if (typeof x.meta?.attempt === 'number') attempt = Math.max(attempt, x.meta.attempt);
+      if (x.meta?.verdict === 'FAIL') phase = 'blocked';
+    }
+    // 대표가 말해서 풀렸다 (resumeRound 가 남기는 note)
+    if (x.type === 'note' && x.meta?.resumed) { phase = 'running'; attempt = 0; }
   }
   return {
     ...BLANK_STATE,
-    round: e.round ?? 0, milestone: e.milestone ?? 0, phase: 'running',
-    topic: e.meta?.topic ?? null, attempt, startedAt: e.ts, endedAt: null,
+    round: e.round ?? 0, milestone: e.milestone ?? 0, phase,
+    topic: e.meta?.topic ?? null, attempt: Math.min(attempt, MAX_ATTEMPTS), startedAt: e.ts, endedAt: null,
   };
 }
 
@@ -505,12 +511,19 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
 /**
  * 감사 판정.
  * REVISE 는 반박 횟수를 올리고, 상한에 닿으면 FAIL 로 승격해 사람을 부른다.
+ *
+ * FAIL 은 멈춘다 — 인격 문장이 아니라 여기서. 방은 phase 'blocked' 가 되고, 그 뒤로는 판정을 낼 수 없다.
+ * 대표가 이 방에 말을 하면 풀린다 (resumeRound). 개발팀 대화록 09-02: FAIL 두 번 뒤에도 작업이 이어졌고
+ * 뒤이은 PASS 가 경고를 지웠다 — 규칙이 산문에만 있었다 (Fable 재점검, 2026-09-12).
  */
 export function recordVerdict(team, { actor, verdict, text, target = 'guide', round = null }) {
   const v = String(verdict || '').toUpperCase();
   if (!VERDICTS.has(v)) throw new Error(`판정은 ${[...VERDICTS].join(' / ')} 중 하나여야 합니다.`);
 
   const state = readState(team);
+  if (state.phase === 'blocked') {
+    throw new Error(`대표 판단 대기 중입니다 (라운드 ${state.round}, FAIL). 대표가 이 방에 말하면 풀립니다. 그 전엔 판정을 낼 수 없습니다.`);
+  }
 
   // 판정을 시작할 때의 라운드를 알고 왔는데 그 사이 라운드가 바뀌었다 — 외부감사가 5분 생각하는 동안
   // 라운드가 닫히고 다음이 열린 경우. 새 라운드의 반박 횟수를 올리면 안 되고, 새 라운드에 찍혀도 안 된다.
@@ -529,23 +542,44 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
   // 제리의 대조 REVISE 가 여기 쌓여 총괄실이 대표 호출로 잠길 뻔했다 (Fable 감사, 2026-09-02).
   // 총괄실의 REVISE 는 그냥 REVISE 다 — 세지 않는다.
   if (v === 'REVISE' && !isOffice(team)) {
-    attempt += 1;
-    writeState(team, { attempt });
+    attempt = Math.min(attempt + 1, MAX_ATTEMPTS);
     if (attempt >= MAX_ATTEMPTS) final = 'FAIL';
   }
+  // 총괄실은 라운드가 없다 — 막을 것도 없다. FAIL 은 그냥 한 마디다.
+  if (final === 'FAIL' && !isOffice(team)) writeState(team, { attempt, phase: 'blocked' });
+  else if (v === 'REVISE' && !isOffice(team)) writeState(team, { attempt });
 
   const rec = emit(team, {
     type: 'verdict', actor, text,
     meta: { verdict: final, target, attempt, max: MAX_ATTEMPTS },
   });
 
-  if (final === 'FAIL' && v === 'REVISE') {
+  if (final === 'FAIL' && !isOffice(team)) {
     emit(team, {
       type: 'note', actor: 'system',
-      text: `반박 ${MAX_ATTEMPTS}회를 채웠습니다. 대표 판단이 필요합니다.`,
+      text: v === 'REVISE'
+        ? `반박 ${MAX_ATTEMPTS}회를 채웠습니다. 대표 판단이 필요합니다 — 이 방은 대표가 말할 때까지 멈춥니다.`
+        : 'FAIL — 대표 판단이 필요합니다. 이 방은 대표가 말할 때까지 멈춥니다.',
+      meta: { blocked: true },
     });
   }
   return rec;
+}
+
+/**
+ * 대표가 말했다 — 막힌 방을 푼다. 반박 횟수는 0 으로, 라운드는 그대로 이어진다.
+ * 대표의 다음 말이 곧 판단이다. 화면의 입력창이 대표의 것이므로 서버가 /api/say 에서 부른다.
+ */
+export function resumeRound(team, { text = null } = {}) {
+  const state = readState(team);
+  if (state.phase !== 'blocked') return null;
+  writeState(team, { phase: 'running', attempt: 0 });
+  emit(team, {
+    type: 'note', actor: 'system',
+    text: `대표 판단으로 재개합니다. 반박 횟수를 0 으로 되돌립니다.${text ? ' — ' + String(text).replace(/\s+/g, ' ').slice(0, 80) : ''}`,
+    meta: { resumed: true },
+  });
+  return readState(team);
 }
 
 /** 팀 하나의 요약 — 왼쪽 레일의 계기판이 읽는 값. */
@@ -572,6 +606,7 @@ export function teamSummary(team) {
     logCount: log.length,
     milestonesDone: done,
     milestonesTotal: roadmap.milestones?.length ?? 0,
-    needsBoss: lastVerdict === 'FAIL',
+    // 마지막 판정이 아니라 상태다. 전에는 FAIL 뒤에 PASS 가 오면 경고가 꺼졌다.
+    needsBoss: state.phase === 'blocked',
   };
 }

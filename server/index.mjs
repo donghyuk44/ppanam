@@ -15,7 +15,7 @@ import { WebSocketServer } from 'ws';
 import {
   paths, listTeams, defaultTeam, teamExists, teamSummary,
   readCast, readRoadmap, readTail, listRounds, parseJSONL,
-  readState, startRound, endRound, readLog, isOffice, quiet,
+  readState, startRound, endRound, resumeRound, readLog, isOffice, quiet,
   listApprovals, decideApproval, APPROVAL_GRADES,
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
@@ -225,9 +225,13 @@ const server = http.createServer((req, res) => {
 
       // 작전실은 라운드 밖에서 훅이 기록하지 않는다. 지시해도 화면에 아무것도
       // 안 뜨니, 고장으로 보이기 전에 여기서 막는다. 총괄실은 라운드가 없다.
-      if (!isOffice(t) && readState(t).phase !== 'running') {
+      const phase = isOffice(t) ? 'running' : readState(t).phase;
+      if (phase === 'idle') {
         return json(res, 409, { error: '라운드를 먼저 여세요.', needsRound: true });
       }
+      // FAIL 로 막힌 방이다. 입력창은 대표의 것이므로 대표가 말한 것이고, 그 말이 곧 판단이다 — 푼다.
+      // 들려주기(quiet)는 다른 세션이 옮기는 말이라 풀지 않는다.
+      if (phase === 'blocked' && !q) resumeRound(t, { text: say });
 
       try {
         // quiet 는 이미 대화록에 있는 말을 세션의 귀에만 넣는 것이다.

@@ -293,9 +293,17 @@ async function ask(team, question, { talk = false, lull = false } = {}) {
     return 0;
   }
 
-  const rec = verdict && !apr
-    ? recordVerdict(team, { actor: 'outside', verdict, text: body, target: 'guide', round })
-    : emit(team, { round, actor: 'outside', type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...(apr ? { approval: apr } : {}) } });
+  let rec;
+  if (verdict && !apr) {
+    try {
+      rec = recordVerdict(team, { actor: 'outside', verdict, text: body, target: 'guide', round });
+    } catch (e) {
+      // 방이 막혀 있다(FAIL 뒤 대표 판단 대기). 판정으로 세지 않고 말로만 남긴다.
+      rec = emit(team, { round, actor: 'outside', type: 'message', text: `[${verdict} — 판정으로 세지 않음: ${e.message}] ${body}`, meta: { engine: ENGINE } });
+    }
+  } else {
+    rec = emit(team, { round, actor: 'outside', type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...(apr ? { approval: apr } : {}) } });
+  }
 
   // 방금 남긴 것까지가 "이미 본 것"이다. 다음 턴에는 이 뒤로 새로 온 말만 받는다.
   if (res.sessionId) remember(team, res.sessionId, seenId);

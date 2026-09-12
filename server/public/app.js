@@ -102,12 +102,15 @@ function renderHead() {
   // 총괄실은 대표와의 1:1 이라 라운드가 없다. 늘 열려 있다.
   const office = t?.kind === 'office';
 
+  const blocked = !office && summary.phase === 'blocked';
   $('rnum').textContent = office ? '1:1' : summary.round ? `R${summary.round}` : '—';
   $('rtitle').textContent = office
     ? '늘 열려 있습니다 — 지시하면 톰이 팀에 나눕니다'
-    : summary.round
-      ? (summary.topic ? `마일스톤 ${summary.milestone} — ${summary.topic}` : `마일스톤 ${summary.milestone}`)
-      : '대기 중 — 라운드를 시작하세요';
+    : blocked
+      ? `대표 판단 필요 — FAIL. 여기에 판단을 적으면 라운드 ${summary.round} 이 재개됩니다`
+      : summary.round
+        ? (summary.topic ? `마일스톤 ${summary.milestone} — ${summary.topic}` : `마일스톤 ${summary.milestone}`)
+        : '대기 중 — 라운드를 시작하세요';
   $('rprog').textContent = summary.attempt > 0 ? `반박 ${summary.attempt}/3` : '';
   app.dataset.alert = summary.attempt > 0 || summary.needsBoss ? '1' : '0';
 
@@ -127,7 +130,9 @@ function renderHead() {
   input.disabled = !office && !summary.round;
   input.placeholder = office
     ? '톰에게 지시하기'
-    : summary.round ? '실무에게 지시하기' : '라운드를 열면 지시할 수 있습니다';
+    : blocked
+      ? '대표 판단을 적으면 라운드가 재개됩니다'
+      : summary.round ? '실무에게 지시하기' : '라운드를 열면 지시할 수 있습니다';
 
   const crew = $('crew');
   crew.replaceChildren();
