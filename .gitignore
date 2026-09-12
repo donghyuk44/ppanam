@@ -24,3 +24,6 @@ state/notifier.json
 state/conductor.json
 state/turn/
 teams/*/journal/
+
+# 화풍 참고용 외부 그림 — 저작권이 남의 것이라 저장소에 넣지 않는다
+teams/*/ref/
