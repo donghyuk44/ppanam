@@ -6,12 +6,17 @@
 //   node bus/demo.mjs --team dev   개발팀에서
 //   BEAT=300 npm run demo          빠르게
 
-import { startRound, endRound, emit, recordVerdict, defaultTeam, teamExists } from './bus.mjs';
+import fs from 'node:fs';
+import { startRound, endRound, emit, recordVerdict, defaultTeam, teamExists, paths, isOffice, readState } from './bus.mjs';
 
 const argv = process.argv.slice(2);
 let team = process.env.PPANAM_TEAM ?? defaultTeam();
 for (let i = 0; i < argv.length; i++) if (argv[i] === '--team' || argv[i] === '-t') team = argv[++i];
 if (!teamExists(team)) { console.error(`'${team}' 팀이 없습니다.`); process.exit(1); }
+// 시연은 빈 방에서만. 실제 방에 가짜 화자·가짜 판정을 섞어 넣고 반박 횟수를 올린 것이 09-01 의 시연 잔재다.
+if (isOffice(team)) { console.error('총괄실에는 라운드가 없습니다. 시연은 팀 방에서.'); process.exit(1); }
+if (fs.existsSync(paths(team).log)) { console.error(`${team} 방에는 이미 대화록이 있습니다. 시연은 대화록이 없는 빈 방에서만 돕니다.`); process.exit(1); }
+if (readState(team).phase !== 'idle') { console.error(`${team} 방에 라운드가 열려 있습니다.`); process.exit(1); }
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const beat = Number(process.env.BEAT ?? 1400);

@@ -132,7 +132,7 @@ function appendApproval(line) {
 /** 요청과 판정 줄을 접어서 요청 하나당 상태 하나로 만든다. */
 export function listApprovals({ team = null, status = null } = {}) {
   const byId = new Map();
-  for (const l of parseJSONL(safeRead(APPROVALS_PATH))) {
+  for (const l of readJSONLCached(APPROVALS_PATH)) {
     if (l.kind === 'request') {
       byId.set(l.id, { ...l, decisions: [], status: l.grade === 'A' ? 'passed' : 'pending', decidedAt: l.grade === 'A' ? l.ts : null });
       continue;
@@ -228,6 +228,24 @@ function writeJSON(file, value) {
 }
 function safeRead(file) {
   try { return fs.readFileSync(file, 'utf8'); } catch { return ''; }
+}
+
+/**
+ * 파일이 바뀌지 않았으면 지난번 파싱 결과를 돌려준다.
+ *
+ * 서버는 250ms 마다 다섯 방의 요약을 만든다. 그때마다 대화록 전체를 파싱하면(teamSummary → readLog)
+ * 대화록이 자랄수록 서버가 느려진다 — "하루종일 대화" 를 요구한 시스템에서 치명적이다 (Fable 재점검, 2026-09-12).
+ * 크기·수정 시각이 같으면 같은 파일이다. 돌려주는 배열은 공유되므로 고치지 않는다.
+ */
+const jsonlCache = new Map();   // file → { size, mtimeMs, rows }
+function readJSONLCached(file) {
+  let st;
+  try { st = fs.statSync(file); } catch { jsonlCache.delete(file); return []; }
+  const hit = jsonlCache.get(file);
+  if (hit && hit.size === st.size && hit.mtimeMs === st.mtimeMs) return hit.rows;
+  const rows = parseJSONL(safeRead(file));
+  jsonlCache.set(file, { size: st.size, mtimeMs: st.mtimeMs, rows });
+  return rows;
 }
 
 export function parseJSONL(text) {
@@ -371,9 +389,9 @@ export function emit(team, event) {
   return record;
 }
 
-/** 대화록 전체. 큰 팀에서는 readTail 을 쓴다. */
+/** 대화록 전체. 파일이 안 바뀌었으면 캐시다 — 돌려받은 배열을 고치지 않는다. */
 export function readLog(team) {
-  return parseJSONL(safeRead(paths(team).log));
+  return readJSONLCached(paths(team).log);
 }
 
 /**

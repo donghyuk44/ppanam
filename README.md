@@ -24,10 +24,9 @@ npm start                 # http://localhost:4321
 다른 터미널에서:
 
 ```bash
-node bus/seed.mjs                     # 네 팀에 씨앗 데이터
-npm run demo                          # 라운드 한 판이 실시간으로 흐른다
+npm run demo -- --team design         # 대화록이 없는 빈 방에서 시연 한 판 (실제 방에서는 거부한다)
 node bus/round.mjs status             # 전체 팀 현황
-node bus/say.mjs --as guide "안녕"     # 한 마디
+node bus/say.mjs --team design --as guide "안녕"     # 한 마디 (대표의 터미널에서)
 ```
 
 폰에서 보려면 Tailscale 같은 VPN으로 이 PC에 붙는다. 배포도 인증도 없다 — 로컬 도구다.
