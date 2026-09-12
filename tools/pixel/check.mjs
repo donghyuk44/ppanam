@@ -1,22 +1,25 @@
 // 그림 검사 — 열어서 재고 센다. 클레멘타인이 조립 뒤에, 마크가 판정 때 돌린다. 읽기 전용.
 //
-//   node tools/pixel/check.mjs <png…> [--cell 32x48] [--palette out/palette.json] [--max-colors 32]
+//   node tools/pixel/check.mjs <png…> [--cell 32x48] [--palette out/palette.json] [--max-colors 32] [--torsox]
 //
 // 보는 것: 크기·격자 나눠떨어짐·칸마다 그림이 있나·투명 모서리·칸 경계 침범·색 수·팔레트 밖 색.
+// --torsox: 칸 안 y 32~40 띠(도포 자락, style.md 3절)의 불투명 픽셀 가로 중간이 칸 중심(cw/2)에서 얼마나 벗어났는지 잰다.
 import fs from 'node:fs';
 import { decodePNG } from './png.mjs';
 
 const argv = process.argv.slice(2);
-const opt = { cell: null, palette: null, maxColors: 32 };
+const opt = { cell: null, palette: null, maxColors: 32, torsox: false, torsoBand: [32, 40] };
 const files = [];
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a === '--cell') opt.cell = argv[++i].split('x').map(Number);
   else if (a === '--palette') opt.palette = argv[++i];
   else if (a === '--max-colors') opt.maxColors = Number(argv[++i]);
+  else if (a === '--torsox') opt.torsox = true;
+  else if (a === '--torso-band') opt.torsoBand = argv[++i].split('-').map(Number);
   else files.push(a);
 }
-if (!files.length) { console.log('사용법: check.mjs <png…> [--cell WxH] [--palette 파일] [--max-colors N]'); process.exit(2); }
+if (!files.length) { console.log('사용법: check.mjs <png…> [--cell WxH] [--palette 파일] [--max-colors N] [--torsox] [--torso-band y0-y1]'); process.exit(2); }
 
 const hex = (r, g, b) => '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
 const palette = opt.palette ? new Set(JSON.parse(fs.readFileSync(opt.palette, 'utf8')).colors.map((c) => c.toLowerCase())) : null;
@@ -51,6 +54,21 @@ for (const file of files) {
         }
         if (!n) notes.push(`빈 칸 (${c},${r})`);
         else if (edge) notes.push(`칸 (${c},${r}) 가장자리에 픽셀 ${edge}개 — 경계 침범 의심`);
+      }
+      // 중심축 흐름 — torsoX
+      if (opt.torsox) {
+        const [by0, by1] = opt.torsoBand, centerX = cw / 2;
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+          let minX = Infinity, maxX = -Infinity;
+          for (let y = by0; y <= by1 && y < ch; y++) for (let x = 0; x < cw; x++) {
+            if (alpha(c * cw + x, r * ch + y) === 0) continue;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+          }
+          if (minX > maxX) { notes.push(`칸 (${c},${r}) torsoX 띠(y ${by0}..${by1})가 비어 있음`); continue; }
+          const torsoX = Math.round((minX + maxX) / 2), shift = centerX - torsoX;
+          if (shift !== 0) notes.push(`칸 (${c},${r}) torsoX=${torsoX} 중심(${centerX})에서 ${shift > 0 ? '+' : ''}${shift}px 벗어남`);
+        }
       }
     }
   }
