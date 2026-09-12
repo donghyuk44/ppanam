@@ -15,6 +15,7 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const PAD = { x: 120, y: 110 };                    // 지도 둘레 여백(CSS px) — world.css 의 --pad-x/--pad-y 와 같다
 
 const S = {
+  lamps: new Set(), blocked: new Set(), roomEls: {}, failAt: {}, summaries: null,   // FAIL 램프·대표실 문 앞 대기 (W3)
   open: false, ready: null, map: null, sheets: [], npc: null, cast: null,
   z: 2, teams: [], casts: {}, actors: new Map(), boss: null,
   scene: 'castle', caches: {},                       // 보고 있는 장면, 장면별 정적 층 캐시
@@ -161,11 +162,12 @@ function rebuild() {
 }
 
 function buildLabels() {
-  const box = $('wvLabels'); box.replaceChildren();
+  const box = $('wvLabels'); box.replaceChildren(); S.roomEls = {};
   const z = S.z;
   for (const [id, r] of Object.entries(cur().rooms)) {
     if (!r.label) continue;
     const el = document.createElement('div'); el.className = 'wv-room'; el.textContent = r.label;
+    S.roomEls[id] = el; if (S.lamps.has(id)) el.classList.add('wv-room--fail');
     el.style.left = `${(r.x + r.w / 2) * TP * z}px`; el.style.top = `${r.y * TP * z + (id === 'plaza' || id === 'cafe' ? 28 * z : 8 * z)}px`;
     box.appendChild(el);
   }
@@ -295,8 +297,10 @@ function face(a, b) {
 /** 잠깐 다른 자리로 갔다가(ms) 시계가 정한 자리로 돌아온다. 도착하면 arrive() */
 function detour(a, place, ms, arrive) {
   if (!place) return;
-  a.detour = { until: performance.now() + ms };
-  walkTo(a, place, () => { if (a.detour) arrive?.(); });
+  // 머무는 시간(ms)은 도착한 뒤부터 센다 — 성 반대편 게시판까지 걸어가는 데 걸리는 시간이 머무는 시간을 잡아먹지 않게.
+  // 길이 없거나 너무 멀면 90초 뒤 포기한다.
+  a.detour = { until: performance.now() + 90000 };
+  walkTo(a, place, () => { if (a.detour) { a.detour.until = performance.now() + ms; arrive?.(); } });
 }
 function endDetour(a) {
   if (!a.detour) return;
@@ -530,6 +534,7 @@ function handle(team, e) {
       // 감사역이 판정 대상의 자리로 걸어가 도장을 찍는다 (W3). 대상은 실무(guide)다.
       const target = e.meta?.target && actorFor(team, e.meta.target) || actorFor(team, 'guide');
       const say = () => speak(a, e.text || v, { cls: `wb--verdict wb--${v}`, who: `${a.name} · ${v || '판정'}`, id: e.id });
+      if (v === 'FAIL') { S.failAt[team] = performance.now() + 60000; lamp(team, true); setTimeout(() => { if (!S.blocked.has(team)) lamp(team, false); }, 60000); }
       if (target && target !== a && target.scene === a.scene && !target.hidden) {
         const spot = nearFree({ scene: target.scene, x: target.x, y: target.y }, 0, 1);
         detour(a, spot, 12000, () => { face(a, target); face(target, a); say(); });
@@ -552,6 +557,7 @@ function handle(team, e) {
     }
     case 'round_start':
       banner(team, e.text);
+      if (!S.blocked.has(team)) lamp(team, false);
       gather(team);                                   // 회의상으로 모인다 (W3)
       return;
     case 'round_end':
@@ -560,6 +566,7 @@ function handle(team, e) {
       return;
     case 'note':
       banner(team, e.text);
+      if (e.meta?.approval) approvalScene(team, e);   // 게시판 (W3)
       return;
     default:
   }
@@ -698,6 +705,38 @@ async function submitTalk(ev) {
   closeTalk();
 }
 
+/* ── 승인 게시판 (W3) — 요청자는 총괄실 게시판에 두루마리를 붙이고, 통과·반려는 톰이 게시판 앞에서 도장을 찍는다 ── */
+
+function approvalScene(team, e) {
+  const board = placeOf('hq.board'); if (!board) return;
+  const text = String(e.text ?? ''), status = e.meta?.status ?? null;
+  if (e.actor !== 'system' && /^승인 요청/.test(text)) {
+    const a = actorFor(team, e.actor); if (!a || a.hidden || a.scene !== board.scene) return;
+    detour(a, nearFree(board, 0, 1), 15000, () => { a.dir = DIR.up; speak(a, text, { id: e.id, team }); });
+    return;
+  }
+  if (!status) return;
+  const tom = actorFor('hq', 'chief'); if (!tom || tom.hidden || tom.scene !== board.scene) return;
+  const v = status === 'passed' ? 'PASS' : status === 'revised' ? 'FAIL' : '';   // 큐의 상태값: pending·passed·revised(반려)·void
+  detour(tom, nearFree(board, 1, 1), 10000, () => { tom.dir = DIR.up; speak(tom, text, { cls: v ? `wb--verdict wb--${v}` : '', who: `${tom.name} · 게시판`, id: e.id, team }); });
+}
+
+/* ── FAIL 램프와 대표실 문 앞 대기 (W3) — 방 상태(phase)는 사건이 아니라 요약으로 온다 ── */
+
+function lamp(team, on) {
+  if (on) S.lamps.add(team); else S.lamps.delete(team);
+  S.roomEls?.[team]?.classList.toggle('wv-room--fail', on);
+}
+function setBlocked(team, on) {
+  const was = S.blocked.has(team);
+  if (on) S.blocked.add(team); else S.blocked.delete(team);
+  lamp(team, on || (S.failAt[team] ?? 0) > performance.now());
+  const g = actorFor(team, 'guide'), door = placeOf('hq.bossdoor');
+  if (!g || !door) return;
+  if (on) { if ((!was || !g.detour) && g.scene === door.scene && !g.hidden) detour(g, nearFree(door, 0, 1), 10 * 60 * 1000, () => { g.dir = DIR.right; }); }
+  else if (was) endDetour(g);
+}
+
 /* ── 캐릭터 카드 — 누구인가·어제·최근 발언 (W3) ── */
 
 /** 클릭한 화면 좌표(캔버스 CSS px)에 선 캐릭터. 앞(아래)에 선 사람이 이긴다. 댄은 카드가 없다. */
@@ -827,6 +866,7 @@ export async function open({ teams, jump } = {}) {
   await S.ready;
   if (!S.open) return;
   if (!S.raf) { S.last = performance.now(); S.raf = requestAnimationFrame(frame); }
+  if (S.summaries) onSummaries(S.summaries);        // 열기 전에 온 방 상태(blocked)를 지금 반영한다
   // 검증용: ?fixture=marketing-r14 로 열면 fixtures/ 의 사건 배열을 그 방에서 재생한다 (통과 조건 "R14 재생" 을 누구나 재현)
   const fx = new URLSearchParams(location.search).get('fixture');
   if (fx && !S.fixtureDone) {
@@ -848,7 +888,12 @@ export function onEvents(team, events) {
   if (R.team === team && R.events.length) { R.held.push(...events); return; }
   for (const e of events) handle(team, e);
 }
-export function onSummaries() { /* 자리 상태는 world 메시지로 온다 (onWorld) */ }
+/** 방 요약 — 자리 상태는 world 메시지로 오고(onWorld), 여기서는 phase 만 본다: blocked 면 램프와 문 앞 대기. */
+export function onSummaries(summaries) {
+  S.summaries = summaries ?? null;
+  if (!S.map) return;
+  for (const [team, s] of Object.entries(summaries ?? {})) if (roomOf(team)[1]) setBlocked(team, s?.phase === 'blocked');
+}
 /** 시험용 — 장면·자리·말풍선 수. 화면을 보지 않고도 재생이 맞는지 확인할 수 있다. */
 export function snapshot() {
   return {

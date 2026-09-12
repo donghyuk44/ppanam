@@ -22,6 +22,7 @@ state/executor.json
 teams/*/round.json
 state/notifier.json
 state/conductor.json
+state/world.json
 state/turn/
 teams/*/journal/
 
