@@ -12,6 +12,7 @@ let teams = [];
 let active = null;
 let cast = { agents: {} };
 let roadmap = { milestones: [], cutList: [] };
+let journal = {};            // 자리 → 최근 일지 문단
 let summary = {};
 let summaries = {};
 let approvals = [];          // 대기 중인 승인 — 관제탑 맨 위
@@ -26,6 +27,18 @@ let lastDay = null;
 /* ── 작은 도구들 ── */
 
 const who = (id) => cast.agents?.[id] ?? { ...FALLBACK, name: id };
+
+/** 자리의 살아 있음. 세션이 있나(듣는 중), 일하는 중인가, 지금 차례가 잡혀 있나. codex 자리는 사회자의 busy 로. */
+const STATE_LABEL = { off: '자는 중', idle: '듣는 중', busy: '말하는 중', turn: '차례 대기' };
+function stateOf(id) {
+  const c = summary.conductor ?? {};
+  const a = cast.agents?.[id];
+  if (a?.model === 'gpt') return c.outsideBusy ? 'busy' : (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'idle';
+  const s = summary.sessions?.[id];
+  if (!s || !s.alive) return (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'off';
+  if (s.busy) return 'busy';
+  return (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'idle';
+}
 
 const hhmm = (ts) => new Date(ts).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' });
 const dayOf = (ts) => new Date(ts).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
@@ -142,7 +155,9 @@ function renderHead() {
       : open
         ? (summary.topic ? `마일스톤 ${summary.milestone} — ${summary.topic}` : `마일스톤 ${summary.milestone}`)
         : '대기 중 — 라운드를 시작하세요';
-  $('rprog').textContent = open && summary.attempt > 0 ? `반박 ${summary.attempt}/3` : '';
+  const c = summary.conductor ?? {};
+  const turnNote = c.flow ? `판정 중 · ${who(c.flow.waiting ?? c.flow.step).name} 차례` : c.pending?.length ? `차례: ${c.pending.map((p) => who(p.split(':')[0]).name).join(', ')}` : '';
+  $('rprog').textContent = [turnNote, open && summary.attempt > 0 ? `반박 ${summary.attempt}/3` : ''].filter(Boolean).join(' · ');
   app.dataset.alert = (open && summary.attempt > 0) || summary.needsBoss ? '1' : '0';
 
   // 누가 지금 일하는 중인가. 총괄실도 일한다 — 라운드 번호가 0 이라고 숨기지 않는다.
@@ -171,7 +186,9 @@ function renderHead() {
     if (id === 'boss' || id === 'system') continue;
     const c = el('div', 'chip', a.initial ?? '?');
     c.style.background = a.color ?? FALLBACK.color;
-    c.title = `${a.name} — ${a.role ?? ''}`;
+    const st = stateOf(id);
+    c.dataset.state = st;
+    c.title = `${a.name} — ${a.role ?? ''} · ${STATE_LABEL[st]}`;
     crew.appendChild(c);
   }
   const dot = el('div', 'live');
@@ -254,13 +271,31 @@ function renderSide() {
     const row = el('div', 'who__row');
     const av = el('div', 'chip', a.initial ?? '?');
     av.style.background = a.color ?? FALLBACK.color;
+    if (id !== 'boss') av.dataset.state = stateOf(id);
     row.appendChild(av);
     const t = el('div', 'who__t');
     t.appendChild(el('div', 'who__n', a.name));
-    t.appendChild(el('div', 'who__r', a.role ?? ''));
+    t.appendChild(el('div', 'who__r', id === 'boss' ? (a.role ?? '') : `${a.role ?? ''} · ${STATE_LABEL[stateOf(id)]}`));
     row.appendChild(t);
     if (a.model) row.appendChild(el('div', 'who__m', a.model.toUpperCase()));
     c.appendChild(row);
+  }
+
+  // 일지 — 자리마다 어제 한 문단. 세션이 죽어도 이게 남는다.
+  const j = $('cardJournal');
+  j.replaceChildren();
+  j.appendChild(el('div', 'card__k', '일지'));
+  const entries = Object.entries(journal);
+  if (!entries.length) {
+    j.appendChild(el('div', 'card__note', '아직 없습니다. 라운드가 닫힐 때 자리마다 한 문단이 남습니다.'));
+  } else {
+    for (const [id, text] of entries) {
+      const d = el('details', 'jr');
+      const s = el('summary', null, `${who(id).name} — ${text.split('\n')[0].replace(/^## /, '')}`);
+      d.appendChild(s);
+      d.appendChild(el('div', 'jr__body', text.split('\n').slice(1).join('\n').trim()));
+      j.appendChild(d);
+    }
   }
 }
 
@@ -382,7 +417,7 @@ async function selectTeam(id) {
   active = id;
   unread[id] = 0;
   const r = await fetch(`/api/team?team=${encodeURIComponent(id)}`).then((x) => x.json());
-  cast = r.cast; roadmap = r.roadmap; summary = r.summary;
+  cast = r.cast; roadmap = r.roadmap; summary = r.summary; journal = r.journal ?? {};
   oldest = r.events[0]?.id ?? null;
   hasMore = r.more;
   $('loadMore').hidden = !hasMore;

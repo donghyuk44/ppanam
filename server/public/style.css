@@ -140,6 +140,19 @@ body {
   width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
   font-family: 'Gowun Batang', serif; font-size: 13px; color: #fdfbf7;
 }
+.chip { position: relative; }
+.chip[data-state]::after {
+  content: ''; position: absolute; right: -2px; bottom: -2px; width: 8px; height: 8px; border-radius: 50%;
+  border: 2px solid var(--panel); background: var(--ink-4);
+}
+.chip[data-state="idle"]::after { background: var(--live); }
+.chip[data-state="busy"]::after { background: var(--seal); animation: pulse 1.1s ease-in-out infinite; }
+.chip[data-state="turn"]::after { background: var(--me-ink); }
+.chip[data-state="off"]::after { background: var(--ink-4); opacity: .5; }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.5); } }
+.jr { font-size: 12px; margin-top: 6px; }
+.jr summary { cursor: pointer; color: var(--ink-2); }
+.jr__body { margin-top: 5px; color: var(--ink-3); line-height: 1.55; white-space: pre-wrap; }
 .live { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-4); margin-left: 4px; }
 .live[data-on="1"] { background: var(--live); }
 .live[data-on="0"] { background: var(--bad); }
