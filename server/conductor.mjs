@@ -51,7 +51,10 @@ function room(team) {
       loopNoted: false,
       outsideBusy: false,
       outsideAgain: null,
-      round: null,          // 마지막으로 본 라운드 번호 — 바뀌면 상태를 비운다
+      // 마지막으로 본 라운드 번호 — 바뀌면 상태를 비운다. 서버가 막 떴을 때는 null 이 아니라
+      // 지금 라운드로 시작한다. null 이면 첫 폴링이 "라운드가 바뀌었다"로 읽고 방금 만든 flow 를
+      // 지운다 (레오 감사, 2026-09-12).
+      round: readState(team).round,
       flow: null,           // 판정 흐름 { target, step: 'review'|'outside', asked: n }
     });
   }
@@ -172,7 +175,7 @@ function giveTurn(team, actor, kind) {
   const instruction = kind === 'verdict' ? VERDICT_INSTRUCTION(target, nameOf(team, session.ownerOf(team))) : INSTRUCTION[kind];
   const body = (lines.length ? `그동안 이 방에서 오간 말:\n\n${lines.join('\n')}\n\n---\n` : '') + instruction;
   if (last) setCursor(team, actor, last);
-  session.send(team, quiet(body), actor);
+  session.send(team, quiet(body), actor, kind === 'verdict' ? { kind: 'verdict', extra: target.slice(0, 200) } : {});
 }
 
 /** 차례를 예약한다. 같은 자리에 쌓이면 더 센 종류로 합친다. */
@@ -212,6 +215,7 @@ export function startVerdict(team, target) {
   const cast = readCast(team).agents ?? {};
   const steps = [cast.review?.model === 'claude' ? 'review' : null, cast.outside?.model === 'gpt' ? 'outside' : null].filter(Boolean);
   if (!steps.length) throw new Error('이 방에는 감사역이 없습니다.');
+  r.round = state.round;
   r.flow = { target: String(target ?? '').trim() || '이번 라운드 산출물', steps, i: 0, asked: 0 };
   emit(team, { actor: 'system', type: 'note', text: `판정 시작 — ${r.flow.target}. ${steps.map((s) => nameOf(team, s)).join(' → ')} 순서.`, meta: { verdictFlow: 'start' } });
   askStep(team);

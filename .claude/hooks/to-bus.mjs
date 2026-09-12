@@ -122,7 +122,7 @@ switch (ev) {
       const kind = bus.turnKindOf(text);
       if (kind) {
         const target = kind === 'verdict' ? (/⟦판정 요청⟧\s*([^\n]*)/.exec(text)?.[1] ?? '').trim().slice(0, 200) : '';
-        try { bus.writeTurn(team, ME, kind, target); } catch { /* 못 적으면 말로 남는다 */ }
+        try { bus.writeTurn(team, ME, kind, target, hook.session_id); } catch { /* 못 적으면 말로 남는다 */ }
       }
       bail('들려주기 — 기록 안 함');
     }
@@ -176,7 +176,7 @@ switch (ev) {
 
     // 이번 턴이 무엇이었나. 판정 요청이었으면 첫 줄이 판정이다 — 모든 엔진이 같은 규약. 일지였으면 대화록에 안 남는다.
     if (ev === 'Stop') {
-      const turn = bus.takeTurn(team, actor);
+      const turn = bus.takeTurn(team, actor, hook.session_id);
       if (turn?.kind === 'journal') bail('일지 — 서버가 받는다');
       if (turn?.kind === 'verdict') {
         const v = bus.splitVerdictLine(text);

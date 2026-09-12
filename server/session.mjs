@@ -17,7 +17,7 @@ import path from 'node:path';
 import { spawn as spawnProc } from 'node:child_process';
 import {
   ROOT, emit, listTeams, isOffice, paths, endRound, readCast, readState, readRoadmap, listRounds,
-  readLog, quiet, appendJournal, TURN_JOURNAL,
+  readLog, quiet, appendJournal, TURN_JOURNAL, writeTurn,
 } from '../bus/bus.mjs';
 
 const STORE = path.join(ROOT, 'state', 'sessions.json');
@@ -45,6 +45,10 @@ const ARGS = [
 
 const sessions = new Map();   // "team:actor" → session
 const closing = new Map();    // team → { verdict, summary } — 이 방의 모든 자리가 놀면 닫는다
+const closingNow = new Set();  // closeRound 가 도는 중인 방 — 일지를 받는 동안 새 지시를 받지 않는다
+
+/** 이 방이 닫히는 중인가. 그동안 온 지시는 거절한다 — 받아놓고 reset 으로 지우면 성공처럼 보이는 유실이다 (레오 감사). */
+export const isClosing = (team) => closing.has(team) || closingNow.has(team);
 const turnEndListeners = [];  // (team, actor) → void — 사회자가 다음 차례를 주려고 듣는다
 
 /** 어느 자리의 턴이 끝나면 부른다. 사회자가 쌓인 차례를 그때 준다. */
@@ -339,6 +343,8 @@ function write(s, turn) {
   s.busy = true;
   s.inflight = turn;
   clearTimeout(s.timer);
+  // 턴의 종류(판정·일지)는 stdin 에 쓰기 전에 적는다. 훅의 UserPromptSubmit 도 적지만 비동기라 늦을 수 있다.
+  if (turn.kind) { try { writeTurn(s.team, s.actor, turn.kind, turn.extra ?? '', s.id); } catch { /* 훅이 적는다 */ } }
   s.timer = setTimeout(() => {
     die(s, `${name(s)}이 ${Math.round(TURN_TIMEOUT / 60_000)}분 동안 응답하지 않아 세션을 닫았습니다.`);
   }, TURN_TIMEOUT);
@@ -362,13 +368,15 @@ function alive(s) {
  * 턴을 보낸다. 자리를 말하지 않으면 방 주인에게 — 대표의 지시가 가는 곳이다.
  * 말풍선은 여기서 만들지 않는다. 훅이 남긴다. 앞 턴이 안 끝났으면 줄을 세운다.
  */
-export function send(team, text, actor = ownerOf(team)) {
-  return enqueue(team, actor, { text, resolve: null });
+export function send(team, text, actor = ownerOf(team), { kind = null, extra = '', internal = false } = {}) {
+  if (isClosing(team) && !internal) return { refused: true, reason: '라운드가 닫히는 중입니다. 잠시 뒤 다시 보내세요.' };
+  return enqueue(team, actor, { text, resolve: null, kind, extra });
 }
 
 /** 턴을 보내고 답(result)을 기다린다. 일지 턴처럼 서버가 답을 받아 써야 하는 경우. 세션이 죽으면 null. */
-export function sendAndWait(team, text, actor = ownerOf(team)) {
-  return new Promise((resolve) => enqueue(team, actor, { text, resolve }));
+export function sendAndWait(team, text, actor = ownerOf(team), { kind = null, extra = '', internal = false } = {}) {
+  if (isClosing(team) && !internal) return Promise.resolve(null);
+  return new Promise((resolve) => enqueue(team, actor, { text, resolve, kind, extra }));
 }
 
 function enqueue(team, actor, turn) {
@@ -446,10 +454,16 @@ function maybeFinishClose(team) {
 export async function closeRound(team, opts = {}) {
   const state = readState(team);
   if (!state.round || state.phase === 'idle') throw new Error('진행 중인 라운드가 없습니다.');
-  const journaled = await journalAll(team, state.round);
-  const n = endRound(team, opts);
-  reset(team);
-  return { round: n, journaled };
+  if (closingNow.has(team)) throw new Error('이미 닫는 중입니다.');
+  closingNow.add(team);
+  try {
+    const journaled = await journalAll(team, state.round);
+    const n = endRound(team, opts);
+    reset(team);
+    return { round: n, journaled };
+  } finally {
+    closingNow.delete(team);
+  }
 }
 
 async function journalAll(team, round) {
@@ -458,7 +472,7 @@ async function journalAll(team, round) {
   const ask = (actor) => {
     const p = `${TURN_JOURNAL} 라운드 ${round} 이 끝난다. 이번 라운드에서 네가 배운 것·판단한 이유·버린 시도·막힌 곳을 한 문단(3~6줄) 산문으로. 파일 이름·완료율·다음 할 일 목록은 쓰지 마라 — 그건 git 이 안다. 남길 것이 없으면 (패스).`;
     if (cast[actor]?.model === 'gpt') return journalOutside(team);
-    return Promise.race([sendAndWait(team, quiet(p), actor), new Promise((r) => setTimeout(() => r(null), JOURNAL_TIMEOUT))]);
+    return Promise.race([sendAndWait(team, quiet(p), actor, { kind: 'journal', internal: true }), new Promise((r) => setTimeout(() => r(null), JOURNAL_TIMEOUT))]);
   };
   const actors = [...spoke].filter((a) => cast[a]?.model === 'claude' || cast[a]?.model === 'gpt');
   const results = await Promise.all(actors.map(async (a) => {

@@ -89,9 +89,11 @@ async function hasCodex() {
  */
 function runCodex(input, { resume = null } = {}) {
   const outPath = path.join(os.tmpdir(), `ppanam-outside-${crypto.randomBytes(4).toString('hex')}.txt`);
+  // 샌드박스는 읽기 전용으로 못 박는다. 기본값에 맡겼더니 codex 0.154 가 워크트리에 시험 디렉터리와 수정을 남겼다
+  // (2026-09-12). 감사역이 고치면 감사가 아니다 — 인격 문장이 아니라 플래그로.
   const args = resume
-    ? ['exec', 'resume', resume, '--skip-git-repo-check', '-m', CODEX_MODEL, '-o', outPath, '-']
-    : ['exec', '--skip-git-repo-check', '-m', CODEX_MODEL, '-o', outPath, '-'];
+    ? ['exec', 'resume', resume, '--skip-git-repo-check', '--sandbox', 'read-only', '-m', CODEX_MODEL, '-o', outPath, '-']
+    : ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '-m', CODEX_MODEL, '-o', outPath, '-'];
 
   return new Promise((resolve, reject) => {
     const child = spawn('codex', args, { cwd: ROOT, stdio: ['pipe', 'pipe', 'pipe'] });
@@ -305,7 +307,9 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
       rec = emit(team, { round, actor: 'outside', type: 'message', text: `[${verdict} — 판정으로 세지 않음: ${e.message}] ${body}`, meta: { engine: ENGINE } });
     }
   } else {
-    rec = emit(team, { round, actor: 'outside', type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...(apr ? { approval: apr } : {}) } });
+    // 판정 차례였는데 첫 줄에 판정이 없다 — 말로 남기되 표시한다. 사회자가 한 번 더 묻고, 두 번이면 멈춘다 (레오 감사).
+    const missed = turn === 'verdict' && !verdict;
+    rec = emit(team, { round, actor: 'outside', type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...(apr ? { approval: apr } : {}), ...(missed ? { noVerdict: true } : {}) } });
   }
 
   // 방금 남긴 것까지가 "이미 본 것"이다. 다음 턴에는 이 뒤로 새로 온 말만 받는다.

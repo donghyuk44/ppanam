@@ -66,17 +66,24 @@ export function turnKindOf(text) {
   return null;
 }
 export const TURN_DIR = path.join(ROOT, 'state', 'turn');
-export function writeTurn(team, actor, kind, extra = '') {
+// 파일 이름에 세션 id 가 들어간다. 같은 방·자리에 세션이 둘(닫히는 것과 새것)이면 한 파일을 덮어썼다 (레오 감사, 2026-09-12).
+// 서버가 턴을 stdin 에 쓰기 전에 먼저 적고(session.mjs write), 훅의 UserPromptSubmit 도 적는다 — 비동기 훅이 늦어도 서버 것이 있다.
+const turnFile = (team, actor, sid) => path.join(TURN_DIR, sid ? `${team}.${actor}.${String(sid).replace(/[^A-Za-z0-9_-]/g, '_')}` : `${team}.${actor}`);
+export function writeTurn(team, actor, kind, extra = '', sid = null) {
   fs.mkdirSync(TURN_DIR, { recursive: true });
-  fs.writeFileSync(path.join(TURN_DIR, `${team}.${actor}`), extra ? `${kind}:${extra}` : kind);
+  fs.writeFileSync(turnFile(team, actor, sid), extra ? `${kind}:${extra}` : kind);
 }
-export function takeTurn(team, actor) {
-  const f = path.join(TURN_DIR, `${team}.${actor}`);
-  let s = null;
-  try { s = fs.readFileSync(f, 'utf8').trim(); } catch { return null; }
-  try { fs.unlinkSync(f); } catch { /* 없으면 그만 */ }
-  const i = s.indexOf(':');
-  return i < 0 ? { kind: s, extra: '' } : { kind: s.slice(0, i), extra: s.slice(i + 1) };
+export function takeTurn(team, actor, sid = null) {
+  for (const f of sid ? [turnFile(team, actor, sid), turnFile(team, actor, null)] : [turnFile(team, actor, null)]) {
+    let s = null;
+    try { s = fs.readFileSync(f, 'utf8').trim(); } catch { continue; }
+    try { fs.unlinkSync(f); } catch { /* 없으면 그만 */ }
+    // 같은 턴을 서버와 훅이 둘 다 적었을 수 있다 — 나머지도 치운다
+    if (sid) { try { fs.unlinkSync(turnFile(team, actor, null)); } catch { /* 없다 */ } try { fs.unlinkSync(turnFile(team, actor, sid)); } catch { /* 없다 */ } }
+    const i = s.indexOf(':');
+    return i < 0 ? { kind: s, extra: '' } : { kind: s.slice(0, i), extra: s.slice(i + 1) };
+  }
+  return null;
 }
 
 /** 판정의 첫 줄 규약. PASS/REVISE/FAIL 한 단어면 그 판정, 아니면 null. */

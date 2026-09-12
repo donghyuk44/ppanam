@@ -21,7 +21,7 @@ import {
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
-import { noticeEvents, startVerdict } from './conductor.mjs';
+import { noticeEvents, startVerdict, snapshot } from './conductor.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
 
@@ -72,6 +72,7 @@ const summaries = () => Object.fromEntries(listTeams().map((t) => {
     ...s,
     session: session.status(t.id),
     sessions: session.statusAll(t.id),   // 자리별 — 참여 카드의 상태 점
+    conductor: snapshot(t.id),           // 누구 차례가 쌓여 있나, 판정 흐름은 어디까지 왔나
     milestoneTitle: now?.title ?? null,
     deliverable: now?.deliverable ?? null,
     progress: readProgress(t.id),
@@ -92,6 +93,23 @@ const summaries = () => Object.fromEntries(listTeams().map((t) => {
 function readProgress(team) {
   try { return JSON.parse(fs.readFileSync(path.join(paths(team).dir, 'progress.json'), 'utf8')); }
   catch { return null; }
+}
+
+/** teams/<팀>/journal/<자리>.md 의 맨 위 문단. 상황판의 "어제" 다. */
+function latestJournal(team) {
+  const dir = path.join(paths(team).dir, 'journal');
+  let names;
+  try { names = fs.readdirSync(dir); } catch { return {}; }
+  const out = {};
+  for (const n of names) {
+    if (!n.endsWith('.md')) continue;
+    try {
+      const s = fs.readFileSync(path.join(dir, n), 'utf8');
+      const first = s.split(/\n(?=## )/)[0].trim();
+      if (first) out[n.slice(0, -3)] = first.slice(0, 600);
+    } catch { /* 넘어간다 */ }
+  }
+  return out;
 }
 
 /** teams/<팀>/out/ 의 산출물. 라운드의 통과 조건은 완료율이 아니라 제출 가능한 물건이다. */
@@ -159,6 +177,7 @@ const server = http.createServer((req, res) => {
       roadmap: readRoadmap(team),
       rounds: listRounds(team).slice(0, 40),
       summary: teamSummary(team),
+      journal: latestJournal(team),
       ...readTail(team, { limit: PAGE }),
     });
   }
@@ -250,7 +269,9 @@ const server = http.createServer((req, res) => {
           return json(res, 200, { ok: true, to, queued: 0, event: rec.id });
         }
         const actor = to && (cast[to]?.model === 'claude') ? to : undefined;
-        json(res, 200, { ok: true, to: actor ?? session.ownerOf(t), ...session.send(t, q ? quiet(say) : say, actor) });
+        const sent = session.send(t, q ? quiet(say) : say, actor);
+        if (sent.refused) return json(res, 409, { error: sent.reason, closing: true });
+        json(res, 200, { ok: true, to: actor ?? session.ownerOf(t), ...sent });
       } catch (e) {
         json(res, 500, { error: `실무에게 전달하지 못했습니다 — ${e.message}` });
       }
