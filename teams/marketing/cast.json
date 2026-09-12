@@ -12,7 +12,13 @@
       "initial": "안",
       "color": "#a8541f",
       "role": "내부감사 · 논리와 구조 감사",
-      "model": "claude"
+      "model": "claude",
+      "llm": "sonnet",
+      "disallow": [
+        "Write",
+        "Edit",
+        "NotebookEdit"
+      ]
     },
     "outside": {
       "name": "다니엘",

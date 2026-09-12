@@ -12,7 +12,13 @@
       "initial": "되",
       "color": "#a8541f",
       "role": "감사 · 이해 갭 진단 · 전달 품질",
-      "model": "claude"
+      "model": "claude",
+      "llm": "sonnet",
+      "disallow": [
+        "Write",
+        "Edit",
+        "NotebookEdit"
+      ]
     },
     "outside": {
       "name": "외부감사",

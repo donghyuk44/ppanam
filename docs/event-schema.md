@@ -31,8 +31,11 @@ teams/<방>/
   out/           마일스톤 산출물
 ```
 
-**방 주인은 서브에이전트가 아니라 메인 세션이다.** 그래서 frontmatter 가 없고,
-인격을 `--append-system-prompt` 로 붙인다 (`server/session.mjs`).
+**자리 = 프로세스.** 방의 모든 claude 자리(`guide`·`chief`·`review`·`ops`)가 각자 세션을 갖는다 — 서브에이전트가 아니다.
+서버가 자리마다 `claude -p` 를 띄우며 `PPANAM_TEAM`·`PPANAM_ACTOR` 를 넣고, 인격은 `teams/<방>/<자리>.md` 를
+`--append-system-prompt` 로 붙인다 (`server/session.mjs assemblePrompt` = 인격 + 확정 조항 해석 + 일지 최근 문단 + 라운드 브리프).
+모델·도구는 `cast.json` 의 `llm`·`disallow` 가 정한다(감사역은 Write·Edit 없음). 외부감사(`outside`)만 codex 별도 프로세스다.
+전에는 내부감사·운영이 실무가 부를 때만 뜨는 서브에이전트라 방을 듣지도 서로 부르지도 못했다 — "서로 대화 안 하는데?" (2026-09-01).
 
 모든 이벤트는 `team` 필드를 갖는다. 컴퓨터에서는 왼쪽 레일이 **안 보고 있는 팀**의
 상태(진행 중 / 대기 / 대표 호출)까지 함께 보여주고, 폰에서는 한 방씩 본다.
@@ -63,12 +66,10 @@ teams/<방>/
 프로세스로 띄우고, **그 답을 직접 대화록에 남긴다.** 클로드가 옮겨 적으면 그 순간
 다시 클로드의 말이 되기 때문이다. 발언에는 `meta.engine` 으로 어느 엔진이었는지 남는다.
 
-서브에이전트 이름은 방마다 갈라진다(`marketing-review`). 훅이 접미사로 되돌려
-화자는 늘 위 표의 일곱 중 하나다 (`.claude/hooks/to-bus.mjs` 의 `actorOf`).
+훅은 `PPANAM_ACTOR` 로 화자를 정한다. 과도기의 서브에이전트 이벤트는 캐스트 자리 이름(접두 포함)이면 그 자리로,
+그 밖(임시 도구)은 기록하지 않는다 (`.claude/hooks/to-bus.mjs` 의 `actorOf`). 화자는 늘 위 표의 일곱 중 하나다.
 
-말풍선 색은 각 서브에이전트 `.md` frontmatter 의 `color` 필드에서 가져온다
-(`red`/`blue`/`green`/`yellow`/`purple`/`orange`/`pink`/`cyan` — 공식 필드).
-별도 매핑 파일을 두지 않는다.
+말풍선 색·이름·모델은 `cast.json` 이 정한다. 별도 매핑 파일을 두지 않는다.
 
 ---
 

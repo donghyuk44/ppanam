@@ -7,12 +7,12 @@
 - 무엇을 만들고 있는지 → `docs/plan.md`
 - 채팅방에 나타나는 것의 계약 → `docs/event-schema.md`
 - 이번 팀의 목적지와 마일스톤 → `teams/<팀>/roadmap.json`
-- 감사 기준 → 내부 `.claude/agents/<팀>-review.md` (없으면 공용 `review.md`), 외부 `teams/<팀>/outside.md`
+- 인격과 감사 기준 → `teams/<팀>/<자리>.md` (guide·review·ops·outside·chief)
 
 ## 캐스트
 
 메인 세션이 **실무**다. 대표가 말을 거는 상대이고, 실제 작업을 한다.
-**내부감사**(`review`)는 서브에이전트, **외부감사**(`outside`)는 `bus/outside.mjs` 가 띄우는 별도 프로세스(codex)다.
+**모든 자리는 각자의 세션이다** — 내부감사·운영도. **외부감사**(`outside`)만 codex 별도 프로세스다.
 
 외부감사가 다른 회사 모델인 데는 이유가 있다.
 **클로드 둘이 사이좋게 같이 틀릴 때, 그건 다른 엔진에게만 보이기 때문이다.**

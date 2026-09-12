@@ -1,25 +1,31 @@
-// 팀별 실무 세션.
+// 자리별 상주 세션.
 //
-// 작전실 입력창에 쓴 지시가 여기를 통해 실무에게 간다.
-// 터미널을 열지 않고도 라운드가 돌게 하는 것이 이 파일의 전부다.
+// 방의 모든 자리(실무·내부감사·운영·총괄)가 자기 claude 프로세스를 갖는다. 서브에이전트가 아니다 —
+// 부르는 사람이 없어도 존재하고, 사회자(server/conductor.mjs)가 차례를 주면 말한다. 외부감사(codex)만
+// bus/outside.mjs 가 턴마다 띄운다. 이렇게 바꾼 이유는 대표의 말이다: "실제 참여자로 하기로 했잖아",
+// "서로 대화 안 하는데?" — 서브에이전트는 부를 때만 태어나 답을 돌려주고 죽는다. 방을 못 듣고 서로 못 부른다.
 //
-// 팀마다 claude 프로세스를 하나씩 살려둔다. stdin 을 열어둔 채 stream-json 을
-// 한 줄씩 밀어넣으면 같은 세션에서 대화가 이어진다. 프로세스가 죽으면
-// 다음 지시 때 --resume 으로 되살린다.
+// 인격은 --append-system-prompt 로 각자 붙는다. CLAUDE.md 하나를 공유해도 동화되지 않는다 (영상 ①이 계정을
+// 나눈 이유가 이것이었다). 프로세스마다 PPANAM_TEAM 과 PPANAM_ACTOR 가 들어가고, 훅은 그 값으로 화자를 정한다.
 //
-// 기록은 하지 않는다. 훅이 이미 한다 (.claude/hooks/to-bus.mjs).
-// 여기서 stdout 을 파싱해 대화록에 또 쓰면 같은 말이 두 번 쌓인다.
-// 이 파일이 stdout 에서 읽는 것은 두 가지뿐이다 — 세션 id 와 "지금 일하는 중인가".
+// 기록은 하지 않는다. 훅이 한다. 여기서 stdout 에서 읽는 것은 세션 id, "지금 일하는 중인가", 그리고
+// 답을 기다리는 턴(일지)의 결과뿐이다.
 
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, emit, listTeams, isOffice, paths, endRound } from '../bus/bus.mjs';
+import {
+  ROOT, emit, listTeams, isOffice, paths, endRound, readCast, readState, readRoadmap, listRounds,
+} from '../bus/bus.mjs';
 
 const STORE = path.join(ROOT, 'state', 'sessions.json');
 
 /** 한 턴이 이 시간 안에 안 끝나면 죽은 것으로 본다. */
 const TURN_TIMEOUT = Number(process.env.PPANAM_TURN_TIMEOUT || 15 * 60_000);
+/** 조립한 시스템 프롬프트의 상한(문자). 넘으면 일지부터 줄인다 — 다 기억시키면 느려지고 나빠진다. */
+const PROMPT_CAP = Number(process.env.PPANAM_PROMPT_CAP || 12_000);
+/** 세션이 뜰 때 붙이는 일지 문단 수. */
+const JOURNAL_PARAS = Number(process.env.PPANAM_JOURNAL_PARAS || 5);
 
 /**
  * --bare 를 쓰지 않는다. 훅을 아예 로드하지 않아 아무것도 기록되지 않는다.
@@ -33,156 +39,243 @@ const ARGS = [
   '--forward-subagent-text',
 ];
 
-const sessions = new Map(); // team → session
+const sessions = new Map();   // "team:actor" → session
+const closing = new Map();    // team → { verdict, summary } — 이 방의 모든 자리가 놀면 닫는다
+
+const keyOf = (team, actor) => `${team}:${actor}`;
+
+/** 방 주인 — 작전실이면 실무, 총괄실이면 총괄. 대표의 지시가 먼저 가는 자리. */
+export const ownerOf = (team) => (isOffice(team) ? 'chief' : 'guide');
+
+/** 이 방에서 claude 세션을 갖는 자리. outside(codex)·boss·system 은 아니다. */
+export function claudeActors(team) {
+  const agents = readCast(team).agents ?? {};
+  return Object.keys(agents).filter((a) => agents[a]?.model === 'claude');
+}
 
 /* ── 세션 id 보관 ── */
 
 function readStore() {
   try { return JSON.parse(fs.readFileSync(STORE, 'utf8')); } catch { return {}; }
 }
-
-function rememberId(team, id) {
-  const all = readStore();
-  if (all[team] === id) return;
-  all[team] = id;
+function writeStore(all) {
   fs.mkdirSync(path.dirname(STORE), { recursive: true });
   fs.writeFileSync(STORE, JSON.stringify(all, null, 2) + '\n');
+}
+/** 예전 형식({팀: id})은 그 방 주인의 것이다. */
+function storedId(team, actor) {
+  const all = readStore();
+  return all[keyOf(team, actor)] ?? (actor === ownerOf(team) ? all[team] : null) ?? null;
+}
+function rememberId(team, actor, id) {
+  const all = readStore();
+  if (all[keyOf(team, actor)] === id) return;
+  all[keyOf(team, actor)] = id;
+  delete all[team];
+  writeStore(all);
+}
+function forgetId(team, actor) {
+  const all = readStore();
+  let changed = false;
+  if (keyOf(team, actor) in all) { delete all[keyOf(team, actor)]; changed = true; }
+  if (actor === ownerOf(team) && team in all) { delete all[team]; changed = true; }
+  if (changed) writeStore(all);
+}
+
+/* ── 인격 조립 ── */
+
+/**
+ * 인격 파일. teams/<팀>/<자리>.md — 없으면 공용 .claude/agents/<자리>.md 의 본문(frontmatter 제거).
+ * 실무·총괄은 서브에이전트가 아니라 frontmatter 가 없고, 내부감사·운영도 이제 같다.
+ */
+function personaOf(team, actor) {
+  try { const s = fs.readFileSync(path.join(paths(team).dir, `${actor}.md`), 'utf8').trim(); if (s) return s; } catch { /* 없다 */ }
+  try {
+    const s = fs.readFileSync(path.join(ROOT, '.claude', 'agents', `${actor}.md`), 'utf8');
+    return s.replace(/^---[\s\S]*?\n---\n/, '').trim() || null;
+  } catch { return null; }
+}
+
+/**
+ * 확정 조항의 해석 부분. teams/<팀>/decisions.md 는 대표 원문과 해석을 분리해 둔다 — 붙이는 것은 해석이다.
+ * 원문까지 매번 실으면 크기가 돌아온다(out/m2-memory.md). 원문은 파일에 있고 필요할 때 읽는다.
+ */
+function decisionsOf(team) {
+  let s;
+  try { s = fs.readFileSync(path.join(paths(team).dir, 'decisions.md'), 'utf8'); } catch { return null; }
+  const out = [];
+  for (const part of s.split(/\n(?=## )/).slice(1)) {
+    const title = part.split('\n')[0].replace(/^## /, '').trim();
+    const m = /\*\*해석\*\*[^\n]*\n([\s\S]*?)(?=\n\*\*대표 원문\*\*|$)/.exec(part);
+    if (m) out.push(`- ${title}: ${m[1].trim().replace(/\s+/g, ' ').slice(0, 400)}`);
+  }
+  return out.length ? out.join('\n') : null;
+}
+
+/** 일지의 최근 문단들. teams/<팀>/journal/<자리>.md — 최신이 맨 위다. 없으면 null. */
+function journalOf(team, actor, n = JOURNAL_PARAS) {
+  let s;
+  try { s = fs.readFileSync(path.join(paths(team).dir, 'journal', `${actor}.md`), 'utf8'); } catch { return null; }
+  const paras = s.split(/\n(?=## )/).map((p) => p.trim()).filter((p) => p.startsWith('## '));
+  if (!paras.length) return null;
+  return { text: paras.slice(0, n).join('\n\n'), total: paras.length };
+}
+
+/**
+ * 지금 이 방 — 라운드 브리프. 라운드마다 세션이 새로 뜨므로 여기 붙는다. 인격 파일은 대표만 고치는 것(C)이라
+ * 장치가 바뀐 것(자리 = 프로세스, 호명으로 부른다)은 여기서 말한다.
+ */
+function briefOf(team, actor) {
+  const cast = readCast(team).agents ?? {};
+  const me = cast[actor]?.name ?? actor;
+  const people = Object.entries(cast)
+    .filter(([id]) => id !== 'boss' && id !== 'system')
+    .map(([id, a]) => `${a.name}(${id}${a.model === 'gpt' ? ', 다른 회사 모델' : ''})`).join(' · ');
+  const lines = ['## 지금 이 방', `너는 ${me}(${actor})다. 이 방 사람: ${people}. 대표: ${cast.boss?.name ?? '대표'}.`];
+  if (isOffice(team)) {
+    lines.push('총괄실은 라운드가 없다 — 늘 열려 있다.');
+  } else {
+    const st = readState(team);
+    const rm = readRoadmap(team);
+    const m = rm.milestones?.find((x) => x.n === st.milestone);
+    const last = listRounds(team)[0];
+    lines.push(st.phase !== 'idle'
+      ? `라운드 ${st.round} · 마일스톤 ${st.milestone}${m ? ` "${m.title}" — 통과 조건: ${m.deliverable}` : ''}${st.topic ? ` · 주제: ${st.topic}` : ''}${st.phase === 'blocked' ? ' · FAIL 로 막혀 있다. 대표 판단 대기' : ''}`
+      : '지금 열린 라운드가 없다.');
+    if (rm.cutList?.length) lines.push(`컷리스트(이번엔 하지 않는 것): ${rm.cutList.join(' / ')}`);
+    if (last) lines.push(`직전 라운드 ${last.round}: ${last.verdict ?? '판정 없음'}${last.summary ? ' — ' + last.summary : ''}`);
+  }
+  lines.push('방의 모든 자리는 각자 살아 있는 세션이다. Agent 툴(서브에이전트)로 동료를 부르지 마라 — 첫머리에 이름을 부르면 그가 답한다("안젤, …"). 외부감사도 같다. 너에게 온 말은 ⟦들려주기⟧ 로 들어오며 이미 대화록에 있다. 방에 남길 말이 없으면 (패스) 한 마디만.');
+  return lines.join('\n');
+}
+
+/**
+ * 시스템 프롬프트 = 인격 + 확정 조항(해석) + 일지(최근) + 라운드 브리프. 조립 함수는 이것 하나다 —
+ * 층을 더 쌓지 않는다(순순빌리지는 메타데이터+시스템+기억+상호작용이 쌓여 꼬였다, docs/cases.md 6).
+ * 상한을 넘으면 일지 문단부터 줄인다.
+ */
+export function assemblePrompt(team, actor) {
+  const persona = personaOf(team, actor);
+  const decisions = decisionsOf(team);
+  const brief = briefOf(team, actor);
+  let paras = JOURNAL_PARAS;
+  for (;;) {
+    const j = paras > 0 ? journalOf(team, actor, paras) : null;
+    const parts = [
+      persona,
+      decisions ? `## 확정 조항 (대표 원문의 해석 — 원문은 teams/${team}/decisions.md)\n${decisions}` : null,
+      j ? `## 네 일지 (최근 ${Math.min(paras, j.total)}문단 / 전체 ${j.total} — teams/${team}/journal/${actor}.md)\n${j.text}` : null,
+      brief,
+    ].filter(Boolean);
+    const text = parts.join('\n\n---\n\n');
+    if (text.length <= PROMPT_CAP || paras === 0) return text;
+    paras -= 1;
+  }
 }
 
 /* ── 기동 ── */
 
-/**
- * 이 방 주인의 인격.
- *
- * 실무와 총괄은 서브에이전트가 아니라 메인 세션이라 .md frontmatter 가 없다.
- * CLAUDE.md 는 다섯 방이 공용이므로 방별 인격은 teams/<방>/ 에 두고 여기서 붙인다.
- * 대화록에는 안 남는다 — 시스템 프롬프트지 발언이 아니다.
- */
-function personaOf(team) {
-  const file = path.join(paths(team).dir, isOffice(team) ? 'chief.md' : 'guide.md');
-  try { return fs.readFileSync(file, 'utf8').trim() || null; } catch { return null; }
-}
-
-function spawnFor(team) {
-  const prior = readStore()[team];
+function spawnFor(team, actor) {
+  const cast = readCast(team).agents?.[actor] ?? {};
+  const prior = storedId(team, actor);
   const args = prior ? [...ARGS, '--resume', prior] : [...ARGS];
 
-  // 방마다 다른 모델을 쓸 수 있다 (state/teams.json 의 model).
-  const model = listTeams().find((t) => t.id === team)?.model;
+  // 자리마다 다른 모델. cast.json 의 llm 이 우선, 없으면 방의 모델 (state/teams.json).
+  const model = cast.llm ?? listTeams().find((t) => t.id === team)?.model;
   if (model) args.push('--model', model);
 
-  const persona = personaOf(team);
-  if (persona) args.push('--append-system-prompt', persona);
+  const prompt = assemblePrompt(team, actor);
+  if (prompt) args.push('--append-system-prompt', prompt);
+
+  // 자리마다 다른 도구. 감사역은 고치지 않는다 — 감사역이 고치면 감사가 아니다.
+  if (Array.isArray(cast.disallow) && cast.disallow.length) args.push('--disallowedTools', ...cast.disallow);
 
   const child = spawn('claude', args, {
     cwd: ROOT,
     stdio: ['pipe', 'pipe', 'pipe'],
-    // 훅은 이 값으로 방을 정한다. 팀별 세션이 각자 팀
-    // 대화록에 기록되는 것은 전적으로 이 한 줄 덕분이다.
-    env: { ...process.env, PPANAM_TEAM: team },
+    // 훅은 이 두 값으로 방과 화자를 정한다. 자리별 세션이 각자 이름으로 기록되는 것은 전적으로 이 두 줄 덕분이다.
+    env: { ...process.env, PPANAM_TEAM: team, PPANAM_ACTOR: actor },
   });
 
   const s = {
-    team, child,
+    team, actor, child,
     id: prior ?? null,
     busy: false,
-    queue: [],
+    queue: [],          // [{ text, resolve }]
     buf: '',
     stderr: '',
     timer: null,
     startedAt: new Date().toISOString(),
     resumed: !!prior,   // --resume 으로 떴다. 첫 턴이 성공하기 전에 죽으면 그 id 가 문제다
     firstOk: false,     // 이 프로세스에서 턴이 한 번이라도 끝났나
-    inflight: null,     // 지금 보내진 지시 — 프로세스가 죽으면 한 번 다시 보낼 수 있게
-    closeAfter: null,   // 턴이 끝나면 라운드를 닫고 세션을 비운다 ({ verdict, summary })
-    closing: false,     // stop() 이 불렸다. 프로세스가 끝날 때까지 맵에 남는다 — 그 사이 온 지시는 아래에
+    inflight: null,     // 지금 보내진 턴 { text, resolve } — 프로세스가 죽으면 한 번 다시 보낼 수 있게
+    closing: false,     // stop() 이 불렸다. 프로세스가 끝날 때까지 맵에 남는다 — 그 사이 온 턴은 아래에
     pendingAfterClose: [],
   };
 
   child.stdout.on('data', (d) => { s.buf += d; drain(s); });
-  child.stderr.on('data', (d) => {
-    s.stderr = (s.stderr + d).slice(-4000);
-  });
+  child.stderr.on('data', (d) => { s.stderr = (s.stderr + d).slice(-4000); });
 
-  child.on('error', (e) => die(s, `실무를 띄우지 못했습니다 — ${e.message}`));
+  child.on('error', (e) => die(s, `${name(s)} 세션을 띄우지 못했습니다 — ${e.message}`));
   child.on('close', (code) => {
-    // 우리가 닫은 것이다 — 끝나기를 기다리고 있었다.
     if (s.closing) { onClosed(s); return; }
-    // 우리가 부른 게 아니라 스스로 죽었다면 대표에게 알린다.
-    if (sessions.get(team) === s) {
-      sessions.delete(team);
-      clearTimeout(s.timer);
-      if (code !== 0) {
-        const why = s.stderr.trim().split('\n').slice(-2).join(' ').slice(0, 200);
-        // 저장된 id 로 이어붙이려다 첫 턴도 못 끝내고 죽었다 — 그 id 가 썩은 것이다. 버리고 새 세션으로
-        // 같은 지시를 한 번 다시 보낸다. 안 그러면 id 가 영영 남아 그 뒤 모든 지시가 같은 이유로 죽는다.
-        if (s.resumed && !s.firstOk && s.inflight) {
-          forgetId(team);
-          note(team, `저장된 세션을 이어붙이지 못했습니다 (code ${code})${why ? ' — ' + why : ''}. 새 세션으로 다시 보냅니다.`);
-          const fresh = spawnFor(team);
-          fresh.queue.push(...s.queue);
-          write(fresh, s.inflight);
-          return;
-        }
-        note(team, `실무 세션이 끊겼습니다 (code ${code})${why ? ' — ' + why : ''}. 다음 지시에 다시 붙습니다.`);
-        dropped(s);
+    if (sessions.get(keyOf(team, actor)) !== s) return;
+    sessions.delete(keyOf(team, actor));
+    clearTimeout(s.timer);
+    if (code !== 0) {
+      const why = s.stderr.trim().split('\n').slice(-2).join(' ').slice(0, 200);
+      // 저장된 id 로 이어붙이려다 첫 턴도 못 끝내고 죽었다 — 그 id 가 썩은 것이다. 버리고 새 세션으로
+      // 같은 턴을 한 번 다시 보낸다. 안 그러면 id 가 영영 남아 그 뒤 모든 턴이 같은 이유로 죽는다.
+      if (s.resumed && !s.firstOk && s.inflight) {
+        forgetId(team, actor);
+        note(team, `${name(s)}의 저장된 세션을 이어붙이지 못했습니다 (code ${code})${why ? ' — ' + why : ''}. 새 세션으로 다시 보냅니다.`);
+        const fresh = spawnFor(team, actor);
+        fresh.queue.push(...s.queue);
+        write(fresh, s.inflight);
+        return;
       }
-      // 닫기가 예약돼 있었는데 턴을 못 끝내고 죽었다 — 그래도 닫는다. 대표가 닫으라고 했다.
-      if (s.closeAfter) finishClose(s);
+      note(team, `${name(s)} 세션이 끊겼습니다 (code ${code})${why ? ' — ' + why : ''}. 다음 차례에 다시 붙습니다.`);
+      s.inflight?.resolve?.(null);
+      dropped(s);
     }
+    maybeFinishClose(team);
   });
 
   child.stdin.on('error', () => { /* 자식이 먼저 죽은 경우 */ });
 
-  sessions.set(team, s);
+  sessions.set(keyOf(team, actor), s);
   return s;
 }
 
+const name = (s) => readCast(s.team).agents?.[s.actor]?.name ?? s.actor;
+
 function die(s, message) {
-  if (sessions.get(s.team) === s) sessions.delete(s.team);
+  if (sessions.get(keyOf(s.team, s.actor)) === s) sessions.delete(keyOf(s.team, s.actor));
   clearTimeout(s.timer);
   try { s.child.kill('SIGKILL'); } catch { /* 이미 죽음 */ }
   note(s.team, message);
+  s.inflight?.resolve?.(null);
   dropped(s);
-  if (s.closeAfter) finishClose(s);
+  maybeFinishClose(s.team);
 }
 
-/**
- * 닫히던 프로세스가 끝났다. 이제야 맵에서 뺀다. 닫히는 동안 온 지시가 있으면 그제야 새 프로세스를 띄운다 —
- * 전에는 stop() 이 맵에서 바로 빼고 돌아와, 새 지시가 오면 옛 프로세스가 30~40초 살아 있는 채 둘째가 떴다
- * (레오 감사, 2026-09-12).
- */
+/** 닫히던 프로세스가 끝났다. 이제야 맵에서 뺀다. 닫히는 동안 온 턴이 있으면 그제야 새 프로세스를 띄운다. */
 function onClosed(s) {
-  if (sessions.get(s.team) === s) sessions.delete(s.team);
+  if (sessions.get(keyOf(s.team, s.actor)) === s) sessions.delete(keyOf(s.team, s.actor));
   const pend = s.pendingAfterClose ?? [];
   s.pendingAfterClose = [];
   if (pend.length) {
-    const fresh = spawnFor(s.team);
+    const fresh = spawnFor(s.team, s.actor);
     fresh.queue.push(...pend.slice(1));
     write(fresh, pend[0]);
   }
 }
 
-/** 줄 서 있던 지시가 버려졌으면 말한다. 조용히 사라지는 것이 가장 나쁘다. */
+/** 줄 서 있던 턴이 버려졌으면 말한다. 조용히 사라지는 것이 가장 나쁘다. */
 function dropped(s) {
-  if (s.queue.length) note(s.team, `대기 중이던 지시 ${s.queue.length}건을 버렸습니다. 다시 보내세요.`);
+  if (s.queue.length) note(s.team, `${name(s)}에게 대기 중이던 턴 ${s.queue.length}건을 버렸습니다.`);
+  for (const q of s.queue) q.resolve?.(null);
   s.queue = [];
-}
-
-function forgetId(team) {
-  const all = readStore();
-  if (!(team in all)) return;
-  delete all[team];
-  fs.mkdirSync(path.dirname(STORE), { recursive: true });
-  fs.writeFileSync(STORE, JSON.stringify(all, null, 2) + '\n');
-}
-
-/** 예약된 닫기를 실행한다 — 라운드를 닫고 이 방의 세션 컨텍스트를 비운다. */
-function finishClose(s) {
-  const o = s.closeAfter;
-  s.closeAfter = null;
-  try { endRound(s.team, o); } catch (e) { note(s.team, `라운드를 닫지 못했습니다 — ${e.message}`); }
-  reset(s.team);
 }
 
 /** 시스템 안내. 화면에서 가장 약하게 표시되는 줄이다 (event-schema 3절). */
@@ -202,19 +295,20 @@ function drain(s) {
 
     if (msg.session_id && msg.session_id !== s.id) {
       s.id = msg.session_id;
-      rememberId(s.team, s.id);
+      rememberId(s.team, s.actor, s.id);
     }
 
     if (msg.type === 'result') {
       clearTimeout(s.timer);
       s.busy = false;
-      s.inflight = null;
       s.firstOk = true;
+      const done = s.inflight;
+      s.inflight = null;
       if (msg.subtype && msg.subtype !== 'success') {
-        note(s.team, `실무가 이번 지시를 끝내지 못했습니다 (${msg.subtype}).`);
+        note(s.team, `${name(s)}이 이번 턴을 끝내지 못했습니다 (${msg.subtype}).`);
       }
-      // 턴이 끝나면 닫기로 했다. 줄 서 있던 지시는 닫히는 라운드의 것이라 버린다 — 말하고 버린다.
-      if (s.closeAfter) { dropped(s); finishClose(s); return; }
+      done?.resolve?.(typeof msg.result === 'string' ? msg.result : '');
+      if (closing.has(s.team)) { dropped(s); maybeFinishClose(s.team); return; }
       next(s);
     }
   }
@@ -222,17 +316,17 @@ function drain(s) {
 
 /* ── 보내기 ── */
 
-function write(s, text) {
+function write(s, turn) {
   s.busy = true;
-  s.inflight = text;
+  s.inflight = turn;
   clearTimeout(s.timer);
   s.timer = setTimeout(() => {
-    die(s, `실무가 ${Math.round(TURN_TIMEOUT / 60_000)}분 동안 응답하지 않아 세션을 닫았습니다.`);
+    die(s, `${name(s)}이 ${Math.round(TURN_TIMEOUT / 60_000)}분 동안 응답하지 않아 세션을 닫았습니다.`);
   }, TURN_TIMEOUT);
 
   s.child.stdin.write(JSON.stringify({
     type: 'user',
-    message: { role: 'user', content: [{ type: 'text', text }] },
+    message: { role: 'user', content: [{ type: 'text', text: turn.text }] },
   }) + '\n');
 }
 
@@ -241,80 +335,100 @@ function next(s) {
   write(s, s.queue.shift());
 }
 
-/**
- * 지시를 보낸다.
- *
- * 대표 말풍선은 여기서 만들지 않는다 — 프롬프트가 세션에 들어가면
- * UserPromptSubmit 훅이 알아서 남긴다. 여기서 또 emit 하면 두 번 뜬다.
- *
- * 앞 지시가 아직 안 끝났으면 줄을 세운다. 한 번에 하나씩 시킨다.
- */
-export function send(team, text) {
-  let s = sessions.get(team);
-  // 닫히는 중이다. 옛 프로세스가 끝나면 새로 띄워 보낸다 — 한 팀에 프로세스는 하나다.
-  if (s?.closing) { s.pendingAfterClose.push(text); return { queued: s.pendingAfterClose.length, closing: true }; }
-  if (!s || s.child.exitCode !== null || s.child.signalCode !== null) s = spawnFor(team);
+function alive(s) {
+  return s && !s.closing && s.child.exitCode === null && s.child.signalCode === null;
+}
 
-  if (s.busy) {
-    s.queue.push(text);
-    return { queued: s.queue.length };
-  }
-  write(s, text);
+/**
+ * 턴을 보낸다. 자리를 말하지 않으면 방 주인에게 — 대표의 지시가 가는 곳이다.
+ * 말풍선은 여기서 만들지 않는다. 훅이 남긴다. 앞 턴이 안 끝났으면 줄을 세운다.
+ */
+export function send(team, text, actor = ownerOf(team)) {
+  return enqueue(team, actor, { text, resolve: null });
+}
+
+/** 턴을 보내고 답(result)을 기다린다. 일지 턴처럼 서버가 답을 받아 써야 하는 경우. 세션이 죽으면 null. */
+export function sendAndWait(team, text, actor = ownerOf(team)) {
+  return new Promise((resolve) => enqueue(team, actor, { text, resolve }));
+}
+
+function enqueue(team, actor, turn) {
+  let s = sessions.get(keyOf(team, actor));
+  // 닫히는 중이다. 옛 프로세스가 끝나면 새로 띄워 보낸다 — 한 자리에 프로세스는 하나다.
+  if (s?.closing) { s.pendingAfterClose.push(turn); return { queued: s.pendingAfterClose.length, closing: true }; }
+  if (!alive(s)) s = spawnFor(team, actor);
+  if (s.busy) { s.queue.push(turn); return { queued: s.queue.length }; }
+  write(s, turn);
   return { queued: 0 };
 }
 
-/** 작전실 상단의 "실무가 일하는 중" 표시가 읽는 값. */
-export function status(team) {
-  const s = sessions.get(team);
-  if (!s) return { alive: false, busy: false, queued: 0, sessionId: readStore()[team] ?? null };
-  if (s.closing) return { alive: false, closing: true, busy: false, queued: s.pendingAfterClose.length, sessionId: readStore()[team] ?? null };
+/** 한 자리의 상태. 화면의 "일하는 중" 과 사회자의 busy 검사가 읽는다. */
+export function status(team, actor = ownerOf(team)) {
+  const s = sessions.get(keyOf(team, actor));
+  if (!s) return { alive: false, busy: false, queued: 0, sessionId: storedId(team, actor) };
+  if (s.closing) return { alive: false, closing: true, busy: false, queued: s.pendingAfterClose.length, sessionId: storedId(team, actor) };
   return { alive: true, busy: s.busy, queued: s.queue.length, sessionId: s.id, startedAt: s.startedAt };
 }
 
+/** 방의 모든 claude 자리 상태. */
+export function statusAll(team) {
+  return Object.fromEntries(claudeActors(team).map((a) => [a, status(team, a)]));
+}
+
+export const anyBusy = (team) => Object.values(statusAll(team)).some((x) => x.busy);
+
 /**
- * 세션을 닫는다. 세션 id 는 남겨두므로 다음 지시에 --resume 으로 이어붙는다.
- *
- * stdin 만 닫고 잊으면 안 된다. 턴을 마저 끝내는 고아가 남고, 그 사이 새 지시가 오면 같은 팀에
- * 프로세스가 둘이 된다. 끝나기를 기다리고, 30초 안에 안 끝나면 SIGTERM, 10초 더 지나면 SIGKILL.
+ * 한 자리의 세션을 닫는다. 세션 id 는 남겨두므로 다음 턴에 --resume 으로 이어붙는다.
+ * stdin 만 닫고 잊으면 안 된다. 끝나기를 기다리고, 30초 안에 안 끝나면 SIGTERM, 10초 더 지나면 SIGKILL.
  */
-export function stop(team) {
-  const s = sessions.get(team);
+export function stop(team, actor = ownerOf(team)) {
+  const s = sessions.get(keyOf(team, actor));
   if (!s || s.closing) return false;
-  s.closing = true;             // 맵에 남긴다. send() 가 이걸 보고 기다린다
+  s.closing = true;
   clearTimeout(s.timer);
   const c = s.child;
   try { c.stdin.end(); } catch { /* 이미 닫힘 */ }
   if (c.exitCode !== null || c.signalCode !== null) { onClosed(s); return true; }
   const t1 = setTimeout(() => { try { c.kill('SIGTERM'); } catch { /* 이미 죽음 */ } }, 30_000);
   const t2 = setTimeout(() => { try { c.kill('SIGKILL'); } catch { /* 이미 죽음 */ } }, 40_000);
-  c.once('close', () => { clearTimeout(t1); clearTimeout(t2); });   // onClosed 는 위의 close 핸들러가 부른다
+  c.once('close', () => { clearTimeout(t1); clearTimeout(t2); });
   return true;
 }
 
+/** 방의 모든 자리를 닫는다 (id 는 남긴다). */
+export function stopTeam(team) {
+  for (const k of [...sessions.keys()]) if (k.startsWith(team + ':')) stop(team, k.slice(team.length + 1));
+}
+
 /**
- * 실무가 일하는 중이면 지금 닫지 않는다. 턴이 끝난 뒤 라운드를 닫고 세션을 비운다.
- * 지금 닫으면 그 턴의 마지막 발언이 훅에서 버려진다(phase 가 이미 idle). 대표가 닫으라고 한 뒤에
- * 나온 말이지만, 실무의 마무리 보고는 그 라운드의 것이다.
- * 일하는 중이 아니면 false — 부른 쪽이 바로 닫는다.
+ * 누가 일하는 중이면 지금 닫지 않는다. 방의 모든 자리가 놀면 라운드를 닫고 세션을 비운다.
+ * 지금 닫으면 그 턴의 마지막 발언이 훅에서 버려진다. 일하는 중이 아니면 false — 부른 쪽이 바로 닫는다.
  */
 export function closeWhenIdle(team, opts = {}) {
-  const s = sessions.get(team);
-  if (!s || !s.busy) return false;
-  s.closeAfter = { verdict: opts.verdict ?? null, summary: opts.summary ?? null };
+  if (!anyBusy(team)) return false;
+  closing.set(team, { verdict: opts.verdict ?? null, summary: opts.summary ?? null });
   return true;
 }
 
+function maybeFinishClose(team) {
+  if (!closing.has(team) || anyBusy(team)) return;
+  const o = closing.get(team);
+  closing.delete(team);
+  try { endRound(team, o); } catch (e) { note(team, `라운드를 닫지 못했습니다 — ${e.message}`); }
+  reset(team);
+}
+
 /**
- * 세션을 닫고 **세션 id 까지 버린다.** 라운드가 끝날 때 쓴다.
- *
- * 비워지는 건 AI 컨텍스트뿐이다 (CLAUDE.md). id 를 남겨두면 다음 라운드가
- * --resume 으로 지난 라운드 대화를 통째로 안고 시작한다. 대화록은 그대로 남는다.
+ * 방의 세션을 전부 닫고 **세션 id 까지 버린다.** 라운드가 끝날 때 쓴다.
+ * 비워지는 건 AI 컨텍스트뿐이다 (CLAUDE.md). id 를 남겨두면 다음 라운드가 지난 라운드 대화를 통째로 안고 시작한다.
  */
 export function reset(team) {
-  stop(team);
-  forgetId(team);
+  stopTeam(team);
+  for (const a of claudeActors(team)) forgetId(team, a);
+  const all = readStore();
+  if (team in all) { delete all[team]; writeStore(all); }
 }
 
 export function stopAll() {
-  for (const team of [...sessions.keys()]) stop(team);
+  for (const k of [...sessions.keys()]) { const i = k.indexOf(':'); stop(k.slice(0, i), k.slice(i + 1)); }
 }

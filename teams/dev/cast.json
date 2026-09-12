@@ -12,7 +12,8 @@
       "initial": "솔",
       "color": "#2f6b7a",
       "role": "개발·운영 · 만들고 굴러가게 한다",
-      "model": "claude"
+      "model": "claude",
+      "llm": "sonnet"
     },
     "outside": {
       "name": "레오",

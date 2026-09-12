@@ -88,20 +88,20 @@ const state = bus.readState(team);
 if (!office && state.phase === 'idle' && process.env.PPANAM_ALWAYS !== '1') bail('라운드 대기 중');
 
 /* 화자 결정.
-   메인 세션이 실무다 (대표가 말을 거는 상대). 서브에이전트는 자기 name 이 곧 화자다. */
-/* 화면에 나타나는 화자는 이 셋뿐이다 (docs/event-schema.md 1절).
-   서브에이전트 이름은 팀별로 갈라지므로(marketing-review 등) 접미사로 되돌린다.
-   이걸 안 하면 팀별 감사역이 전부 실무로 찍힌다. */
+   자리 = 프로세스. 서버가 세션을 띄우며 PPANAM_ACTOR 를 넣는다 (server/session.mjs) — 이 세션이 곧 그 자리다.
+   없으면(예전 방식, 대표의 터미널) 방 주인이다 — 작전실이면 실무, 총괄실이면 총괄. */
+const ME = process.env.PPANAM_ACTOR || (office ? 'chief' : 'guide');
+const OWNER = ME;
+
+/* 서브에이전트 이벤트는 과도기 것이다. 캐스트 자리 이름(review·ops·outside, 팀 접두 포함)이면 그 자리로,
+   그 밖(Explore 등 임시 도구)은 화자가 아니다 — 기록하지 않는다. 전에는 임시 서브에이전트의 마지막 말이
+   방 주인의 발언으로 찍혔다. */
 const CAST = new Set(['guide', 'review', 'outside', 'chief', 'ops']);
-
-/** 메인 세션은 그 방의 주인이다 — 작전실이면 실무, 총괄실이면 총괄. */
-const OWNER = office ? 'chief' : 'guide';
-
 const actorOf = (t) => {
-  if (!t) return OWNER;
+  if (!t) return ME;
   if (CAST.has(t)) return t;
   const m = /-(review|outside|ops)$/.exec(t);
-  return m ? m[1] : OWNER;
+  return m ? m[1] : null;
 };
 
 const trim = (s, n = 4000) => {
@@ -144,6 +144,7 @@ switch (ev) {
 
   case 'SubagentStart': {
     const a = actorOf(hook.agent_type);
+    if (!a) bail('캐스트가 아닌 서브에이전트 — 기록 안 함');
     const cast = bus.readCast(team);
     const name = cast.agents?.[a]?.name ?? a;
     // 언제 들어왔는지 남긴다. 나갈 때 "그동안 방에 말했나" 를 보기 위해서다.
@@ -162,7 +163,8 @@ switch (ev) {
     // 문서가 transcript 파싱 대신 이 필드를 쓰라고 명시한다.
     const text = hook.last_assistant_message;
     if (!text) break;
-    const actor = ev === 'Stop' ? OWNER : actorOf(hook.agent_type);
+    const actor = ev === 'Stop' ? ME : actorOf(hook.agent_type);
+    if (!actor) bail('캐스트가 아닌 서브에이전트 — 기록 안 함');
 
     // 서브에이전트의 마지막 말은 실무에게 돌려주는 보고다. 그가 그동안 bus/say.mjs 로 방에 이미 말했으면
     // 그 보고는 같은 지적의 재요약이라 두 번 뜬다 (마케팅 R14, 2026-09-01). "(패스) 로 끝내라" 는 인격 문장은
@@ -185,7 +187,7 @@ switch (ev) {
     // 저장소 밖 절대 경로는 남기지 않는다 — 총괄실 대화록이 /private/tmp/... 로 채워졌다.
     if (what.startsWith('/') && !what.startsWith(ROOT + '/') && what !== ROOT) bail('저장소 밖 경로');
     out = {
-      actor: actorOf(hook.agent_type),
+      actor: actorOf(hook.agent_type) ?? ME,   // 이 자리의 임시 도구가 쓴 도구는 이 자리의 것이다
       type: 'tool',
       text: trim(String(what).split('\n')[0], 160) || tool,
       meta: { tool },

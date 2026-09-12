@@ -70,6 +70,7 @@ const summaries = () => Object.fromEntries(listTeams().map((t) => {
   return [t.id, {
     ...s,
     session: session.status(t.id),
+    sessions: session.statusAll(t.id),   // 자리별 — 참여 카드의 상태 점
     milestoneTitle: now?.title ?? null,
     deliverable: now?.deliverable ?? null,
     progress: readProgress(t.id),
