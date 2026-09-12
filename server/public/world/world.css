@@ -1,6 +1,6 @@
 /* 마을 탭 — 도트 마을 위에 캐릭터와 말풍선. 그림은 캔버스, 글은 DOM. */
 
-.world { display: none; flex-direction: column; min-height: 0; background: var(--ground); }
+.world { display: none; flex-direction: column; min-height: 0; background: var(--ground); position: relative; }
 .app[data-view="world"] .world { display: flex; }
 .app[data-view="world"] .room, .app[data-view="world"] .side { display: none; }
 .app[data-view="world"] { grid-template-columns: 224px minmax(0, 1fr); }
@@ -100,7 +100,7 @@
 
 /* 캐릭터 카드 — 누구인가·어제·최근 발언 (W3) */
 .world__card {
-  position: absolute; right: 14px; top: 14px; z-index: 4; width: min(320px, calc(100% - 28px)); max-height: calc(100% - 28px); overflow: auto;
+  position: absolute; right: 26px; bottom: 26px; z-index: 4; width: min(320px, calc(100% - 52px)); max-height: min(72vh, calc(100% - 110px)); overflow: auto;
   background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px #0004;
   font: 12px/1.45 'IBM Plex Sans KR', system-ui, sans-serif;
 }
