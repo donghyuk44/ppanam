@@ -6,14 +6,16 @@
 // 장면은 둘이다: 마을(village) 과 회사(castle, 성 안). 포탈(성문·정문)로 오가고, "어디로" 목록으로 바로 간다.
 
 const $ = (id) => document.getElementById(id);
-const T = 16;                                      // 타일 한 변(px)
-const DIR = { down: 0, left: 1, up: 2, right: 3 }; // NPC_test.png 의 행 순서
+const T = 16;                                      // 타일 그림 원본 한 변(px) — 지금 CC0 시트는 16px
+const TP = 32;                                     // 화면 칸 한 변(px, 배율 1) — 디자인팀 캐릭터 시트(칸 32×48)의 기준. 32px 타일이 오면 T 도 32
+const DIR = { down: 0, left: 1, up: 2, right: 3 }; // 방향 번호 (대체 그림 NPC_test.png 의 행 순서와 같다)
+const CAST = { dir: '/world/assets/cast/', manifest: 'manifest.json' };   // 디자인팀이 만든 캐릭터 시트 — 없으면 대체 그림
 const WALK = 4;                                    // 초당 걷는 칸 수
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const PAD = { x: 120, y: 110 };                    // 지도 둘레 여백(CSS px) — world.css 의 --pad-x/--pad-y 와 같다
 
 const S = {
-  open: false, ready: null, map: null, sheets: [], npc: null,
+  open: false, ready: null, map: null, sheets: [], npc: null, cast: null,
   z: 2, teams: [], casts: {}, actors: new Map(), boss: null,
   scene: 'castle', caches: {},                       // 보고 있는 장면, 장면별 정적 층 캐시
   canvas: null, ctx: null,
@@ -40,12 +42,38 @@ function tint(img, color) {
   return c;
 }
 
+/** 디자인팀 시트 목록. manifest.json:
+ *   { cell:[w,h], rows:[방향 이름 순서], frames, sprites:{ '<팀>:<자리>'|'boss': 파일 | { file, cell, frames, anchor:[x,y],
+ *     walk:{ down:줄, left:줄, right:줄, up:줄 }, idle:{ row, cols:{ down, left, right, up } } } } }
+ *   문자열이면 옛 형식(줄 = 방향, 칸 = 걷기 프레임, 첫 칸이 정지). 객체면 PixelLab 형식(0줄 = 8방향 정지, 방향마다 걷기 줄 하나).
+ *   anchor 는 칸 안에서 발 가운데 점 — 없으면 [w/2, h]. */
+async function loadCast() {
+  const m = await fetch(CAST.dir + CAST.manifest).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  if (!m?.sprites) return null;
+  const [fw, fh] = m.cell ?? [32, 48];
+  const rowOf = []; (m.rows ?? ['down', 'left', 'right', 'up']).forEach((name, i) => { if (DIR[name] !== undefined) rowOf[DIR[name]] = i; });
+  const sheets = {};
+  await Promise.all(Object.entries(m.sprites).map(async ([key, spec]) => {
+    try {
+      if (typeof spec === 'string') { sheets[key] = { img: await loadImage(CAST.dir + spec), fw, fh, rowOf, frames: m.frames ?? 4, anchor: [fw / 2, fh] }; return; }
+      const [w, h] = spec.cell ?? m.cell ?? [32, 48];
+      const walk = [], idleCol = [];
+      for (const [name, i] of Object.entries(DIR)) { walk[i] = spec.walk?.[name]; idleCol[i] = spec.idle?.cols?.[name]; }
+      sheets[key] = { img: await loadImage(CAST.dir + spec.file), fw: w, fh: h, rowOf: walk, frames: spec.frames ?? 8, anchor: spec.anchor ?? [w / 2, h], idle: spec.idle ? { row: spec.idle.row ?? 0, col: idleCol } : null };
+    } catch { /* 못 읽는 시트는 대체 그림으로 */ }
+  }));
+  return { ...m, sheets };
+}
+const sheetFor = (key) => S.cast?.sheets?.[key] ?? null;
+/** 그림 위 끝(칸 좌표) — 이름표·말풍선이 여기 붙는다. 시트가 없으면 대체 그림(2배 64px)의 위 끝 */
+const topOf = (a) => a.py + TP - (a.sheet ? a.sheet.anchor[1] : 64);
+
 function makeActor(team, id, a, home) {
   const act = {
     key: `${team}:${id}`, team, id, name: a.name ?? id, color: a.color, model: a.model, scene: home.scene,
-    x: home.x, y: home.y, px: home.x * T, py: home.y * T, dir: DIR[home.dir ?? 'down'] ?? 0,
+    x: home.x, y: home.y, px: home.x * TP, py: home.y * TP, dir: DIR[home.dir ?? 'down'] ?? 0,
     frame: 0, animT: 0, path: [], onArrive: null, hidden: false, home, lastSpoke: 0,
-    sprite: tint(S.npc, a.color),
+    sprite: tint(S.npc, a.color), sheet: sheetFor(`${team}:${id}`),
   };
   S.actors.set(act.key, act);
   return act;
@@ -53,11 +81,12 @@ function makeActor(team, id, a, home) {
 
 async function load() {
   const map = await fetch('/world/map.json').then((r) => r.json());
-  const [sheets, npc] = await Promise.all([
+  const [sheets, npc, cast] = await Promise.all([
     Promise.all(map.sheets.map((s) => loadImage('/world/' + s))),
     loadImage('/world/assets/zelda/NPC_test.png'),
+    loadCast(),
   ]);
-  S.map = map; S.sheets = sheets; S.npc = npc;
+  S.map = map; S.sheets = sheets; S.npc = npc; S.cast = cast;
 
   const casts = await Promise.all(S.teams.map((t) =>
     fetch(`/api/team?team=${encodeURIComponent(t.id)}`).then((r) => r.json()).then((r) => [t.id, r.cast?.agents ?? {}]).catch(() => [t.id, {}])));
@@ -72,8 +101,8 @@ async function load() {
   const bd = map.places['boss.desk'] ?? map.places['hq.bossdoor'];
   S.boss = {
     key: 'boss', team: null, id: 'boss', name: bc.initial ?? '댄', color: bc.color, scene: bd.scene,
-    x: bd.x, y: bd.y, px: bd.x * T, py: bd.y * T, dir: DIR.down, frame: 0, animT: 0, path: [], onArrive: null,
-    hidden: false, home: bd, lastSpoke: 0, controlled: 0, sprite: tint(npc, bc.color),
+    x: bd.x, y: bd.y, px: bd.x * TP, py: bd.y * TP, dir: DIR.down, frame: 0, animT: 0, path: [], onArrive: null,
+    hidden: false, home: bd, lastSpoke: 0, controlled: 0, sprite: tint(npc, bc.color), sheet: sheetFor('boss'),
   };
 
   S.canvas = $('wvCanvas'); S.ctx = S.canvas.getContext('2d');
@@ -102,21 +131,21 @@ function paintLayer(x, arr) {
   for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) {
     const v = arr[y * w + xx]; if (!v) continue;
     const [s, c, r] = tileAt(v);
-    x.drawImage(S.sheets[s], c * T, r * T, T, T, xx * T * z, y * T * z, T * z, T * z);
+    x.drawImage(S.sheets[s], c * T, r * T, T, T, xx * TP * z, y * TP * z, TP * z, TP * z);
   }
 }
 function layerCanvas(names) {
-  const c = document.createElement('canvas'); c.width = cur().w * T * S.z; c.height = cur().h * T * S.z;
+  const c = document.createElement('canvas'); c.width = cur().w * TP * S.z; c.height = cur().h * TP * S.z;
   const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
   for (const n of names) paintLayer(x, cur().layers[n]);
   return c;
 }
 function rebuild() {
   const { w, h } = cur(), z = S.z;
-  S.canvas.width = w * T * z; S.canvas.height = h * T * z;
+  S.canvas.width = w * TP * z; S.canvas.height = h * TP * z;
   S.ctx.imageSmoothingEnabled = false;
-  $('wvInner').style.width = `${w * T * z + PAD.x * 2}px`; $('wvInner').style.height = `${h * T * z + PAD.y * 2}px`;
-  for (const id of ['wvBubbles', 'wvLabels']) { const el = $(id); el.style.width = `${w * T * z}px`; el.style.height = `${h * T * z}px`; }
+  $('wvInner').style.width = `${w * TP * z + PAD.x * 2}px`; $('wvInner').style.height = `${h * TP * z + PAD.y * 2}px`;
+  for (const id of ['wvBubbles', 'wvLabels']) { const el = $(id); el.style.width = `${w * TP * z}px`; el.style.height = `${h * TP * z}px`; }
   const key = `${S.scene}@${z}`;
   if (!S.caches[key]) S.caches[key] = { bg: layerCanvas(['ground', 'deco', 'wall']), obj: layerCanvas(['objects']), over: layerCanvas(['over']) };
   Object.assign(S, S.caches[key]);
@@ -129,7 +158,7 @@ function buildLabels() {
   for (const [id, r] of Object.entries(cur().rooms)) {
     if (!r.label) continue;
     const el = document.createElement('div'); el.className = 'wv-room'; el.textContent = r.label;
-    el.style.left = `${(r.x + r.w / 2) * T * z}px`; el.style.top = `${r.y * T * z + (id === 'plaza' || id === 'cafe' ? 14 * z : 4 * z)}px`;
+    el.style.left = `${(r.x + r.w / 2) * TP * z}px`; el.style.top = `${r.y * TP * z + (id === 'plaza' || id === 'cafe' ? 28 * z : 8 * z)}px`;
     box.appendChild(el);
   }
 }
@@ -161,7 +190,7 @@ function bfs(sc, from, to) {
 }
 
 function teleport(a, p) {
-  a.path = []; a.onArrive = null; a.x = p.x; a.y = p.y; a.px = p.x * T; a.py = p.y * T; a.frame = 0; a.hidden = false;
+  a.path = []; a.onArrive = null; a.x = p.x; a.y = p.y; a.px = p.x * TP; a.py = p.y * TP; a.frame = 0; a.hidden = false;
   if (p.scene) a.scene = p.scene;
   if (p.dir) a.dir = DIR[p.dir];
 }
@@ -179,15 +208,15 @@ function walkTo(a, p, done) {
 function tick(dt) {
   for (const a of everyone()) {
     if (!a.path.length) continue;
-    const [tx, ty] = a.path[0]; const gx = tx * T, gy = ty * T;
-    const dx = gx - a.px, dy = gy - a.py, dist = Math.hypot(dx, dy), step = WALK * T * dt;
+    const [tx, ty] = a.path[0]; const gx = tx * TP, gy = ty * TP;
+    const dx = gx - a.px, dy = gy - a.py, dist = Math.hypot(dx, dy), step = WALK * TP * dt;
     a.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? DIR.right : DIR.left) : (dy > 0 ? DIR.down : DIR.up);
     if (dist <= step) {
       a.px = gx; a.py = gy; a.x = tx; a.y = ty; a.path.shift();
       if (!a.path.length) { a.frame = 0; const f = a.onArrive; a.onArrive = null; f?.(); }
       if (a === S.boss) usePortal(a);
     } else { a.px += dx / dist * step; a.py += dy / dist * step; }
-    a.animT += dt; if (a.animT > 0.12) { a.animT = 0; a.frame = (a.frame + 1) % 4; }
+    a.animT += dt; if (a.animT > 0.12) { a.animT = 0; a.frame = (a.frame + 1) % (a.sheet?.frames ?? 4); }
   }
 }
 
@@ -226,25 +255,42 @@ const LABEL = (name) => {
 
 /* ── 그리기: 바닥 → (물건 줄, 그 줄에 발 딛은 사람) → 위층 → 이름표 ── */
 
+/** 한 사람을 그린다. 발이 칸 바닥에 닿고 가로로 칸 가운데. 시트(32×48)가 있으면 그것, 없으면 대체 그림(16×32 를 2배로) */
+function drawActor(x, a, z) {
+  const s = a.sheet;
+  if (s) {
+    const walking = a.path.length > 0;
+    let row, col;
+    if (s.idle && (!walking || s.rowOf[a.dir] === undefined)) { row = s.idle.row; col = s.idle.col[a.dir] ?? 0; }   // PixelLab: 정지는 0줄의 방향 칸
+    else { row = s.rowOf[a.dir] ?? 0; col = a.frame % s.frames; }
+    if (s.rowOf[a.dir] === undefined && !s.idle) row = 0;
+    // 발 가운데(anchor)가 칸 바닥 가운데에 오게
+    const dx = a.px + TP / 2 - s.anchor[0], dy = a.py + TP - s.anchor[1];
+    x.drawImage(s.img, col * s.fw, row * s.fh, s.fw, s.fh, Math.round(dx * z), Math.round(dy * z), s.fw * z, s.fh * z);
+  } else {
+    x.drawImage(a.sprite, a.frame * 16, a.dir * 32, 16, 32, Math.round(a.px * z), Math.round((a.py + TP - 64) * z), 32 * z, 64 * z);
+  }
+}
+
 function render() {
-  const x = S.ctx, z = S.z, { w, h } = cur(), rowH = T * z;
+  const x = S.ctx, z = S.z, { w, h } = cur(), rowH = TP * z;
   x.drawImage(S.bg, 0, 0);
   const list = everyone().filter((a) => !a.hidden && a.scene === S.scene).sort((a, b) => a.py - b.py);
   // 발밑 그림자 — 바닥에 붙어 보이게 한다
   x.fillStyle = '#00000038';
-  for (const a of list) { x.beginPath(); x.ellipse((a.px + 8) * z, (a.py + 14) * z, 6 * z, 2.5 * z, 0, 0, Math.PI * 2); x.fill(); }
+  for (const a of list) { x.beginPath(); x.ellipse((a.px + TP / 2) * z, (a.py + TP - 3) * z, 9 * z, 3.5 * z, 0, 0, Math.PI * 2); x.fill(); }
   let drawn = 0;
   const band = (to) => { if (to > drawn) { x.drawImage(S.obj, 0, drawn * rowH, w * rowH, (to - drawn) * rowH, 0, drawn * rowH, w * rowH, (to - drawn) * rowH); drawn = to; } };
   for (const a of list) {
-    band(clamp(Math.floor((a.py + T / 2) / T), 0, h - 1) + 1);
-    x.drawImage(a.sprite, a.frame * 16, a.dir * 32, 16, 32, Math.round(a.px * z), Math.round((a.py - 16) * z), 16 * z, 32 * z);
+    band(clamp(Math.floor((a.py + TP / 2) / TP), 0, h - 1) + 1);
+    drawActor(x, a, z);
   }
   band(h);
   x.drawImage(S.over, 0, 0);
-  x.font = `${z >= 3 ? 15 : 12}px Galmuri11, 'IBM Plex Sans KR', sans-serif`; x.textAlign = 'center'; x.textBaseline = 'bottom';
+  x.font = `${z >= 2 ? 15 : 12}px Galmuri11, 'IBM Plex Sans KR', sans-serif`; x.textAlign = 'center'; x.textBaseline = 'bottom';
   x.lineWidth = 3; x.lineJoin = 'round'; x.strokeStyle = '#1c1a17cc';
   for (const a of list) {
-    const tx = (a.px + 8) * z, ty = (a.py - 17) * z;
+    const tx = (a.px + TP / 2) * z, ty = (topOf(a) - 2) * z;
     x.strokeText(a.name, tx, ty); x.fillStyle = a === S.boss ? '#ffe28a' : '#fff'; x.fillText(a.name, tx, ty);
   }
 }
@@ -290,7 +336,7 @@ function layoutBubbles() {
     for (let i = list.length - 1; i >= 0; i--) {
       const el = list[i].el;
       el.style.display = (a.hidden || a.scene !== S.scene) ? 'none' : '';
-      el.style.left = `${(a.px + 8) * z}px`; el.style.top = `${(a.py - 26) * z - off}px`;
+      el.style.left = `${(a.px + TP / 2) * z}px`; el.style.top = `${(topOf(a) - 10) * z - off}px`;
       off += el.offsetHeight + 8;
     }
   }
@@ -309,7 +355,7 @@ function banner(team, text) {
   if (sc.name !== S.scene && !(S.cam && setScene(sc.name))) return;   // 다른 장면의 띠는 카메라가 따라갈 때만
   const el = document.createElement('div'); el.className = 'wv-banner';
   el.textContent = String(text).length > 60 ? String(text).slice(0, 60) + '…' : text;
-  el.style.left = `${(r.x + r.w / 2) * T * S.z}px`; el.style.top = `${(r.y + 3) * T * S.z}px`;
+  el.style.left = `${(r.x + r.w / 2) * TP * S.z}px`; el.style.top = `${(r.y + 3) * TP * S.z}px`;
   $('wvLabels').appendChild(el);
   setTimeout(() => { el.classList.add('wb--gone'); setTimeout(() => el.remove(), 260); }, 5000);
 }
@@ -317,7 +363,7 @@ function banner(team, text) {
 function lookAt(a, force = false) {
   if (a.scene !== S.scene) { if (!S.cam && !force) return; setScene(a.scene); force = true; }
   const v = $('wvView'), z = S.z;
-  const cx = (a.px + 8) * z + PAD.x, cy = a.py * z + PAD.y;
+  const cx = (a.px + TP / 2) * z + PAD.x, cy = a.py * z + PAD.y;
   const l = v.scrollLeft, t = v.scrollTop, W = v.clientWidth, H = v.clientHeight;
   if (!force && cx > l + 60 && cx < l + W - 60 && cy > t + 80 && cy < t + H - 40) return;
   v.scrollTo({ left: cx - W / 2, top: cy - H / 2, behavior: force ? 'auto' : 'smooth' });
@@ -419,7 +465,7 @@ export function replay(team, events, round = events[0]?.round ?? null) {
   clearBubbles(team);
   $('wvPlay').textContent = '일시정지'; $('wvStop').hidden = false;
   const [sc, room] = roomOf(team);
-  if (room && S.cam) { if (sc.name !== S.scene) setScene(sc.name); $('wvView').scrollTo({ left: (room.x + room.w / 2) * T * S.z + PAD.x - $('wvView').clientWidth / 2, top: Math.max(0, room.y * T * S.z + PAD.y - 60), behavior: 'smooth' }); }
+  if (room && S.cam) { if (sc.name !== S.scene) setScene(sc.name); $('wvView').scrollTo({ left: (room.x + room.w / 2) * TP * S.z + PAD.x - $('wvView').clientWidth / 2, top: Math.max(0, room.y * TP * S.z + PAD.y - 60), behavior: 'smooth' }); }
   step();
 }
 function step() {
@@ -576,7 +622,8 @@ export function onSummaries() { /* W2: 자리 상태(자는 중·말하는 중)�
 export function snapshot() {
   return {
     scene: S.scene,
-    actors: everyone().map((a) => ({ key: a.key, name: a.name, scene: a.scene, x: a.x, y: a.y, hidden: a.hidden, walking: a.path.length > 0 })),
+    actors: everyone().map((a) => ({ key: a.key, name: a.name, scene: a.scene, x: a.x, y: a.y, hidden: a.hidden, walking: a.path.length > 0, sheet: !!a.sheet })),
+    cast: S.cast ? { cell: S.cast.cell, sheets: Object.keys(S.cast.sheets) } : null,
     bubbles: [...S.bubbles].map((b) => ({ who: b.a.key, kind: b.kind, text: b.el.textContent.slice(0, 40) })),
     replay: { team: R.team, round: R.round, i: R.i, n: R.events.length, playing: R.playing },
   };
