@@ -23,6 +23,8 @@ const S = {
   world: null,                                       // 세상의 시계 — 서버가 준 { hour, mode, actors } (W2)
 };
 const MODE_LABEL = { work: '근무', lunch: '점심', evening: '퇴근', night: '밤', rest: '휴식' };
+/** 시각 → 모드 (화면용 근사. 정본은 server/world.mjs). 재생할 때 사건의 시각으로 색조를 정한다. */
+const modeOfHour = (h) => (h >= 23 || h < 7 ? 'night' : h >= 12 && h < 13 ? 'lunch' : h >= 9 && h < 18 ? 'work' : 'evening');
 const cur = () => S.map.scenes[S.scene];             // 지금 보는 장면
 const sceneOf = (a) => S.map.scenes[a.scene];
 const placeOf = (name) => S.map.places[name] ?? null;
@@ -211,7 +213,10 @@ function walkTo(a, p, done) {
 }
 
 function tick(dt) {
+  const nowT = performance.now();
+  fidget(nowT);
   for (const a of everyone()) {
+    if (a.detour && nowT > a.detour.until && !a.path.length) endDetour(a);
     if (a.act === 'typing' && !a.hidden) {
       const cur = [...S.bubbles].find((b) => b.a === a && b.kind === 'tool');
       if (cur) cur.until = performance.now() + 1500; else speak(a, '', { kind: 'tool', cls: 'wb--tool', ms: 1500 });
@@ -256,8 +261,7 @@ function applyWorld(w) {
     if (R.team === a.team && R.events.length) continue;
     if (a.routine !== t.place) {
       a.routine = t.place;
-      const p = routinePlace(a, t.place, i);
-      if (p) walkTo(a, p);
+      if (!a.detour) { const p = routinePlace(a, t.place, i); if (p) walkTo(a, p); }
     }
     const zzz = [...S.bubbles].find((b) => b.a === a && b.kind === 'zzz');
     if (t.act === 'sleep' && !zzz) speak(a, 'z z z', { kind: 'zzz', cls: 'wb--zzz', ms: 1e9 });
@@ -268,6 +272,57 @@ function applyWorld(w) {
   const sel = $('wvHour'); if (sel && document.activeElement !== sel) sel.value = w.debug ? String(Math.round(w.hour)) : '';
 }
 export function onWorld(w) { S.world = w; applyWorld(w); }
+
+/* ── 연출 (W3): 사건이 잠깐 자리를 바꾼다. 끝나면 시계가 정한 자리로 돌아간다 ── */
+
+/** p 주변의 빈 칸 하나 — 같은 장면에서. i 로 자리를 나눠 여럿이 겹치지 않게. */
+function nearFree(p, i = 0, radius = 2) {
+  const sc = S.map.scenes[p.scene]; if (!sc) return null;
+  const ring = [];
+  for (let r = 1; r <= radius; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (Math.max(Math.abs(dx), Math.abs(dy)) === r) ring.push([dx, dy]);
+  const taken = new Set(everyone().map((a) => `${a.scene}:${a.x},${a.y}`));
+  const cand = ring.filter(([dx, dy]) => free(sc, p.x + dx, p.y + dy) && !taken.has(`${p.scene}:${p.x + dx},${p.y + dy}`));
+  if (!cand.length) return null;
+  const [dx, dy] = cand[i % cand.length];
+  return { scene: p.scene, x: p.x + dx, y: p.y + dy };
+}
+/** a 가 b 를 바라본다. */
+function face(a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  a.dir = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? DIR.right : DIR.left) : (dy > 0 ? DIR.down : DIR.up);
+}
+/** 잠깐 다른 자리로 갔다가(ms) 시계가 정한 자리로 돌아온다. 도착하면 arrive() */
+function detour(a, place, ms, arrive) {
+  if (!place) return;
+  a.detour = { until: performance.now() + ms };
+  walkTo(a, place, () => { if (a.detour) arrive?.(); });
+}
+function endDetour(a) {
+  if (!a.detour) return;
+  a.detour = null;
+  // 재생 중인 방은 시계가 아니라 재생의 기준 자리(자기 책상)로 돌아간다 — 밤에 낮 회의를 재생해도 집으로 가지 않게
+  const replaying = R.team === a.team && R.events.length;
+  const back = replaying ? a.home : routinePlace(a, a.routine ?? `${a.team}.desk.${a.id}`, 0);
+  if (back) walkTo(a, back);
+}
+/** 회의 — 팀이 회의상 둘레에 모인다. */
+function gather(team, ms = 25000) {
+  const t = placeOf(`${team}.table`); if (!t) return;
+  let i = 0;
+  for (const a of S.actors.values()) if (a.team === team && !a.hidden) { const spot = nearFree(t, i++, 2); detour(a, spot, ms, () => face(a, t)); }
+}
+/** 살아 있는 느낌의 잔동작 — 근무 중 놀고 있는 사람 하나가 가끔 근처를 한 바퀴 돈다. 토큰 0. */
+let fidgetAt = 0;
+function fidget(now) {
+  if (now < fidgetAt) return;
+  fidgetAt = now + 40000 + Math.random() * 50000;
+  if (S.world?.mode !== 'work') return;
+  const pool = [...S.actors.values()].filter((a) => !a.hidden && a.act === 'idle' && !a.detour && !a.path.length && !(R.team === a.team && R.events.length));
+  if (!pool.length) return;
+  const a = pool[Math.floor(Math.random() * pool.length)];
+  const spot = nearFree({ scene: a.scene, x: a.x, y: a.y }, Math.floor(Math.random() * 8), 2);
+  if (spot) detour(a, spot, 4000 + Math.random() * 5000);
+}
 
 /** 댄이 포탈 칸에 올라섰다 — 건너편에 나타나고 화면도 따라간다. */
 function usePortal(a) {
@@ -339,7 +394,7 @@ function render() {
   band(h);
   x.drawImage(S.over, 0, 0);
   // 세상의 시각 — 밤엔 어둡고 저녁엔 붉다. 마을이 시계를 따른다는 것이 한눈에 보이게.
-  const mode = S.world?.mode;
+  const mode = R.team && R.events.length && R.hour != null ? modeOfHour(R.hour) : S.world?.mode;
   if (mode === 'night') { x.fillStyle = 'rgba(8, 10, 32, 0.55)'; x.fillRect(0, 0, S.canvas.width, S.canvas.height); }
   else if (mode === 'evening') { x.fillStyle = 'rgba(80, 40, 10, 0.18)'; x.fillRect(0, 0, S.canvas.width, S.canvas.height); }
   x.font = `${z >= 2 ? 15 : 12}px Galmuri11, 'IBM Plex Sans KR', sans-serif`; x.textAlign = 'center'; x.textBaseline = 'bottom';
@@ -447,6 +502,18 @@ function handle(team, e) {
       if (e.actor === 'system') { banner(team, e.text); return; }
       const a = actorFor(team, e.actor); if (!a) return;
       if (a.hidden) teleport(a, a.home);
+      // 대표가 마을에서 말을 건 사람이 답한다 — 다가와서 대표를 보고 말한다 (W3)
+      const tt = S.talkTarget;
+      if (tt && tt.key === a.key && performance.now() - tt.at < 4 * 60 * 1000 && a.scene === S.boss.scene) {
+        S.talkTarget = null;
+        const spot = nearFree({ scene: S.boss.scene, x: S.boss.x, y: S.boss.y }, 0, 1);
+        detour(a, spot, 20000, () => { face(a, S.boss); speak(a, e.text); });
+        return;
+      }
+      // 호명이면 상대를 바라본다
+      const m = /^\s*([^,，\s]{1,12})\s*[,，]/.exec(String(e.text ?? ''));
+      const to = m ? [...S.actors.values()].find((x) => x.team === team && x.name === m[1]) : null;
+      if (to && to.scene === a.scene) face(a, to);
       speak(a, e.text);
       return;
     }
@@ -454,7 +521,13 @@ function handle(team, e) {
       const a = actorFor(team, e.actor); if (!a) return;
       const v = e.meta?.verdict ?? '';
       if (a.hidden) teleport(a, a.home);
-      speak(a, e.text || v, { cls: `wb--verdict wb--${v}`, who: `${a.name} · ${v || '판정'}` });
+      // 감사역이 판정 대상의 자리로 걸어가 도장을 찍는다 (W3). 대상은 실무(guide)다.
+      const target = e.meta?.target && actorFor(team, e.meta.target) || actorFor(team, 'guide');
+      const say = () => speak(a, e.text || v, { cls: `wb--verdict wb--${v}`, who: `${a.name} · ${v || '판정'}` });
+      if (target && target !== a && target.scene === a.scene && !target.hidden) {
+        const spot = nearFree({ scene: target.scene, x: target.x, y: target.y }, 0, 1);
+        detour(a, spot, 12000, () => { face(a, target); face(target, a); say(); });
+      } else say();
       return;
     }
     case 'tool': {
@@ -471,7 +544,15 @@ function handle(team, e) {
       const door = P[`${team}.door`]; if (door) { teleport(a, door); walkTo(a, a.home); }
       return;
     }
-    case 'round_start': case 'round_end': case 'note':
+    case 'round_start':
+      banner(team, e.text);
+      gather(team);                                   // 회의상으로 모인다 (W3)
+      return;
+    case 'round_end':
+      banner(team, e.text);
+      for (const a of S.actors.values()) if (a.team === team) endDetour(a);
+      return;
+    case 'note':
       banner(team, e.text);
       return;
     default:
@@ -527,6 +608,7 @@ function step() {
   if (!R.playing) return;
   if (R.i >= R.events.length) { status(`재생 끝 · R${R.round}`); stop(); return; }
   const e = R.events[R.i++];
+  R.hour = e.ts ? new Date(e.ts).getHours() + new Date(e.ts).getMinutes() / 60 : null;
   handle(R.team, e);
   status(`재생 ${R.i}/${R.events.length}`);
   const nxt = R.events[R.i];
@@ -543,7 +625,7 @@ function pause() {
   if (R.playing) step();
 }
 function stop(quiet) {
-  clearTimeout(R.timer); R.playing = false; R.events = []; R.i = 0;
+  clearTimeout(R.timer); R.playing = false; R.events = []; R.i = 0; R.hour = null;
   const team = R.team, held = R.held; R.team = null; R.held = [];
   $('wvPlay').textContent = '재생'; $('wvStop').hidden = true;
   if (!quiet) status('');
@@ -592,6 +674,7 @@ function onKey(ev) {
 }
 function openTalk(a) {
   talkTo = a;
+  face(a, S.boss);
   const f = $('wvTalk'), i = $('wvTalkIn');
   f.hidden = false; i.value = `${a.name}, `; i.placeholder = `${a.name}에게`; i.focus();
   i.setSelectionRange(i.value.length, i.value.length);
@@ -604,7 +687,7 @@ async function submitTalk(ev) {
   if (!a || !text) return closeTalk();
   const r = await fetch('/api/say', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ team: a.team, text }) })
     .then(async (x) => ({ ok: x.ok, data: await x.json().catch(() => ({})) })).catch(() => ({ ok: false, data: {} }));
-  if (r.ok) toast(`${a.name}에게 전했습니다. 답은 여기와 작전실에 같이 뜹니다.`);
+  if (r.ok) { S.talkTarget = { key: a.key, at: performance.now() }; toast(`${a.name}에게 전했습니다. 답은 여기와 작전실에 같이 뜹니다.`); }
   else toast(r.data.needsRound ? `${a.team} 방의 라운드를 먼저 여세요(작전실에서).` : (r.data.error ?? '전하지 못했습니다.'), 5000);
   closeTalk();
 }
