@@ -94,30 +94,30 @@
       }
     },
     "design:outside": {
-      "file": "design-outside-64.png",
+      "file": "design-outside-walk.png",
       "cell": [
-        29,
-        55
+        92,
+        92
       ],
-      "frames": 1,
+      "frames": 8,
       "anchor": [
-        15,
-        55
+        46,
+        79
       ],
       "idle": {
         "row": 0,
         "cols": {
           "down": 0,
-          "left": 0,
-          "right": 0,
-          "up": 0
+          "right": 2,
+          "up": 4,
+          "left": 6
         }
       },
       "walk": {
-        "down": 0,
-        "left": 0,
-        "right": 0,
-        "up": 0
+        "down": 1,
+        "right": 2,
+        "up": 3,
+        "left": 4
       }
     },
     "dev:guide": {
@@ -283,30 +283,30 @@
       }
     },
     "hq:chief": {
-      "file": "hq-chief-64.png",
+      "file": "hq-chief-walk.png",
       "cell": [
-        30,
-        59
+        92,
+        92
       ],
-      "frames": 1,
+      "frames": 8,
       "anchor": [
-        15,
-        59
+        46,
+        78
       ],
       "idle": {
         "row": 0,
         "cols": {
           "down": 0,
-          "left": 0,
-          "right": 0,
-          "up": 0
+          "right": 2,
+          "up": 4,
+          "left": 6
         }
       },
       "walk": {
-        "down": 0,
-        "left": 0,
-        "right": 0,
-        "up": 0
+        "down": 1,
+        "right": 2,
+        "up": 3,
+        "left": 4
       }
     },
     "hq:outside": {
