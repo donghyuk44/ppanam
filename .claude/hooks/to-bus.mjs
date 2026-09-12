@@ -55,6 +55,16 @@ if (DEBUG) {
   );
 }
 
+/* 서브에이전트 등장 마커는 나갈 때 무조건 거둔다 — 방이 정해졌든, 기록하든 말든. 마커는 방과 무관하게 ROOT 아래에 있고,
+ * 아래 어느 bail 보다 먼저 있어야 어떤 경로로도 남지 않는다 (레오 감사, 2026-09-12). */
+const ev = hook.hook_event_name;
+let enteredAt = null;
+if (ev === 'SubagentStop' && hook.agent_id) {
+  const marker = path.join(AGENTS_DIR, String(hook.agent_id));
+  try { enteredAt = fs.readFileSync(marker, 'utf8').trim(); } catch { /* 들어온 기록이 없다 */ }
+  try { fs.unlinkSync(marker); } catch { /* 없으면 그만 */ }
+}
+
 /* 어느 작전실인가.
  *
  * 방을 명시하지 않은 세션은 아무 방에도 기록하지 않는다. 기본값으로 떨어뜨리면
@@ -73,16 +83,6 @@ if (!bus.teamExists(team)) bail('없는 방: ' + team);
    총괄실은 방 자체가 대표와의 1:1 이라 라운드가 없다. 늘 기록한다. */
 const office = bus.isOffice(team);
 const state = bus.readState(team);
-const ev = hook.hook_event_name;
-
-// 서브에이전트 등장 마커는 나갈 때 무조건 거둔다 — 기록하든 말든. 빈 최종 보고나 닫힌 방에서 나가면
-// 아래 어딘가에서 bail 하므로, 여기서 먼저 읽고 지운다 (레오 감사, 2026-09-12).
-let enteredAt = null;
-if (ev === 'SubagentStop' && hook.agent_id) {
-  const marker = path.join(AGENTS_DIR, String(hook.agent_id));
-  try { enteredAt = fs.readFileSync(marker, 'utf8').trim(); } catch { /* 들어온 기록이 없다 */ }
-  try { fs.unlinkSync(marker); } catch { /* 없으면 그만 */ }
-}
 
 // 막힌 방(FAIL, 대표 판단 대기)도 열린 라운드다 — FAIL 직후 실무의 "무엇이 막혔는지" 보고가 남아야 한다.
 if (!office && state.phase === 'idle' && process.env.PPANAM_ALWAYS !== '1') bail('라운드 대기 중');

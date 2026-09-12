@@ -133,14 +133,20 @@ export function runNotifier({ send = (team, text) => session.send(team, quiet(te
       }
     }
 
-    // (b) 결말 — 요청한 방에 (+ 행동 실행)
+    // (b-1) 통과한 요청에 박힌 행동은 방이 닫혀 있어도, 세션이 없어도 실행한다. 상태를 바꾸는 일이지 말이 아니다.
+    // "다음 마일스톤 착수" 가 통과했는데 라운드가 닫혀 있으면 now 가 안 옮겨져 startRound 가 영영 거부됐다 —
+    // 알림 가능 여부가 행동까지 막고 있었다 (레오 감사, 2026-09-12). 적용은 한 번뿐이므로 send 와 무관하게 먼저 기록한다.
+    if (r.status === 'passed' && !t.applied) {
+      t.applied = now();
+      t.appliedText = applyAction(r);
+      changed = true;
+    }
+
+    // (b-2) 결말 — 요청한 방에
     if (r.status !== 'pending' && !t.decided) {
       if (!canHear(r.team)) continue;          // 라운드가 닫혀 있다. 열리면 알린다
       let text = decidedText(r);
-      if (r.status === 'passed') {
-        const applied = applyAction(r);
-        if (applied) text += ' ' + applied;
-      }
+      if (t.appliedText) text += ' ' + t.appliedText;
       try { send(r.team, text); t.decided = now(); changed = true; }
       catch (e) { emit(r.team, { actor: 'system', type: 'note', text: `승인 ${r.id} 결과를 세션에 넣지 못했습니다 — ${String(e.message).slice(0, 120)}` }); }
     }
