@@ -381,6 +381,16 @@ function handle(team, e) {
 
 function status(t) { $('wvStatus').textContent = t; }
 
+/** 도구막대의 팀·라운드 선택기를 지금 재생하는 것에 맞춘다. 목록에 없는 라운드(픽스처)는 항목을 만들어 넣는다. */
+function syncPicker(team, round) {
+  const ts = $('wvTeam'); if (ts && [...ts.options].some((o) => o.value === team)) ts.value = team;
+  const sel = $('wvRound'); if (!sel || round == null) return;
+  if (![...sel.options].some((o) => o.value === String(round))) {
+    const o = document.createElement('option'); o.value = String(round); o.textContent = `R${round} · 재생 중`; sel.prepend(o);
+  }
+  sel.value = String(round);
+}
+
 async function loadRounds(team) {
   const sel = $('wvRound'); sel.replaceChildren();
   const r = await fetch(`/api/team?team=${encodeURIComponent(team)}`).then((x) => x.json()).catch(() => ({}));
@@ -404,6 +414,7 @@ export function replay(team, events, round = events[0]?.round ?? null) {
   if (!S.map || !events?.length) return;
   stop(true);
   R.team = team; R.round = round; R.events = [...events]; R.i = 0; R.playing = true; R.held = [];
+  syncPicker(team, round);
   for (const a of S.actors.values()) if (a.team === team) teleport(a, a.home);
   clearBubbles(team);
   $('wvPlay').textContent = '일시정지'; $('wvStop').hidden = false;
@@ -544,7 +555,7 @@ export async function open({ teams } = {}) {
   if (fx && !S.fixtureDone) {
     S.fixtureDone = true;
     fetch(`/world/fixtures/${encodeURIComponent(fx)}.json`).then((r) => r.json())
-      .then((ev) => { const team = ev[0]?.team; if (team) { $('wvTeam').value = team; replay(team, ev, ev[0]?.round ?? null); } })
+      .then((ev) => { const team = ev[0]?.team; if (team) replay(team, ev, ev[0]?.round ?? null); })
       .catch(() => status('픽스처를 못 읽었습니다'));
   }
 }
