@@ -292,7 +292,38 @@ const BLANK_STATE = {
 };
 
 export function readState(team) {
-  return { ...BLANK_STATE, ...readJSON(paths(team).state, {}) };
+  const file = readJSON(paths(team).state, null);
+  if (file) return { ...BLANK_STATE, ...file };
+  // 파일이 없다 — 지워졌거나(round.json 은 git 에 없다. 이 커밋을 받은 체크아웃에서 사라진다) 처음이다.
+  // 대화록이 진실이므로 거기서 되살린다. 라운드 경계는 round_start / round_end 이벤트다.
+  return deriveState(team);
+}
+
+/**
+ * 대화록만으로 라운드 상태를 되살린다. round.json 은 이 값의 캐시일 뿐이다.
+ *
+ * 마지막 경계가 round_start 면 열린 라운드다 — 번호·마일스톤·주제는 그 이벤트에, 반박 횟수는
+ * 그 뒤 판정 카드의 meta.attempt 최대값에 있다. 마지막 경계가 round_end 면 닫힌 라운드다.
+ * (레오 감사, 2026-09-12: gitignore 만으로는 받는 쪽의 열린 라운드를 지키지 못한다.)
+ */
+export function deriveState(team) {
+  const log = readLog(team);
+  let i = log.length - 1;
+  for (; i >= 0; i--) if (log[i].type === 'round_start' || log[i].type === 'round_end') break;
+  if (i < 0) return { ...BLANK_STATE };
+  const e = log[i];
+  if (e.type === 'round_end') {
+    return { ...BLANK_STATE, round: e.round ?? 0, milestone: e.milestone ?? 0, phase: 'idle', endedAt: e.ts };
+  }
+  let attempt = 0;
+  for (let j = i + 1; j < log.length; j++) {
+    if (log[j].type === 'verdict' && typeof log[j].meta?.attempt === 'number') attempt = Math.max(attempt, log[j].meta.attempt);
+  }
+  return {
+    ...BLANK_STATE,
+    round: e.round ?? 0, milestone: e.milestone ?? 0, phase: 'running',
+    topic: e.meta?.topic ?? null, attempt, startedAt: e.ts, endedAt: null,
+  };
 }
 
 export function writeState(team, patch) {
