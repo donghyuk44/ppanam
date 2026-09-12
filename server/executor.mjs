@@ -55,7 +55,9 @@ function invalidAction(a) {
   if (!a || typeof a !== 'object') return 'action 없음';
   if (typeof a.sha !== 'string' || !/^[0-9a-f]{40}$/.test(a.sha)) return 'sha 가 40자 hex 가 아님';
   if (typeof a.branch !== 'string' || !a.branch || a.branch === 'HEAD') return '브랜치 없음';
-  if (/^-|\.\.|[\s~^:?*[\\]/.test(a.branch) || a.branch.endsWith('/') || a.branch.endsWith('.lock')) return '브랜치 이름이 이상함';
+  // 이름 규칙은 git 이 안다. 정규식으로 흉내내면 'foo.' 'foo@{bar' 'foo//bar' '/foo' 가 샌다 (레오 감사, 2026-09-12).
+  try { execFileSync('git', ['check-ref-format', '--branch', a.branch], { cwd: REPO, stdio: 'ignore' }); }
+  catch { return '브랜치 이름이 git 규칙에 맞지 않음'; }
   if (PROTECTED.has(a.branch)) return `'${a.branch}' 는 C 등급(메인 병합)이라 실행자가 밀지 않음`;
   if (a.remote != null && (typeof a.remote !== 'string' || !/^[A-Za-z0-9_.-]+$/.test(a.remote))) return '원격 이름이 이상함';
   return null;

@@ -12,6 +12,9 @@
 //     outside 는 bus/outside.mjs 가, boss 는 화면이, chief 는 총괄실 세션의 훅이 각자 남긴다 — 여기서는 못 쓴다.
 //   - 판정(--verdict)은 review 만 낸다. 만든 사람은 판정하지 않는다. ops 도 감사역이 아니다.
 //   - PPANAM_ACTOR 가 있으면(서버가 자리별 세션을 띄울 때 넣는다) --as 는 그 값이어야 한다.
+//     ※ 아직 서버가 PPANAM_ACTOR 를 넣지 않는다(자리별 상주 세션은 B1 에서). 그때까지 같은 세션 안의 실무와
+//     내부감사 서브에이전트를 구분할 환경 변수가 없어 실무가 --as review --verdict 를 낼 수 있다 (레오 감사,
+//     2026-09-12). 외부감사·대표·총괄 사칭은 이미 막혔고, 이 구멍은 B1 이 닫는다.
 //   - 환경이 없는 셸은 대표의 터미널이다. 방을 --team 으로 고르되, 위의 화자 제한은 같다.
 
 import { emit, readCast, recordVerdict, EVENT_TYPES, VERDICTS, defaultTeam, teamExists, listTeams } from './bus.mjs';
