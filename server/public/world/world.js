@@ -116,6 +116,7 @@ function rebuild() {
   S.canvas.width = w * T * z; S.canvas.height = h * T * z;
   S.ctx.imageSmoothingEnabled = false;
   $('wvInner').style.width = `${w * T * z + PAD.x * 2}px`; $('wvInner').style.height = `${h * T * z + PAD.y * 2}px`;
+  for (const id of ['wvBubbles', 'wvLabels']) { const el = $(id); el.style.width = `${w * T * z}px`; el.style.height = `${h * T * z}px`; }
   const key = `${S.scene}@${z}`;
   if (!S.caches[key]) S.caches[key] = { bg: layerCanvas(['ground', 'deco', 'wall']), obj: layerCanvas(['objects']), over: layerCanvas(['over']) };
   Object.assign(S, S.caches[key]);
@@ -240,7 +241,7 @@ function render() {
   }
   band(h);
   x.drawImage(S.over, 0, 0);
-  x.font = `600 ${Math.max(9, 5 * z)}px 'IBM Plex Sans KR', sans-serif`; x.textAlign = 'center'; x.textBaseline = 'bottom';
+  x.font = `${z >= 3 ? 15 : 12}px Galmuri11, 'IBM Plex Sans KR', sans-serif`; x.textAlign = 'center'; x.textBaseline = 'bottom';
   x.lineWidth = 3; x.lineJoin = 'round'; x.strokeStyle = '#1c1a17cc';
   for (const a of list) {
     const tx = (a.px + 8) * z, ty = (a.py - 17) * z;

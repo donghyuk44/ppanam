@@ -91,8 +91,10 @@ function runCodex(input, { resume = null } = {}) {
   const outPath = path.join(os.tmpdir(), `ppanam-outside-${crypto.randomBytes(4).toString('hex')}.txt`);
   // 샌드박스는 읽기 전용으로 못 박는다. 기본값에 맡겼더니 codex 0.154 가 워크트리에 시험 디렉터리와 수정을 남겼다
   // (2026-09-12). 감사역이 고치면 감사가 아니다 — 인격 문장이 아니라 플래그로.
+  // `exec resume` 는 --sandbox · -m · -o 를 받지 않는다 (codex 0.154: 사용법 오류로 exit 2). 같은 뜻을 -c 로 넘기고
+  // 최종 답은 stdout 으로 받는다 — 실측(2026-09-12): 새 세션은 -o 파일과 stdout 둘 다, 이어붙이기는 stdout 에만 답이 온다.
   const args = resume
-    ? ['exec', 'resume', resume, '--skip-git-repo-check', '--sandbox', 'read-only', '-m', CODEX_MODEL, '-o', outPath, '-']
+    ? ['exec', 'resume', resume, '--skip-git-repo-check', '-c', `model=${CODEX_MODEL}`, '-c', 'sandbox_mode=read-only', '-']
     : ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '-m', CODEX_MODEL, '-o', outPath, '-'];
 
   return new Promise((resolve, reject) => {

@@ -29,17 +29,17 @@
 /* 가장자리 말풍선이 잘리지 않게 지도 둘레에 여백을 둔다. 캔버스와 글 층은 같은 원점을 쓴다. */
 .world__inner { position: relative; --pad-x: 120px; --pad-y: 110px; }
 .world__inner canvas { position: absolute; left: var(--pad-x); top: var(--pad-y); image-rendering: pixelated; image-rendering: crisp-edges; }
-.world__bubbles, .world__labels { position: absolute; left: var(--pad-x); top: var(--pad-y); width: 0; height: 0; pointer-events: none; overflow: visible; }
+.world__bubbles, .world__labels { position: absolute; left: var(--pad-x); top: var(--pad-y); pointer-events: none; overflow: visible; }  /* 크기는 rebuild() 가 캔버스와 같게 준다 — 0 이면 말풍선이 한 글자씩 세로로 깨진다 */
 
 /* 방 이름표 */
 .wv-room {
   position: absolute; transform: translate(-50%, -100%);
-  font: 600 11px 'IBM Plex Sans KR', sans-serif; color: #f4efe4; background: #1c1a17cc;
+  font: 12px/1 Galmuri11, 'IBM Plex Sans KR', sans-serif; color: #f4efe4; background: #1c1a17cc;
   padding: 1px 7px; border-radius: 4px; white-space: nowrap; pointer-events: none;
 }
 .wv-banner {
   position: absolute; transform: translate(-50%, -100%);
-  font: 500 11px 'IBM Plex Sans KR', sans-serif; color: #23200f; background: #ecc85e;
+  font: 12px/1.2 Galmuri11, 'IBM Plex Sans KR', sans-serif; color: #23200f; background: #ecc85e;
   border: 1px solid #d9b23f; padding: 2px 8px; border-radius: 5px; white-space: nowrap;
   animation: wv-pop .18s ease-out;
 }
@@ -49,7 +49,7 @@
   position: absolute; transform: translate(-50%, -100%);
   max-width: 220px; min-width: 40px; pointer-events: auto; cursor: pointer;
   background: #fdfbf7; color: #1c1a17; border: 1px solid #b8ad98; border-radius: 9px;
-  padding: 4px 8px 5px; font: 12px/1.4 'IBM Plex Sans KR', sans-serif;
+  padding: 4px 8px 5px; font: 12px/1.35 Galmuri11, 'IBM Plex Sans KR', sans-serif;
   box-shadow: 0 2px 0 #1c1a1740; animation: wv-pop .18s ease-out; word-break: keep-all; overflow-wrap: anywhere;
 }
 .wb::after {
@@ -57,7 +57,7 @@
   background: inherit; border-right: 1px solid #b8ad98; border-bottom: 1px solid #b8ad98;
   transform: translateX(-50%) rotate(45deg);
 }
-.wb__who { display: block; font-size: 10px; font-weight: 600; color: #7a7266; margin-bottom: 1px; }
+.wb__who { display: block; font: 10px/1.2 Galmuri9, 'IBM Plex Sans KR', sans-serif; color: #7a7266; margin-bottom: 2px; }
 .wb--boss { background: #ecc85e; border-color: #d9b23f; }
 .wb--boss::after { border-color: #d9b23f; }
 .wb--boss .wb__who { color: #6b5a12; }
@@ -65,7 +65,7 @@
 .wb--PASS { border-color: #1b5e34; } .wb--PASS .wb__who { color: #1b5e34; }
 .wb--REVISE { border-color: #b8741e; } .wb--REVISE .wb__who { color: #b8741e; }
 .wb--FAIL { border-color: #b3261e; } .wb--FAIL .wb__who { color: #b3261e; }
-.wb--tool { min-width: 0; padding: 1px 6px; font-size: 11px; color: #7a7266; background: #f4efe4; }
+.wb--tool { min-width: 0; padding: 1px 6px; font: 10px/1.2 Galmuri9, sans-serif; color: #7a7266; background: #f4efe4; }
 .wb--tool::after { display: none; }
 .wb--gone { animation: wv-fade .25s ease-in forwards; }
 .wb--full { max-width: 360px; white-space: pre-wrap; }
