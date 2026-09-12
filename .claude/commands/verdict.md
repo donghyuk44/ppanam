@@ -53,8 +53,9 @@ echo "외부감사 → node bus/outside.mjs --team $T --ask ..."
      ```bash
      node bus/round.mjs end -v PASS "무엇이 확정됐는지 한 줄"
      ```
-     그리고 `teams/<팀>/roadmap.json` 에서 그 마일스톤을 `pass` 로,
-     다음 것을 `now` 로 바꾼다.
+     이 마일스톤은 코드가 로드맵에 `pass` 로 기록한다. **로드맵을 손으로 고치지 않는다.**
+     다음 마일스톤 착수는 B 승인이다 — `node bus/approve.mjs --request B --next "다음 마일스톤 착수"`.
+     통과하면 서버가 다음 것을 `now` 로 옮기고 이 방에 들려준다. 그때까지는 다음 것을 당겨오지 않는다.
    - 하나라도 `REVISE` → 지적을 반영해 고치고 다시 `/verdict`.
    - `FAIL` (반박 3회 소진) → **고치려 들지 말고 멈춘다.** 대표에게
      무엇이 막혔고 어떤 판단이 필요한지 두세 문장으로 보고한다.

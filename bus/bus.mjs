@@ -427,10 +427,24 @@ function nextRoundNumber(team) {
  */
 function nowMilestone(team) {
   const ms = readRoadmap(team).milestones ?? [];
-  const now = ms.find((m) => m.status === 'now');
-  if (now) return now.n;
-  const wait = ms.find((m) => m.status !== 'pass');
-  return wait ? wait.n : null;
+  return ms.find((m) => m.status === 'now')?.n ?? null;
+}
+
+/**
+ * 로드맵의 마일스톤 상태를 옮긴다. 사람도 세션도 roadmap.json 을 손으로 고치지 않는다 — 코드가 옮긴다.
+ *   'pass' 는 라운드를 PASS 로 닫을 때(사실 기록), 'now' 는 "다음 마일스톤 착수" B 가 통과할 때(notifier),
+ *   로드맵 전체 교체는 C 가 통과할 때. 컷리스트·로드맵 변경이 C 인 이유가 이것이다.
+ * now 는 하나뿐이다 — 새로 now 가 되면 다른 now 는 wait 로.
+ */
+export function setMilestoneStatus(team, n, status) {
+  const roadmap = readRoadmap(team);
+  const ms = roadmap.milestones ?? [];
+  const m = ms.find((x) => x.n === n);
+  if (!m) return false;
+  if (status === 'now') for (const x of ms) if (x.status === 'now' && x !== m) x.status = 'wait';
+  m.status = status;
+  writeJSON(paths(team).roadmap, roadmap);
+  return true;
 }
 
 export function startRound(team, { topic = null, milestone = null } = {}) {
@@ -439,9 +453,22 @@ export function startRound(team, { topic = null, milestone = null } = {}) {
   if (prev.phase === 'running' || prev.phase === 'blocked') {
     throw new Error(`이미 라운드 ${prev.round} 이 열려 있습니다. 먼저 닫으세요.`);
   }
+  // 어느 마일스톤인가. 로드맵의 now 가 정한다. now 가 없으면(직전 것을 PASS 로 닫아 pass 가 됐다) 다음 착수는
+  // B 승인이다 — 실무가 혼자 다음 것을 당겨오지 않는다. 번호를 명시하면(대표의 화면·터미널) 그건 대표 결정이다.
+  const ms = readRoadmap(team).milestones ?? [];
+  let target = milestone ?? nowMilestone(team);
+  if (target == null) {
+    if (!ms.length) target = prev.milestone || 1;   // 로드맵이 없는 방 — 번호만 이어간다
+    else {
+      const next = ms.find((m) => m.status !== 'pass');
+      throw new Error(next
+        ? `로드맵에 now 인 마일스톤이 없습니다. 다음(${next.n} ${next.title ?? ''})의 착수는 B 승인입니다 — node bus/approve.mjs --request B --next "다음 마일스톤 착수". 대표가 직접 열려면 마일스톤 번호를 지정하세요.`
+        : '로드맵의 마일스톤이 전부 pass 입니다. 로드맵을 다시 짜세요 (/kickoff).');
+    }
+  }
   const next = writeState(team, {
     round: nextRoundNumber(team),
-    milestone: milestone ?? nowMilestone(team) ?? prev.milestone ?? 1,
+    milestone: target,
     phase: 'running',
     topic: topic ?? prev.topic,
     attempt: 0,
@@ -476,6 +503,13 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
     text: summary || `라운드 ${state.round} 종료${verdict ? ' · ' + verdict : ''}`,
     meta: { verdict },
   });
+
+  // PASS 로 닫혔으면 이 마일스톤은 끝났다 — 사실 기록. 다음 것을 now 로 옮기는 것은 B 승인의 일이다.
+  if (String(verdict ?? '').toUpperCase() === 'PASS' && state.milestone) {
+    if (setMilestoneStatus(team, state.milestone, 'pass')) {
+      emit(team, { type: 'milestone', actor: 'system', text: `마일스톤 ${state.milestone} 통과 — 로드맵에 pass 로 기록`, meta: { index: state.milestone } });
+    }
+  }
 
   const events = readLog(team).filter((e) => e.round === state.round);
   const p = paths(team);

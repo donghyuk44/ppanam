@@ -46,7 +46,14 @@ allowed-tools: Bash(node bus/*), Read, Write, Glob, Grep
 
 ## 끝나면
 
-`teams/<활성 팀>/roadmap.json` 에 이 모양으로 쓴다.
+로드맵 변경은 C 등급이다 — 대표가 정한다. 그래서 `roadmap.json` 에 직접 쓰지 않고
+**제안 파일** `teams/<이 방>/out/roadmap.proposed.json` 에 이 모양으로 쓴 뒤 C 요청을 올린다.
+
+```bash
+node bus/approve.mjs --request C --roadmap out/roadmap.proposed.json "로드맵 교체 — <프로젝트 한 줄>"
+```
+
+대표가 관제탑에서 누르면 서버가 그 파일을 `roadmap.json` 으로 옮긴다.
 
 ```json
 {

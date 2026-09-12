@@ -7,19 +7,23 @@
 //   node bus/approve.mjs --list                  대기 중인 것
 //   node bus/approve.mjs --list --all            전부
 //   node bus/approve.mjs --show apr_1a2b3c4d
+//   node bus/approve.mjs --team dev --request B --next "다음 마일스톤 착수"        통과하면 서버가 로드맵 now 를 옮긴다
+//   node bus/approve.mjs --team marketing --request C --roadmap out/roadmap.proposed.json "로드맵 교체"
 //
 // 등급
 //   A 자동   실무 혼자. 요청하면 바로 통과로 기록된다.
 //   B 총괄   톰(chief)이 결정하고 제리(outside)가 대조한다. 둘 다 PASS 여야 통과.
 //   C 대표   대표만. 큐에 남고, 실무는 다음 일감으로 넘어간다.
 //
-// 요청이 들어오면 판정할 사람의 귀에 넣는다(들려주기). B 는 총괄실, C 는 관제탑 카드.
-// 통과·반려가 나면 요청한 방의 귀에 넣는다. 사람이 중간에 옮기지 않는다.
+// 알림은 이 파일이 하지 않는다. 서버의 notifier 가 큐를 보고 B 요청을 총괄실에, 결말을 요청한 방에 들려준다 —
+// 서버가 꺼져 있을 때 올린 요청도 서버가 뜨면 알려진다. 전에는 요청 순간 한 번 알리고 끝이라 잃어버렸다.
 
+import fs from 'node:fs';
+import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
   ROOT, requestApproval, decideApproval, voidApproval, listApprovals, APPROVAL_GRADES,
-  defaultTeam, teamExists, listTeams, readCast, isOffice,
+  defaultTeam, teamExists, listTeams, readCast, readRoadmap, paths, isOffice,
 } from './bus.mjs';
 
 /** 실행자가 밀지 않는 브랜치. 메인 병합은 C 등급이라 B 로 우회할 수 없어야 한다. */
@@ -70,12 +74,10 @@ function whoAmI() {
 }
 const me = whoAmI();
 
-const BASE = process.env.PPANAM_SERVER || 'http://localhost:4321';
-
 /* ── 인자 ── */
 
 const argv = process.argv.slice(2);
-const o = { team: null, mode: null, grade: null, id: null, as: null, decision: null, detail: '', all: false, push: false };
+const o = { team: null, mode: null, grade: null, id: null, as: null, decision: null, detail: '', all: false, push: false, next: false, roadmap: null };
 const words = [];
 
 for (let i = 0; i < argv.length; i++) {
@@ -86,6 +88,8 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--as') o.as = argv[++i];
   else if (a === '--detail') o.detail = argv[++i];
   else if (a === '--push') o.push = true;
+  else if (a === '--next') o.next = true;
+  else if (a === '--roadmap') o.roadmap = argv[++i];
   else if (a === '--list' || a === '-l') o.mode = 'list';
   else if (a === '--all') o.all = true;
   else if (a === '--show' || a === '-s') { o.mode = 'show'; o.id = argv[++i]; }
@@ -97,8 +101,10 @@ for (let i = 0; i < argv.length; i++) {
 function usage() {
   console.log(`승인 — 등급으로 나뉜 게이트.
 
-  --request <A|B|C> "<무엇>" [--detail "..."] [--push]   요청 (--team 으로 방 지정)
-      --push 는 지금의 브랜치·SHA 를 요청에 묶는다. 통과하면 서버가 그 커밋을 origin 에 민다.
+  --request <A|B|C> "<무엇>" [--detail "..."] [--push | --next | --roadmap <파일>]   요청 (--team 으로 방 지정)
+      --push     지금의 브랜치·SHA 를 요청에 묶는다. 통과하면 서버가 그 커밋을 origin 에 민다. (B)
+      --next     로드맵의 다음 마일스톤을 묶는다. 통과하면 서버가 그것을 now 로 옮긴다. (B)
+      --roadmap  teams/<팀>/out/ 의 제안 파일을 묶는다. 통과하면 서버가 roadmap.json 으로 옮긴다. (C)
   --decide <id> --as <chief|outside|boss> <PASS|REVISE> "<이유>"
   --list [--all]        대기 중인 것 (--all 이면 전부)
   --show <id>
@@ -106,17 +112,6 @@ function usage() {
 
 등급
 ${Object.entries(APPROVAL_GRADES).map(([g, x]) => `  ${g} ${x.label.padEnd(3)} ${x.needs.length ? x.needs.join('+') : '실무 혼자'}  — ${x.desc}`).join('\n')}`);
-}
-
-/** 판정할 사람의 귀에 넣는다. 서버가 없으면 큐에는 남았으니 그걸로 족하다. */
-async function tell(team, text) {
-  try {
-    const r = await fetch(`${BASE}/api/say`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ team, quiet: true, text }),
-    });
-    return r.ok;
-  } catch { return false; }
 }
 
 // 요청자는 그 팀 사람이지만, B·C 의 판정자는 늘 총괄실(톰·제리) 아니면 대표다.
@@ -164,33 +159,38 @@ if (o.mode === 'request') {
   if (o.as && o.as !== me.actor) { console.error(`오류: 너는 '${me.actor}' 다. '${o.as}' 로 요청할 수 없다.`); process.exit(1); }
   const by = me.actor;
   const what = words.join(' ').trim();
-  // 푸시 요청이면 지금의 브랜치·SHA 를 요청에 박는다. 실행자는 이것만 믿는다.
-  const action = o.push ? gitTarget() : null;
+  // 실행할 행동을 요청에 박는다. 실행자·알림자는 이것만 믿는다 — 자유 텍스트를 훑지 않는다.
+  let action = null;
+  if ([o.push, o.next, !!o.roadmap].filter(Boolean).length > 1) { console.error('오류: --push · --next · --roadmap 은 하나만.'); process.exit(1); }
+  if (o.push) action = gitTarget();
+  if (o.next) {
+    if (String(o.grade).toUpperCase() !== 'B') { console.error('오류: --next 는 B 등급입니다.'); process.exit(1); }
+    const ms = readRoadmap(team).milestones ?? [];
+    const cur = ms.find((m) => m.status === 'now');
+    const next = ms.find((m) => m.status !== 'pass' && m.status !== 'now') ?? null;
+    if (!next) { console.error('오류: 착수할 다음 마일스톤이 로드맵에 없습니다.'); process.exit(1); }
+    if (cur) { console.error(`오류: 마일스톤 ${cur.n} 이 아직 now 입니다. PASS 로 라운드를 닫아 pass 가 된 뒤에 다음을 요청하세요.`); process.exit(1); }
+    action = { type: 'milestone', n: next.n, title: next.title ?? null };
+  }
+  if (o.roadmap) {
+    if (String(o.grade).toUpperCase() !== 'C') { console.error('오류: --roadmap 은 C 등급(로드맵 변경)입니다.'); process.exit(1); }
+    const file = path.basename(o.roadmap);
+    if (!fs.existsSync(path.join(paths(team).out, file))) { console.error(`오류: teams/${team}/out/${file} 이 없습니다. 제안 파일은 out/ 에 둡니다.`); process.exit(1); }
+    action = { type: 'roadmap', file };
+  }
   let r;
   try { r = requestApproval(team, { by, grade: o.grade, what, detail: o.detail, action }); }
   catch (e) { console.error('오류: ' + e.message); process.exit(1); }
 
   console.log(fmt(r));
-  if (action) console.log(`푸시 대상: ${action.remote}/${action.branch} @ ${action.sha.slice(0, 8)} — 이 커밋을 통과시키는 것입니다.`);
+  if (action?.type === 'push') console.log(`푸시 대상: ${action.remote}/${action.branch} @ ${action.sha.slice(0, 8)} — 이 커밋을 통과시키는 것입니다.`);
+  if (action?.type === 'milestone') console.log(`착수 대상: 마일스톤 ${action.n}${action.title ? ' ' + action.title : ''} — 통과하면 서버가 now 로 옮깁니다.`);
+  if (action?.type === 'roadmap') console.log(`교체 대상: out/${action.file} — 통과하면 서버가 roadmap.json 으로 옮깁니다.`);
 
   if (r.status === 'passed') { console.log('등급 A — 바로 진행하세요.'); process.exit(0); }
 
-  if (r.grade === 'B') {
-    // 톰이 결정하고 제리가 대조한다. 총괄실 귀에 넣는다.
-    const heard = await tell('hq', (
-      `승인 요청 ${r.id} [등급 B] — ${team} 팀 ${readCast(team).agents?.[by]?.name ?? by}: ${r.what}` +
-      (r.detail ? `\n상세: ${r.detail}` : '') +
-      // 푸시라면 무엇을 통과시키는지 보여준다. 이게 없으면 톰·제리는 대상을 모른 채 판정한다 (레오 2차 감사).
-      (action ? `\n대상: ${action.remote}/${action.branch} @ ${action.sha.slice(0, 8)} — 통과하면 서버가 정확히 이 커밋을 민다` : '') +
-      `\n\n판정하세요. 마일스톤 조건을 채웠는지, 컷리스트를 안 넘었는지 보고 결정하고, 제리에게 원문 대조를 시키세요.` +
-      `\n  node bus/approve.mjs --decide ${r.id} --as chief PASS|REVISE "이유"` +
-      `\n  node bus/outside.mjs --team hq --ask "승인 요청 ${r.id} 대조: ${r.what}"`));
-    console.log(heard ? '총괄실에 올렸습니다. 톰과 제리가 판정합니다.' : '(서버가 없어 총괄실에 못 알렸습니다. 큐에는 남았습니다.)');
-    console.log('대기 중에는 다음 일감으로 넘어가세요.');
-  }
-  if (r.grade === 'C') {
-    console.log('등급 C — 대표 판단입니다. 관제탑에 올라갑니다. 다음 일감으로 넘어가세요.');
-  }
+  if (r.grade === 'B') console.log('큐에 남았습니다. 서버가 총괄실에 알리고, 톰과 제리가 판정하면 이 방에 들려줍니다. 대기 중에는 다음 일감으로 넘어가세요.');
+  if (r.grade === 'C') console.log('등급 C — 대표 판단입니다. 관제탑에 올라갑니다. 결과는 서버가 이 방에 들려줍니다. 다음 일감으로 넘어가세요.');
   process.exit(0);
 }
 
@@ -207,13 +207,7 @@ if (o.mode === 'decide') {
   console.log(fmt(r));
 
   if (r.status !== 'pending') {
-    // 요청한 방에 결과를 들려준다. 실무가 기다리던 답이다.
-    const cast = readCast(r.team).agents ?? {};
-    const msg = r.status === 'passed'
-      ? `승인 ${r.id} 통과 — ${r.what}. 진행하세요.`
-      : `승인 ${r.id} 반려 — ${r.what}.${reason ? ' 이유: ' + reason : ''} 고쳐서 다시 요청하세요.`;
-    const heard = await tell(r.team, msg);
-    console.log(heard ? `${r.team} 팀에 알렸습니다.` : '(서버가 없어 팀에 못 알렸습니다. 큐에는 남았습니다.)');
+    console.log(`${r.status === 'passed' ? '통과' : '반려'}입니다. 서버가 ${r.team} 팀에 들려줍니다.`);
   } else {
     const left = APPROVAL_GRADES[r.grade].needs.filter((w) => !r.decisions.some((d) => d.by === w));
     console.log(`아직 ${left.map((w) => nameOf(r.team, w)).join('·')} 판정이 남았습니다.`);

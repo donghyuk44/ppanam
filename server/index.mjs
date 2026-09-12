@@ -20,6 +20,7 @@ import {
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
+import { runNotifier } from './notifier.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
 
@@ -332,6 +333,8 @@ setInterval(() => {
   }
   // 통과한 B 푸시를 서버가 대신 민다. 한 번에 하나씩, 겹치지 않게.
   runExecutor();
+  // 승인 요청·결말·실행 결과를 귀에 넣는다. 알림은 서버의 일이다.
+  try { runNotifier(); } catch (e) { console.error('notifier:', e.message); }
 
   // 레일의 계기판 값이 바뀌었을 때만 보낸다.
   const s = summaries();
