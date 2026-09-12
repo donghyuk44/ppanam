@@ -64,7 +64,7 @@ teams/<방>/
 다시 클로드의 말이 되기 때문이다. 발언에는 `meta.engine` 으로 어느 엔진이었는지 남는다.
 
 서브에이전트 이름은 방마다 갈라진다(`marketing-review`). 훅이 접미사로 되돌려
-화자는 늘 위 표의 여섯 중 하나다 (`.claude/hooks/to-bus.mjs` 의 `actorOf`).
+화자는 늘 위 표의 일곱 중 하나다 (`.claude/hooks/to-bus.mjs` 의 `actorOf`).
 
 말풍선 색은 각 서브에이전트 `.md` frontmatter 의 `color` 필드에서 가져온다
 (`red`/`blue`/`green`/`yellow`/`purple`/`orange`/`pink`/`cyan` — 공식 필드).
@@ -113,7 +113,7 @@ teams/<방>/
 연속된 같은 화자의 발언은 아바타를 생략하고 묶는다.
 
 - **출처**: `SubagentStop` 훅의 `last_assistant_message`
-- `meta.partial: true` 면 아직 생성 중 (stream-json `text_delta`). 타이핑 표시.
+- `meta.partial` — 계약에만 있고 **미구현**이다. 타이핑 말풍선은 만들지 않았다 (2026-09-12 확인).
 
 ### `enter` — 등장 배너
 에이전트가 라운드에 합류. 가운데 작은 알약 모양.

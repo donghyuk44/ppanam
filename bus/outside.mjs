@@ -343,9 +343,9 @@ async function status() {
     try { v = (await run('codex', ['--version'], { timeout: 15_000 })).stdout.trim(); } catch { /* 무시 */ }
     lines.push(`codex CLI 있음${v ? ` (${v})` : ''} · 모델 ${CODEX_MODEL}` +
       (process.env.CODEX_API_KEY ? ' · CODEX_API_KEY 설정됨' : ' · 저장된 로그인 사용'));
-    const open = Object.entries(readStore());
+    const open = Object.keys(readStore());
     lines.push(open.length
-      ? `열린 세션: ${open.map(([t, id]) => `${t}(${id.slice(0, 8)})`).join(', ')}`
+      ? `열린 세션: ${open.map((t) => `${t}(${String(slotOf(t)?.id ?? '').slice(0, 8)})`).join(', ')}`
       : '열린 세션 없음');
   }
   if (process.env.OPENAI_API_KEY) lines.push(`OpenAI API 있음 (모델 ${API_MODEL}) — 한 번 묻기 전용`);

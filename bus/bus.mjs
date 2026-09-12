@@ -80,10 +80,12 @@ export function addressee(text, cast, { except = null } = {}) {
   const head = String(text ?? '').trim().slice(0, 24);
   for (const [id, a] of Object.entries(cast ?? {})) {
     if (id === except || id === 'system' || !a?.name) continue;
-    if (new RegExp('^' + a.name + '\\s*(씨|님)?\\s*[,，、:·]').test(head)) return id;
+    // 이름을 정규식에 그대로 넣으면 "함동혁(댄)" 의 괄호가 그룹이 되어 영영 안 잡힌다.
+    if (new RegExp('^' + escapeRegExp(a.name) + '\\s*(씨|님)?\\s*[,，、:·]').test(head)) return id;
   }
   return null;
 }
+const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export const quiet = (text) => `${RELAY_QUIET}\n${text}`;
 
 /**

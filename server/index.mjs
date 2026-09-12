@@ -44,6 +44,19 @@ const json = (res, code, body) => {
 };
 
 /**
+ * 팀 방의 cast 에 총괄실의 chief 를 합친다.
+ *
+ * 배달(bus/dispatch.mjs)이 팀 방에 chief 이벤트를 남기는데 팀 cast.json 에는 그 자리가 없어
+ * 화면에 "chief / 알 수 없음" 으로 떴다. cast.json 을 다섯 번 복제하는 대신 여기서 합친다.
+ */
+function castOf(team) {
+  const cast = readCast(team);
+  if (isOffice(team) || cast.agents?.chief) return cast;
+  const chief = readCast('hq').agents?.chief;
+  return chief ? { ...cast, agents: { ...cast.agents, chief } } : cast;
+}
+
+/**
  * 팀별 요약. 왼쪽 레일과 관제탑이 같은 값을 읽는다.
  *
  * 관제탑은 안 보고 있는 팀까지 한 화면에 놓으므로, 그 팀의 캐스트 이름과
@@ -59,7 +72,7 @@ const summaries = () => Object.fromEntries(listTeams().map((t) => {
     milestoneTitle: now?.title ?? null,
     deliverable: now?.deliverable ?? null,
     progress: readProgress(t.id),
-    cast: readCast(t.id).agents ?? {},
+    cast: castOf(t.id).agents ?? {},
     approvals: {
       pending: listApprovals({ team: t.id, status: 'pending' }).length,
       passedToday: listApprovals({ team: t.id, status: 'passed' })
@@ -138,7 +151,7 @@ const server = http.createServer((req, res) => {
     if (!teamExists(team)) return json(res, 404, { error: 'no such team' });
     return json(res, 200, {
       team,
-      cast: readCast(team),
+      cast: castOf(team),
       roadmap: readRoadmap(team),
       rounds: listRounds(team).slice(0, 40),
       summary: teamSummary(team),
@@ -182,7 +195,7 @@ const server = http.createServer((req, res) => {
 
     return json(res, 200, {
       team,
-      cast: readCast(team),
+      cast: castOf(team),
       roadmap,
       summary: teamSummary(team),
       rounds: rounds.slice(0, 60),

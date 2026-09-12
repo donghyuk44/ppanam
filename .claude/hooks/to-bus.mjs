@@ -154,13 +154,14 @@ switch (ev) {
     break;
   }
 
-  case 'PostToolUse':
-  case 'PreToolUse': {
-    if (ev === 'PreToolUse') bail('PostToolUse 만 기록');
+  case 'PostToolUse': {
     const tool = hook.tool_name;
     if (!tool) break;
     const i = hook.tool_input ?? {};
-    const what = i.file_path ?? i.path ?? i.pattern ?? i.url ?? i.command ?? i.prompt ?? '';
+    const what = String(i.file_path ?? i.path ?? i.pattern ?? i.url ?? i.command ?? i.prompt ?? '');
+    // 하네스 내부 파일(임시 디렉터리의 작업 출력, 세션 메모리 등)은 이 방의 일이 아니다.
+    // 저장소 밖 절대 경로는 남기지 않는다 — 총괄실 대화록이 /private/tmp/... 로 채워졌다.
+    if (what.startsWith('/') && !what.startsWith(ROOT + '/') && what !== ROOT) bail('저장소 밖 경로');
     out = {
       actor: actorOf(hook.agent_type),
       type: 'tool',

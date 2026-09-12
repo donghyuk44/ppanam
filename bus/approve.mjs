@@ -19,7 +19,7 @@
 import { execFileSync } from 'node:child_process';
 import {
   requestApproval, decideApproval, voidApproval, listApprovals, APPROVAL_GRADES,
-  defaultTeam, teamExists, listTeams, readCast, quiet, isOffice,
+  defaultTeam, teamExists, listTeams, readCast, isOffice,
 } from './bus.mjs';
 
 /**
@@ -164,7 +164,7 @@ if (o.mode === 'request') {
 
   if (r.grade === 'B') {
     // 톰이 결정하고 제리가 대조한다. 총괄실 귀에 넣는다.
-    const heard = await tell('hq', quiet(
+    const heard = await tell('hq', (
       `승인 요청 ${r.id} [등급 B] — ${team} 팀 ${readCast(team).agents?.[by]?.name ?? by}: ${r.what}` +
       (r.detail ? `\n상세: ${r.detail}` : '') +
       // 푸시라면 무엇을 통과시키는지 보여준다. 이게 없으면 톰·제리는 대상을 모른 채 판정한다 (레오 2차 감사).
@@ -199,7 +199,7 @@ if (o.mode === 'decide') {
     const msg = r.status === 'passed'
       ? `승인 ${r.id} 통과 — ${r.what}. 진행하세요.`
       : `승인 ${r.id} 반려 — ${r.what}.${reason ? ' 이유: ' + reason : ''} 고쳐서 다시 요청하세요.`;
-    const heard = await tell(r.team, quiet(msg));
+    const heard = await tell(r.team, msg);
     console.log(heard ? `${r.team} 팀에 알렸습니다.` : '(서버가 없어 팀에 못 알렸습니다. 큐에는 남았습니다.)');
   } else {
     const left = APPROVAL_GRADES[r.grade].needs.filter((w) => !r.decisions.some((d) => d.by === w));
