@@ -34,9 +34,11 @@ const QUESTIONS = `대표가 묻는다. 아래 다섯 항목으로 자기소개�
 - 싫어하는 것`;
 
 const model = a.llm ?? listTeams().find((t) => t.id === team)?.model;
-const args = ['-p', '--output-format', 'text', '--append-system-prompt', prompt, ...(model ? ['--model', model] : []), '--disallowedTools', 'Write', 'Edit', 'Bash', QUESTIONS];
+// --disallowedTools 는 뒤따르는 인자를 전부 먹으므로(공백 구분) 질문은 stdin 으로 넣고 도구 목록은 한 인자로 준다 (2026-09-13 발견).
+const args = ['-p', '--output-format', 'text', '--append-system-prompt', prompt, ...(model ? ['--model', model] : []), '--disallowedTools', 'Write,Edit,Bash,NotebookEdit'];
 console.error(`[${team}/${actor}] ${a.name} — ${model ?? '기본 모델'}, 프롬프트 ${prompt.length}자. 기록하지 않습니다.`);
 const env = { ...process.env };
 delete env.PPANAM_TEAM; delete env.PPANAM_ACTOR;
-const child = spawn('claude', args, { cwd: ROOT, stdio: ['ignore', 'inherit', 'inherit'], env });
+const child = spawn('claude', args, { cwd: ROOT, stdio: ['pipe', 'inherit', 'inherit'], env });
+child.stdin.end(QUESTIONS);
 child.on('close', (code) => process.exit(code ?? 1));

@@ -470,7 +470,8 @@ async function journalAll(team, round) {
   const spoke = new Set(readLog(team).filter((e) => e.round === round && (e.type === 'message' || e.type === 'verdict')).map((e) => e.actor));
   const cast = readCast(team).agents ?? {};
   const ask = (actor) => {
-    const p = `${TURN_JOURNAL} 라운드 ${round} 이 끝난다. 이번 라운드에서 네가 배운 것·판단한 이유·버린 시도·막힌 곳을 한 문단(3~6줄) 산문으로. 파일 이름·완료율·다음 할 일 목록은 쓰지 마라 — 그건 git 이 안다. 남길 것이 없으면 (패스).`;
+    // 일지는 정체성의 연결고리다 — 라운드가 바뀌고 컨텍스트가 비워져도 다음 세션이 이 문단을 읽고 '어제의 나' 를 잇는다 (대표 지시 2026-09-13).
+    const p = `${TURN_JOURNAL} 라운드 ${round} 이 끝난다. 네 말투로 한 문단(3~6줄)을 써라. 첫 문장은 네가 누구인지 한 줄("나는 …" — 이름·기질·지금 마음가짐), 그다음 이번 라운드에서 배운 것·판단한 이유·버린 시도·막힌 곳·사람들과 있었던 일. 파일 이름·완료율·다음 할 일 목록은 쓰지 마라 — 그건 git 이 안다. 남길 일이 없어도 첫 문장은 쓴다.`;
     if (cast[actor]?.model === 'gpt') return journalOutside(team);
     return Promise.race([sendAndWait(team, quiet(p), actor, { kind: 'journal', internal: true }), new Promise((r) => setTimeout(() => r(null), JOURNAL_TIMEOUT))]);
   };

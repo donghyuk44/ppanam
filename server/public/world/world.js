@@ -57,9 +57,11 @@ async function loadCast() {
     try {
       if (typeof spec === 'string') { sheets[key] = { img: await loadImage(CAST.dir + spec), fw, fh, rowOf, frames: m.frames ?? 4, anchor: [fw / 2, fh] }; return; }
       const [w, h] = spec.cell ?? m.cell ?? [32, 48];
+      // 줄·칸 값은 숫자이거나 { row|col, flip:true } — flip 은 좌우를 뒤집어 그린다 (동쪽 걷기로 서쪽을 만들 때)
+      const norm = (v) => (v == null ? undefined : typeof v === 'object' ? { n: v.row ?? v.col ?? 0, flip: !!v.flip } : { n: v, flip: false });
       const walk = [], idleCol = [];
-      for (const [name, i] of Object.entries(DIR)) { walk[i] = spec.walk?.[name]; idleCol[i] = spec.idle?.cols?.[name]; }
-      sheets[key] = { img: await loadImage(CAST.dir + spec.file), fw: w, fh: h, rowOf: walk, frames: spec.frames ?? 8, anchor: spec.anchor ?? [w / 2, h], idle: spec.idle ? { row: spec.idle.row ?? 0, col: idleCol } : null };
+      for (const [name, i] of Object.entries(DIR)) { walk[i] = norm(spec.walk?.[name]); idleCol[i] = norm(spec.idle?.cols?.[name]); }
+      sheets[key] = { img: await loadImage(CAST.dir + spec.file), fw: w, fh: h, rowOf: walk, frames: spec.frames ?? 8, anchor: spec.anchor ?? [w / 2, h], idle: spec.idle ? { row: spec.idle.row ?? 0, col: idleCol } : null, rich: true };
     } catch { /* 못 읽는 시트는 대체 그림으로 */ }
   }));
   return { ...m, sheets };
@@ -260,13 +262,17 @@ function drawActor(x, a, z) {
   const s = a.sheet;
   if (s) {
     const walking = a.path.length > 0;
-    let row, col;
-    if (s.idle && (!walking || s.rowOf[a.dir] === undefined)) { row = s.idle.row; col = s.idle.col[a.dir] ?? 0; }   // PixelLab: 정지는 0줄의 방향 칸
-    else { row = s.rowOf[a.dir] ?? 0; col = a.frame % s.frames; }
-    if (s.rowOf[a.dir] === undefined && !s.idle) row = 0;
-    // 발 가운데(anchor)가 칸 바닥 가운데에 오게
-    const dx = a.px + TP / 2 - s.anchor[0], dy = a.py + TP - s.anchor[1];
-    x.drawImage(s.img, col * s.fw, row * s.fh, s.fw, s.fh, Math.round(dx * z), Math.round(dy * z), s.fw * z, s.fh * z);
+    let row, col, flip = false;
+    if (s.rich) {
+      const w = s.rowOf[a.dir], ic = s.idle?.col?.[a.dir];
+      if (s.idle && (!walking || !w)) { row = s.idle.row; col = ic?.n ?? 0; flip = !!ic?.flip; }   // PixelLab: 정지는 0줄의 방향 칸
+      else { row = w?.n ?? 0; col = a.frame % s.frames; flip = !!w?.flip; }
+    } else { row = s.rowOf[a.dir] ?? 0; col = a.frame % s.frames; }
+    // 발 가운데(anchor)가 칸 바닥 가운데에 오게. flip 이면 앵커도 좌우로 뒤집는다
+    const ax = flip ? s.fw - s.anchor[0] : s.anchor[0];
+    const dx = a.px + TP / 2 - ax, dy = a.py + TP - s.anchor[1];
+    if (flip) { x.save(); x.translate(Math.round((dx + s.fw) * z), 0); x.scale(-1, 1); x.drawImage(s.img, col * s.fw, row * s.fh, s.fw, s.fh, 0, Math.round(dy * z), s.fw * z, s.fh * z); x.restore(); }
+    else x.drawImage(s.img, col * s.fw, row * s.fh, s.fw, s.fh, Math.round(dx * z), Math.round(dy * z), s.fw * z, s.fh * z);
   } else {
     x.drawImage(a.sprite, a.frame * 16, a.dir * 32, 16, 32, Math.round(a.px * z), Math.round((a.py + TP - 64) * z), 32 * z, 64 * z);
   }
