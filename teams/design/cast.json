@@ -1,30 +1,25 @@
 {
   "agents": {
     "guide": {
-      "name": "실무",
-      "initial": "길",
-      "color": "#2f4f7a",
-      "role": "실행 · 로드맵 · 스코프 방어",
+      "name": "헨리",
+      "initial": "헨",
+      "color": "#4b5f9e",
+      "role": "메인 디자인 · 양식을 정하고 그림을 뽑는다",
       "model": "claude"
     },
-    "review": {
-      "name": "내부감사",
-      "initial": "되",
-      "color": "#a8541f",
-      "role": "감사 · 이해 갭 진단 · 전달 품질",
+    "ops": {
+      "name": "클레멘타인",
+      "initial": "클",
+      "color": "#c96f3b",
+      "role": "보조 디자인 · 팔레트·시트·검수 스크립트",
       "model": "claude",
-      "llm": "sonnet",
-      "disallow": [
-        "Write",
-        "Edit",
-        "NotebookEdit"
-      ]
+      "llm": "sonnet"
     },
     "outside": {
-      "name": "외부감사",
-      "initial": "바",
-      "color": "#5b3a63",
-      "role": "교차검증 · 기술감사 · 외부 시각",
+      "name": "마크",
+      "initial": "마",
+      "color": "#6b4a2f",
+      "role": "외부감사 · 열어서 재고 세어 본다",
       "model": "gpt"
     },
     "boss": {
