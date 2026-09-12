@@ -42,6 +42,9 @@ function readExec() {
   try { return JSON.parse(fs.readFileSync(EXEC, 'utf8')).done ?? {}; } catch { return {}; }
 }
 
+/** 화면용 — 어느 요청을 언제 알렸나. */
+export function notified() { return readStore().told ?? {}; }
+
 /** 이 방의 귀가 열려 있나. 총괄실은 늘, 팀 방은 라운드가 열려 있을 때만. */
 const canHear = (team) => isOffice(team) || readState(team).phase !== 'idle';
 

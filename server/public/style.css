@@ -255,6 +255,11 @@ body {
   white-space: pre-wrap; word-break: break-word;
 }
 .row.cont .bub { border-radius: 14px; }
+.bub b { font-weight: 600; }
+.bub code { font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: var(--sunk); padding: 0 4px; border-radius: 3px; }
+.bub__fold { margin-top: 6px; font-size: 12px; }
+.bub__fold summary { cursor: pointer; color: var(--ink-3); }
+.bub__fold pre { margin: 6px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; white-space: pre; overflow-x: auto; max-width: 100%; background: var(--sunk); padding: 8px; border-radius: 6px; }
 .row.me .bub { background: var(--me); border-color: var(--me-line); color: var(--me-ink); border-radius: 14px 3px 14px 14px; }
 .row.me.cont .bub { border-radius: 14px; }
 
@@ -446,7 +451,10 @@ body {
 }
 .apr__act button[data-d="PASS"] { border-color: var(--good-line); background: var(--good-bg); color: var(--good); }
 .apr__act button[data-d="REVISE"] { border-color: var(--bad-line); background: var(--bad-bg); color: var(--bad); }
-.apr__wait { font-size: 11px; color: var(--ink-4); white-space: nowrap; }
+.apr__wait { font-size: 11px; color: var(--ink-4); white-space: normal; text-align: right; max-width: 260px; }
+.apr__reason { grid-column: 1 / -1; font: inherit; font-size: 12px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--ink); }
+.apr__reason[hidden], .apr__err[hidden] { display: none; }
+.apr__err { grid-column: 1 / -1; font-size: 11.5px; color: var(--bad); }
 
 /* ── 관제탑 카드 ── */
 

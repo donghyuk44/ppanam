@@ -15,6 +15,7 @@ let roadmap = { milestones: [], cutList: [] };
 let summary = {};
 let summaries = {};
 let approvals = [];          // 대기 중인 승인 — 관제탑 맨 위
+let told = {};               // 승인 id → { requested, decided, executed } — 서버가 언제 알렸나
 let grades = {};
 let oldest = null;          // 더 불러올 기준점
 let hasMore = false;
@@ -33,6 +34,33 @@ function el(tag, cls, text) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
   if (text != null) n.textContent = text;
+  return n;
+}
+
+const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/**
+ * 말풍선 본문. 인격은 "보고서를 쓰지 마라" 지만 대표 보고에는 표와 굵은 글씨가 온다. 그걸 원문 기호로
+ * 보여주면 읽히지 않는다(** 와 | 가 그대로 떴다). 굵게·인라인 코드·줄바꿈만 살리고, 표와 코드블록은
+ * 접어 둔다 — 방은 채팅이지 문서가 아니다. 먼저 이스케이프한 뒤 기호를 바꾸므로 HTML 이 새지 않는다.
+ */
+function bubble(text) {
+  const n = el('div', 'bub');
+  const src = String(text ?? '');
+  const blocks = [];
+  // 코드블록과 표(연속된 | 줄)를 떼어 접는다
+  let body = src.replace(/```[^\n]*\n([\s\S]*?)```/g, (_, code) => { blocks.push(['코드', code]); return `\u0000${blocks.length - 1}\u0000`; });
+  body = body.replace(/(?:^|\n)((?:[ \t]*\|[^\n]*\n?){2,})/g, (m, tbl) => { blocks.push(['표', tbl.trim()]); return `\n\u0000${blocks.length - 1}\u0000`; });
+  let html = escapeHtml(body)
+    .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
+    .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+    .replace(/^#{1,6}\s+(.+)$/gm, '<b>$1</b>')
+    .replace(/^[ \t]*[-*]\s+/gm, '· ');
+  html = html.replace(/\u0000(\d+)\u0000/g, (_, i) => {
+    const [kind, content] = blocks[Number(i)];
+    return `<details class="bub__fold"><summary>${kind} 보기</summary><pre>${escapeHtml(content)}</pre></details>`;
+  });
+  n.innerHTML = html.trim();
   return n;
 }
 
@@ -97,42 +125,44 @@ function renderHead() {
   $('roomWho').textContent = Object.entries(cast.agents ?? {})
     .filter(([id]) => id !== 'boss' && id !== 'system')
     .map(([, a]) => a.name).join(', ');
-  document.title = summary.round ? `R${summary.round} · ${t?.name ?? '작전실'}` : (t?.room ?? '작전실');
-
   // 총괄실은 대표와의 1:1 이라 라운드가 없다. 늘 열려 있다.
   const office = t?.kind === 'office';
-
+  // 라운드가 "있다" 는 번호가 아니라 phase 다. 번호는 닫힌 뒤에도 남아서, 번호로 그리면 닫힌 방이
+  // "R14 · 라운드 닫기 · 입력 가능" 으로 보이고 보내면 409, 닫으면 두 번 닫힌다 (Fable 재점검, 2026-09-12).
+  const open = office || summary.phase === 'running' || summary.phase === 'blocked';
   const blocked = !office && summary.phase === 'blocked';
-  $('rnum').textContent = office ? '1:1' : summary.round ? `R${summary.round}` : '—';
+  document.title = open && !office ? `R${summary.round} · ${t?.name ?? '작전실'}` : (t?.room ?? '작전실');
+
+  $('rnum').textContent = office ? '1:1' : open ? `R${summary.round}` : '—';
   $('rtitle').textContent = office
     ? '늘 열려 있습니다 — 지시하면 톰이 팀에 나눕니다'
     : blocked
       ? `대표 판단 필요 — FAIL. 여기에 판단을 적으면 라운드 ${summary.round} 이 재개됩니다`
-      : summary.round
+      : open
         ? (summary.topic ? `마일스톤 ${summary.milestone} — ${summary.topic}` : `마일스톤 ${summary.milestone}`)
         : '대기 중 — 라운드를 시작하세요';
-  $('rprog').textContent = summary.attempt > 0 ? `반박 ${summary.attempt}/3` : '';
-  app.dataset.alert = summary.attempt > 0 || summary.needsBoss ? '1' : '0';
+  $('rprog').textContent = open && summary.attempt > 0 ? `반박 ${summary.attempt}/3` : '';
+  app.dataset.alert = (open && summary.attempt > 0) || summary.needsBoss ? '1' : '0';
 
-  // 실무가 지금 일하는 중인가. 줄 서 있는 지시가 있으면 개수도 함께.
+  // 누가 지금 일하는 중인가. 총괄실도 일한다 — 라운드 번호가 0 이라고 숨기지 않는다.
   const sess = summary.session ?? {};
   const work = $('rwork');
-  work.hidden = !(summary.round && sess.busy);
-  work.textContent = sess.queued ? `실무가 일하는 중 · 대기 ${sess.queued}` : '실무가 일하는 중';
+  work.hidden = !sess.busy;
+  work.textContent = sess.queued ? `${office ? '톰' : '실무'}이 일하는 중 · 대기 ${sess.queued}` : `${office ? '톰' : '실무'}이 일하는 중`;
 
   const rb = $('roundBtn');
   rb.hidden = office;
-  rb.textContent = summary.round ? '라운드 닫기' : '라운드 열기';
+  rb.textContent = open ? '라운드 닫기' : '라운드 열기';
   if (office) $('roundOpen').hidden = true;
 
   // 작전실은 라운드 밖에서 훅이 기록하지 않는다. 쓸 수 있게 두면 고장으로 보인다.
   const input = $('input');
-  input.disabled = !office && !summary.round;
+  input.disabled = !open;
   input.placeholder = office
     ? '톰에게 지시하기'
     : blocked
       ? '대표 판단을 적으면 라운드가 재개됩니다'
-      : summary.round ? '실무에게 지시하기' : '라운드를 열면 지시할 수 있습니다';
+      : open ? '실무에게 지시하기' : '라운드를 열면 지시할 수 있습니다';
 
   const crew = $('crew');
   crew.replaceChildren();
@@ -156,7 +186,7 @@ function renderSide() {
   const r = $('cardRound');
   r.replaceChildren();
   r.appendChild(el('div', 'card__k', '이번 라운드'));
-  if (summary.round) {
+  if (summary.phase === 'running' || summary.phase === 'blocked') {
     r.appendChild(el('div', 'card__big', `라운드 ${summary.round}`));
     if (summary.topic) r.appendChild(el('div', 'card__note', summary.topic));
     const dl = el('dl');
@@ -289,7 +319,7 @@ function draw(e) {
         name.append(' ' + hhmm(e.ts));
         stack.appendChild(name);
       }
-      stack.appendChild(el('div', 'bub', e.text));
+      stack.appendChild(bubble(e.text));
       row.appendChild(stack);
       return row;
     }
@@ -314,7 +344,7 @@ function emptyView() {
   n.appendChild(s);
   n.appendChild(el('div', 'quiet__t', '아직 조용합니다'));
   const p = el('div', 'quiet__s');
-  p.innerHTML = '터미널에서 <code>node bus/round.mjs start "주제"</code><br>로 라운드를 시작하세요.';
+  p.textContent = '위의 "라운드 열기" 를 누르고 주제를 적으면 실무가 일을 시작합니다.';
   n.appendChild(p);
   return n;
 }
@@ -391,12 +421,18 @@ $('loadMoreBtn').addEventListener('click', async () => {
 
 /* ── 연결 ── */
 
-let ws = null, retry = 0;
+let ws = null, retry = 0, everOpened = false;
 
 function connect() {
   ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
 
-  ws.onopen = () => { retry = 0; const d = $('liveDot'); if (d) d.dataset.on = '1'; };
+  ws.onopen = () => {
+    retry = 0;
+    const d = $('liveDot'); if (d) d.dataset.on = '1';
+    // 끊겼다 붙었다. 그 사이 발언은 소켓으로 안 왔다 — 보던 방을 다시 불러온다. 안 그러면 화면이 조용히 빠진다.
+    if (everOpened && active) selectTeam(active).then(() => { if (view === 'tower') renderTower(); if (view === 'analysis') loadAnalysis(); });
+    everOpened = true;
+  };
   ws.onclose = () => {
     const d = $('liveDot'); if (d) d.dataset.on = '0';
     retry = Math.min(retry + 1, 6);
@@ -411,7 +447,7 @@ function connect() {
       summary = summaries[active] ?? summary;
       renderRail(); renderHead(); renderSide();
       if (view === 'tower') {
-        fetch('/api/approvals').then((r) => r.json()).then((a) => { approvals = a.pending ?? []; renderTower(); }).catch(() => renderTower());
+        fetch('/api/approvals').then((r) => r.json()).then((a) => { approvals = a.pending ?? []; told = a.told ?? told; renderTower(); }).catch(() => renderTower());
       }
       // 분석은 값이 실제로 움직였을 때만 다시 불러온다. 250ms 마다 받아올 이유가 없다.
       if (view === 'analysis') {
@@ -424,8 +460,9 @@ function connect() {
       if (msg.team === active) {
         append(msg.events);
       } else {
-        unread[msg.team] = (unread[msg.team] ?? 0) + msg.events.length;
-        renderRail();
+        // 도구 줄은 발언이 아니다. 안 읽음 배지가 도구 호출로 부풀면 배지가 의미를 잃는다.
+        unread[msg.team] = (unread[msg.team] ?? 0) + msg.events.filter((e) => e.type !== 'tool').length;
+        if (unread[msg.team] > 0) renderRail();
       }
     }
   };
@@ -456,7 +493,8 @@ const showOpen = (on) => {
 
 $('roundBtn').addEventListener('click', async () => {
   if (!active) return;
-  if (!summary.round) return showOpen($('roundOpen').hidden);
+  const open = summary.phase === 'running' || summary.phase === 'blocked';
+  if (!open) return showOpen($('roundOpen').hidden);
 
   // 판정은 감사역이 낸다. 여기서 닫는 건 판정 없이 라운드를 접는 것이다.
   if (!confirm(`라운드 ${summary.round} 을 닫습니다.\n\n대화록은 그대로 남고, 다음 라운드는 새 컨텍스트로 시작합니다.`)) return;
@@ -586,21 +624,33 @@ function renderApprovals() {
     row.appendChild(w);
     if (r.grade === 'C') {
       const act = el('div', 'apr__act');
+      const err = el('div', 'apr__err'); err.hidden = true;
+      const reasonBox = el('input', 'apr__reason'); reasonBox.type = 'text'; reasonBox.placeholder = '반려 이유'; reasonBox.hidden = true;
+      const decide = async (d) => {
+        const reason = d === 'REVISE' ? reasonBox.value.trim() : '';
+        if (d === 'REVISE' && !reason) { reasonBox.hidden = false; reasonBox.focus(); return; }
+        const res = await post('/api/approvals', { id: r.id, decision: d, reason });
+        if (!res.ok) { err.textContent = res.data.error ?? '판정하지 못했습니다.'; err.hidden = false; }
+        else { approvals = approvals.filter((x) => x.id !== r.id); renderApprovals(); }
+      };
       for (const d of ['PASS', 'REVISE']) {
         const b = el('button', null, d === 'PASS' ? '승인' : '반려'); b.type = 'button'; b.dataset.d = d;
-        b.addEventListener('click', async () => {
-          const reason = d === 'REVISE' ? (prompt('반려 이유') ?? '') : '';
-          if (d === 'REVISE' && !reason) return;
-          const res = await post('/api/approvals', { id: r.id, decision: d, reason });
-          if (!res.ok) alert(res.data.error ?? '판정하지 못했습니다.');
-          else { approvals = approvals.filter((x) => x.id !== r.id); renderApprovals(); }
-        });
+        b.addEventListener('click', () => decide(d));
         act.appendChild(b);
       }
+      reasonBox.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); decide('REVISE'); } });
       row.appendChild(act);
+      row.appendChild(reasonBox);
+      row.appendChild(err);
     } else {
-      const done = r.decisions.map((x) => x.by).join('·');
-      row.appendChild(el('span', 'apr__wait', done ? `${done} 판정함 · 나머지 대기` : '톰·제리 판정 중'));
+      // 누가 판정했고 누가 남았나 — 이름으로. 그리고 총괄실이 이 요청을 들었는가.
+      const hq = summaries.hq?.cast ?? {};
+      const nameOf = (id) => hq[id]?.name ?? id;
+      const need = (grades[r.grade]?.needs ?? []);
+      const done = r.decisions.map((x) => `${nameOf(x.by)} ${x.decision}`).join(' · ');
+      const left = need.filter((w) => !r.decisions.some((x) => x.by === w)).map(nameOf).join('·');
+      const heard = told[r.id]?.requested ? '총괄실에 알림 ✓' : '총괄실에 아직 안 알림 — 서버가 다음 틱에 알립니다';
+      row.appendChild(el('span', 'apr__wait', `${done ? done + ' · ' : ''}${left ? left + ' 대기' : ''} · ${heard}`));
     }
     box.appendChild(row);
   }
@@ -619,7 +669,7 @@ function renderTower() {
     const s = summaries[t.id] ?? {};
     const agents = s.cast ?? {};
     const office = t.kind === 'office';       // 총괄실은 라운드가 없다. 늘 열려 있다
-    const running = office || (s.phase === 'running' && s.round);
+    const running = office || s.phase === 'running' || s.phase === 'blocked';
 
     const card = el('div', 'tcard');
     card.dataset.alert = s.needsBoss ? '1' : '0';
@@ -714,7 +764,7 @@ function renderTower() {
     box.autocomplete = 'off';
     box.dataset.team = t.id;
     box.value = draft[t.id] ?? '';
-    box.placeholder = office ? '톰에게 지시하기' : running ? '지시하기' : '라운드 주제를 쓰고 열기';
+    box.placeholder = office ? '톰에게 지시하기' : s.phase === 'blocked' ? '대표 판단을 적으면 재개' : running ? '지시하기' : '라운드 주제를 쓰고 열기';
     box.addEventListener('input', () => { draft[t.id] = box.value; });
 
     const fail = (m) => { err.textContent = m; err.hidden = false; };
@@ -921,6 +971,7 @@ const boot = await fetch('/api/boot').then((r) => r.json());
 teams = boot.teams;
 summaries = boot.summaries ?? {};
 approvals = boot.approvals ?? [];
+told = boot.told ?? {};
 grades = boot.grades ?? {};
 for (const t of teams) unread[t.id] = 0;
 connect();

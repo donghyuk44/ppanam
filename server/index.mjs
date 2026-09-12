@@ -20,7 +20,7 @@ import {
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
-import { runNotifier } from './notifier.mjs';
+import { runNotifier, notified } from './notifier.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
 
@@ -130,13 +130,14 @@ const server = http.createServer((req, res) => {
       defaultTeam: defaultTeam(),
       summaries: summaries(),
       approvals: listApprovals({ status: 'pending' }),
+      told: notified(),
       grades: APPROVAL_GRADES,
     });
   }
 
   // 승인 큐. 대표는 화면에서 C 등급을 판정한다. B 는 톰·제리가 CLI 로 한다.
   if (url.pathname === '/api/approvals' && req.method === 'GET') {
-    return json(res, 200, { pending: listApprovals({ status: 'pending' }), all: listApprovals() });
+    return json(res, 200, { pending: listApprovals({ status: 'pending' }), all: listApprovals(), told: notified() });
   }
   if (url.pathname === '/api/approvals' && req.method === 'POST') {
     readBody(req, res, ({ id, decision, reason }) => {
