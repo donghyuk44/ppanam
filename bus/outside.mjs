@@ -3,6 +3,7 @@
 //
 //   node bus/outside.mjs --status
 //   node bus/outside.mjs --team marketing --ask "이 산출물의 근거가 실재하는가"
+//   node bus/outside.mjs --team marketing --turn called   사회자가 차례를 줄 때 (called·lull·lunch·third — 판정 없음)
 //   node bus/outside.mjs --check "2 더하기 2는 5인가"      한 번만 묻고 끝 (기록 안 함)
 //   node bus/outside.mjs --team marketing --reset          세션 버리기
 //   node bus/outside.mjs --setup
@@ -25,7 +26,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readCast, readState,
-  defaultTeam, teamExists, isOffice, paths, VERDICTS, addressee, decideApproval,
+  defaultTeam, teamExists, isOffice, paths, VERDICTS, decideApproval,
 } from './bus.mjs';
 
 const run = promisify(execFile);
@@ -167,32 +168,10 @@ function contextOf(team, { since = null } = {}) {
   return lines.slice(-40).join('\n');
 }
 
-/** 방 주인 — 작전실이면 실무, 총괄실이면 총괄. 그에게 말한 건 따로 넘길 필요가 없다. */
-const OWNER_OF = (team) => (isOffice(team) ? 'chief' : 'guide');
-
 /** 이 방에서 지금까지 남은 마지막 이벤트. 다음 턴에 "그 뒤로 새로 온 말"의 기준이 된다. */
 function lastEventId(team) {
   const { events } = readTail(team, { limit: 1 });
   return events[0]?.id ?? null;
-}
-
-/**
- * 방금 한 말을 상대 세션의 귀에 넣는다.
- *
- * 외부감사의 말은 그가 직접 대화록에 남겼다. 그런데 실무 세션은 대화록을 읽지
- * 않으므로, 넣어주지 않으면 못 듣는다. 그러면 대화가 아니라 각자 독백이 된다.
- * 훅은 이 표시를 보고 기록하지 않는다 — 말한 사람이 이미 남겼기 때문이다.
- */
-async function tell(team, name, text) {
-  const base = process.env.PPANAM_SERVER || 'http://localhost:4321';
-  try {
-    const r = await fetch(`${base}/api/say`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ team, quiet: true, text: `${name}: ${text}` }),
-    });
-    return r.ok;
-  } catch { return false; }   // 서버가 안 떠 있으면 대화록에는 남았으니 그걸로 족하다
 }
 
 /**
@@ -206,16 +185,21 @@ function splitVerdict(text) {
   return { verdict: null, body: text };
 }
 
+/** 사회자가 주는 차례의 종류별 지시문. 판정이 아니다. server/conductor.mjs 의 INSTRUCTION 과 같다. */
+const TURN = {
+  called: '방에서 너에게 한 말이다. 상대 이름으로 시작해 한두 문장으로 답해라. 판정이 아니다 — 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라. 모르면 모른다고, 돌려봐야 알면 돌려보겠다고 해라. 남길 말이 없으면 (패스) 한 마디만.',
+  lull: '방이 잠시 조용하다. 아무도 너에게 말한 건 아니다. 그동안 오간 말에 보탤 것이 있을 때만 한두 문장 — 없으면 (패스) 한 마디만. 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라.',
+  third: '두 사람 사이에서 같은 얘기가 세 번 오갔다. 너는 제3자다. 정리하거나 다른 각도를 하나만, 한두 문장. 없으면 (패스).',
+  lunch: '점심시간이다. 일 얘기는 잠시 두고 한마디 툭 — 한 문장. 없으면 (패스).',
+};
+
 /**
- * talk — 판정이 아니라 대화다.
- *
- * 외부감사가 대화를 안 하는 이유는 성격이 아니라 통로였다. --ask 는 한 번 돌고 첫 줄에
- * PASS/REVISE 를 강제하니 무슨 말을 해도 판정이 된다. 방에서 "레오, 이거 어때" 하고
- * 불러도 아무 일이 안 일어난다 — 클로드 세션에는 이름이 불리면 다음 화자가 되는 장치가
- * 있는데 codex 에는 그 방아쇠가 없었다. talk 는 그 방아쇠의 반대쪽 끝이다: 서버가 이름이
- * 불린 걸 보고 --talk 로 깨우면, 그는 판정 없이 사람에게 답한다. 대표 지적 (2026-09-02).
+ * 대화의 통로. 외부감사가 대화를 안 하는 이유는 성격이 아니라 통로였다 — --ask 는 한 번 돌고 첫 줄에
+ * PASS/REVISE 를 강제하니 무슨 말을 해도 판정이 된다. 사회자(server/conductor.mjs)가 이름이 불리거나 방이
+ * 조용할 때 --turn <종류> 로 깨우면, 그는 판정 없이 사람에게 답한다. 대표 지적 (2026-09-02).
+ * 그의 답은 그가 직접 대화록에 남기고, 다른 자리들은 각자 다음 차례에 듣는다 — 들려주기는 사회자의 일이다.
  */
-async function ask(team, question, { talk = false, lull = false } = {}) {
+async function ask(team, question, { talk = false, lull = false, turn = null } = {}) {
   if (!await hasCodex()) {
     emit(team, {
       actor: 'outside', type: 'note',
@@ -241,11 +225,13 @@ async function ask(team, question, { talk = false, lull = false } = {}) {
     prior ? null : personaOf(team),
     prior ? null : '\n---\n',
     ctx ? `그동안 이 방에서 오간 말:\n\n${ctx}\n\n---\n` : null,
-    lull
-      ? '방이 잠시 조용하다. 아무도 너에게 말한 건 아니다. 그동안 오간 말에 보탤 것이 있을 때만 한두 문장 — 없으면 (패스) 한 마디만. 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라.'
-      : talk
-        ? `방에서 누가 너에게 한 말이다. 판정이 아니라 대화로 답해라 — 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라. 상대 이름으로 시작해 한두 문장. 모르면 모른다고, 돌려봐야 알면 돌려보겠다고 해라.\n\n${question}`
-        : question,
+    turn
+      ? TURN[turn] ?? TURN.called
+      : lull
+        ? TURN.lull
+        : talk
+          ? `방에서 누가 너에게 한 말이다. 판정이 아니라 대화로 답해라 — 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라. 상대 이름으로 시작해 한두 문장. 모르면 모른다고, 돌려봐야 알면 돌려보겠다고 해라.\n\n${question}`
+          : question,
   ].filter(Boolean).join('\n');
 
   let res;
@@ -307,20 +293,6 @@ async function ask(team, question, { talk = false, lull = false } = {}) {
 
   // 방금 남긴 것까지가 "이미 본 것"이다. 다음 턴에는 이 뒤로 새로 온 말만 받는다.
   if (res.sessionId) remember(team, res.sessionId, seenId);
-
-  // 같은 방에 있는데 못 들으면 대화가 아니다. 이 방 주인의 귀에 넣는다.
-  //
-  // 그리고 이 말이 누구를 향한 것인지도 함께 알린다. 질문에 답이 오지 않으면
-  // 대화가 아니라 독백이다. 감사역은 스스로 등장할 수 없으므로, 방 주인이
-  // 그를 불러 답하게 해야 한다.
-  const cast = readCast(team).agents ?? {};
-  const to = addressee(body, cast, { except: 'outside' });
-  const route = to && to !== OWNER_OF(team)
-    ? `\n\n(이 말은 ${cast[to]?.name ?? to} 에게 한 것입니다. 그를 불러 답하게 하세요.)`
-    : '';
-
-  const heard = await tell(team, name, (verdict ? `[${verdict}] ` : '') + body + route);
-  if (!heard) console.error('(서버가 없어 상대에게 들려주지 못했습니다. 대화록에는 남았습니다.)');
 
   console.log(`[${ENGINE}] ${team} · ${rec.type}${verdict ? ' ' + rec.meta.verdict : ''}`);
   console.log(body);
@@ -391,7 +363,7 @@ const SETUP = `외부감사를 연결하는 법.
 
 const argv = process.argv.slice(2);
 let team = process.env.PPANAM_TEAM ?? null;
-let question = null, mode = null;
+let question = null, mode = null, turnKind = null;
 
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
@@ -399,6 +371,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--ask' || a === '-a') { mode = 'ask'; question = argv[++i]; }
   else if (a === '--talk') { mode = 'talk'; question = argv[++i]; }
   else if (a === '--lull') { mode = 'lull'; question = '(조용한 틈)'; }
+  else if (a === '--turn') { mode = 'turn'; turnKind = argv[++i]; question = `(차례: ${turnKind})`; }
   else if (a === '--check' || a === '-c') { mode = 'check'; question = argv[++i]; }
   else if (a === '--reset') mode = 'reset';
   else if (a === '--status') mode = 'status';
@@ -423,7 +396,8 @@ if (mode === 'reset') {
 
 if (!question) {
   console.error('사용법: outside.mjs --team <팀> --ask "물어볼 것"        판정 (첫 줄 PASS/REVISE)');
-  console.error('        outside.mjs --team <팀> --talk "방에서 한 말"     대화 (판정 없음. 서버가 이름 불리면 자동으로 부른다)');
+  console.error('        outside.mjs --team <팀> --talk "방에서 한 말"     대화 (판정 없음)');
+  console.error('        outside.mjs --team <팀> --turn <called|lull|lunch|third>   사회자가 주는 차례 (판정 없음)');
   console.error('        outside.mjs --check "한 번만 물어볼 것"');
   console.error('        outside.mjs --setup');
   process.exit(2);
@@ -446,4 +420,4 @@ if (mode === 'check') {
   process.exit(1);
 }
 
-process.exit(await ask(team, question, { talk: mode === 'talk' || mode === 'lull', lull: mode === 'lull' }));
+process.exit(await ask(team, question, { talk: mode === 'talk' || mode === 'lull' || mode === 'turn', lull: mode === 'lull', turn: mode === 'turn' ? turnKind : null }));

@@ -21,3 +21,4 @@ state/executor.json
 # 없으면 idle(round 0)로 시작하고, 번호는 log.jsonl·rounds.jsonl 의 최대값에서 이어진다 (nextRoundNumber).
 teams/*/round.json
 state/notifier.json
+state/conductor.json

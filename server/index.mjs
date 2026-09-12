@@ -15,12 +15,13 @@ import { WebSocketServer } from 'ws';
 import {
   paths, listTeams, defaultTeam, teamExists, teamSummary,
   readCast, readRoadmap, readTail, listRounds, parseJSONL,
-  readState, startRound, endRound, resumeRound, readLog, isOffice, quiet,
+  readState, startRound, endRound, resumeRound, readLog, isOffice, quiet, addressee,
   listApprovals, decideApproval, APPROVAL_GRADES,
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
+import { noticeEvents } from './conductor.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
 
@@ -238,7 +239,12 @@ const server = http.createServer((req, res) => {
 
       try {
         // quiet 는 이미 대화록에 있는 말을 세션의 귀에만 넣는 것이다.
-        json(res, 200, { ok: true, ...session.send(t, q ? quiet(say) : say) });
+        // 대표가 첫머리에 이름을 불렀으면 그 사람에게 간다("안젤, 이거 봐줘") — 방의 모든 자리가 자기 세션을 갖는다.
+        // 아니면 방 주인에게. 나머지는 각자 다음 차례에 듣는다 (server/conductor.mjs).
+        const cast = readCast(t).agents ?? {};
+        const to = q ? null : addressee(say, cast);
+        const actor = to && (cast[to]?.model === 'claude') ? to : undefined;
+        json(res, 200, { ok: true, to: actor ?? session.ownerOf(t), ...session.send(t, q ? quiet(say) : say, actor) });
       } catch (e) {
         json(res, 500, { error: `실무에게 전달하지 못했습니다 — ${e.message}` });
       }
@@ -331,7 +337,11 @@ let lastSummaries = '';
 setInterval(() => {
   for (const t of listTeams()) {
     const events = pollTeam(t.id);
-    if (events.length) broadcast({ kind: 'events', team: t.id, events });
+    if (events.length) {
+      broadcast({ kind: 'events', team: t.id, events });
+      // 사회자에게 넘긴다 — 누가 불렸나, 방이 조용한가. 기동 시 커서 맞추기(아래)는 여기를 거치지 않는다.
+      try { noticeEvents(t.id, events); } catch (e) { console.error('conductor:', e.message); }
+    }
   }
   // 통과한 B 푸시를 서버가 대신 민다. 한 번에 하나씩, 겹치지 않게.
   runExecutor();
