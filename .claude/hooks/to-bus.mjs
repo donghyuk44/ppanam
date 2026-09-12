@@ -117,7 +117,15 @@ switch (ev) {
     if (!text) break;
 
     // 이미 대화록에 있는 말을 귀에 넣어준 것이다. 말한 사람이 이미 남겼다.
-    if (bus.isQuietRelay(text)) bail('들려주기 — 기록 안 함');
+    // 다만 이번 턴의 종류(판정 요청·일지)는 적어 둔다 — Stop 훅이 답을 어떻게 남길지 여기서 정해진다.
+    if (bus.isQuietRelay(text)) {
+      const kind = bus.turnKindOf(text);
+      if (kind) {
+        const target = kind === 'verdict' ? (/⟦판정 요청⟧\s*([^\n]*)/.exec(text)?.[1] ?? '').trim().slice(0, 200) : '';
+        try { bus.writeTurn(team, ME, kind, target); } catch { /* 못 적으면 말로 남는다 */ }
+      }
+      bail('들려주기 — 기록 안 함');
+    }
 
     // 하네스가 세션에 넣는 알림(백그라운드 작업 완료 등)은 대표가 한 말이 아니다.
     // 그대로 두면 대표 말풍선으로 남고, 감사역이 그걸 대표 지시로 읽는다.
@@ -165,6 +173,23 @@ switch (ev) {
     if (!text) break;
     const actor = ev === 'Stop' ? ME : actorOf(hook.agent_type);
     if (!actor) bail('캐스트가 아닌 서브에이전트 — 기록 안 함');
+
+    // 이번 턴이 무엇이었나. 판정 요청이었으면 첫 줄이 판정이다 — 모든 엔진이 같은 규약. 일지였으면 대화록에 안 남는다.
+    if (ev === 'Stop') {
+      const turn = bus.takeTurn(team, actor);
+      if (turn?.kind === 'journal') bail('일지 — 서버가 받는다');
+      if (turn?.kind === 'verdict') {
+        const v = bus.splitVerdictLine(text);
+        if (v) {
+          try { bus.recordVerdict(team, { actor, verdict: v.verdict, text: trim(v.body), target: 'guide' }); }
+          catch (e) { bus.emit(team, { actor, type: 'message', text: `[${v.verdict} — 판정으로 세지 않음: ${e.message}] ${trim(v.body)}` }); }
+          process.exit(0);
+        }
+        // 판정을 요청받고도 첫 줄에 안 썼다. 말로 남기되 표시해 둔다 — 사회자가 한 번 더 묻는다.
+        out = { actor, type: 'message', text: trim(text), meta: { noVerdict: true } };
+        break;
+      }
+    }
 
     // 서브에이전트의 마지막 말은 실무에게 돌려주는 보고다. 그가 그동안 bus/say.mjs 로 방에 이미 말했으면
     // 그 보고는 같은 지적의 재요약이라 두 번 뜬다 (마케팅 R14, 2026-09-01). "(패스) 로 끝내라" 는 인격 문장은

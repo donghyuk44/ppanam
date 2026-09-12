@@ -23,7 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, readCast, readState, isOffice, emit, readLog, readTail, quiet } from '../bus/bus.mjs';
+import { addressee, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -52,6 +52,7 @@ function room(team) {
       outsideBusy: false,
       outsideAgain: null,
       round: null,          // 마지막으로 본 라운드 번호 — 바뀌면 상태를 비운다
+      flow: null,           // 판정 흐름 { target, step: 'review'|'outside', asked: n }
     });
   }
   return rooms.get(team);
@@ -123,6 +124,9 @@ function unheard(team, actor) {
   return { lines: lines.slice(-HEAR_LINES), last };
 }
 
+/** 판정 차례의 지시문. ⟦판정 요청⟧ 마커를 훅이 보고 첫 줄을 판정으로 남긴다 — 모든 엔진이 같은 규약. */
+const VERDICT_INSTRUCTION = (target, guideName) => `${TURN_VERDICT} ${target}\n판정 대상: ${target} (만든 사람: ${guideName}). 산출물 파일을 열어 확인해라. 첫 줄에 PASS 또는 REVISE 한 단어만, 그다음 줄부터 근거(경로·줄 번호). 같은 지적을 다시 내지 마라 — 새 근거가 없으면 PASS. 통과 기준은 완벽함이 아니라 이번 마일스톤의 산출물 조건이다.`;
+
 const INSTRUCTION = {
   called: '방에서 너에게 한 말이다. 상대 이름으로 시작해 한두 문장으로 답해라. 판정이 아니다 — 첫 줄에 PASS·REVISE 를 쓰지 마라. 남길 말이 없으면 (패스) 한 마디만.',
   lull: '방이 잠시 조용하다. 아무도 너에게 말한 건 아니다. 그동안 오간 말에 보탤 것이 있을 때만 한두 문장 — 없으면 (패스) 한 마디만. 첫 줄에 PASS·REVISE 를 쓰지 마라.',
@@ -134,11 +138,13 @@ const INSTRUCTION = {
 
 function giveTurn(team, actor, kind) {
   const r = room(team);
+  const target = r.flow?.target ?? '';
 
   if (isOutside(team, actor)) {
     // codex 는 프로세스가 턴마다 뜬다. outside.mjs 가 자기 커서(lastSeen)로 못 들은 말을 붙이므로 여기선 종류만 넘긴다.
     r.outsideBusy = true;
     const args = [OUTSIDE, '--team', team, '--turn', kind];
+    if (kind === 'verdict') args.push('--text', target);
     let child;
     try {
       child = spawn('node', args, { cwd: REPO, stdio: ['ignore', 'ignore', 'pipe'], env: { ...process.env } });
@@ -163,13 +169,14 @@ function giveTurn(team, actor, kind) {
   }
 
   const { lines, last } = unheard(team, actor);
-  const body = (lines.length ? `그동안 이 방에서 오간 말:\n\n${lines.join('\n')}\n\n---\n` : '') + INSTRUCTION[kind];
+  const instruction = kind === 'verdict' ? VERDICT_INSTRUCTION(target, nameOf(team, session.ownerOf(team))) : INSTRUCTION[kind];
+  const body = (lines.length ? `그동안 이 방에서 오간 말:\n\n${lines.join('\n')}\n\n---\n` : '') + instruction;
   if (last) setCursor(team, actor, last);
   session.send(team, quiet(body), actor);
 }
 
 /** 차례를 예약한다. 같은 자리에 쌓이면 더 센 종류로 합친다. */
-const RANK = { third: 3, called: 2, lull: 1, lunch: 1 };
+const RANK = { verdict: 4, third: 3, called: 2, lull: 1, lunch: 1 };
 function enqueue(team, actor, kind) {
   const r = room(team);
   const cur = r.pending.get(actor);
@@ -186,6 +193,61 @@ function dispatch(team) {
     if (busy(team, actor)) continue;
     r.pending.delete(actor);
     giveTurn(team, actor, p.kind);
+  }
+}
+
+/* ── 판정 흐름 ── */
+
+/**
+ * /verdict. 내부감사 → (PASS 면) 외부감사 순서로 판정 차례를 준다. 내부감사가 없는 방(개발)은 외부감사만.
+ * REVISE 가 나오면 흐름은 끝나고 실무가 호명 차례를 받는다(판정 카드는 어차피 그가 듣는다). FAIL 이면 방이 막힌다.
+ * 둘 다 PASS 면 note — 라운드를 PASS 로 닫는 것은 실무나 대표가 한다(자동으로 닫지 않는다).
+ */
+export function startVerdict(team, target) {
+  const r = room(team);
+  const state = readState(team);
+  if (isOffice(team)) throw new Error('총괄실에는 판정이 없습니다.');
+  if (state.phase !== 'running') throw new Error(state.phase === 'blocked' ? '대표 판단 대기 중입니다.' : '라운드를 먼저 여세요.');
+  if (r.flow) throw new Error(`이미 판정이 돌고 있습니다 (${r.flow.step}).`);
+  const cast = readCast(team).agents ?? {};
+  const steps = [cast.review?.model === 'claude' ? 'review' : null, cast.outside?.model === 'gpt' ? 'outside' : null].filter(Boolean);
+  if (!steps.length) throw new Error('이 방에는 감사역이 없습니다.');
+  r.flow = { target: String(target ?? '').trim() || '이번 라운드 산출물', steps, i: 0, asked: 0 };
+  emit(team, { actor: 'system', type: 'note', text: `판정 시작 — ${r.flow.target}. ${steps.map((s) => nameOf(team, s)).join(' → ')} 순서.`, meta: { verdictFlow: 'start' } });
+  askStep(team);
+  return r.flow;
+}
+
+function askStep(team) {
+  const r = room(team);
+  const actor = r.flow.steps[r.flow.i];
+  r.flow.asked = 0;
+  r.flow.waiting = actor;
+  enqueue(team, actor, 'verdict');
+}
+
+/** 판정 흐름 중에 온 이벤트. 기다리던 자리의 판정 카드면 다음 단계로, 판정 없는 말이면 한 번 더 묻는다. */
+function onFlowEvent(team, e) {
+  const r = room(team);
+  const f = r.flow;
+  if (!f || e.actor !== f.waiting) return;
+  if (e.type === 'verdict') {
+    const v = e.meta?.verdict;
+    f.waiting = null;
+    if (v === 'PASS' && f.i + 1 < f.steps.length) { f.i += 1; askStep(team); return; }
+    r.flow = null;
+    if (v === 'PASS') {
+      emit(team, { actor: 'system', type: 'note', text: `판정 완료 — ${f.steps.map((s) => nameOf(team, s)).join('·')} 모두 PASS. 라운드를 PASS 로 닫을 수 있습니다 (node bus/round.mjs end -v PASS "…").`, meta: { verdictFlow: 'pass' } });
+    } else if (v === 'REVISE') {
+      enqueue(team, session.ownerOf(team), 'called');   // 판정 카드를 듣고 고친다
+    }
+    // FAIL: recordVerdict 가 방을 막았다. 여기서 할 일 없음.
+    return;
+  }
+  if (e.type === 'message' && e.meta?.noVerdict) {
+    if (f.asked < 1) { f.asked += 1; enqueue(team, e.actor, 'verdict'); return; }
+    r.flow = null;
+    emit(team, { actor: 'system', type: 'note', text: `${nameOf(team, e.actor)}이 두 번 물어도 첫 줄에 판정을 쓰지 않았습니다. 판정 흐름을 멈춥니다.`, meta: { verdictFlow: 'abort' } });
   }
 }
 
@@ -264,7 +326,7 @@ export function noticeEvents(team, events) {
   const state = readState(team);
 
   if (!isOffice(team)) {
-    if (state.round !== r.round) { r.round = state.round; r.pending.clear(); r.recent = []; r.loopNoted = false; }
+    if (state.round !== r.round) { r.round = state.round; r.pending.clear(); r.recent = []; r.loopNoted = false; r.flow = null; }
     if (state.phase !== 'running') { clearTimeout(r.lullTimer); r.lullTimer = null; r.pending.clear(); return; }   // idle·blocked: 차례 없음
   }
 
@@ -276,10 +338,13 @@ export function noticeEvents(team, events) {
     r.recent.push(e.actor);
     r.recent = r.recent.slice(-MAX_EXCHANGE * 4);
 
+    onFlowEvent(team, e);
+
     const to = addressee(e.text, cast);
     if (to && to !== e.actor && participants(team).includes(to)) {
-      // 대표가 부른 사람은 /api/say 가 이미 그에게 넣었다. 대표 발언은 여기서 다시 주지 않는다.
-      if (e.actor === 'boss') { armLull(team); continue; }
+      // 대표가 부른 사람이 claude 자리면 /api/say 가 이미 그에게 넣었다 — 다시 주지 않는다.
+      // codex 자리면 넣을 세션이 없어 서버가 말풍선만 남겼다 — 여기서 깨운다 (레오 감사, 2026-09-12).
+      if (e.actor === 'boss' && !isOutside(team, to)) { armLull(team); continue; }
       if (inLoop(team) && new Set(r.recent.slice(-MAX_EXCHANGE * 2)).has(to)) {
         const z = thirdParty(team, e.actor, to);
         if (!r.loopNoted) {
@@ -300,5 +365,5 @@ export function noticeEvents(team, events) {
 /** 화면·시험용. */
 export function snapshot(team) {
   const r = room(team);
-  return { pending: [...r.pending.entries()].map(([a, p]) => `${a}:${p.kind}`), recent: r.recent, lulls: r.lulls.length, outsideBusy: r.outsideBusy };
+  return { pending: [...r.pending.entries()].map(([a, p]) => `${a}:${p.kind}`), recent: r.recent, lulls: r.lulls.length, outsideBusy: r.outsideBusy, flow: r.flow ? { step: r.flow.steps[r.flow.i], waiting: r.flow.waiting, asked: r.flow.asked } : null };
 }

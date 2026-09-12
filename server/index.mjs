@@ -14,14 +14,14 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import {
   paths, listTeams, defaultTeam, teamExists, teamSummary,
-  readCast, readRoadmap, readTail, listRounds, parseJSONL,
+  readCast, readRoadmap, readTail, listRounds, parseJSONL, emit,
   readState, startRound, endRound, resumeRound, readLog, isOffice, quiet, addressee,
   listApprovals, decideApproval, APPROVAL_GRADES,
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
-import { noticeEvents } from './conductor.mjs';
+import { noticeEvents, startVerdict } from './conductor.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
 
@@ -243,11 +243,27 @@ const server = http.createServer((req, res) => {
         // 아니면 방 주인에게. 나머지는 각자 다음 차례에 듣는다 (server/conductor.mjs).
         const cast = readCast(t).agents ?? {};
         const to = q ? null : addressee(say, cast);
+        // 대표가 외부감사(codex)를 불렀다. codex 는 세션이 없어 넣을 곳이 없다 — 서버가 대표 말풍선을 직접 남기고
+        // 사회자가 그를 깨운다. 주인은 다음 차례에 듣는다 (레오 감사, 2026-09-12: 다니엘은 대표가 불러도 안 깼다).
+        if (to && cast[to]?.model === 'gpt') {
+          const rec = emit(t, { actor: 'boss', type: 'message', text: say });
+          return json(res, 200, { ok: true, to, queued: 0, event: rec.id });
+        }
         const actor = to && (cast[to]?.model === 'claude') ? to : undefined;
         json(res, 200, { ok: true, to: actor ?? session.ownerOf(t), ...session.send(t, q ? quiet(say) : say, actor) });
       } catch (e) {
         json(res, 500, { error: `실무에게 전달하지 못했습니다 — ${e.message}` });
       }
+    });
+    return;
+  }
+
+  // 판정. 내부감사 → 외부감사 순서로 판정 차례를 준다. 실무가 /verdict 로, 대표가 화면에서 부른다.
+  if (url.pathname === '/api/verdict' && req.method === 'POST') {
+    readBody(req, res, ({ team: t, target }) => {
+      if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
+      try { return json(res, 200, { ok: true, flow: startVerdict(t, target) }); }
+      catch (e) { return json(res, 400, { error: e.message }); }
     });
     return;
   }
@@ -272,11 +288,13 @@ const server = http.createServer((req, res) => {
           };
           const st = readState(t);
           if (!st.round || st.phase === 'idle') return json(res, 409, { error: '진행 중인 라운드가 없습니다.' });
-          // 실무가 일하는 중이면 턴이 끝난 뒤 닫는다. 지금 닫으면 마지막 발언이 훅에서 버려진다.
+          // 누가 일하는 중이면 턴이 끝난 뒤 닫는다. 지금 닫으면 마지막 발언이 훅에서 버려진다.
           if (session.closeWhenIdle(t, opts)) return json(res, 202, { deferred: true, round: st.round });
-          const n = endRound(t, opts);
-          session.reset(t); // 비워지는 건 AI 컨텍스트뿐이다. 대화록은 그대로 남는다
-          return json(res, 200, { round: n });
+          // 일지 → 닫기 → 비우기. 일지가 있어야 다음 세션이 어제를 인용한다.
+          session.closeRound(t, opts)
+            .then((r) => json(res, 200, r))
+            .catch((e) => json(res, 400, { error: e.message }));
+          return;
         }
         return json(res, 400, { error: 'action 은 start 또는 end 입니다.' });
       } catch (e) {

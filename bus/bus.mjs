@@ -52,6 +52,60 @@ export const RELAY_QUIET = '⟦들려주기 — 기록하지 않음⟧';
 export const isQuietRelay = (text) => String(text ?? '').startsWith(RELAY_QUIET);
 
 /**
+ * 턴의 종류를 말하는 표시. 들려주기 안에 들어간다.
+ *   ⟦판정 요청⟧ <대상>  — 답의 첫 줄이 PASS/REVISE/FAIL 이면 훅이 판정 카드로 남긴다 (모든 엔진이 같은 규약).
+ *   ⟦일지⟧             — 답은 대화록에 남지 않는다. 서버가 받아 journal/<자리>.md 에 붙인다.
+ * 훅은 UserPromptSubmit 에서 종류를 state/turn/<방>.<자리> 에 적고 Stop 에서 읽는다 — 에이전트가 기억할 규칙이 아니다.
+ */
+export const TURN_VERDICT = '⟦판정 요청⟧';
+export const TURN_JOURNAL = '⟦일지⟧';
+export function turnKindOf(text) {
+  const s = String(text ?? '');
+  if (s.includes(TURN_JOURNAL)) return 'journal';
+  if (s.includes(TURN_VERDICT)) return 'verdict';
+  return null;
+}
+export const TURN_DIR = path.join(ROOT, 'state', 'turn');
+export function writeTurn(team, actor, kind, extra = '') {
+  fs.mkdirSync(TURN_DIR, { recursive: true });
+  fs.writeFileSync(path.join(TURN_DIR, `${team}.${actor}`), extra ? `${kind}:${extra}` : kind);
+}
+export function takeTurn(team, actor) {
+  const f = path.join(TURN_DIR, `${team}.${actor}`);
+  let s = null;
+  try { s = fs.readFileSync(f, 'utf8').trim(); } catch { return null; }
+  try { fs.unlinkSync(f); } catch { /* 없으면 그만 */ }
+  const i = s.indexOf(':');
+  return i < 0 ? { kind: s, extra: '' } : { kind: s.slice(0, i), extra: s.slice(i + 1) };
+}
+
+/** 판정의 첫 줄 규약. PASS/REVISE/FAIL 한 단어면 그 판정, 아니면 null. */
+export function splitVerdictLine(text) {
+  const [first, ...rest] = String(text ?? '').split('\n');
+  const v = first.trim().toUpperCase().replace(/[^A-Z]/g, '');
+  if (VERDICTS.has(v)) return { verdict: v, body: rest.join('\n').trim() || String(text) };
+  return null;
+}
+
+/** 일지에 한 문단 붙인다 — 최신이 맨 위. 첫 줄이 머리(## …)가 아니면 붙여 준다. */
+export function appendJournal(team, actor, text, { round = null } = {}) {
+  const body = String(text ?? '').trim();
+  if (!body || /^\(?패스\)?[.·\s]*$/.test(body)) return false;
+  const cast = readCast(team).agents ?? {};
+  const name = cast[actor]?.name ?? actor;
+  const date = new Date().toISOString().slice(0, 10);
+  const head = `## ${date} · 라운드 ${round ?? readState(team).round} · ${name}`;
+  const para = body.startsWith('## ') ? body : `${head}\n\n${body}`;
+  const dir = path.join(paths(team).dir, 'journal');
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${actor}.md`);
+  let old = '';
+  try { old = fs.readFileSync(file, 'utf8'); } catch { /* 첫 문단 */ }
+  fs.writeFileSync(file, para + '\n\n' + old);
+  return true;
+}
+
+/**
  * 하네스가 세션에 밀어넣는 블록을 걷어낸다.
  *
  * 백그라운드 작업 완료 알림 같은 것은 대표가 한 말이 아닌데, 프롬프트로 들어오기

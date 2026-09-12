@@ -40,11 +40,11 @@ const phrase = words.join(' ').trim() || null;
  * 이미 idle), 세션 id 가 남아 다음 라운드가 지난 컨텍스트를 안고 뜬다 (Fable 재점검, 2026-09-12).
  * 서버가 안 떠 있으면 null — 그때는 직접 닫는다.
  */
-async function viaServer(body) {
+async function viaServer(body, api = '/api/round') {
   const base = process.env.PPANAM_SERVER || 'http://localhost:4321';
   let r;
   try {
-    r = await fetch(`${base}/api/round`, {
+    r = await fetch(`${base}${api}`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body), signal: AbortSignal.timeout(5000),
     });
@@ -85,6 +85,13 @@ switch (cmd) {
       console.error('오류: ' + e.message);
       process.exit(1);
     }
+    break;
+  }
+  case 'verdict': {
+    // 판정은 사회자가 돌린다 — 내부감사 → 외부감사 순서로 차례를 주고, 첫 줄 PASS/REVISE 를 카드로 남긴다.
+    const r = await viaServer({ team, target: phrase }, '/api/verdict');
+    if (!r) { console.error('오류: 판정 흐름은 서버가 돌립니다. 서버(npm start)가 떠 있어야 합니다.'); process.exit(1); }
+    console.log(`[${team}] 판정 시작 — ${r.flow.target}. 결과는 판정 카드로 방에 남고 너에게 들립니다. 기다리는 동안 (패스).`);
     break;
   }
   case 'rounds': {

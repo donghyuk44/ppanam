@@ -25,7 +25,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {
-  ROOT, emit, recordVerdict, readContext, readTail, readCast, readState,
+  ROOT, emit, recordVerdict, readContext, readTail, readCast, readState, appendJournal,
   defaultTeam, teamExists, isOffice, paths, VERDICTS, decideApproval,
 } from './bus.mjs';
 
@@ -185,6 +185,11 @@ function splitVerdict(text) {
   return { verdict: null, body: text };
 }
 
+/** 판정 차례. 첫 줄 PASS/REVISE 규약 — 클로드 자리와 같다. */
+const VERDICT_TURN = (target) => `⟦판정 요청⟧ ${target}\n판정 대상: ${target}. 산출물 파일을 열어 확인해라. 첫 줄에 PASS 또는 REVISE 한 단어만, 그다음 줄부터 근거(경로·줄 번호). 같은 지적을 다시 내지 마라 — 새 근거가 없으면 PASS.`;
+/** 일지 차례. 답은 대화록이 아니라 journal/outside.md 에 간다. */
+const JOURNAL_TURN = (round) => `⟦일지⟧ 라운드 ${round} 이 끝난다. 이번 라운드에서 네가 본 것·판단한 이유·틀렸던 것을 한 문단(3~6줄) 산문으로. 파일 이름·완료율·할 일 목록은 쓰지 마라. 남길 것이 없으면 (패스).`;
+
 /** 사회자가 주는 차례의 종류별 지시문. 판정이 아니다. server/conductor.mjs 의 INSTRUCTION 과 같다. */
 const TURN = {
   called: '방에서 너에게 한 말이다. 상대 이름으로 시작해 한두 문장으로 답해라. 판정이 아니다 — 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라. 모르면 모른다고, 돌려봐야 알면 돌려보겠다고 해라. 남길 말이 없으면 (패스) 한 마디만.',
@@ -199,7 +204,7 @@ const TURN = {
  * 조용할 때 --turn <종류> 로 깨우면, 그는 판정 없이 사람에게 답한다. 대표 지적 (2026-09-02).
  * 그의 답은 그가 직접 대화록에 남기고, 다른 자리들은 각자 다음 차례에 듣는다 — 들려주기는 사회자의 일이다.
  */
-async function ask(team, question, { talk = false, lull = false, turn = null } = {}) {
+async function ask(team, question, { talk = false, lull = false, turn = null, text = null } = {}) {
   if (!await hasCodex()) {
     emit(team, {
       actor: 'outside', type: 'note',
@@ -225,9 +230,13 @@ async function ask(team, question, { talk = false, lull = false, turn = null } =
     prior ? null : personaOf(team),
     prior ? null : '\n---\n',
     ctx ? `그동안 이 방에서 오간 말:\n\n${ctx}\n\n---\n` : null,
-    turn
-      ? TURN[turn] ?? TURN.called
-      : lull
+    turn === 'verdict'
+      ? VERDICT_TURN(text || question)
+      : turn === 'journal'
+        ? JOURNAL_TURN(round)
+        : turn
+          ? TURN[turn] ?? TURN.called
+          : lull
         ? TURN.lull
         : talk
           ? `방에서 누가 너에게 한 말이다. 판정이 아니라 대화로 답해라 — 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라. 상대 이름으로 시작해 한두 문장. 모르면 모른다고, 돌려봐야 알면 돌려보겠다고 해라.\n\n${question}`
@@ -253,6 +262,14 @@ async function ask(team, question, { talk = false, lull = false, turn = null } =
   let { verdict, body } = splitVerdict(res.answer || '(빈 답)');
   // 대화에서는 판정이 없다. 습관처럼 첫 줄에 PASS 를 썼어도 떼고 본문만 남긴다.
   if (talk) verdict = null;
+
+  // 일지는 대화록에 남지 않는다. 자기 일지 파일에 붙인다 — 이 프로세스가 곧 그다.
+  if (turn === 'journal') {
+    if (res.sessionId) remember(team, res.sessionId, seenId);
+    const ok = appendJournal(team, 'outside', body, { round });
+    console.log(`[${ENGINE}] ${team} · 일지 ${ok ? '한 문단' : '(패스)'}`);
+    return 0;
+  }
 
   // 승인 대조였으면 그 판정을 외부감사 이름으로 큐에 남긴다.
   // codex 샌드박스는 파일을 못 쓰므로 그녀 대신 이 프로세스가 쓴다 — 이 프로세스가 곧 그녀다.
@@ -363,7 +380,7 @@ const SETUP = `외부감사를 연결하는 법.
 
 const argv = process.argv.slice(2);
 let team = process.env.PPANAM_TEAM ?? null;
-let question = null, mode = null, turnKind = null;
+let question = null, mode = null, turnKind = null, turnText = null;
 
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
@@ -372,6 +389,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--talk') { mode = 'talk'; question = argv[++i]; }
   else if (a === '--lull') { mode = 'lull'; question = '(조용한 틈)'; }
   else if (a === '--turn') { mode = 'turn'; turnKind = argv[++i]; question = `(차례: ${turnKind})`; }
+  else if (a === '--text') turnText = argv[++i];
   else if (a === '--check' || a === '-c') { mode = 'check'; question = argv[++i]; }
   else if (a === '--reset') mode = 'reset';
   else if (a === '--status') mode = 'status';
@@ -398,6 +416,8 @@ if (!question) {
   console.error('사용법: outside.mjs --team <팀> --ask "물어볼 것"        판정 (첫 줄 PASS/REVISE)');
   console.error('        outside.mjs --team <팀> --talk "방에서 한 말"     대화 (판정 없음)');
   console.error('        outside.mjs --team <팀> --turn <called|lull|lunch|third>   사회자가 주는 차례 (판정 없음)');
+  console.error('        outside.mjs --team <팀> --turn verdict --text "<대상>"       판정 차례 (첫 줄 PASS/REVISE)');
+  console.error('        outside.mjs --team <팀> --turn journal                    일지 한 문단 (대화록에 안 남음)');
   console.error('        outside.mjs --check "한 번만 물어볼 것"');
   console.error('        outside.mjs --setup');
   process.exit(2);
@@ -420,4 +440,5 @@ if (mode === 'check') {
   process.exit(1);
 }
 
-process.exit(await ask(team, question, { talk: mode === 'talk' || mode === 'lull' || mode === 'turn', lull: mode === 'lull', turn: mode === 'turn' ? turnKind : null }));
+const chat = mode === 'talk' || mode === 'lull' || (mode === 'turn' && turnKind !== 'verdict' && turnKind !== 'journal');
+process.exit(await ask(team, question, { talk: chat, lull: mode === 'lull', turn: mode === 'turn' ? turnKind : null, text: turnText }));

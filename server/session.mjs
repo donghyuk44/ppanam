@@ -14,8 +14,10 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawn as spawnProc } from 'node:child_process';
 import {
   ROOT, emit, listTeams, isOffice, paths, endRound, readCast, readState, readRoadmap, listRounds,
+  readLog, quiet, appendJournal, TURN_JOURNAL,
 } from '../bus/bus.mjs';
 
 const STORE = path.join(ROOT, 'state', 'sessions.json');
@@ -26,6 +28,8 @@ const TURN_TIMEOUT = Number(process.env.PPANAM_TURN_TIMEOUT || 15 * 60_000);
 const PROMPT_CAP = Number(process.env.PPANAM_PROMPT_CAP || 12_000);
 /** 세션이 뜰 때 붙이는 일지 문단 수. */
 const JOURNAL_PARAS = Number(process.env.PPANAM_JOURNAL_PARAS || 5);
+/** 라운드가 끝날 때 일지 한 문단을 기다리는 시간. */
+const JOURNAL_TIMEOUT = Number(process.env.PPANAM_JOURNAL_TIMEOUT || 3 * 60_000);
 
 /**
  * --bare 를 쓰지 않는다. 훅을 아예 로드하지 않아 아무것도 기록되지 않는다.
@@ -429,8 +433,55 @@ function maybeFinishClose(team) {
   if (!closing.has(team) || anyBusy(team)) return;
   const o = closing.get(team);
   closing.delete(team);
-  try { endRound(team, o); } catch (e) { note(team, `라운드를 닫지 못했습니다 — ${e.message}`); }
+  closeRound(team, o).catch((e) => note(team, `라운드를 닫지 못했습니다 — ${e.message}`));
+}
+
+/**
+ * 라운드를 닫는 순서 — 일지, 닫기, 비우기. 이 순서라야 일지가 있다.
+ *
+ * 세 층 중 자라는 층이 일지다(인격은 불변, 라운드 컨텍스트는 비운다). 세션이 죽어도 어제를 인용할 수 있는
+ * 유일한 길이다 — "AI티는 리셋에서 난다" (설계 점검 1항, docs/cases.md 2·5). 이번 라운드에 말한 자리에게만
+ * 한 문단을 받는다. 답은 대화록에 안 남는다(훅이 ⟦일지⟧ 를 보고 건너뛴다). 외부감사는 outside.mjs 가 제 일지에 쓴다.
+ */
+export async function closeRound(team, opts = {}) {
+  const state = readState(team);
+  if (!state.round || state.phase === 'idle') throw new Error('진행 중인 라운드가 없습니다.');
+  const journaled = await journalAll(team, state.round);
+  const n = endRound(team, opts);
   reset(team);
+  return { round: n, journaled };
+}
+
+async function journalAll(team, round) {
+  const spoke = new Set(readLog(team).filter((e) => e.round === round && (e.type === 'message' || e.type === 'verdict')).map((e) => e.actor));
+  const cast = readCast(team).agents ?? {};
+  const ask = (actor) => {
+    const p = `${TURN_JOURNAL} 라운드 ${round} 이 끝난다. 이번 라운드에서 네가 배운 것·판단한 이유·버린 시도·막힌 곳을 한 문단(3~6줄) 산문으로. 파일 이름·완료율·다음 할 일 목록은 쓰지 마라 — 그건 git 이 안다. 남길 것이 없으면 (패스).`;
+    if (cast[actor]?.model === 'gpt') return journalOutside(team);
+    return Promise.race([sendAndWait(team, quiet(p), actor), new Promise((r) => setTimeout(() => r(null), JOURNAL_TIMEOUT))]);
+  };
+  const actors = [...spoke].filter((a) => cast[a]?.model === 'claude' || cast[a]?.model === 'gpt');
+  const results = await Promise.all(actors.map(async (a) => {
+    try {
+      const text = await ask(a);
+      if (cast[a]?.model === 'gpt') return text ? 1 : 0;   // outside.mjs 가 제 일지에 썼다
+      return appendJournal(team, a, text, { round }) ? 1 : 0;
+    } catch { return 0; }
+  }));
+  return results.reduce((x, y) => x + y, 0);
+}
+
+/** 외부감사의 일지는 outside.mjs 가 쓴다. 끝나기만 기다린다. */
+function journalOutside(team) {
+  return new Promise((resolve) => {
+    let child;
+    try {
+      child = spawnProc('node', [path.join(ROOT, 'bus', 'outside.mjs'), '--team', team, '--turn', 'journal'], { cwd: ROOT, stdio: ['ignore', 'ignore', 'ignore'] });
+    } catch { return resolve(null); }
+    const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* 이미 죽음 */ } resolve(null); }, JOURNAL_TIMEOUT);
+    child.on('error', () => { clearTimeout(t); resolve(null); });
+    child.on('close', (code) => { clearTimeout(t); resolve(code === 0 ? 'ok' : null); });
+  });
 }
 
 /**

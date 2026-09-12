@@ -226,6 +226,16 @@ teams/<방>/
 | 5 브레이크 | 같은 둘이 `PPANAM_MAX_EXCHANGE`(3)회 왕복이면 호명이어도 제3자에게. 제3자가 없으면 쉰다. 한 자리에 한 번에 한 턴 — 일하는 중이면 쌓이고, 쌓인 차례는 합쳐서 한 턴 |
 | 6 문 | 라운드가 idle 이면 차례 없음(총괄실 예외). blocked 면 대표만. 세상의 시계(마을)가 근무 시간 밖의 침묵 차례를 끈다 |
 
+**판정 규약 — 첫 줄 한 단어.** 사회자가 `⟦판정 요청⟧ <대상>` 턴을 주면(`/api/verdict` · `round.mjs verdict`) 답의 첫 줄이
+`PASS` / `REVISE` / `FAIL` 이다. 훅이 `UserPromptSubmit` 에서 턴 종류를 `state/turn/<방>.<자리>` 에 적고 `Stop` 에서 읽어
+판정 카드(`recordVerdict`)로 남긴다 — 클로드 자리도 codex 도 같다. `say.mjs --verdict` 는 호환용이다. 첫 줄에 판정이 없으면
+말로 남고(`meta.noVerdict`) 사회자가 한 번 더 묻는다. 순서는 내부감사 → (PASS 면) 외부감사. 둘 다 PASS 면 `note`
+(`meta.verdictFlow: 'pass'`) — 라운드를 닫는 것은 실무나 대표다.
+
+**일지 — 라운드가 끝날 때 한 문단.** 서버가 라운드를 닫기 전에 이번 라운드에 말한 자리마다 `⟦일지⟧` 턴을 보내 한 문단을 받아
+`teams/<방>/journal/<자리>.md` 맨 위에 붙인다(최신이 위). 대화록에는 남지 않는다. 외부감사는 `outside.mjs --turn journal` 이
+제 일지에 쓴다. 다음 세션이 뜰 때 최근 문단이 인격 뒤에 붙는다(`assemblePrompt`). 세 층 중 자라는 층이 이것이다.
+
 외부감사(codex)는 `bus/outside.mjs --turn <종류>` 로 깨운다 — 자기 커서(`state/outside-sessions.json` 의 `lastSeen`)로 못 들은 말을 붙인다.
 남들이 깨진 자리를 코드로 막은 것이다 — 작별 인사 20회 루프, 쳇바퀴, 감사 인사 무한 (`docs/cases.md` 1·11·17·20·33).
 
