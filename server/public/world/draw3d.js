@@ -121,7 +121,7 @@ function buildVillage(g, name, spec, w, h) {
   base.position.set(w / 2, -0.4, h / 2); base.castShadow = false; g.add(base);
   for (const p of spec.ground ?? []) {
     const x = range(p.x), z = range(p.z);
-    const y = p.kind === 'water' ? -0.02 : 0.02;
+    const y = p.kind === 'water' ? 0.012 : 0.03;   // 받침 윗면이 y=0 — 물을 그 아래 두면 안 보인다(R25 첫 낮 그림에서 한강이 베이지였다)
     const m = new THREE.Mesh(new THREE.PlaneGeometry(x.len, z.len), mat(p.kind, p.kind === 'water' ? { roughness: 0.35 } : {}));
     m.rotation.x = -Math.PI / 2; m.position.set(x.mid, y, z.mid); m.receiveShadow = true; g.add(m);
   }
@@ -155,10 +155,13 @@ function placePart(entry, teamColor) {
 function buildMod(mod, [sw, sh, sd], entry, teamColor) {
   const c = mod.color === 'team' ? (teamColor ?? '#8a7320') : mod.color;
   if (mod.kind === 'cap') {
-    const o = mod.overhang ?? 0.3, m = box(sw + o * 2, mod.h, sd + o * 2, c, 0.12);
-    m.position.y = sh + mod.h / 2;
-    const ridge = box(sw + o * 2 - 0.3, 0.12, 0.3, c, 0.05); ridge.position.y = sh + mod.h + 0.06;   // 용마루 한 줄 — 기와 지붕으로 읽히게
-    const grp = new THREE.Group(); grp.add(m, ridge); return grp;
+    // 우진각 지붕 — 처마 판 한 장 + 네모 뿔(사각뿔을 45° 돌려 폭·깊이에 맞춤). 납작한 상자는 옥상으로 읽혔다(R25 첫 낮 그림).
+    const o = mod.overhang ?? 0.3, w = sw + o * 2, d = sd + o * 2, grp = new THREE.Group();
+    const eave = box(w, 0.1, d, c, 0.03); eave.position.y = sh + 0.05; grp.add(eave);
+    const hip = new THREE.Mesh(new THREE.CylinderGeometry(0.12, Math.SQRT1_2, mod.h, 4, 1), mat(c));
+    hip.rotation.y = Math.PI / 4; hip.scale.set(w, 1, d); hip.position.y = sh + 0.1 + mod.h / 2; hip.castShadow = hip.receiveShadow = true; grp.add(hip);
+    const ridge = box(Math.max(0.3, w * 0.45), 0.1, 0.22, c, 0.04); ridge.position.y = sh + 0.1 + mod.h + 0.02; grp.add(ridge);   // 용마루
+    return grp;
   }
   if (mod.kind === 'front') {
     const text = mod.text === '@sign' ? entry.sign : mod.text;
