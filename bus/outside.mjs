@@ -27,6 +27,7 @@ import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readLog, readCast, readState, appendJournal,
   defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, headSha, codexModelOf, codexArgs,
+  markOutsideRunning, clearOutsideRunning,
 } from './bus.mjs';
 // 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
 import { assemblePrompt, personaOf as seatPersonaOf } from '../server/session.mjs';
@@ -294,9 +295,14 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   }
 
   let res;
+  // 도는 동안 표시 — 관제탑이 이 자리를 "일하는 중" 으로 그린다(CLI 호출은 사회자의 outsideBusy 에 안 잡혀 "쉼" 으로 떴다, 09-13 13:48).
+  markOutsideRunning(team, ACTOR);
+  const clear = () => clearOutsideRunning(team, ACTOR);
+  process.once('exit', clear);
   try {
     res = await runCodex(input, { resume: prior, model: codexModelFor(team), effort: effortFor(team) });
   } catch (e) {
+    clear();
     // 이어붙이기가 깨졌으면 세션을 버리고 다음에 새로 연다.
     if (prior) forget(team);
     emit(team, {
@@ -306,6 +312,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
     console.error('실패: ' + e.message);
     return 1;
   }
+  clear();
 
   if (!prior) emit(team, { round, actor: 'system', type: 'enter', text: `${name} 님이 들어왔습니다` });
 

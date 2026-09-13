@@ -706,6 +706,28 @@ const eul = (name) => {
   const hangul = c >= 0xac00 && c <= 0xd7a3;
   return s + (hangul && (c - 0xac00) % 28 !== 0 ? '을' : '를');
 };
+/* ── codex 가 도는 중인가 ──
+ * codex 자리는 claude 세션이 없어 busy 를 세션에서 못 읽는다. 사회자가 띄운 호출은 conductor.outsideBusy 로 보이지만 CLI(--ask) 호출은
+ * 안 보여 관제탑에 "쉼" 으로 떴다 — 대표가 "레오 세션 초기화 했어?" 하고 물은 건(09-13 13:48). outside.mjs 가 codex 를 돌리는 동안
+ * state/outside-running/<방>.<자리>.json 에 { pid, since } 를 두고 끝나면 지운다. 읽는 쪽은 pid 가 살아 있을 때만 참(죽은 표시는 무시).
+ */
+const runningDir = path.join(ROOT, 'state', 'outside-running');
+const runningPath = (team, actor) => path.join(runningDir, `${team}.${actor}.json`);
+export function markOutsideRunning(team, actor, pid = process.pid) {
+  fs.mkdirSync(runningDir, { recursive: true });
+  fs.writeFileSync(runningPath(team, actor), JSON.stringify({ pid, since: new Date().toISOString() }) + '\n');
+}
+export function clearOutsideRunning(team, actor) {
+  try { fs.rmSync(runningPath(team, actor), { force: true }); } catch { /* 이미 없음 */ }
+}
+/** 도는 중이면 { pid, since }, 아니면 null. pid 가 죽었으면(SIGKILL 등으로 못 지운 표시) null. */
+export function outsideRunning(team, actor) {
+  let v; try { v = JSON.parse(fs.readFileSync(runningPath(team, actor), 'utf8')); } catch { return null; }
+  if (!v?.pid) return null;
+  try { process.kill(v.pid, 0); } catch { return null; }
+  return v;
+}
+
 /** note 한 줄 — "대표가 테라를 opus·high 로 바꿨습니다". 바뀐 값만, 엔진은 이름으로. */
 export function castChangeText(name, to) {
   const words = [];

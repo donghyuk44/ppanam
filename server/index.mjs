@@ -123,7 +123,11 @@ function peopleOf(team, sessions, conductor, phase) {
         .filter((d) => d.by === 'boss' && new Date(d.ts ?? 0).getTime() >= dayStart.getTime()).length;
       continue;
     }
-    if (cast[id]?.model === 'gpt') { p.busy = !!conductor.outsideBusy; p.alive = null; p.lastSignal = p.lastSaidAt; }
+    if (cast[id]?.model === 'gpt') {
+      // 사회자가 띄운 호출(outsideBusy) 이든 CLI --ask 든, outside.mjs 가 도는 동안은 일하는 중 — 표시 파일(bus.outsideRunning). 도는 중이면 신호는 시작 시각.
+      const running = bus.outsideRunning(team, id);
+      p.busy = !!conductor.outsideBusy || !!running; p.alive = null; p.lastSignal = running?.since ?? p.lastSaidAt;
+    }
     else { p.busy = !!sessions[id]?.busy; p.alive = !!sessions[id]?.alive; p.lastSignal = sessions[id]?.lastSignal ?? null; }
     p.state = bus.workStateOf(p, phase);
     p.journalFirst = session.journalFirstSentence(team, id);

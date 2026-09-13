@@ -19,7 +19,7 @@ import {
   startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound,
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
   addressees, callsBoss, asksBoss, bossNotesOf, readLog, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
-  castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText,
+  castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -425,6 +425,17 @@ switch (cmd) {
           && readLog(T).length === before + 1 && r2?.refused;
         out.push(['codex 자리 귀 → 방에 note', sWant ? '✓ note 한 줄(들려주기 표 뗌) · id 돌려줌 · boss 는 refused' : '✗ ' + JSON.stringify({ r1, last: last?.text, r2 })]);
         endRound(T, { summary: '귀 시험 닫음' });
+      }
+      // codex 가 도는 중 표시 — outside.mjs 가 두고 지우는 파일. 내 pid 로 두면 참, 지우면 null, 죽은 pid 는 무시(SIGKILL 로 못 지운 표시).
+      {
+        markOutsideRunning(T, 'outside');
+        const on = outsideRunning(T, 'outside');
+        clearOutsideRunning(T, 'outside');
+        const off = outsideRunning(T, 'outside');
+        markOutsideRunning(T, 'outside', 2 ** 22 - 7);   // 있을 리 없는 pid
+        const dead = outsideRunning(T, 'outside');
+        clearOutsideRunning(T, 'outside');
+        out.push(['codex 도는 중 표시', on?.pid === process.pid && on.since && off === null && dead === null ? '✓ 내 pid 참 · 지우면 null · 죽은 pid 무시' : '✗ ' + JSON.stringify({ on, off, dead })]);
       }
       // 알림 목록 (결정 68) — 요약·승인에서 종류 순(대표 차례→승인→막힘→보고), 같은 종류는 최근 것부터, 보고는 ask 아닌 것만, C 승인만,
       // out/ 그림이 있으면 썸네일, 읽음 집합에 있으면 unread:false, 급한 것이 안 읽혔을 때만 urgent.

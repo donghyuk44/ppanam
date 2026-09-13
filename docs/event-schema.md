@@ -178,7 +178,7 @@ disabled, 다른 쪽을 누르면 바뀐다(외부감사는 둘 다 못 누름).
 
 | 필드 | 무엇 | 어디서 |
 | --- | --- | --- |
-| `busy` | 지금 일하는 중인가 | claude 자리는 `sessions[자리].busy`, codex 자리는 사회자의 `outsideBusy`(`server/conductor.mjs`) — codex 는 세션이 없어 돌아가는 프로세스가 있는지가 전부다 |
+| `busy` | 지금 일하는 중인가 | claude 자리는 `sessions[자리].busy`, codex 자리는 사회자의 `outsideBusy`(`server/conductor.mjs`) **또는** `outside.mjs` 가 도는 동안 두는 표시 `state/outside-running/<방>.<자리>.json`(`bus.outsideRunning`, pid 살아 있을 때만) — CLI `--ask` 호출은 사회자가 모르니 표시 파일이 잡는다. 대표가 "레오 세션 초기화 했어?" 하고 본 "쉼"(09-13 13:48) |
 | `alive` | 세션이 떠 있나 — true·false, codex 자리는 **null**(세션이 없다) | claude 자리는 `sessions[자리].alive` |
 | `lastSignal` | 마지막 신호 시각(ISO) 또는 null | claude 자리는 `sessions[자리].lastSignal`(10초 단위). codex 자리는 **대화록의 마지막 발언(`message`·`verdict`) 시각** — 스트림이 없으니 말한 시각이 신호다 |
 | `state` | 일 상태 — `working`·`bossCall`·`blocked`·`waiting`·`resting` | `bus.workStateOf(p, phase, now)` (아래). 화면은 이 값으로 알약을 고른다 — **마을 시계는 안 본다**(결정 58) |
