@@ -9,7 +9,7 @@
     "대표가 할 일 1건 — deny 규칙 잠그기(결정 2): 독립검수 카드 뒤, 저장소 루트에서"
   ],
   "done": [
-    "R13 가드 (2026-09-13, ee91991 + 0e3abe8, 레오 REVISE→PASS): end -v PASS 조건 · blocked 못 닫음 · 반박 횟수 마일스톤 키 · 닫힌 방 판정 stale · 사회자도 stale 무시 · --summary/--topic · 보호 브랜치=원격 기본 브랜치 · 대조 요청은 hq 세션만 · 턴 상한은 마지막 신호에서. node bus/round.mjs check 10/10 ✓, 메인 체크아웃 approve --push 거부는 레오 실측",
+    "R13 가드 (2026-09-13, ee91991 + 0e3abe8, 레오 REVISE→PASS): end -v PASS 조건 · blocked 못 닫음 · 반박 횟수 마일스톤 키 · 닫힌 방 판정 stale · 사회자도 stale 무시 · --summary/--topic · 보호 브랜치=원격 기본 브랜치 · 대조 요청은 hq 세션만 · 턴 상한은 마지막 신호에서. node bus/round.mjs check 10/10 ✓. 넷째 시험(메인 체크아웃에서 --push 거부)은 실측 아님 — 옛 코드가 환경 검사에서 먼저 끊은 것. 근거는 check 의 pushAction 거부뿐, 문자 그대로는 결정 9 뒤",
     "잔재 정리: finance R1 닫음 · 솔라 '내부감사' 오기 정정 · README 세 군데 · R3·R6·R8 감사 없는 통과 note · AGENTS.md·.codex 삭제(시스템, 결정 1)",
     "M1 부품(9-02): approvals.jsonl · approve.mjs · 등급 A/B/C · 관제탑 승인 카드 · 실행자(refspec 푸시). 실제로 민 횟수 0"
   ],
