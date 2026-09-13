@@ -178,7 +178,8 @@ function flushProxyLines(store) {
   } catch (e) {
     const msg = String(e.message).slice(0, 120);
     console.error('[notifier] proxy-decisions.md 쓰기 실패 — ' + msg);
-    if (store.proxyLinesError !== msg) emit('hq', { actor: 'system', type: 'note', text: `대리 결정 기록(hq/out/proxy-decisions.md)을 쓰지 못했습니다 — ${msg}. 줄 ${lines.length}개를 들고 30초 뒤 다시 씁니다.` });
+    // 파일은 흔적이고 진실은 대화록이다 — 각 방의 '대리 결정 — …' 줄(meta.proxy)이 원본. 아침 보고서는 파일만 보지 말고 그 줄도 센다(M6 보고서 탭).
+    if (store.proxyLinesError !== msg) emit('hq', { actor: 'system', type: 'note', text: `대리 결정 기록(hq/out/proxy-decisions.md)을 쓰지 못했습니다 — ${msg}. 줄 ${lines.length}개를 들고 30초 뒤 다시 씁니다. 그 사이 원본은 각 방 대화록의 '대리 결정 — …' 줄입니다.` });
     store.proxyLinesError = msg;
     return true;   // store 가 바뀌었다(줄·오류) — 저장
   }
