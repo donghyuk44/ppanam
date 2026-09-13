@@ -517,11 +517,14 @@ export function bossQuietFor(now = Date.now()) {
 export function overdue(items, { now = Date.now(), wait = PROXY_WAIT_MS } = {}) {
   return items.filter((it) => it.since && now - new Date(it.since).getTime() >= wait);
 }
-export function proxyCandidates({ now = Date.now(), wait = PROXY_WAIT_MS } = {}) {
-  if (bossQuietFor(now) < wait) return [];
-  const items = [];
+export function proxyCandidates({ now = Date.now(), wait = PROXY_WAIT_MS, withExcluded = false } = {}) {
+  const items = [], excluded = [];
+  const result = () => (withExcluded ? { items: overdue(items, { now, wait }), excluded: overdue(excluded, { now, wait }) } : overdue(items, { now, wait }));
+  if (bossQuietFor(now) < wait) return withExcluded ? { items: [], excluded: [] } : [];
   for (const r of listApprovals({ status: 'pending' })) {
-    if (proxyEligible(r)) items.push({ key: `approval:${r.id}`, kind: 'approval', team: r.team, ref: r.id, what: r.what, since: r.ts });
+    if (r.grade !== 'C') continue;
+    const it = { key: `approval:${r.id}`, kind: 'approval', team: r.team, ref: r.id, what: r.what, since: r.ts };
+    (proxyEligible(r) ? items : excluded).push(it);   // ④ 돈·바깥은 후보가 아니다 — 대표만. 빠진 것도 돌려줘 총괄실에 한 줄 남기게(조용히 사라지지 않게)
   }
   for (const t of listTeams()) {
     if (isOffice(t.id)) continue;
@@ -535,12 +538,11 @@ export function proxyCandidates({ now = Date.now(), wait = PROXY_WAIT_MS } = {})
     if (s.bossCall) {
       const call = log.find((e) => e.id === s.bossCall.id);
       // 물음도 같은 선(④) — "유료 결제를 허용해 주세요" 를 질문 경로로 대리하면 금지선을 우회한다 (레오 REVISE R23). 그건 대표만.
-      if (!proxyForbidden(call?.text)) {
-        items.push({ key: `answer:${s.bossCall.id}`, kind: 'answer', team: t.id, ref: s.bossCall.id, what: `${readCast(t.id).agents?.[s.bossCall.by]?.name ?? s.bossCall.by}: ${String(call?.text ?? '').replace(/\s+/g, ' ').slice(0, 120)}`, since: s.bossCall.ts });
-      }
+      const it = { key: `answer:${s.bossCall.id}`, kind: 'answer', team: t.id, ref: s.bossCall.id, what: `${readCast(t.id).agents?.[s.bossCall.by]?.name ?? s.bossCall.by}: ${String(call?.text ?? '').replace(/\s+/g, ' ').slice(0, 120)}`, since: s.bossCall.ts };
+      (proxyForbidden(call?.text) ? excluded : items).push(it);
     }
   }
-  return overdue(items, { now, wait });
+  return result();
 }
 
 /* ── 파일 ── */

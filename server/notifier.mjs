@@ -177,7 +177,15 @@ function runProxy(store) {
   proxyCheckedAt = Date.now();
   let changed = false;
   store.proxied ??= {};
-  for (const it of proxyCandidates()) {
+  const { items, excluded } = proxyCandidates({ withExcluded: true });
+  // ④ 돈·바깥으로 나가는 것 — 대리 후보가 아니다. 조용히 빠지면 대표가 아침에 왜 답이 없었는지 모른다 — 총괄실에 한 번 남긴다.
+  for (const it of excluded) {
+    if (store.proxied[it.key]?.excluded) continue;
+    emit('hq', { actor: 'system', type: 'note', text: `대표 차례가 10분 넘게 답이 없지만 대리로 정하지 않습니다 — 돈이 나가거나 바깥으로 나가는 일이라 대표만 정합니다(결정 85 ④): ${it.kind} · ${it.team} · ${it.what.slice(0, 100)}` });
+    store.proxied[it.key] = { excluded: true, at: new Date().toISOString() };
+    changed = true;
+  }
+  for (const it of items) {
     const prev = store.proxied[it.key];
     if (prev?.id) continue;   // 올라간 것만 건너뛴다 — 실패한 것은 다음 살피기(30초)에 다시 (레오 REVISE R23: 실패도 기록하면 영원히 건너뛰어 조용히 죽는다)
     try {
