@@ -23,6 +23,10 @@ let approvals = [];          // 대기 중인 승인 — 모든 탭 맨 위
 let pendingMark = -1;        // 마지막으로 본 대기 건수 합 — 바뀌면 목록을 다시 받는다
 let told = {};               // 승인 id → { requested, decided, executed } — 서버가 언제 알렸나
 let grades = {};
+let requestsAll = [];         // 요청 블록 접은 목록 (6-1절) — 관제탑 요청 탭·전체 탭 타일
+let requestsLoaded = false;
+let requestsFetchedAt = 0;
+let requestsFetching = null;
 let oldest = null;          // 더 불러올 기준점
 let hasMore = false;
 let unread = {};            // team → 안 읽은 건수
@@ -1048,6 +1052,20 @@ for (const b of $('towerTabs').querySelectorAll('button')) b.addEventListener('c
 /** 상태 알약 — 다섯 상태 = 색 셋 (헨리 설계 6절). k: boss(빨간 바탕) · bad(빨간 테두리) · live · idle */
 function pill(text, k) { const p = el('span', 'pill', text); p.dataset.k = k; return p; }
 
+/** 요청 블록 목록 — 4초 안에 또 부르면 그물망 안 던진다. 새로 받아 왔을 때만 true (다시 그리라는 신호). */
+function loadRequests() {
+  if (Date.now() - requestsFetchedAt < 4000) return Promise.resolve(false);
+  if (requestsFetching) return requestsFetching;
+  requestsFetching = fetch('/api/requests').then((r) => r.json()).then((data) => {
+    requestsAll = data.requests ?? [];
+    requestsLoaded = true;
+    requestsFetchedAt = Date.now();
+    requestsFetching = null;
+    return true;
+  }).catch(() => { requestsFetching = null; return false; });
+  return requestsFetching;
+}
+
 function renderTower() {
   renderApprovals();
   const grid = $('towerGrid');
@@ -1063,6 +1081,8 @@ function renderTower() {
   }
   grid.dataset.tab = towerTab;
   if (towerTab === 'teams') return renderTowerTeams(grid);
+  // 요청 블록은 승인 큐와 달리 요약 방송을 안 탄다(6-1절 — 대화록엔 시작·완료 한 줄뿐). 전체·요청 탭에 있을 때만 받아 온다.
+  if (towerTab === 'all' || towerTab === 'asks') loadRequests().then((changed) => { if (changed && view === 'tower') renderTower(); });
   grid.replaceChildren();
   if (towerTab === 'all') return renderTowerAll(grid);
   if (towerTab === 'people') return renderTowerPeople(grid);
@@ -1081,8 +1101,10 @@ function renderTowerAll(grid) {
   };
   stats.appendChild(tile('대표 차례', String(n), n > 0));
   stats.appendChild(tile('승인 대기', String(approvals.length), false));
-  // 팀 사이 요청 — 승인 체인(M3)이 서기 전엔 셀 것이 없다. 자리만 잡아 둔다.
-  stats.appendChild(tile('요청 진행 / 완료', '— / —', false));
+  // 블록 수다 — 다섯 방 requestCounts 합이 아니다(한 블록이 두 방에 걸친다, 6-1절). 아직 못 받아 왔으면 자리만.
+  const reqOpen = requestsAll.filter((r) => r.status !== 'closed').length;
+  const reqClosed = requestsAll.length - reqOpen;
+  stats.appendChild(tile('요청 진행 / 완료', requestsLoaded ? `${reqOpen} / ${reqClosed}` : '— / —', false));
   grid.appendChild(stats);
 
   const turn = el('section', 'dash__card');
@@ -1245,11 +1267,73 @@ async function loadJournal(key, first, team, actor) {
   return journalFull[k];
 }
 
-/* ── 요청 — 팀 사이 요청 블록 (결정 45 ①·50). 데이터는 M3 승인 체인에서 온다 ── */
+/* ── 요청 — 팀 사이 요청 블록 (결정 45 ①·49·51, 계약 6-1절). 대표가 누를 버튼은 없다(결정 46 — 방향 안의 일). ── */
+const REQ_PILL = { open: ['열림', 'live'], done: ['됐다', 'idle'], acked: ['받았다', 'idle'] };
+const openThreads = new Set();   // 스레드 전체를 펼쳐 둔 요청 id
+
+function nameOfWho(who) {
+  if (!who) return '?';
+  if (who.team === 'hq') return summaries.hq?.cast?.chief?.name ?? '톰';
+  const team = teams.find((t) => t.id === who.team)?.name ?? who.team;
+  const name = summaries[who.team]?.cast?.[who.actor]?.name;
+  return name ? `${team}·${name}` : `${team}/${who.actor}`;
+}
+
+function requestPill(r) {
+  if (r.status === 'closed') return r.closedBy === 'stop' ? ['끊김', 'bad'] : ['닫힘', 'idle'];
+  return REQ_PILL[r.status] ?? REQ_PILL.open;
+}
+
+const REQ_LINE_LABEL = { goal: '목표', done: '됐다', ack: '받았다', confirm: '확인', stop: '끊음' };
+
+function requestCard(r) {
+  const card = el('div', 'apr');
+  const head = el('div', 'apr__head');
+  const [pt, pk] = requestPill(r);
+  head.appendChild(pill(pt, pk));
+  const fromName = teams.find((t) => t.id === r.from.team)?.name ?? r.from.team;
+  const toName = teams.find((t) => t.id === r.to.team)?.name ?? r.to.team;
+  head.appendChild(el('span', 'apr__team', `${fromName} → ${toName} · ${ago(r.updatedAt)}`));
+  card.appendChild(head);
+  card.appendChild(el('div', 'apr__what', r.what));
+  const bits = [];
+  if (r.why) bits.push(`왜: ${r.why}`);
+  if (r.due) bits.push(`기한 ${r.due}`);
+  if (r.mode === 'milestone') bits.push('공동 프로젝트 — 마일스톤 끝까지 연다');
+  if (r.goal) bits.push(`목표: ${r.goal}`);
+  if (bits.length) card.appendChild(el('div', 'apr__detail', bits.join(' · ')));
+
+  if (r.thread.length) {
+    const showAll = openThreads.has(r.id);
+    const lines = showAll ? r.thread : r.thread.slice(-3);
+    const th = el('div', 'apr__arts');
+    th.appendChild(el('div', 'apr__artsk', showAll ? `대화 ${r.thread.length}줄` : `최근 대화 (전체 ${r.thread.length}줄)`));
+    // done 의 out/… 은 승인 카드와 같은 방식으로 링크가 된다 — 받는 쪽 팀의 out/ 기준.
+    for (const line of lines) {
+      const row = el('div', null);
+      const label = REQ_LINE_LABEL[line.kind];
+      const text = line.text ? linkOutPaths(escapeHtml(line.text), r.to.team, outAnchor) : '';
+      row.innerHTML = `<b>${escapeHtml(nameOfWho(line.by) + (label ? ` · ${label}` : ''))}</b>${text ? ' ' + text : ''}`;
+      th.appendChild(row);
+    }
+    if (r.thread.length > 3) {
+      const more = el('button', 'apr__link', showAll ? '최근 3줄만' : '전체 보기'); more.type = 'button';
+      more.addEventListener('click', () => { if (showAll) openThreads.delete(r.id); else openThreads.add(r.id); renderTower(); });
+      th.appendChild(more);
+    }
+    card.appendChild(th);
+  }
+  return card;
+}
+
 function renderTowerAsks(grid) {
   const box = el('section', 'dash__card');
-  box.appendChild(el('div', 'dash__k', '요청'));
-  box.appendChild(el('div', 'dash__empty', '팀 사이 요청은 아직 없습니다. 승인 체인(M3)이 서면 진행 중·완료된 요청과 그 1:1 대화가 여기 나옵니다.'));
+  box.appendChild(el('div', 'dash__k', requestsAll.length ? `요청 ${requestsAll.length}` : '요청'));
+  if (!requestsAll.length) {
+    box.appendChild(el('div', 'dash__empty', requestsLoaded ? '팀 사이 요청이 아직 없습니다.' : '불러오는 중…'));
+  } else {
+    for (const r of requestsAll) box.appendChild(requestCard(r));
+  }
   grid.appendChild(box);
 }
 
