@@ -66,13 +66,33 @@ function room(team) {
 
 /* ── 커서: 자리마다 "여기까지 들었다" ── */
 
-function readStore() { try { return JSON.parse(fs.readFileSync(STORE, 'utf8')); } catch { return {}; } }
+// 반쯤 깨진 파일은 조용히 빈 것으로 읽지 않는다 (솔라 R24) — 커서와 차례가 소리 없이 다 사라지는 자리다. 없는 파일만 빈 것이다.
+// 쓰기는 임시 파일에 쓰고 rename 한다 — 쓰다가 죽어도 옛 파일이 온전히 남는다.
+let storeBroken = null;
+function readStore() {
+  let raw;
+  try { raw = fs.readFileSync(STORE, 'utf8'); } catch { return {}; }
+  try { const all = JSON.parse(raw); storeBroken = null; return all; }
+  catch (e) {
+    if (storeBroken !== raw) {   // 같은 깨진 내용으로 매 턴 떠들지 않는다 — 한 번, 그리고 내용이 바뀌면 또 한 번
+      storeBroken = raw;
+      console.error(`conductor: ${STORE} 이 깨져 있습니다 — ${e.message}. 커서·차례를 빈 것으로 읽습니다.`);
+      note('hq', `state/conductor.json 이 깨져 있어 커서·저장된 차례를 빈 것으로 읽었습니다 — ${String(e.message).slice(0, 100)}. 다음 저장이 덮어씁니다.`);
+    }
+    return {};
+  }
+}
+function writeStore(all) {
+  fs.mkdirSync(path.dirname(STORE), { recursive: true });
+  const tmp = `${STORE}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(all, null, 2) + '\n');
+  fs.renameSync(tmp, STORE);
+}
 function cursorOf(team, actor) { return readStore()[team]?.[actor] ?? null; }
 function setCursor(team, actor, id) {
   const all = readStore();
   (all[team] ??= {})[actor] = id;
-  fs.mkdirSync(path.dirname(STORE), { recursive: true });
-  fs.writeFileSync(STORE, JSON.stringify(all, null, 2) + '\n');
+  writeStore(all);
 }
 
 /* ── 차례 저장 (결정 104) — 서버가 꺼져도 기다리던 차례가 살아남는다 ──
@@ -89,7 +109,7 @@ function persist(team) {
     inflight: [...r.inflight].map(([a, p]) => [a, p.kind, p.cursor ?? null]),
     carry: r.carry, carryFrom: r.carryFrom ?? null,
   };
-  try { fs.mkdirSync(path.dirname(STORE), { recursive: true }); fs.writeFileSync(STORE, JSON.stringify(all, null, 2) + '\n'); }
+  try { writeStore(all); }
   catch (e) { note(team, `차례를 저장하지 못했습니다 — ${String(e.message).slice(0, 120)}. 서버가 꺼지면 이 방의 대기 차례가 사라질 수 있습니다.`); }
 }
 /**
