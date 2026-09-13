@@ -18,6 +18,7 @@ import {
   readState, startRound, assertEndable, resumeRound, readLog, isOffice, quiet, addressee,
   listApprovals, decideApproval, APPROVAL_GRADES, approvalPreview, approvalArtifacts, outFile,
 } from '../bus/bus.mjs';
+import * as bus from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
@@ -82,11 +83,13 @@ const summaryOf = (team) => {
   const s = teamSummary(team);
   const roadmap = readRoadmap(team);
   const now = roadmap.milestones?.find((m) => m.n === s.milestone) ?? null;
+  const sessions = session.statusAll(team);
+  const conductor = snapshot(team);
   return {
     ...s,
     session: session.status(team),
-    sessions: session.statusAll(team),   // 자리별 — 참여 카드의 상태 점
-    conductor: snapshot(team),           // 누구 차례가 쌓여 있나, 판정 흐름은 어디까지 왔나
+    sessions,                            // 자리별 — 참여 카드의 상태 점
+    conductor,                           // 누구 차례가 쌓여 있나, 판정 흐름은 어디까지 왔나
     milestoneTitle: now?.title ?? null,
     deliverable: now?.deliverable ?? null,
     progress: readProgress(team),
@@ -96,8 +99,31 @@ const summaryOf = (team) => {
       passedToday: listApprovals({ team, status: 'passed' })
         .filter((r) => (r.decidedAt ?? '').slice(0, 10) === new Date().toISOString().slice(0, 10)).length,
     },
+    people: peopleOf(team, sessions, conductor),
   };
 };
+
+/**
+ * 사람별 집계 (결정 40 · M2) — 대화록에서 나오는 것(bus.peopleOf)에 세션 상태와 일지 첫 문장을 얹는다.
+ * claude 자리는 세션의 busy·lastSignal, codex 자리는 사회자의 outsideBusy 와 마지막 발언 시각(스트림이 없다).
+ * 대표의 오늘 판정 수는 이 방 승인 요청에 대표가 내린 결정 수. 계약은 docs/event-schema.md 3절 "사람별 집계".
+ */
+function peopleOf(team, sessions, conductor) {
+  const cast = readCast(team).agents ?? {};
+  const people = bus.peopleOf(readLog(team), cast);
+  const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+  for (const [id, p] of Object.entries(people)) {
+    if (id === 'boss') {
+      p.todayDecisions = listApprovals({ team }).flatMap((r) => r.decisions ?? [])
+        .filter((d) => d.by === 'boss' && new Date(d.ts ?? 0).getTime() >= dayStart.getTime()).length;
+      continue;
+    }
+    if (cast[id]?.model === 'gpt') { p.busy = !!conductor.outsideBusy; p.lastSignal = p.lastSaidAt; }
+    else { p.busy = !!sessions[id]?.busy; p.lastSignal = sessions[id]?.lastSignal ?? null; }
+    p.journalFirst = session.journalFirstSentence(team, id);
+  }
+  return people;
+}
 const summaries = () => Object.fromEntries(listTeams().map((t) => [t.id, summaryOf(t.id)]));
 
 /** 대기 중인 승인 카드 — 행동(action)을 지금 상태로 푼 preview 와 산출물 목록(결정 36)을 붙여서 (결정 20-2). 대기 건수가 바뀔 때만 받아 가므로 git·파일을 읽어도 된다. */

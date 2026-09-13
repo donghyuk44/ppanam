@@ -971,3 +971,78 @@ export function teamSummary(team) {
     bossCall,
   };
 }
+
+/** 발언의 첫 문장 — 공백이 따라오는 마침표·물음표·느낌표에서 자른다(session.journalFirstSentence 와 같은 규칙). 200자까지. */
+export function firstSentence(text) {
+  const body = String(text ?? '').replace(/\s+/g, ' ').trim();
+  if (!body) return null;
+  const m = /^[\s\S]*?[.!?。](?=\s|$)/.exec(body);
+  return (m ? m[0] : body).trim().slice(0, 200);
+}
+
+/** 판정을 내는 자리 — `todayVerdict` 를 숫자로 주는 자리. 나머지는 null 이라 화면이 항목을 안 그린다. */
+const JUDGES = new Set(['review', 'outside']);
+
+/**
+ * 사람별 집계 (대표 결정 40 · M2) — 관제탑 개인 탭 카드의 값 중 **대화록에서 나오는 것**. 계약은 docs/event-schema.md 3절 "사람별 집계".
+ * 세션 상태(busy·lastSignal)와 일지 첫 문장은 서버가 얹는다 (server/index.mjs summaryOf) — 여기는 파일을 안 읽는 순수 함수라
+ * `round.mjs check` 가 돌려본다. 대표는 `boss` 로 모양이 다르다(마지막 지시·오늘 지시 수). system 은 사람이 아니다.
+ *
+ * 뒤에서 앞으로 훑는다 — 마지막 발언·그 뒤의 도구 줄·이 라운드의 대표 호출은 최근 것이 먼저 나오고,
+ * 오늘 밖으로 나갔고 모두의 마지막 발언을 찾았으면 더 볼 게 없다.
+ * @param log  대화록(시간순)
+ * @param cast cast.json 의 agents
+ * @param now  "오늘" 의 기준 시각(ms) — 서버 프로세스의 현지 날짜
+ */
+export function peopleOf(log, cast, { now = Date.now() } = {}) {
+  const agents = cast ?? {};
+  const ids = Object.keys(agents).filter((a) => a !== 'system' && a !== 'boss');
+  const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+  const isToday = (ts) => new Date(ts).getTime() >= dayStart.getTime();
+  const isPass = (e) => /^\(패스\)/.test(String(e.text ?? '').trim());
+
+  const people = Object.fromEntries(ids.map((a) => [a, {
+    busy: false, lastSignal: null, lastSaidAt: null, doing: null,
+    todaySay: 0, todayVerdict: JUDGES.has(a) ? 0 : null, bossCall: null, journalFirst: null,
+  }]));
+  const boss = { lastSaidAt: null, lastText: null, todaySay: 0, todayDecisions: 0 };
+  const unsaid = new Set([...ids, 'boss']);   // 마지막 발언을 아직 못 찾은 자리
+
+  let inRound = true, bossAnswered = false;
+  for (let i = log.length - 1; i >= 0; i--) {
+    const e = log[i];
+    const ts = e.ts ?? '';
+    if (!isToday(ts) && !inRound && unsaid.size === 0) break;
+    if (e.type === 'round_start') { inRound = false; continue; }
+    const spoke = (e.type === 'message' || e.type === 'verdict') && !isPass(e);
+
+    if (e.actor === 'boss') {
+      if (e.type !== 'message') continue;
+      if (inRound) bossAnswered = true;
+      if (boss.lastSaidAt == null) { boss.lastSaidAt = ts; boss.lastText = String(e.text ?? '').slice(0, 200); unsaid.delete('boss'); }
+      if (isToday(ts)) boss.todaySay += 1;
+      continue;
+    }
+    const p = people[e.actor];
+    if (!p) continue;
+    // 마지막 발언 뒤에 온 도구 줄 — 뒤에서 훑으니 발언보다 먼저 만난 도구 줄이 "지금 만지는 것" 이다.
+    if (e.type === 'tool') {
+      if (p.lastSaidAt == null && !p.doing) p.doing = { tool: e.meta?.tool ?? null, text: e.text ?? '', ts };
+      continue;
+    }
+    if (!spoke) continue;
+    if (p.lastSaidAt == null) {
+      p.lastSaidAt = ts; unsaid.delete(e.actor);
+      if (!p.doing) p.doing = { text: firstSentence(e.text), ts };
+    }
+    if (isToday(ts)) {
+      if (e.type === 'message') p.todaySay += 1;
+      else if (p.todayVerdict != null) p.todayVerdict += 1;
+    }
+    // 이 라운드에서 대표를 불렀는데 그 뒤 대표가 말하지 않았다 — teamSummary.bossCall 과 같은 판별, 인용문만 더한다.
+    if (inRound && !bossAnswered && !p.bossCall && e.type === 'message' && callsBoss(e.text, agents)) {
+      p.bossCall = { id: e.id, ts, text: String(e.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 80) };
+    }
+  }
+  return { ...people, boss };
+}

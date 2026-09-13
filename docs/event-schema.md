@@ -150,6 +150,30 @@ teams/<방>/
 사람이 "자는 중" 으로 보인다 (독립검수 #1). 15분 신호가 없어 세션을 닫을 때의 안내는 "무응답" 이 아니라
 "15분 동안 신호 없음 — 세션을 닫았습니다. 다음 지시로 이어집니다" (결정 31 ③).
 
+### 사람별 집계 `people` — 관제탑 개인 탭 (대표 결정 40 · M2)
+요약(`summaries[팀]`)의 `people[자리]` — 그 방의 사람마다 한 묶음. 열쇠는 `cast.json` 의 자리 이름(`guide`·`ops`·`outside` …)이고
+`system` 은 없다. 대표는 `people.boss` 로 따로 모양이 다르다(아래). 헨리 설계 `teams/design/out/opsroom-tower-tabs.md` 3절·7절이
+읽는 값이다. 이름·색·자리 이름은 `cast` 에 이미 있으니 여기 다시 싣지 않는다.
+
+| 필드 | 무엇 | 어디서 |
+| --- | --- | --- |
+| `busy` | 지금 일하는 중인가 | claude 자리는 `sessions[자리].busy`, codex 자리는 사회자의 `outsideBusy`(`server/conductor.mjs`) — codex 는 세션이 없어 돌아가는 프로세스가 있는지가 전부다 |
+| `lastSignal` | 마지막 신호 시각(ISO) 또는 null | claude 자리는 `sessions[자리].lastSignal`(10초 단위). codex 자리는 **대화록의 마지막 발언(`message`·`verdict`) 시각** — 스트림이 없으니 말한 시각이 신호다 |
+| `lastSaidAt` | 마지막 발언 시각 또는 null | 대화록 전체에서 그 자리의 마지막 `message`·`verdict`. `(패스)` 로 시작하는 줄은 발언이 아니다 |
+| `doing` | 지금 하는 일 한 줄 또는 null | 마지막 발언 **뒤에** 그 자리의 도구 줄이 있으면 `{ tool, text, ts }`(화면이 `toolPhrase` 로 "app.js 고치는 중" 을 만든다), 없으면 마지막 발언의 첫 문장 `{ text, ts }` |
+| `todaySay` | 오늘 발언 수 | 서버의 오늘(현지 날짜) `message` 수. `(패스)` 제외 |
+| `todayVerdict` | 오늘 판정 수 또는 null | `verdict` 수. 판정을 내는 자리(`review`·`outside`)만 숫자, 나머지는 **null** — 화면은 null 이면 항목을 안 그린다 |
+| `bossCall` | `{ id, ts, text }` 또는 null | 이 라운드에서 대표를 불렀는데(`callsBoss`) 그 뒤 대표가 말하지 않았다. `text` 는 그 발언 첫 80자 — 카드의 `"손 하나 빌리겠…"`. 대표가 답하면 null. 팀 요약의 `bossCall` 과 같은 판별에 `text` 만 더한 것 |
+| `journalFirst` | 일지 맨 위 문단의 첫 문장 또는 null | `session.journalFirstSentence` — 마을 카드의 "어제 한 줄" 과 같은 값 |
+
+`people.boss` = `{ lastSaidAt, lastText, todaySay, todayDecisions }` — 이 방에서 대표가 마지막으로 한 지시(첫 200자)와 시각, 오늘 이 방에
+한 지시 수, 오늘 이 방의 승인 요청에 대표(`by: 'boss'`)가 내린 판정 수. 대표는 한 사람이라 화면이 다섯 방의 값을 **합쳐서** 카드 하나로
+그린다 — 지시·판정은 합, 마지막 지시는 가장 늦은 것. 대표 카드의 상태 알약(`자리에`·`자리 비움`)은 화면이 마지막 지시 10분 안인지로 정한다.
+
+"오늘" 은 서버 프로세스의 현지 날짜다 — 마을 시계(`world.mjs`)의 `debugHour` 는 시각만 바꾸고 날짜는 안 바꾼다. 상태 알약 다섯
+(`일하는 중`·`대표 부름`·`막힘`·`대기`·`잠`) 은 서버가 정하지 않는다: 화면이 `busy` → `bossCall` → 팀의 `phase === 'blocked'` →
+마을 시계 `night`·`rest` 순서로 고른다. 집계는 순수 함수 `bus/bus.mjs peopleOf(log, cast, { now })` 라 `round.mjs check` 가 돌려본다.
+
 ### `verdict` — 판정 카드
 감사 결과. 말풍선이 아니라 **가운데 카드**로 크게 표시한다. 라운드의 분기점이므로
 스크롤에서 한눈에 찾을 수 있어야 한다.

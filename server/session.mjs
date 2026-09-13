@@ -143,13 +143,23 @@ export function journalOf(team, actor, n = JOURNAL_PARAS) {
  * 오늘 마음가짐이 한 줄로 온다. 머리(## …)를 떼고, 공백이 따라오는 마침표·물음표·느낌표에서 자른다 — `bus/outside.mjs` 의
  * 점이나 `2.6초` 는 안 자른다. 없으면 null. 관제탑 개인 카드(M2)도 이걸 쓴다.
  */
+const journalFirstCache = new Map();   // file → { size, mtimeMs, value }
 export function journalFirstSentence(team, actor) {
+  // 요약(summaryOf)이 250ms 마다 열다섯 자리를 묻는다 — 파일이 안 바뀌었으면 지난 답이다.
+  const file = path.join(paths(team).dir, 'journal', `${actor}.md`);
+  let st;
+  try { st = fs.statSync(file); } catch { journalFirstCache.delete(file); return null; }
+  const hit = journalFirstCache.get(file);
+  if (hit && hit.size === st.size && hit.mtimeMs === st.mtimeMs) return hit.value;
   const j = journalOf(team, actor, 1);
-  if (!j) return null;
-  const body = j.text.split('\n').slice(1).join(' ').replace(/\s+/g, ' ').trim();
-  if (!body) return null;
-  const m = /^[\s\S]*?[.!?。](?=\s|$)/.exec(body);
-  return (m ? m[0] : body).trim().slice(0, 200);
+  let value = null;
+  if (j) {
+    const body = j.text.split('\n').slice(1).join(' ').replace(/\s+/g, ' ').trim();
+    const m = body ? /^[\s\S]*?[.!?。](?=\s|$)/.exec(body) : null;
+    value = body ? (m ? m[0] : body).trim().slice(0, 200) : null;
+  }
+  journalFirstCache.set(file, { size: st.size, mtimeMs: st.mtimeMs, value });
+  return value;
 }
 
 /**
