@@ -1,4 +1,4 @@
-/* 마을 탭 — 도트 마을 위에 캐릭터와 말풍선. 그림은 캔버스, 글은 DOM. */
+/* 마을 탭 — 인형 서울(Three.js, M5) 위에 인형과 말풍선. 그림은 WebGL, 글(이름표·말풍선·방 이름)은 CSS2D 층의 DOM. */
 
 .world { display: none; flex-direction: column; min-height: 0; background: var(--ground); position: relative; }
 .app[data-view="world"] .world { display: flex; }
@@ -25,15 +25,23 @@
 .world__scene button[aria-current="true"] { background: var(--seal); color: var(--seal-ink); }
 .world__sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
 
-.world__view { flex: 1; min-height: 0; overflow: auto; background: #2a3a2a; position: relative; }
-/* 가장자리 말풍선이 잘리지 않게 지도 둘레에 여백을 둔다. 캔버스와 글 층은 같은 원점을 쓴다. */
-.world__inner { position: relative; --pad-x: 120px; --pad-y: 110px; }
-.world__inner canvas { position: absolute; left: var(--pad-x); top: var(--pad-y); image-rendering: pixelated; image-rendering: crisp-edges; }
-.world__bubbles, .world__labels { position: absolute; left: var(--pad-x); top: var(--pad-y); pointer-events: none; overflow: visible; }  /* 크기는 rebuild() 가 캔버스와 같게 준다 — 0 이면 말풍선이 한 글자씩 세로로 깨진다 */
+.world__view { flex: 1; min-height: 0; overflow: hidden; background: #f3e9d8; position: relative; }
+/* 무대 — WebGL 캔버스와 글 층이 같은 네모를 덮는다. 카메라가 움직이지 화면은 안 흐른다(스크롤 없음). */
+.world__stage { position: absolute; inset: 0; touch-action: none; }
+.world__stage .world__gl { position: absolute; left: 0; top: 0; width: 100% !important; height: 100% !important; display: block; cursor: grab; }
+.world__stage .world__gl:active { cursor: grabbing; }
+.world__stage .world__labels { position: absolute; left: 0; top: 0; pointer-events: none; overflow: hidden; }
+
+/* 사람 머리 위 기둥 — 말풍선(위)과 이름표(아래). 자리는 CSS2D 가 transform 으로 옮긴다. */
+.wv-tag { display: flex; flex-direction: column; align-items: center; gap: 7px; pointer-events: none; white-space: nowrap; }
+.wv-name {
+  font: 12px/1 Galmuri11, 'IBM Plex Sans KR', sans-serif; color: #fff; background: var(--team, #1c1a17);
+  padding: 2px 7px 3px; border-radius: 999px; box-shadow: 0 1px 0 #1c1a1740; text-shadow: 0 1px 0 #0003;
+}
+.wv-name--boss { background: #ecc85e; color: #23200f; text-shadow: none; }
 
 /* 방 이름표 */
 .wv-room {
-  position: absolute; transform: translate(-50%, -100%);
   font: 12px/1 Galmuri11, 'IBM Plex Sans KR', sans-serif; color: #f4efe4; background: #1c1a17cc;
   padding: 1px 7px; border-radius: 4px; white-space: nowrap; pointer-events: none;
 }
@@ -41,11 +49,13 @@
 .wv-room--fail::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #e5484d; box-shadow: 0 0 6px #e5484d; margin-right: 5px; vertical-align: -1px; animation: wv-lamp .9s ease-in-out infinite alternate; }
 @keyframes wv-lamp { from { opacity: .3; } to { opacity: 1; } }
 .wv-banner {
-  position: absolute; transform: translate(-50%, -100%);
   font: 12px/1.2 Galmuri11, 'IBM Plex Sans KR', sans-serif; color: #23200f; background: #ecc85e;
   border: 1px solid #d9b23f; padding: 2px 8px; border-radius: 5px; white-space: nowrap;
-  animation: wv-pop .18s ease-out;
+  animation: wv-pop-soft .18s ease-out;   /* transform 을 건드리는 애니메이션은 안 된다 — CSS2D 가 자리를 transform 으로 준다 */
 }
+/* 기둥 안의 말풍선은 흐름 배치 — 자리는 기둥(CSS2D)이 잡고, 꼬리만 아래 가운데 */
+.wv-tag .wb { position: relative; transform: none; animation: wv-pop-soft .18s ease-out; }
+@keyframes wv-pop-soft { from { opacity: 0; } to { opacity: 1; } }
 
 /* 말풍선. 꼬리는 아래 가운데. */
 .wb {
@@ -129,4 +139,3 @@
 .wc__foot { display: flex; gap: 6px; padding: 10px 12px; }
 .wc__foot button { font: inherit; font-size: 12px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); color: var(--ink); cursor: pointer; }
 .wc__foot button.primary { background: var(--seal); color: var(--seal-ink); border-color: var(--seal); }
-.world__view canvas { cursor: pointer; }

@@ -1,25 +1,22 @@
 // 마을 — 대화록의 시각화.
 //
 // 캐릭터가 어디 있고 무엇을 하는지는 기록된 사건(message·verdict·tool·enter…)과 지도의 자리 표에서만 나온다.
-// LLM 이 좌표를 정하는 채널은 없다. 그림은 캔버스가, 글(말풍선·이름표)은 DOM 이 맡는다.
+// LLM 이 좌표를 정하는 채널은 없다. 그림은 draw3d.js(Three.js, M5)가, 글(말풍선·이름표)은 DOM(CSS2D)이 맡는다.
+// 이 파일은 걷기·자리·연출·재생·카드 — 결정 16 대로 그림 엔진을 바꿔도 그대로다. 칸 좌표(px = 칸 × TP)도 그대로.
 // 대표(댄)만 사람이라 방향키로 움직이고, 옆 사람에게 Enter 로 말을 건다 — 그 말은 작전실과 같은 /api/say 로 간다.
 // 장면은 둘이다: 마을(village) 과 회사(castle, 성 안). 포탈(성문·정문)로 오가고, "어디로" 목록으로 바로 간다.
 
 const $ = (id) => document.getElementById(id);
-const T = 16;                                      // 타일 그림 원본 한 변(px) — 지금 CC0 시트는 16px
-const TP = 32;                                     // 화면 칸 한 변(px, 배율 1) — 디자인팀 캐릭터 시트(칸 32×48)의 기준. 32px 타일이 오면 T 도 32
-const DIR = { down: 0, left: 1, up: 2, right: 3 }; // 방향 번호 (대체 그림 NPC_test.png 의 행 순서와 같다)
-const CAST = { dir: '/world/assets/cast/', manifest: 'manifest.json' };   // 디자인팀이 만든 캐릭터 시트 — 없으면 대체 그림
+const TP = 32;                                     // 칸 한 변(px) — 걷기 코드는 px/py 로 셈하고, 그림은 px/TP 를 칸 좌표로 받는다
+const DIR = { down: 0, left: 1, up: 2, right: 3 }; // 방향 번호
 const WALK = 4;                                    // 초당 걷는 칸 수
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const PAD = { x: 120, y: 110 };                    // 지도 둘레 여백(CSS px) — world.css 의 --pad-x/--pad-y 와 같다
 
 const S = {
-  lamps: new Set(), blocked: new Set(), roomEls: {}, failAt: {}, summaries: null,   // FAIL 램프·대표실 문 앞 대기 (W3)
-  open: false, ready: null, map: null, sheets: [], npc: null, cast: null,
+  lamps: new Set(), blocked: new Set(), failAt: {}, summaries: null,   // FAIL 램프·대표실 문 앞 대기 (W3)
+  open: false, ready: null, map: null, gl: null,     // gl: draw3d.js 의 그림 — CDN 이 안 오면 null 이고 마을은 "못 불러왔습니다"
   z: 2, teams: [], casts: {}, actors: new Map(), boss: null,
-  scene: 'castle', caches: {},                       // 보고 있는 장면, 장면별 정적 층 캐시
-  canvas: null, ctx: null,
+  scene: 'castle',                                   // 보고 있는 장면
   bubbles: new Set(), cam: true, raf: 0, last: 0,
   world: null,                                       // 세상의 시계 — 서버가 준 { hour, mode, actors } (W2)
 };
@@ -34,70 +31,32 @@ const R = { team: null, round: null, events: [], i: 0, timer: 0, playing: false,
 
 /* ── 불러오기 ── */
 
-const loadImage = (src) => new Promise((res, rej) => {
-  const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error(`못 읽음: ${src}`)); i.src = src;
-});
-
-/** 스프라이트를 캐스트 색으로 물들인다. 윤곽은 남고 몸만 색이 든다. */
-function tint(img, color) {
-  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
-  const x = c.getContext('2d'); x.drawImage(img, 0, 0);
-  x.globalCompositeOperation = 'source-atop'; x.globalAlpha = 0.55; x.fillStyle = color || '#8a8175';
-  x.fillRect(0, 0, c.width, c.height);
-  return c;
-}
-
-/** 디자인팀 시트 목록. manifest.json:
- *   { cell:[w,h], rows:[방향 이름 순서], frames, sprites:{ '<팀>:<자리>'|'boss': 파일 | { file, cell, frames, anchor:[x,y],
- *     walk:{ down:줄, left:줄, right:줄, up:줄 }, idle:{ row, cols:{ down, left, right, up } } } } }
- *   문자열이면 옛 형식(줄 = 방향, 칸 = 걷기 프레임, 첫 칸이 정지). 객체면 PixelLab 형식(0줄 = 8방향 정지, 방향마다 걷기 줄 하나).
- *   anchor 는 칸 안에서 발 가운데 점 — 없으면 [w/2, h]. */
-async function loadCast() {
-  const m = await fetch(CAST.dir + CAST.manifest).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  if (!m?.sprites) return null;
-  const [fw, fh] = m.cell ?? [32, 48];
-  const rowOf = []; (m.rows ?? ['down', 'left', 'right', 'up']).forEach((name, i) => { if (DIR[name] !== undefined) rowOf[DIR[name]] = i; });
-  const sheets = {};
-  await Promise.all(Object.entries(m.sprites).map(async ([key, spec]) => {
-    try {
-      if (typeof spec === 'string') { sheets[key] = { img: await loadImage(CAST.dir + spec), fw, fh, rowOf, frames: m.frames ?? 4, anchor: [fw / 2, fh] }; return; }
-      const [w, h] = spec.cell ?? m.cell ?? [32, 48];
-      // 줄·칸 값은 숫자이거나 { row|col, flip:true } — flip 은 좌우를 뒤집어 그린다 (동쪽 걷기로 서쪽을 만들 때)
-      const norm = (v) => (v == null ? undefined : typeof v === 'object' ? { n: v.row ?? v.col ?? 0, flip: !!v.flip } : { n: v, flip: false });
-      const walk = [], idleCol = [];
-      for (const [name, i] of Object.entries(DIR)) { walk[i] = norm(spec.walk?.[name]); idleCol[i] = norm(spec.idle?.cols?.[name]); }
-      sheets[key] = { img: await loadImage(CAST.dir + spec.file), fw: w, fh: h, rowOf: walk, frames: spec.frames ?? 8, anchor: spec.anchor ?? [w / 2, h], idle: spec.idle ? { row: spec.idle.row ?? 0, col: idleCol } : null, rich: true };
-    } catch { /* 못 읽는 시트는 대체 그림으로 */ }
-  }));
-  return { ...m, sheets };
-}
-const sheetFor = (key) => S.cast?.sheets?.[key] ?? null;
-/** 그림 위 끝(칸 좌표) — 이름표·말풍선이 여기 붙는다. 시트가 없으면 대체 그림(2배 64px)의 위 끝 */
-const topOf = (a) => a.py + TP - (a.sheet ? a.sheet.anchor[1] : 64);
+/** 팀 색 — 그 방 실무(총괄실은 총괄)의 색. 집 문·이름표·발밑 고리에 쓴다. */
+const teamColor = (team) => S.casts[team]?.guide?.color ?? S.casts[team]?.chief?.color ?? '#8a7320';
 
 function makeActor(team, id, a, home) {
   const act = {
     key: `${team}:${id}`, team, id, name: a.name ?? id, color: a.color, model: a.model, scene: home.scene,
     x: home.x, y: home.y, px: home.x * TP, py: home.y * TP, dir: DIR[home.dir ?? 'down'] ?? 0,
-    frame: 0, animT: 0, path: [], onArrive: null, hidden: false, home, lastSpoke: 0,
-    sprite: tint(S.npc, a.color), sheet: sheetFor(`${team}:${id}`),
+    animT: 0, path: [], onArrive: null, hidden: false, home, lastSpoke: 0,
   };
   S.actors.set(act.key, act);
+  S.gl.addActor(act, { key: `${team}-${id}`, name: act.name, color: teamColor(team) });
   return act;
 }
 
 async function load() {
   const map = await fetch('/world/map.json').then((r) => r.json());
-  const [sheets, npc, cast] = await Promise.all([
-    Promise.all(map.sheets.map((s) => loadImage('/world/' + s))),
-    loadImage('/world/assets/zelda/NPC_test.png'),
-    loadCast(),
-  ]);
-  S.map = map; S.sheets = sheets; S.npc = npc; S.cast = cast;
+  S.map = map;
+  // 그림 엔진은 늦게 부른다 — three 가 CDN 에서 안 오면 작전실(app.js)까지 같이 죽지 않게. 실패하면 마을만 "못 불러왔습니다".
+  const draw = await import('./draw3d.js').catch((e) => { throw new Error(`3D 를 못 불러왔습니다(CDN?) — ${e.message}`); });
 
   const casts = await Promise.all(S.teams.map((t) =>
     fetch(`/api/team?team=${encodeURIComponent(t.id)}`).then((r) => r.json()).then((r) => [t.id, r.cast?.agents ?? {}]).catch(() => [t.id, {}])));
   S.casts = Object.fromEntries(casts);
+  draw.setTeamColors(Object.fromEntries(S.teams.map((t) => [t.id, teamColor(t.id)])));
+  S.gl = await draw.init({ stage: $('wvStage'), onClick: onStageClick });
+
   for (const [team, agents] of casts) {
     for (const [id, a] of Object.entries(agents)) {
       const home = map.places[`${team}.desk.${id}`];   // 자리가 없는 이름(boss·system·남의 방 총괄)은 캐릭터가 아니다
@@ -108,12 +67,11 @@ async function load() {
   const bd = map.places['boss.desk'] ?? map.places['hq.bossdoor'];
   S.boss = {
     key: 'boss', team: null, id: 'boss', name: bc.initial ?? '댄', color: bc.color, scene: bd.scene,
-    x: bd.x, y: bd.y, px: bd.x * TP, py: bd.y * TP, dir: DIR.down, frame: 0, animT: 0, path: [], onArrive: null,
-    hidden: false, home: bd, lastSpoke: 0, controlled: 0, sprite: tint(npc, bc.color), sheet: sheetFor('boss'),
+    x: bd.x, y: bd.y, px: bd.x * TP, py: bd.y * TP, dir: DIR.down, animT: 0, path: [], onArrive: null,
+    hidden: false, home: bd, lastSpoke: 0, controlled: 0,
   };
+  S.gl.addActor(S.boss, { key: 'boss', name: S.boss.name, color: bc.color, boss: true });
 
-  S.canvas = $('wvCanvas'); S.ctx = S.canvas.getContext('2d');
-  S.canvas.addEventListener('click', onCanvasClick);
   initToolbar();
   setScene(bd.scene);
   window.addEventListener('keydown', onKey);
@@ -121,56 +79,14 @@ async function load() {
   if (S.world) applyWorld(S.world);
 }
 
-/** 장면을 바꾼다. 정적 층은 장면·배율마다 한 번만 그려 둔다. */
+/** 장면을 바꾼다. 장면은 draw3d 가 한 번 세워 두고 보이기만 바꾼다. */
 function setScene(name) {
   if (!S.map.scenes[name]) return;
   S.scene = name;
-  rebuild();
+  S.gl.showScene(name);
+  for (const a of everyone()) S.gl.updateActor(a);
+  for (const id of S.lamps) S.gl.roomEls[id]?.classList.add('wv-room--fail');
   for (const b of $('wvScene').querySelectorAll('button')) b.setAttribute('aria-current', String(b.dataset.scene === name));
-}
-
-/* ── 정적 층은 한 번만 그려 둔다 ── */
-
-function tileAt(v) {
-  const n = v - 1;
-  return [Math.floor(n / 10000), n % 100, Math.floor((n % 10000) / 100)];   // [시트, 열, 행]
-}
-function paintLayer(x, arr) {
-  const { w, h } = cur(), z = S.z;
-  for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) {
-    const v = arr[y * w + xx]; if (!v) continue;
-    const [s, c, r] = tileAt(v);
-    x.drawImage(S.sheets[s], c * T, r * T, T, T, xx * TP * z, y * TP * z, TP * z, TP * z);
-  }
-}
-function layerCanvas(names) {
-  const c = document.createElement('canvas'); c.width = cur().w * TP * S.z; c.height = cur().h * TP * S.z;
-  const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
-  for (const n of names) paintLayer(x, cur().layers[n]);
-  return c;
-}
-function rebuild() {
-  const { w, h } = cur(), z = S.z;
-  S.canvas.width = w * TP * z; S.canvas.height = h * TP * z;
-  S.ctx.imageSmoothingEnabled = false;
-  $('wvInner').style.width = `${w * TP * z + PAD.x * 2}px`; $('wvInner').style.height = `${h * TP * z + PAD.y * 2}px`;
-  for (const id of ['wvBubbles', 'wvLabels']) { const el = $(id); el.style.width = `${w * TP * z}px`; el.style.height = `${h * TP * z}px`; }
-  const key = `${S.scene}@${z}`;
-  if (!S.caches[key]) S.caches[key] = { bg: layerCanvas(['ground', 'deco', 'wall']), obj: layerCanvas(['objects']), over: layerCanvas(['over']) };
-  Object.assign(S, S.caches[key]);
-  buildLabels();
-}
-
-function buildLabels() {
-  const box = $('wvLabels'); box.replaceChildren(); S.roomEls = {};
-  const z = S.z;
-  for (const [id, r] of Object.entries(cur().rooms)) {
-    if (!r.label) continue;
-    const el = document.createElement('div'); el.className = 'wv-room'; el.textContent = r.label;
-    S.roomEls[id] = el; if (S.lamps.has(id)) el.classList.add('wv-room--fail');
-    el.style.left = `${(r.x + r.w / 2) * TP * z}px`; el.style.top = `${r.y * TP * z + (id === 'plaza' || id === 'cafe' ? 28 * z : 8 * z)}px`;
-    box.appendChild(el);
-  }
 }
 
 /* ── 걷기 ── */
@@ -200,7 +116,7 @@ function bfs(sc, from, to) {
 }
 
 function teleport(a, p) {
-  a.path = []; a.onArrive = null; a.x = p.x; a.y = p.y; a.px = p.x * TP; a.py = p.y * TP; a.frame = 0; a.hidden = false;
+  a.path = []; a.onArrive = null; a.x = p.x; a.y = p.y; a.px = p.x * TP; a.py = p.y * TP; a.hidden = false;
   if (p.scene) a.scene = p.scene;
   if (p.dir) a.dir = DIR[p.dir];
 }
@@ -230,10 +146,10 @@ function tick(dt) {
     a.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? DIR.right : DIR.left) : (dy > 0 ? DIR.down : DIR.up);
     if (dist <= step) {
       a.px = gx; a.py = gy; a.x = tx; a.y = ty; a.path.shift();
-      if (!a.path.length) { a.frame = 0; a.hurry = false; const f = a.onArrive; a.onArrive = null; f?.(); }
+      if (!a.path.length) { a.hurry = false; const f = a.onArrive; a.onArrive = null; f?.(); }
       if (a === S.boss) usePortal(a);
     } else { a.px += dx / dist * step; a.py += dy / dist * step; }
-    a.animT += dt; if (a.animT > 0.12) { a.animT = 0; a.frame = (a.frame + 1) % (a.sheet?.frames ?? 4); }
+    // 걷기 동작은 없다 — 인형은 정지 자세로 미끄러져 간다 (컷리스트: 리깅·애니메이션 안 함)
   }
 }
 
@@ -361,63 +277,22 @@ const LABEL = (name) => {
   return name;
 };
 
-/* ── 그리기: 바닥 → (물건 줄, 그 줄에 발 딛은 사람) → 위층 → 이름표 ── */
-
-/** 한 사람을 그린다. 발이 칸 바닥에 닿고 가로로 칸 가운데. 시트(32×48)가 있으면 그것, 없으면 대체 그림(16×32 를 2배로) */
-function drawActor(x, a, z) {
-  const s = a.sheet;
-  if (s) {
-    const walking = a.path.length > 0;
-    let row, col, flip = false;
-    if (s.rich) {
-      const w = s.rowOf[a.dir], ic = s.idle?.col?.[a.dir];
-      if (s.idle && (!walking || !w)) { row = s.idle.row; col = ic?.n ?? 0; flip = !!ic?.flip; }   // PixelLab: 정지는 0줄의 방향 칸
-      else { row = w?.n ?? 0; col = a.frame % s.frames; flip = !!w?.flip; }
-    } else { row = s.rowOf[a.dir] ?? 0; col = a.frame % s.frames; }
-    // 발 가운데(anchor)가 칸 바닥 가운데에 오게. flip 이면 앵커도 좌우로 뒤집는다
-    const ax = flip ? s.fw - s.anchor[0] : s.anchor[0];
-    const dx = a.px + TP / 2 - ax, dy = a.py + TP - s.anchor[1];
-    if (flip) { x.save(); x.translate(Math.round((dx + s.fw) * z), 0); x.scale(-1, 1); x.drawImage(s.img, col * s.fw, row * s.fh, s.fw, s.fh, 0, Math.round(dy * z), s.fw * z, s.fh * z); x.restore(); }
-    else x.drawImage(s.img, col * s.fw, row * s.fh, s.fw, s.fh, Math.round(dx * z), Math.round(dy * z), s.fw * z, s.fh * z);
-  } else {
-    x.drawImage(a.sprite, a.frame * 16, a.dir * 32, 16, 32, Math.round(a.px * z), Math.round((a.py + TP - 64) * z), 32 * z, 64 * z);
-  }
-}
+/* ── 그리기 — draw3d.js 에 자리·방향·보이기만 넘긴다. 앞뒤 정렬·그림자는 3D 라 저절로. ── */
 
 function render() {
-  const x = S.ctx, z = S.z, { w, h } = cur(), rowH = TP * z;
-  x.drawImage(S.bg, 0, 0);
-  const list = everyone().filter((a) => !a.hidden && a.scene === S.scene).sort((a, b) => a.py - b.py);
-  // 발밑 그림자 — 바닥에 붙어 보이게 한다
-  x.fillStyle = '#00000038';
-  for (const a of list) { x.beginPath(); x.ellipse((a.px + TP / 2) * z, (a.py + TP - 3) * z, 9 * z, 3.5 * z, 0, 0, Math.PI * 2); x.fill(); }
-  let drawn = 0;
-  const band = (to) => { if (to > drawn) { x.drawImage(S.obj, 0, drawn * rowH, w * rowH, (to - drawn) * rowH, 0, drawn * rowH, w * rowH, (to - drawn) * rowH); drawn = to; } };
-  for (const a of list) {
-    band(clamp(Math.floor((a.py + TP / 2) / TP), 0, h - 1) + 1);
-    drawActor(x, a, z);
-  }
-  band(h);
-  x.drawImage(S.over, 0, 0);
+  for (const a of everyone()) S.gl.updateActor(a);
   // 세상의 시각 — 밤엔 어둡고 저녁엔 붉다. 마을이 시계를 따른다는 것이 한눈에 보이게.
   const mode = R.team && R.events.length && R.hour != null ? modeOfHour(R.hour) : S.world?.mode;
-  if (mode === 'night') { x.fillStyle = 'rgba(8, 10, 32, 0.55)'; x.fillRect(0, 0, S.canvas.width, S.canvas.height); }
-  else if (mode === 'evening') { x.fillStyle = 'rgba(80, 40, 10, 0.18)'; x.fillRect(0, 0, S.canvas.width, S.canvas.height); }
-  x.font = `${z >= 2 ? 15 : 12}px Galmuri11, 'IBM Plex Sans KR', sans-serif`; x.textAlign = 'center'; x.textBaseline = 'bottom';
-  x.lineWidth = 3; x.lineJoin = 'round'; x.strokeStyle = '#1c1a17cc';
-  for (const a of list) {
-    const tx = (a.px + TP / 2) * z, ty = (topOf(a) - 2) * z;
-    x.strokeText(a.name, tx, ty); x.fillStyle = a === S.boss ? '#ffe28a' : '#fff'; x.fillText(a.name, tx, ty);
-  }
+  S.gl.render(mode);
 }
 
 function frame(t) {
   S.raf = requestAnimationFrame(frame);
   const dt = clamp((t - S.last) / 1000 || 0, 0, 0.1); S.last = t;
-  tick(dt); render(); layoutBubbles();
+  tick(dt); expireBubbles(); render();
 }
 
-/* ── 말풍선 ── */
+/* ── 말풍선 — 사람 머리 위 기둥(a.tag, CSS2D)에 쌓인다. 자리는 3D 가 옮기고 여기는 만들고 지우기만. ── */
 
 function speak(a, text, { kind = 'say', who = a.name, cls = '', ms, id = null, team = a.team } = {}) {
   const full = String(text ?? '').trim();
@@ -438,7 +313,8 @@ function speak(a, text, { kind = 'say', who = a.name, cls = '', ms, id = null, t
   });
   const mine = [...S.bubbles].filter((o) => o.a === a && o.kind !== 'tool');
   while (mine.length >= 3) removeBubble(mine.shift());          // 한 사람에 최대 셋
-  S.bubbles.add(b); $('wvBubbles').appendChild(el);
+  S.bubbles.add(b);
+  if (a.tag) a.tag.insertBefore(el, a.nameEl); else el.remove();   // 이름표 바로 위, 새 말이 머리에 가깝게
   a.lastSpoke = performance.now();
   if (S.cam && kind !== 'tool' && kind !== 'zzz') lookAt(a);
   return b;
@@ -446,21 +322,9 @@ function speak(a, text, { kind = 'say', who = a.name, cls = '', ms, id = null, t
 function removeBubble(b) {
   S.bubbles.delete(b); b.el.classList.add('wb--gone'); setTimeout(() => b.el.remove(), 260);
 }
-function layoutBubbles() {
-  const z = S.z, now = performance.now(), by = new Map();
-  for (const b of S.bubbles) {
-    if (now > b.until) { removeBubble(b); continue; }
-    if (!by.has(b.a)) by.set(b.a, []); by.get(b.a).push(b);
-  }
-  for (const [a, list] of by) {
-    let off = 0;
-    for (let i = list.length - 1; i >= 0; i--) {
-      const el = list[i].el;
-      el.style.display = (a.hidden || a.scene !== S.scene) ? 'none' : '';
-      el.style.left = `${(a.px + TP / 2) * z}px`; el.style.top = `${(topOf(a) - 10) * z - off}px`;
-      off += el.offsetHeight + 8;
-    }
-  }
+function expireBubbles() {
+  const now = performance.now();
+  for (const b of S.bubbles) if (now > b.until) removeBubble(b);
 }
 function clearBubbles(team) {
   for (const b of [...S.bubbles]) if (!team || b.a.team === team) removeBubble(b);
@@ -468,26 +332,21 @@ function clearBubbles(team) {
 
 /** 방 위에 띄우는 띠 — round_start/end·note·system 발언 */
 function roomOf(id) {
-  for (const sc of Object.values(S.map.scenes)) if (sc.rooms[id]) return [sc, sc.rooms[id]];
+  for (const [name, sc] of Object.entries(S.map.scenes)) if (sc.rooms[id]) return [name, sc.rooms[id]];
   return [null, null];
 }
 function banner(team, text) {
-  const [sc, r] = roomOf(team); if (!r || !text) return;
-  if (sc.name !== S.scene && !(S.cam && setScene(sc.name))) return;   // 다른 장면의 띠는 카메라가 따라갈 때만
+  const [scene, r] = roomOf(team); if (!r || !text) return;
+  // 장면 이름은 scenes 의 키다 — 전엔 sc.name(없는 값)을 봐서 띠가 한 번도 안 떴다 (M5 에서 발견)
+  if (scene !== S.scene) { if (!S.cam) return; setScene(scene); }   // 다른 장면의 띠는 카메라가 따라갈 때만
   const el = document.createElement('div'); el.className = 'wv-banner';
   el.textContent = String(text).length > 60 ? String(text).slice(0, 60) + '…' : text;
-  el.style.left = `${(r.x + r.w / 2) * TP * S.z}px`; el.style.top = `${(r.y + 3) * TP * S.z}px`;
-  $('wvLabels').appendChild(el);
-  setTimeout(() => { el.classList.add('wb--gone'); setTimeout(() => el.remove(), 260); }, 5000);
+  S.gl.banner(scene, r.x + r.w / 2, r.y + 1.5, el, 5000);
 }
 
 function lookAt(a, force = false) {
   if (a.scene !== S.scene) { if (!S.cam && !force) return; setScene(a.scene); force = true; }
-  const v = $('wvView'), z = S.z;
-  const cx = (a.px + TP / 2) * z + PAD.x, cy = a.py * z + PAD.y;
-  const l = v.scrollLeft, t = v.scrollTop, W = v.clientWidth, H = v.clientHeight;
-  if (!force && cx > l + 60 && cx < l + W - 60 && cy > t + 80 && cy < t + H - 40) return;
-  v.scrollTo({ left: cx - W / 2, top: cy - H / 2, behavior: force ? 'auto' : 'smooth' });
+  S.gl.lookAt(a, force);
 }
 
 function toast(text, ms = 3500) {
@@ -614,8 +473,8 @@ export function replay(team, events, round = events[0]?.round ?? null) {
   for (const a of S.actors.values()) if (a.team === team) teleport(a, a.home);
   clearBubbles(team);
   $('wvPlay').textContent = '일시정지'; $('wvStop').hidden = false;
-  const [sc, room] = roomOf(team);
-  if (room && S.cam) { if (sc.name !== S.scene) setScene(sc.name); $('wvView').scrollTo({ left: (room.x + room.w / 2) * TP * S.z + PAD.x - $('wvView').clientWidth / 2, top: Math.max(0, room.y * TP * S.z + PAD.y - 60), behavior: 'smooth' }); }
+  const [scene, room] = roomOf(team);
+  if (room && S.cam) { if (scene !== S.scene) setScene(scene); S.gl.lookAtXZ(room.x + room.w / 2, room.y + room.h / 2); }   // 그 방 가운데로 (전엔 sc.name 이 없는 값이라 장면이 안 바뀌었다)
   step();
 }
 function step() {
@@ -726,7 +585,7 @@ function approvalScene(team, e) {
 
 function lamp(team, on) {
   if (on) S.lamps.add(team); else S.lamps.delete(team);
-  S.roomEls?.[team]?.classList.toggle('wv-room--fail', on);
+  S.gl?.roomEls[team]?.classList.toggle('wv-room--fail', on);
 }
 function setBlocked(team, on) {
   const was = S.blocked.has(team);
@@ -740,15 +599,19 @@ function setBlocked(team, on) {
 
 /* ── 캐릭터 카드 — 누구인가·어제·최근 발언 (W3) ── */
 
-/** 클릭한 화면 좌표(캔버스 CSS px)에 선 캐릭터. 앞(아래)에 선 사람이 이긴다. 댄은 카드가 없다. */
+/** 클릭한 화면 좌표(CSS px)에 선 캐릭터 — 발과 머리를 화면에 비춰 그 사이면 맞은 것. 앞(남쪽)에 선 사람이 이긴다. 댄은 카드가 없다. */
 function actorAt(cx, cy) {
-  const z = S.z, x = cx / z, y = cy / z;
-  return everyone()
-    .filter((a) => a.key !== 'boss' && a.scene === S.scene && !a.hidden && x >= a.px - 4 && x <= a.px + TP + 4 && y >= topOf(a) - 4 && y <= a.py + TP)
-    .sort((p, q) => q.py - p.py)[0] ?? null;
+  const hits = [];
+  for (const a of everyone()) {
+    if (a.key === 'boss' || a.scene !== S.scene || a.hidden) continue;
+    const s = S.gl.project(a); if (!s) continue;
+    const half = Math.max(10, s.ppu * 0.45);
+    if (cx >= s.foot.x - half && cx <= s.foot.x + half && cy >= s.head.y - 6 && cy <= s.foot.y + 4) hits.push(a);
+  }
+  return hits.sort((p, q) => q.py - p.py)[0] ?? null;
 }
-function onCanvasClick(ev) {
-  const a = actorAt(ev.offsetX, ev.offsetY);
+function onStageClick(cx, cy) {
+  const a = actorAt(cx, cy);
   if (a) openCard(a); else closeCard();
 }
 const ACT_LABEL = { typing: '작업 중', sleep: '자는 중', idle: '듣는 중', talking: '말하는 중', walking: '이동 중' };
@@ -838,7 +701,8 @@ function initToolbar() {
   $('wvStop').addEventListener('click', () => stop());
   $('wvSpeed').addEventListener('change', (e) => { R.speed = Number(e.target.value) || 1; });
   R.speed = Number($('wvSpeed').value) || 2;
-  $('wvZoom').addEventListener('change', (e) => { S.z = Number(e.target.value) || 2; rebuild(); });
+  $('wvZoom').addEventListener('change', (e) => { S.z = Number(e.target.value) || 2; S.gl.setZoom(S.z); });   // 휠·핀치는 그 위에 MapControls 가 얹는다 (결정 13 의 줌)
+  S.gl.setZoom(S.z = Number($('wvZoom').value) || 2);
   $('wvCam').addEventListener('change', (e) => { S.cam = e.target.checked; });
   $('wvHour')?.addEventListener('change', (e) => {
     fetch('/api/world', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ debugHour: e.target.value === '' ? null : Number(e.target.value) }) })
@@ -905,8 +769,8 @@ export function onSummaries(summaries) {
 export function snapshot() {
   return {
     scene: S.scene,
-    actors: everyone().map((a) => ({ key: a.key, name: a.name, scene: a.scene, x: a.x, y: a.y, hidden: a.hidden, walking: a.path.length > 0, sheet: !!a.sheet, routine: a.routine ?? null, act: a.act ?? null })),
-    cast: S.cast ? { cell: S.cast.cell, sheets: Object.keys(S.cast.sheets) } : null,
+    actors: everyone().map((a) => ({ key: a.key, name: a.name, scene: a.scene, x: a.x, y: a.y, hidden: a.hidden, walking: a.path.length > 0, routine: a.routine ?? null, act: a.act ?? null })),
+    draw: S.gl ? S.gl.stats() : null,               // 그림 엔진 — three · glb 몇 개 왔고 몇 개 못 왔나 · 아직 상자인 부품 수
     bubbles: [...S.bubbles].map((b) => ({ who: b.a.key, kind: b.kind, text: b.el.textContent.slice(0, 40) })),
     replay: { team: R.team, round: R.round, i: R.i, n: R.events.length, playing: R.playing },
     world: S.world ? { hour: S.world.hour, mode: S.world.mode, debug: S.world.debug } : null,

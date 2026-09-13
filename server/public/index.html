@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css">
   <link rel="stylesheet" href="/world/world.css">
+  <!-- 마을 3D (M5) — three 는 jsDelivr(결정 39)에서, 판은 고정. world/draw3d.js 만 쓰고 world.js 가 늦게 불러서 CDN 이 죽어도 작전실은 산다. -->
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }</script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>💬</text></svg>">
 </head>
 <body>
@@ -150,11 +152,8 @@
       </div>
     </header>
     <div class="world__view" id="wvView">
-      <div class="world__inner" id="wvInner">
-        <canvas id="wvCanvas"></canvas>
-        <div class="world__labels" id="wvLabels"></div>
-        <div class="world__bubbles" id="wvBubbles"></div>
-      </div>
+      <!-- 3D 무대 — draw3d.js 가 WebGL 캔버스와 글 층(CSS2D: 이름표·말풍선·방 이름)을 여기에 넣는다. 끌면 이동, 휠·핀치로 확대. -->
+      <div class="world__stage" id="wvStage"></div>
       <form class="world__talk" id="wvTalk" hidden>
         <input id="wvTalkIn" type="text" autocomplete="off">
         <button type="submit">말하기</button>
