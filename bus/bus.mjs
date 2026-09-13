@@ -255,8 +255,18 @@ export const ASK_RE = /[?？]|정해\s*주|골라|답해/;
 /**
  * 대표에게 결정을 청했나 (결정 52) — 부른 것(`callsBoss`)에 물음이 있어야 한다. 종 배지(`bossCall`)는 이것만 본다.
  * "대표님, 정리했습니다." 는 보고라 종이 안 울리고 관제탑 "오늘 보고" 줄로 간다 — 하영·헨리 보고가 승인 요청으로 읽힌 09-13 건.
+ * 물음은 **대표에게 한 문단** 안에 있어야 한다 — "대표님, 보고드립니다.\n\n솔라, 이 수치 맞아?" 는 솔라에게 물은 것이지 대표에게
+ * 청한 게 아니다 (레오 REVISE, R23). 이름 없는 문단은 앞 문단의 상대에게 이어 말한 것으로 본다.
  */
-export const asksBoss = (text, cast) => callsBoss(text, cast) && ASK_RE.test(String(text ?? ''));
+export function asksBoss(text, cast) {
+  let toBoss = false;
+  for (const p of String(text ?? '').split(/\n\s*\n/)) {
+    if (callsBoss(p, cast)) toBoss = true;
+    else if (addressees(p, cast).length) toBoss = false;
+    if (toBoss && ASK_RE.test(p)) return true;
+  }
+  return false;
+}
 export const quiet = (text) => `${RELAY_QUIET}\n${text}`;
 
 /**
@@ -1111,7 +1121,7 @@ export function workStateOf(p, phase, now = Date.now()) {
 
 /**
  * 오늘 대표에게 한 말 (결정 50·52) — 관제탑 "전체" 의 "오늘 보고" 줄. 대표를 부른(`callsBoss`) 오늘의 발언을 최근 것부터 30건까지.
- * `ask` 는 결정이 필요한 말인가 — `asksBoss` 와 같은 표(ASK_RE, 결정 52). 아니면 보고다. 종 배지(`bossCall`)도 같은 판별이라 종은 `ask` 인 것만.
+ * `ask` 는 결정이 필요한 말인가 — `asksBoss` 그대로(결정 52). 아니면 보고다. 종 배지(`bossCall`)도 같은 판별이라 종은 `ask` 인 것만.
  */
 export function bossNotesOf(log, cast, { now = Date.now(), limit = 30 } = {}) {
   const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
@@ -1121,7 +1131,7 @@ export function bossNotesOf(log, cast, { now = Date.now(), limit = 30 } = {}) {
     if (new Date(e.ts ?? 0).getTime() < dayStart.getTime()) break;
     if (e.type !== 'message' || e.actor === 'boss' || e.actor === 'system' || !callsBoss(e.text, cast)) continue;
     const text = String(e.text ?? '').replace(/\s+/g, ' ').trim();
-    out.push({ id: e.id, ts: e.ts, by: e.actor, text: text.slice(0, 160), ask: ASK_RE.test(text) });
+    out.push({ id: e.id, ts: e.ts, by: e.actor, text: text.slice(0, 160), ask: asksBoss(e.text, cast) });
   }
   return out;
 }

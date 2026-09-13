@@ -267,6 +267,11 @@ switch (cmd) {
       const pick = asksBoss('대표님, A 와 B 중 골라 주세요.', pcast), noCall = asksBoss('안젤, 이거 맞아?', pcast);
       const rWant = rp.guide.bossCall === null && rn.length === 1 && rn[0].ask === false && an.length === 1 && an[0].ask === true && pick && !noCall;
       out.push(['보고는 종 없이 보고 줄로(결정 52)', rWant ? '✓ 보고 → bossCall 없음·ask:false · 물음 → bossCall·ask:true · "골라" 는 결정 · 대표 안 부르면 아님' : '✗ ' + JSON.stringify({ call: rp.guide.bossCall, rn, an, pick, noCall })]);
+      // 물음은 대표에게 한 문단 안에 있어야 한다 (레오 REVISE R23) — 다른 사람 문단의 물음표는 대표 것이 아니고, 이름 없는 문단은 앞 상대에게 이어진다.
+      const mixed = asksBoss('대표님, 진행 상황 보고드립니다.\n\n솔라, 이 수치가 맞습니까?', pcast);
+      const cont = asksBoss('대표님, 정리했습니다.\n\n둘 중 어느 쪽으로 갈까요?', pcast);
+      const back = asksBoss('솔라, 이거 맞아?\n\n대표님, 위 결과 보고드립니다.', pcast);
+      out.push(['물음은 대표 문단 안에서만', !mixed && cont && !back ? '✓ 솔라 문단의 물음표는 보고 · 이름 없는 다음 문단은 대표에게 이어짐 · 앞 문단의 물음은 안 섞임' : '✗ ' + JSON.stringify({ mixed, cont, back })]);
       // 총괄이 옮겨온 대표 말(meta.via) 은 대표 카드에 안 잡힌다 — 결정 원문이 "하는 일" 로 떴다 (시스템 R21).
       const pe3 = peopleOf([...plog, { id: 'e8', ts: at(7), actor: 'boss', type: 'message', text: '47. 공동 프로젝트 (대표 원문)', meta: { via: 'chief' } }], pcast, { now: d0.getTime() + 10 * 60_000 });
       out.push(['옮겨온 대표 말은 대표 카드 밖', pe3.boss.lastText === null && pe3.boss.todaySay === 0 && pe3.guide.bossCall === null ? '✓ 카드 비고 · 호출은 답한 것으로' : '✗ ' + JSON.stringify(pe3.boss)]);
