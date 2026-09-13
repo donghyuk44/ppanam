@@ -18,7 +18,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import {
   startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound,
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
-  addressees, callsBoss, asksBoss, bossNotesOf, doneOf, dayStartSeoul, readLog, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
+  addressees, callsBoss, asksBoss, bossNotesOf, doneOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
   mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, overdue,
 } from './bus.mjs';
@@ -186,6 +186,15 @@ switch (cmd) {
       emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass' } });
       let ok = false; try { endRound(T, { verdict: 'PASS' }); ok = true; } catch (e) { out.push(['정식 흐름', `✗ ${e.message}`]); }
       if (ok) out.push(['정식 흐름 → 닫힘 + 로드맵 pass', readRoadmap(T).milestones[0].status === 'pass' && readState(T).phase === 'idle' ? '✓' : '✗ 로드맵이 pass 가 아님']);
+      // 닫힌 고리(대표 실측 09-14) — PASS 로 닫히며 다음 마일스톤이 있으면 서버가 "다음 마일스톤 착수" B 요청을 올린다(autoOpen). 진짜 큐에 남지 않게 바로 무효 처리.
+      {
+        const auto = listApprovals({ team: T, status: 'pending' }).filter((r) => r.action?.type === 'milestone');
+        const a0 = auto[0];
+        const aWant = auto.length === 1 && a0.grade === 'B' && a0.action.n === 2 && a0.action.autoOpen === true && a0.what.includes('착수') && a0.by === 'guide'
+          && readLog(T).some((e) => e.type === 'note' && e.meta?.approval === a0.id);
+        out.push(['PASS 닫힘 → 다음 착수 B 자동 요청', aWant ? `✓ ${a0.id} · 마일스톤 2 · autoOpen · 방에 note` : '✗ ' + JSON.stringify(auto.map((r) => [r.id, r.action]))]);
+        for (const r of auto) voidApproval(r.id, '자가 시험');
+      }
       out.push(['닫힌 방의 판정 → stale', recordVerdict(T, { actor: 'outside', verdict: 'REVISE', text: '늦음' }).meta.stale ? '✓' : '✗']);
       startRound(T, { milestone: 2 });
       // 결정 84 — 받아들여 고친 지적은 반박이 아니다. 첫 REVISE 는 안 세고, 같은 sha 로 다시 받으면(안 고침) 센다.

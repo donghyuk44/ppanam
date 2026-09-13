@@ -28,7 +28,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   listApprovals, readCast, readState, readRoadmap, isOffice, quiet, emit, paths, setMilestoneStatus,
-  proxyCandidates, requestApproval, decideApproval, resumeRound,
+  proxyCandidates, requestApproval, decideApproval, resumeRound, startRound,
 } from '../bus/bus.mjs';
 import { listRequests, openRequest, closeByMilestone } from '../bus/requests.mjs';
 import * as session from './session.mjs';
@@ -94,8 +94,14 @@ function applyAction(r, store) {
   if (!a) return null;
   if (r.grade === 'B' && a.type === 'milestone' && Number.isInteger(a.n)) {
     const ok = setMilestoneStatus(r.team, a.n, 'now');
-    const text = ok ? `마일스톤 ${a.n} 착수 — 로드맵의 now 를 옮겼습니다.` : `마일스톤 ${a.n} 을 로드맵에서 찾지 못했습니다.`;
+    let text = ok ? `마일스톤 ${a.n} 착수 — 로드맵의 now 를 옮겼습니다.` : `마일스톤 ${a.n} 을 로드맵에서 찾지 못했습니다.`;
     emit(r.team, { actor: 'system', type: 'milestone', text, meta: { index: a.n, approval: r.id } });
+    // 라운드를 닫으며 서버가 올린 요청(endRound, autoOpen)이면 라운드까지 연다 — 닫힌 방엔 차례가 안 와서 아무도 못 연다(대표 실측 09-14, 마케팅 여섯 시간).
+    // 누가 먼저 열어 뒀으면(대표 화면) startRound 가 던진다 — 그건 실패가 아니다.
+    if (ok && a.autoOpen) {
+      try { const st = startRound(r.team, { topic: a.title ?? null }); text += ` 라운드 ${st.round} 을 열었습니다.`; }
+      catch (e) { text += ` 라운드는 안 열었습니다 — ${String(e.message).slice(0, 80)}`; }
+    }
     return text;
   }
   if (r.grade === 'C' && a.type === 'roadmap' && typeof a.file === 'string') {

@@ -1098,6 +1098,23 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
   if (String(verdict ?? '').toUpperCase() === 'PASS' && state.milestone) {
     if (setMilestoneStatus(team, state.milestone, 'pass')) {
       emit(team, { type: 'milestone', actor: 'system', text: `마일스톤 ${state.milestone} 통과 — 로드맵에 pass 로 기록`, meta: { index: state.milestone } });
+      // 닫힌 고리(대표 실측 09-14 — 마케팅이 6단계 통과 뒤 여섯 시간 섰다): now 가 없으면 startRound 가 B 승인을 요구하는데, B 를 올리려면 차례가,
+      // 차례는 라운드가 있어야 온다. 닫는 이 순간이 "다음이 뭔지" 아는 유일한 때라 **여기서 B 요청을 자동으로 올린다.** 문(톰·제리)은 그대로다.
+      // 통과하면 서버가 now 로 옮기고 라운드까지 연다(autoOpen — notifier.applyAction). 같은 방에 이미 착수 요청이 떠 있으면 또 안 올린다.
+      const next = (readRoadmap(team).milestones ?? []).find((m) => m.status !== 'pass' && m.status !== 'now') ?? null;
+      const dup = next && listApprovals({ team, status: 'pending' }).some((r) => r.action?.type === 'milestone' && r.action.n === next.n);
+      if (next && !dup) {
+        try {
+          requestApproval(team, {
+            by: 'guide', grade: 'B',
+            what: `다음 마일스톤 착수 — ${next.n} ${next.title ?? ''}`.trim(),
+            detail: `라운드 ${state.round} 이 마일스톤 ${state.milestone} 을 PASS 로 닫으며 서버가 올린 요청입니다. 통과하면 마일스톤 ${next.n} 을 now 로 옮기고 라운드를 엽니다.`,
+            action: { type: 'milestone', n: next.n, title: next.title ?? null, autoOpen: true },
+          });
+        } catch (e) {
+          emit(team, { type: 'note', actor: 'system', text: `다음 마일스톤 착수 요청을 올리지 못했습니다 — ${String(e.message).slice(0, 120)}. node bus/approve.mjs --request B --next 로 올리세요.` });
+        }
+      }
     }
   }
 
