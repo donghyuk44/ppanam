@@ -423,7 +423,8 @@ function groupLabel(g, live) {
   const by = {};
   for (const it of g.items) { const v = VERB[it.tool] ?? '쓰'; by[v] = (by[v] ?? 0) + 1; }
   const parts = Object.entries(by);
-  const verbs = parts.map(([v, n], i) => `${n}개 ${v}${i < parts.length - 1 ? '고' : live ? '는 중' : DONE[v]}`).join(' ');
+  // 어간 + 어미: "읽고" · "읽는 중" · "읽음". 끝난 꼴(DONE)은 어간을 포함한 온전한 말이라 어간을 다시 붙이지 않는다 (레오 감사).
+  const verbs = parts.map(([v, n], i) => `${n}개 ${i < parts.length - 1 ? v + '고' : live ? v + '는 중' : DONE[v]}`).join(' ');
   const names = [...new Set(g.items.map((it) => baseName(it.text)).filter(Boolean))];
   const shown = names.slice(0, 3).join(', ') + (names.length > 3 ? ' …' : '');
   return `${who(g.actor).name} · 파일 ${verbs}${shown ? ` (${shown})` : ''}`;
