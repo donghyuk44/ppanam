@@ -393,7 +393,8 @@ const server = http.createServer((req, res) => {
 
   // 산출물 보기 (대표 결정 36) — teams/<팀>/out/** 을 읽기 전용으로. 카드와 발언의 그림·md 링크가 여기로 온다.
   // 어디를 여는지는 bus.outFile 하나가 정한다(.. · 숨김 · 없는 팀은 null). 파일이 바뀌면 바로 새것 — 캐시 없음.
-  if (url.pathname.startsWith('/out/') && req.method === 'GET') {
+  // HEAD 도 받는다 — `curl -I` 가 GET 만 받는 첫 판에서 404 였다(레오 R16). 본문은 node http 가 HEAD 면 알아서 뺀다.
+  if (url.pathname.startsWith('/out/') && (req.method === 'GET' || req.method === 'HEAD')) {
     let segs;
     try { segs = url.pathname.split('/').slice(2).map(decodeURIComponent); } catch { segs = []; }
     const file = segs.length >= 2 ? outFile(segs[0], segs.slice(1).join('/')) : null;

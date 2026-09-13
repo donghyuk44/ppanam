@@ -363,8 +363,8 @@ codex 를 부르기 전에 `note` 로 거부된다.
   카드는 목록을 링크로 펼치고, 그림은 카드 안에 그리고, md·text 는 눌러 펼쳐 읽는다. 없는 파일은 "파일이 없습니다" 로 —
   모르면서 승인하게 두지 않는다.
 
-**산출물은 화면에서 열린다** (대표 결정 36). 서버가 `teams/<팀>/out/**` 을 **읽기 전용**으로 `GET /out/<팀>/<경로>` 에 내보낸다
-(`bus.outFile` — `..`·숨김 파일·없는 팀은 404, 쓰기 없음, `cache-control: no-cache`). md·txt·jsonl·csv 는 `text/plain` 으로
+**산출물은 화면에서 열린다** (대표 결정 36). 서버가 `teams/<팀>/out/**` 을 **읽기 전용**으로 `GET·HEAD /out/<팀>/<경로>` 에 내보낸다
+(`bus.outFile` — `..`·숨김 파일·없는 팀은 404, 쓰기 없음, `cache-control: no-cache`; HEAD 는 머리만 — `curl -I` 가 되게). md·txt·jsonl·csv 는 `text/plain` 으로
 그대로 보이고, 그림은 그림으로, 모르는 확장자는 내려받기. 발언(`bubble`)과 승인 카드의 `what`·`detail` 에 적힌 `out/…` 경로는
 링크가 된다 — 팀이 안 적힌 `out/…` 은 그 방의 것, `teams/<팀>/out/…` 은 그 팀의 것. 경로 찾기는 화면·서버·자가 시험이 같은
 `server/public/outlink.js` 를 쓴다. 발언 밑에는 그림·md 미리보기가 최대 6개까지 붙는다(관제탑 카드의 마지막 말에는 안 붙는다).
