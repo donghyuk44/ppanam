@@ -1231,18 +1231,13 @@ const openJournal = new Set();   // "팀:자리" — 일지 문단을 펼쳐 둔
 function renderTowerPeople(grid) {
   const groupKey = (t) => `ppanam.towerGroup.${t}`;
 
-  // 대표 카드 — 맨 위, 묶음 밖. 다섯 방의 값을 합친다: 지시·결정은 합, 마지막 지시는 가장 늦은 것.
-  const bosses = teams.map((t) => summaries[t.id]?.people?.boss).filter(Boolean);
+  // 대표 카드 — 맨 위, 묶음 밖. 하영 표(opsroom-content.md 2절, 결정 47 ①): 대표가 자기 상태 알약·자기 통계(오늘 지시·결정·마지막 지시)를
+  // 볼 이유가 없다 — 뺐다. 남는 건 ①③ 의 답, 승인 대기 · 차례인 방. (people.boss 의 지시·결정 수는 계약에 남고 화면만 안 쓴다.)
   const bossCast = summaries[teams[0]?.id]?.cast?.boss ?? { name: '함동혁(댄)', initial: '댄', color: '#8a7320', role: '대표 · 사람' };
-  const lastOrder = bosses.filter((b) => b.lastSaidAt).sort((a, b) => b.lastSaidAt.localeCompare(a.lastSaidAt))[0] ?? null;
-  const here = lastOrder && Date.now() - new Date(lastOrder.lastSaidAt).getTime() < 10 * 60_000;
   const bc = el('div', 'pcard'); bc.dataset.boss = '1';
-  bc.appendChild(pcardTop(bossCast, pill(here ? '자리에' : '자리 비움', here ? 'live' : 'idle')));
-  // 2줄 — 대표 발언 인용이 아니라 대표 앞에 놓인 것의 요약 (결정 58 ②: 6시간 전 말이 "하는 일" 로 떴다). 차례인 방은 종 배지와 같은 셈.
+  bc.appendChild(pcardTop(bossCast, el('span')));
   const { rooms } = bossTurns();
-  bc.appendChild(el('div', 'pcard__doing',
-    `오늘 지시 ${bosses.reduce((n, b) => n + (b.todaySay ?? 0), 0)} · 승인 대기 ${approvals.length} · 차례인 방 ${rooms.length ? rooms.map((t) => t.name).join('·') : '없음'}`));
-  bc.appendChild(el('div', 'pcard__nums', `결정 ${bosses.reduce((n, b) => n + (b.todayDecisions ?? 0), 0)}${lastOrder ? ` · 마지막 지시 ${ago(lastOrder.lastSaidAt)}` : ''}`));
+  bc.appendChild(el('div', 'pcard__doing', `승인 대기 ${approvals.length} · 차례인 방 ${rooms.length ? rooms.map((t) => t.name).join('·') : '없음'}`));
   grid.appendChild(bc);
 
   for (const t of teams) {
@@ -1279,6 +1274,18 @@ function pcardTop(a, pillEl) {
 }
 const firstLine = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, 200) || '—';
 
+/**
+ * 멈춘 이유 한 마디 — 알약(막힘·대기·쉼)만으로는 "왜" 를 모른다(하영 표 4절). 일하는 중·대표 부름은 이유가 알약에 있으니 빈 문자열.
+ * 막힘은 방의 이유(needsBossWhy), 대기는 라운드 있나/차례 기다림, 쉼은 세션 없음(codex 는 부를 때만 뜬다). 문구는 ⑥ 작전실 말 전까지 임시.
+ */
+function whyStopped(t, p) {
+  const s = summaries[t.id] ?? {};
+  if (p.state === 'blocked') return `왜 멈췄나 — ${BOSS_WHY[s.needsBossWhy] ?? '대표 판단을 기다리는 중'}`;
+  if (p.state === 'waiting') return s.phase !== 'running' ? '왜 멈췄나 — 이 방에 열린 회의(라운드)가 없음' : '왜 멈췄나 — 자기 차례를 기다리는 중 (이름이 불리면 답함)';
+  if (p.state === 'resting') return p.alive === null ? '왜 멈췄나 — 부를 때만 뜨는 자리, 5분 넘게 부르지 않음' : '왜 멈췄나 — 세션이 꺼져 있음, 이 회의에 안 낌';
+  return '';
+}
+
 /** 일 상태 → 알약 글자·색 (결정 58 ①, 계약 3절 "일 상태"). 서버의 people[자리].state — 마을 시계는 여기 없다. */
 const WORK_PILL = { working: ['일하는 중', 'live'], bossCall: ['대표 부름', 'boss'], blocked: ['막힘', 'bad'], waiting: ['대기', 'idle'], resting: ['쉼', 'idle'] };
 
@@ -1296,6 +1303,10 @@ function personCard(t, id, a, p) {
   const nums = [p.lastSignal ? `신호 ${ago(p.lastSignal)}` : '신호 없음', `오늘 발언 ${p.todaySay ?? 0}`];
   if (p.todayVerdict != null) nums.push(`판정 ${p.todayVerdict}`);
   card.appendChild(el('div', 'pcard__nums', nums.join(' · ')));
+  // "왜 멈췄나" 한 마디 (하영 표 4절 — 대표 "왜 모두 멈춰있니? 대답해봐"). 알약이 막힘·대기·쉼 까지만 말하니 이유를 붙인다.
+  // 글은 임시 — 정본 문구는 마케팅 ⑥ 작전실 말이 오면 그대로 바꾼다(결정 43).
+  const why = whyStopped(t, p);
+  if (why) card.appendChild(el('div', 'pcard__why', why));
   // 4줄 대표 부름 — 불렀는데 대표가 아직 답 안 했을 때만.
   if (p.bossCall) {
     const c = el('button', 'pcard__call'); c.type = 'button';
@@ -1508,12 +1519,9 @@ function renderTowerTeams(grid) {
     bar.appendChild(fill);
     card.appendChild(bar);
 
+    // 반박 게이지 점 셋·대화록 N건은 뺐다 — 대표가 묻는 질문 어느 것에도 답 안 함(하영 표 opsroom-content.md 3절, 결정 47 ①). 3회 다 쓰면 종에 뜬다.
     const meta = el('div', 'tcard__meta');
     meta.append(total ? `마일스톤 ${done}/${total}` : '로드맵 없음');
-    const g = el('div', 'gauge');
-    for (let i = 1; i <= 3; i++) g.appendChild(el('div', i <= (s.attempt ?? 0) ? 'on' : ''));
-    meta.appendChild(g);
-    meta.append(`대화록 ${s.logCount ?? 0}건`);
     if (s.approvals?.pending) meta.appendChild(el('span', 'rwork', `승인 대기 ${s.approvals.pending}`));
     // 일하는 자리 이름으로 — "일하는 중" 만으로는 누가인지 모른다. 신호 시각은 방 헤더와 같은 값 (결정 31 ①).
     const busy = Object.entries(s.sessions ?? {}).filter(([, x]) => x.busy);

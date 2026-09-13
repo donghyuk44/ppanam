@@ -757,6 +757,7 @@ button.dash__row:hover b { text-decoration: underline; }
 .pcard__who span { font-size: 11px; color: var(--ink-4); overflow: hidden; text-overflow: ellipsis; }
 .pcard__doing { font-size: 12.5px; color: var(--ink-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .pcard__nums { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-4); }
+.pcard__why { font-size: 11.5px; color: var(--ink-3); }
 /* 엔진 · 모델 · 추론 강도 (결정 69) — 엔진 알약(못 누름) + select 둘 + 저장 메시지. 폰에서 select 는 네이티브 선택기. */
 .pcard__cast { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
 /* 엔진 알약 둘 — 켜진 쪽만 진하게(disabled, 상태 표시). 다른 쪽은 누르면 바뀐다. 외부감사는 둘 다 disabled(codex 고정). */
