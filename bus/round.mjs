@@ -4,6 +4,7 @@
 //   node bus/round.mjs start --topic "가드" -m 1      # 주제는 게이트 이름
 //   node bus/round.mjs status                        # 전체 팀 한눈에
 //   node bus/round.mjs end -v PASS --summary "1안 확정"
+//   node bus/round.mjs end --next --summary "로드맵 교체" [-m 1 --topic "…"]   # 닫고 그 자리에서 다음 라운드를 연다 (결정 25)
 //   node bus/round.mjs log --limit 20
 //   node bus/round.mjs check                         # 닫기 가드 자가 시험 (임시 방에서, 기록 안 남음)
 //
@@ -22,7 +23,7 @@ import {
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
-const o = { team: null, milestone: null, verdict: null, limit: 20, topic: null, summary: null };
+const o = { team: null, milestone: null, verdict: null, limit: 20, topic: null, summary: null, next: false };
 const words = [];
 
 for (let i = 1; i < argv.length; i++) {
@@ -33,6 +34,7 @@ for (let i = 1; i < argv.length; i++) {
   else if (a === '--limit' || a === '-n') o.limit = Number(argv[++i]);
   else if (a === '--topic') o.topic = argv[++i];
   else if (a === '--summary') o.summary = argv[++i];
+  else if (a === '--next') o.next = true;
   else words.push(a);
 }
 
@@ -96,12 +98,15 @@ switch (cmd) {
     break;
   }
   case 'end': {
-    const r = await viaServer({ team, action: 'end', verdict: o.verdict, summary });
+    // --next: 닫은 그 자리에서 다음 라운드를 연다 (결정 25). 주제는 --topic 만 — 남은 단어는 이 라운드의 요약이다.
+    const next = o.next ? { milestone: o.milestone, topic: o.topic } : null;
+    const r = await viaServer({ team, action: 'end', verdict: o.verdict, summary, next });
     if (r) {
+      const then = r.next ? ' 닫히면 그 자리에서 다음 라운드가 열립니다(--next).' : '';
       if (r.deferred) {
-        console.log(`[${team}] 실무 턴이 끝나면 라운드 ${r.round} 이 닫힙니다. 세션 컨텍스트도 그때 비워집니다.`);
+        console.log(`[${team}] 실무 턴이 끝나면 라운드 ${r.round} 이 닫힙니다. 세션 컨텍스트도 그때 비워집니다.${then}`);
       } else if (r.accepted) {
-        console.log(`[${team}] 서버가 라운드 ${r.round} 을 닫는 중 — 자리마다 일지 한 문단을 받은 뒤 닫히고 세션 컨텍스트를 비웁니다. 끝나면 방에 note 가 남습니다.`);
+        console.log(`[${team}] 서버가 라운드 ${r.round} 을 닫는 중 — 자리마다 일지 한 문단을 받은 뒤 닫히고 세션 컨텍스트를 비웁니다. 끝나면 방에 note 가 남습니다.${then}`);
       } else {
         console.log(`[${team}] 라운드 ${r.round} 종료${o.verdict ? ' · ' + o.verdict : ''}`);
         console.log('대화록은 그대로 남습니다. 다음 라운드부터 AI 컨텍스트만 새로 시작합니다.');
@@ -113,6 +118,10 @@ switch (cmd) {
       const n = endRound(team, { verdict: o.verdict, summary });
       console.log(`[${team}] 라운드 ${n} 종료${o.verdict ? ' · ' + o.verdict : ''} (서버 없이 직접 닫음)`);
       console.log('대화록은 그대로 남습니다. 다음 라운드부터 AI 컨텍스트만 새로 시작합니다.');
+      if (next) {
+        const s = startRound(team, next);
+        console.log(`[${team}] 라운드 ${s.round} 시작 · 마일스톤 ${s.milestone}${s.topic ? ' — ' + s.topic : ''} (--next)`);
+      }
     } catch (e) {
       console.error('오류: ' + e.message);
       process.exit(1);
@@ -326,6 +335,25 @@ switch (cmd) {
       // 판정 대상 문구 (솔라 R21) — 빈 문구·플래그 모양은 서버로 가기 전에 거부. `--help` 가 대상이 됐던 R20 사고.
       const vt = [verdictTargetError(null), verdictTargetError('--help'), verdictTargetError('M2 people 집계 -v'), verdictTargetError('M2 people 집계')];
       out.push(['판정 대상 가드', vt[0] && vt[1]?.includes('--help') && vt[2]?.includes('-v') && vt[3] === null ? '✓ 빈 문구·--help·-v 거부, 보통 문구 허용' : '✗ ' + JSON.stringify(vt)]);
+      // 닫으면서 이어 열기 (결정 25) — end --next 는 endRound 뒤 그 자리에서 startRound. 마일스톤을 안 주면 로드맵 now — PASS 로 닫아
+      // now 가 없어졌으면 startRound 가 거부한다(다음 착수는 B). 번호를 주면 그 마일스톤으로 이어진다. note 글은 session.closedText 하나.
+      {
+        if (readState(T).phase !== 'idle') endRound(T, { summary: '이어 열기 전 닫음' });
+        const before = readState(T).round;
+        const noNow = refuses(() => startRound(T, { milestone: null, topic: null }), 'B 승인');
+        const s = startRound(T, { milestone: 2, topic: '이어 열기' });
+        const { closedText } = await import('../server/session.mjs');
+        const okText = closedText({ round: before, journaled: 2, next: { round: s.round, milestone: 2, topic: '이어 열기' } });
+        const badText = closedText({ round: before, journaled: 2, nextError: '로드맵에 now 인 마일스톤이 없습니다.' });
+        const nWant = noNow.startsWith('✓') && s.round === before + 1 && s.milestone === 2 && readState(T).phase === 'running'
+          && okText.includes(`라운드 ${s.round} 을 이어 엽니다 · 마일스톤 2 — 이어 열기`) && badText.includes('다음 라운드를 열지 못했습니다');
+        out.push(['닫으면서 이어 열기(--next)', nWant ? `✓ now 없으면 B 거부 · 번호 주면 R${before}→R${s.round} · note 글 둘` : '✗ ' + JSON.stringify({ noNow, s, okText, badText })]);
+        endRound(T, { summary: '이어 열기 시험 닫음' });
+      }
+      // 닫히는 중 쌓인 차례는 다음 라운드로 (결정 25) — 호명·제3자만 넘기고 판정·침묵·점심은 버린다. 순수 함수 pickCarry.
+      const { pickCarry } = await import('../server/conductor.mjs');
+      const carried = pickCarry(new Map([['review', { kind: 'called' }], ['outside', { kind: 'verdict' }], ['ops', { kind: 'lull' }], ['guide', { kind: 'third' }], ['chief', { kind: 'lunch' }]]));
+      out.push(['닫히는 중 차례 넘기기', carried.map((x) => x.join(':')).join(',') === 'review:called,guide:third' ? '✓ 호명·제3자 넘김 · 판정·침묵·점심 버림' : '✗ ' + JSON.stringify(carried)]);
       // 생존 알림 문장 (결정 31 ②) — 신호가 최근이면 "아직 작업 중 (N분째, 마지막: …)", 신호도 끊겼으면 그렇게.
       const { aliveNoteText } = await import('../server/session.mjs');
       const now = Date.now();

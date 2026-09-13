@@ -390,7 +390,7 @@ const server = http.createServer((req, res) => {
 
   // 라운드 열기·닫기. 이게 없으면 지시하려고 결국 터미널로 돌아가야 한다.
   if (url.pathname === '/api/round' && req.method === 'POST') {
-    readBody(req, res, ({ team: t, action, topic, milestone, verdict, summary }) => {
+    readBody(req, res, ({ team: t, action, topic, milestone, verdict, summary, next }) => {
       if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
       if (isOffice(t)) return json(res, 400, { error: '총괄실에는 라운드가 없습니다. 늘 열려 있습니다.' });
       try {
@@ -405,21 +405,25 @@ const server = http.createServer((req, res) => {
           const opts = {
             verdict: verdict ? String(verdict).toUpperCase() : null,
             summary: summary ? String(summary).trim() : null,
+            // --next (결정 25): 닫은 그 자리에서 다음 라운드를 연다. 마일스톤·주제는 있으면 그대로, 없으면 로드맵의 now.
+            next: next && typeof next === 'object'
+              ? { milestone: next.milestone == null || Number.isNaN(Number(next.milestone)) ? null : Number(next.milestone), topic: next.topic ? String(next.topic).trim() : null }
+              : next ? { milestone: null, topic: null } : null,
           };
           const st = readState(t);
           if (!st.round || st.phase === 'idle') return json(res, 409, { error: '진행 중인 라운드가 없습니다.' });
           // 닫아도 되는지는 미루기 전에 본다 — 미룬 뒤 일지까지 받고 나서 거부되면 그 일지가 헛돈다. endRound 가 닫기 직전에 한 번 더 본다.
           try { assertEndable(t, opts); } catch (e) { return json(res, 409, { error: e.message, refused: true }); }
           // 누가 일하는 중이면 턴이 끝난 뒤 닫는다. 지금 닫으면 마지막 발언이 훅에서 버려진다.
-          if (session.closeWhenIdle(t, opts)) return json(res, 202, { deferred: true, round: st.round });
+          if (session.closeWhenIdle(t, opts)) return json(res, 202, { deferred: true, round: st.round, next: !!opts.next });
           // 일지 → 닫기 → 비우기. 일지가 있어야 다음 세션이 어제를 인용한다. 일지는 자리당 최대 3분이라 응답을 기다리게 하면
           // CLI 가 5초 만에 "서버 없음" 으로 보고 직접 닫았고, 서버는 뒤늦게 "라운드 없음" 으로 던져 세션 비우기를 건너뛰었다
           // (R13, 대표 결정 26). 받았다고 바로 답하고 뒤에서 닫는다. 끝나면 note 가 방에 남는다.
           if (session.isClosing(t)) return json(res, 409, { error: '이미 닫는 중입니다.' });
           session.closeRound(t, opts)
-            .then((r) => emit(t, { actor: 'system', type: 'note', text: `라운드 ${r.round} 닫힘 — 일지 ${r.journaled}편. 세션 컨텍스트를 비웠습니다.`, meta: { closed: r.round } }))
+            .then((r) => emit(t, { actor: 'system', type: 'note', text: session.closedText(r), meta: { closed: r.round } }))
             .catch((e) => emit(t, { actor: 'system', type: 'note', text: `라운드를 닫지 못했습니다 — ${e.message}` }));
-          return json(res, 202, { accepted: true, round: st.round });
+          return json(res, 202, { accepted: true, round: st.round, next: !!opts.next });
         }
         return json(res, 400, { error: 'action 은 start 또는 end 입니다.' });
       } catch (e) {

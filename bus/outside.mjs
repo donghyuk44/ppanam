@@ -25,7 +25,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {
-  ROOT, emit, recordVerdict, readContext, readTail, readCast, readState, appendJournal,
+  ROOT, emit, recordVerdict, readContext, readTail, readLog, readCast, readState, appendJournal,
   defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, headSha,
 } from './bus.mjs';
 // 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
@@ -163,9 +163,13 @@ function personaOf(team) {
  * 총괄실은 라운드가 없어서 readContext 가 늘 비어 있으므로 최근 대화를 쓴다 —
  * 이걸 안 하면 제리가 대표 원문을 못 보고 대조하는 척만 하게 된다.
  */
-function contextOf(team, { since = null } = {}) {
+function contextOf(team, { since = null, fromRound = null } = {}) {
   const cast = readCast(team).agents ?? {};
-  let events = isOffice(team) ? readTail(team, { limit: 40 }).events : readContext(team);
+  // 넘어온 차례(--from-round)는 닫힌 라운드의 못 들은 말부터 — 지난 라운드 커서가 이번 라운드에 없어 마지막 10줄로 떨어지면
+  // 무엇에 답하는지 모른다 (결정 25).
+  const { round } = readState(team);
+  let events = isOffice(team) ? readTail(team, { limit: 40 }).events
+    : fromRound && round ? readLog(team).filter((e) => e.round >= fromRound && e.round <= round) : readContext(team);
 
   // 이어지는 턴에는 지난번 이후에 새로 오간 말만 넘긴다.
   // 이게 없으면 첫 턴 이후로 방에서 무슨 말이 오갔는지 모른 채 답하게 된다.
@@ -212,6 +216,7 @@ const TURN = {
   lull: '방이 잠시 조용하다. 아무도 너에게 말한 건 아니다. 오간 말에 보탤 것이 있거나 누군가에게 한마디 걸고 싶으면 네 말투로 한두 문장 — 없으면 (패스) 한 마디만. 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라.',
   third: '두 사람 사이에서 같은 얘기가 세 번 오갔다. 너는 제3자다. 정리하거나 다른 각도를 하나만, 네 말투로 한두 문장. 없으면 (패스).',
   lunch: '점심시간이다. 일 얘기는 잠시 두고 한마디 툭 — 한 문장. 없으면 (패스).',
+  carried: '지난 라운드가 닫히면서 못 받은 차례다 — 위 말 끝에 누가 너에게 한 말이 있다. 새 라운드가 열렸으니 그 말에 지금 답해라. 상대 이름으로 시작해 네 말투로 한두 문장. 판정이 아니다 — 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라. 남길 말이 없으면 (패스) 한 마디만.',
 };
 
 /**
@@ -220,7 +225,7 @@ const TURN = {
  * 조용할 때 --turn <종류> 로 깨우면, 그는 판정 없이 사람에게 답한다. 대표 지적 (2026-09-02).
  * 그의 답은 그가 직접 대화록에 남기고, 다른 자리들은 각자 다음 차례에 듣는다 — 들려주기는 사회자의 일이다.
  */
-async function ask(team, question, { talk = false, lull = false, turn = null, text = null, dry = false } = {}) {
+async function ask(team, question, { talk = false, lull = false, turn = null, text = null, dry = false, fromRound = null } = {}) {
   if (!dry && !await hasCodex()) {
     emit(team, {
       actor: 'outside', type: 'note',
@@ -255,7 +260,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   // 인격은 턴마다. 대화는 첫 턴에 지금까지 전부, 이어지는 턴에는 지난번 이후 새로 온 말만 —
   // 자기 세션이 앞의 대화는 이미 기억하고 있으니, 못 들은 부분만 채워주면 된다. 인격은 다르다: 세션이 라운드를
   // 넘기며 길어지면 압축되고, 첫 턴에 한 번 준 인격이 제일 먼저 밀려난다. 그래서 클로드 자리처럼 매 턴 앞에 둔다.
-  const ctx = contextOf(team, { since: prior ? slot.lastSeen : null });
+  const ctx = contextOf(team, { since: prior ? slot.lastSeen : null, fromRound });
   // 이 턴이 들은 마지막 말. 커서를 여기 둔다 — 자기 발언 id 로 두면 생각하는 동안(최대 5분)
   // 도착한 말이 since 밖으로 떨어져 영영 못 듣는다 (Fable 감사, 2026-09-02).
   const seenId = lastEventId(team);
@@ -415,7 +420,7 @@ const SETUP = `외부감사를 연결하는 법.
 
 const argv = process.argv.slice(2);
 let team = process.env.PPANAM_TEAM ?? null;
-let question = null, mode = null, turnKind = null, turnText = null, dry = false;
+let question = null, mode = null, turnKind = null, turnText = null, dry = false, fromRound = null;
 
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
@@ -427,6 +432,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--lull') { mode = 'lull'; question = '(조용한 틈)'; }
   else if (a === '--turn') { mode = 'turn'; turnKind = argv[++i]; question = `(차례: ${turnKind})`; }
   else if (a === '--text') turnText = argv[++i];
+  else if (a === '--from-round') fromRound = Number(argv[++i]) || null;   // 넘어온 차례(carried) — 닫힌 라운드의 못 들은 말부터 (결정 25)
   else if (a === '--check' || a === '-c') { mode = 'check'; question = argv[++i]; }
   else if (a === '--reset') mode = 'reset';
   else if (a === '--status') mode = 'status';
@@ -455,7 +461,7 @@ if (mode === 'reset') {
 if (!question) {
   console.error('사용법: outside.mjs --team <팀> --ask "물어볼 것"        판정 (첫 줄 PASS/REVISE)');
   console.error('        outside.mjs --team <팀> --talk "방에서 한 말"     대화 (판정 없음)');
-  console.error('        outside.mjs --team <팀> --turn <called|lull|lunch|third>   사회자가 주는 차례 (판정 없음)');
+  console.error('        outside.mjs --team <팀> --turn <called|lull|lunch|third|carried> [--from-round N]   사회자가 주는 차례 (판정 없음)');
   console.error('        outside.mjs --team <팀> --turn verdict --text "<대상>"       판정 차례 (첫 줄 PASS/REVISE)');
   console.error('        outside.mjs --team <팀> --turn journal                    일지 한 문단 (대화록에 안 남음)');
   console.error('        … --dry                                              codex 를 안 부르고 이 턴이 받을 입력만 출력 (기록 없음)');
@@ -482,4 +488,4 @@ if (mode === 'check') {
 }
 
 const chat = mode === 'talk' || mode === 'lull' || (mode === 'turn' && turnKind !== 'verdict' && turnKind !== 'journal');
-process.exit(await ask(team, question, { talk: chat, lull: mode === 'lull', turn: mode === 'turn' ? turnKind : null, text: turnText, dry }));
+process.exit(await ask(team, question, { talk: chat, lull: mode === 'lull', turn: mode === 'turn' ? turnKind : null, text: turnText, dry, fromRound }));

@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn as spawnProc } from 'node:child_process';
 import {
-  ROOT, emit, listTeams, isOffice, paths, endRound, readCast, readState, readRoadmap, listRounds,
+  ROOT, emit, listTeams, isOffice, paths, endRound, startRound, readCast, readState, readRoadmap, listRounds,
   readLog, quiet, appendJournal, journalPrompt, collectJournals, writeTurn,
 } from '../bus/bus.mjs';
 import { toolPhrase } from './public/toollabel.js';
@@ -533,7 +533,7 @@ export function stopTeam(team) {
  */
 export function closeWhenIdle(team, opts = {}) {
   if (!anyBusy(team)) return false;
-  closing.set(team, { verdict: opts.verdict ?? null, summary: opts.summary ?? null });
+  closing.set(team, { verdict: opts.verdict ?? null, summary: opts.summary ?? null, next: opts.next ?? null });
   return true;
 }
 
@@ -542,8 +542,16 @@ function maybeFinishClose(team) {
   const o = closing.get(team);
   closing.delete(team);
   closeRound(team, o)
-    .then((r) => note(team, `라운드 ${r.round} 닫힘 — 일지 ${r.journaled}편. 세션 컨텍스트를 비웠습니다.`))
+    .then((r) => emit(team, { actor: 'system', type: 'note', text: closedText(r), meta: { closed: r.round } }))
     .catch((e) => note(team, `라운드를 닫지 못했습니다 — ${e.message}`));
+}
+
+/** 닫힘 note 한 줄 — 바로 닫든 미뤄 닫든 같은 글. --next 로 이어 열렸으면(또는 못 열었으면) 그것도 여기에. */
+export function closedText(r) {
+  let s = `라운드 ${r.round} 닫힘 — 일지 ${r.journaled}편. 세션 컨텍스트를 비웠습니다.`;
+  if (r.next) s += ` 라운드 ${r.next.round} 을 이어 엽니다 · 마일스톤 ${r.next.milestone}${r.next.topic ? ' — ' + r.next.topic : ''} (--next).`;
+  else if (r.nextError) s += ` 닫았지만 다음 라운드를 열지 못했습니다 — ${r.nextError}`;
+  return s;
 }
 
 /**
@@ -562,7 +570,14 @@ export async function closeRound(team, opts = {}) {
     const journaled = await journalAll(team, state.round);
     const n = endRound(team, opts);
     reset(team);
-    return { round: n, journaled };
+    const out = { round: n, journaled };
+    // --next (결정 25): 닫은 그 자리에서 다음 라운드를 연다 — 여는 손이 없어 방이 멈추던 일. PASS 로 닫아 now 가 없으면
+    // startRound 가 거부한다(다음 착수는 B) — 그건 note 로만 남기고 닫힘은 그대로다.
+    if (opts.next) {
+      try { const s = startRound(team, { milestone: opts.next.milestone ?? null, topic: opts.next.topic ?? null }); out.next = { round: s.round, milestone: s.milestone, topic: s.topic }; }
+      catch (e) { out.nextError = e.message; }
+    }
+    return out;
   } finally {
     closingNow.delete(team);
   }
