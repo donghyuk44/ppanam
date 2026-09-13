@@ -1385,9 +1385,13 @@ export function bossNotesOf(log, cast, { now = Date.now(), limit = 30 } = {}) {
  *   kind: report(대표에게 보고 — 결정 안 청한 말) · verdict(판정 카드, ref=sha) · decision(승인 판정, ref=승인 id) · proxy(대리 결정) ·
  *         request(요청 블록 닫힘, ref=요청 id) · milestone(통과) · round(닫힘, ref=판정)
  */
+/** 우리 시각(서울, +09:00 고정 — 서머타임 없음)의 그날 0시를 UTC ms 로. 서버 프로세스의 TZ 와 무관하다 — 결정 101 의 아홉 시간 오류가 집계에서 다시 나지 않게(레오, R25). */
+export const SEOUL_OFFSET_MS = 9 * 3600_000;
+export const dayStartSeoul = (now = Date.now()) => Math.floor((now + SEOUL_OFFSET_MS) / 86_400_000) * 86_400_000 - SEOUL_OFFSET_MS;
+
 export function doneOf(log, cast, { team = null, since = null, until = null, approvals = [], now = Date.now() } = {}) {
   const agents = cast ?? {};
-  const s = since != null ? new Date(since).getTime() : (() => { const d = new Date(now); d.setHours(0, 0, 0, 0); return d.getTime(); })();
+  const s = since != null ? new Date(since).getTime() : dayStartSeoul(now);
   const u = until != null ? new Date(until).getTime() : now;
   const inWin = (ts) => { const t = new Date(ts ?? 0).getTime(); return t >= s && t < u; };
   const one = (t, n) => String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, n);

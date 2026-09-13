@@ -18,7 +18,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import {
   startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound,
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
-  addressees, callsBoss, asksBoss, bossNotesOf, doneOf, readLog, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
+  addressees, callsBoss, asksBoss, bossNotesOf, doneOf, dayStartSeoul, readLog, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
   mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, overdue,
 } from './bus.mjs';
@@ -323,6 +323,13 @@ switch (cmd) {
       const dy = doneOf([...dlog, { id: 'd9', ts: new Date(d0.getTime() - 20 * 3600_000).toISOString(), actor: 'ops', type: 'message', text: '대표님, 어젯밤에 서버 살렸습니다.' }], pcast,
         { team: 'dev', approvals: dApr, since: d0.getTime() - 30 * 3600_000, until: d0.getTime() - 3600_000 });
       out.push(['한 것 — 창 자르기', dy.length === 2 && dy[0].kind === 'report' && dy[0].by === 'ops' && dy[1].kind === 'decision' && dy[1].by === 'boss' ? '✓ 어젯밤 창에 보고 1·대표 판정 1' : '✗ ' + JSON.stringify(dy.map((x) => [x.kind, x.by]))]);
+      // 기본 창의 "오늘" 은 서울 0시 — 서버 TZ 와 무관(결정 101, 레오). 지금이 09-14 01:00 KST(= 09-13T16:00Z)면 00:30 KST 는 오늘, 23:30 KST(어제) 는 아니다.
+      const kNow = Date.parse('2026-09-13T16:00:00Z');
+      const kn = doneOf([
+        { id: 'k1', ts: '2026-09-13T14:30:00Z', actor: 'guide', type: 'message', text: '대표님, 어제 밤 보고입니다.' },
+        { id: 'k2', ts: '2026-09-13T15:30:00Z', actor: 'guide', type: 'message', text: '대표님, 오늘 새벽 보고입니다.' },
+      ], pcast, { team: 'dev', now: kNow });
+      out.push(['한 것 — 오늘은 서울 0시(결정 101)', kn.length === 1 && kn[0].id === 'report:k2' && dayStartSeoul(kNow) === Date.parse('2026-09-13T15:00:00Z') ? '✓ 00:30 KST 는 오늘 · 23:30 KST 는 어제 · 0시 = 15:00Z' : '✗ ' + JSON.stringify(kn.map((x) => x.id))]);
       // 일 상태 (결정 58 ①) — 마을 시계가 아니라 busy·bossCall·phase·alive·신호 5분으로. 일요일 저녁에 열넷이 "잠" 이던 버그.
       const wnow = d0.getTime() + 10 * 60_000;
       const ws = (p, phase) => workStateOf({ busy: false, alive: null, lastSignal: null, bossCall: null, ...p }, phase, wnow);
