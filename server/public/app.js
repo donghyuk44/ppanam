@@ -851,9 +851,20 @@ const showOpen = (on, { topic = '' } = {}) => {
   if (on) {
     const { pick, now } = suggestMilestone();
     $('roundTopic').value = topic;
-    $('roundTopic').placeholder = summary.topic ? `비우면 지난 주제 그대로 — "${summary.topic.slice(0, 40)}"` : '이번 회의에서 무엇을 하나요';
-    $('roundMs').value = pick ? String(pick.n) : '';
-    $('roundMs').title = pick ? `${pick.n}번째 마일스톤 "${pick.title}"${now ? '' : ' — 앞 것이 끝나 다음 것. 착수는 톰·제리 승인(B)이 먼저'}` : '마일스톤 번호';
+    // 검수 #6 — 마일스톤은 로드맵 제목 목록에서 고른다(now 가 골라져 있고, 끝난 것은 '끝'). 주제를 비우면 고른 마일스톤 제목이 주제다.
+    const sel = $('roundMs');
+    sel.replaceChildren();
+    for (const m of roadmap.milestones ?? []) {
+      const o = document.createElement('option');
+      o.value = String(m.n);
+      o.textContent = `${m.n}. ${m.title}${m.status === 'pass' ? ' (끝)' : m.status === 'now' ? ' (지금)' : ''}`;
+      if (m.status === 'pass') o.disabled = true;
+      sel.appendChild(o);
+    }
+    if (!sel.options.length) { const o = document.createElement('option'); o.value = ''; o.textContent = '로드맵 없음'; sel.appendChild(o); }
+    sel.value = pick ? String(pick.n) : '';
+    sel.title = pick ? `${pick.n}번째 마일스톤 "${pick.title}"${now ? '' : ' — 앞 것이 끝나 다음 것. 착수는 톰·제리 승인(B)이 먼저'}` : '로드맵이 없습니다';
+    $('roundTopic').placeholder = pick ? `비우면 "${pick.title.slice(0, 40)}" 가 주제` : '이번 회의에서 무엇을 하나요';
     $('roundTopic').focus();
   } else pendingSay = null;
 };
@@ -876,8 +887,10 @@ $('roundCancel').addEventListener('click', () => showOpen(false));
 $('roundOpen').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!active) return;
-  const topic = $('roundTopic').value.trim();
-  const ms = $('roundMs').value.trim();
+  const ms = String($('roundMs').value ?? '').trim();
+  const picked = (roadmap.milestones ?? []).find((m) => String(m.n) === ms) ?? null;
+  // 빈 주제는 지난 주제가 아니라 고른 마일스톤 제목이다 (검수 #6 — 물려받는 걸 알 수 없었다).
+  const topic = $('roundTopic').value.trim() || picked?.title || '';
   const r = await post('/api/round', {
     team: active, action: 'start',
     topic: topic || null,

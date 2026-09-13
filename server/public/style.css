@@ -219,7 +219,7 @@ body {
   background: var(--sunk); border: 1px solid var(--line-2); border-radius: 5px; padding: 5px 9px;
 }
 .roundopen__in { flex: 1; min-width: 0; }
-.roundopen__ms { flex: none; width: 52px; font-family: 'IBM Plex Mono', monospace; text-align: center; }
+.roundopen__ms { flex: none; width: min(46%, 220px); font-size: 12.5px; text-overflow: ellipsis; }   /* 로드맵 제목 목록 (검수 #6) */
 .roundopen__go, .roundopen__x {
   flex: none; font: inherit; font-size: 12px; border-radius: 5px; padding: 5px 11px; cursor: pointer;
 }

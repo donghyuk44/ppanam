@@ -77,8 +77,8 @@
     <form class="roundopen" id="roundOpen" hidden>
       <input class="roundopen__in" id="roundTopic" type="text" autocomplete="off"
              placeholder="이번 라운드에서 무엇을 하나요">
-      <input class="roundopen__ms" id="roundMs" type="number" min="1" step="1"
-             inputmode="numeric" placeholder="M" title="마일스톤 번호">
+      <!-- 마일스톤은 번호 칸이 아니라 로드맵 제목 목록에서 고른다 (검수 #6 — 'M' 이 뭔지 알 수 없었다). 주제를 비우면 고른 마일스톤 제목이 주제가 된다. -->
+      <select class="roundopen__ms" id="roundMs" title="이번 회의의 마일스톤 — 로드맵에서 고른다"></select>
       <button class="roundopen__go" type="submit">시작</button>
       <button class="roundopen__x" type="button" id="roundCancel">취소</button>
     </form>
