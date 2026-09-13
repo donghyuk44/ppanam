@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>세라</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="stage" data-tauri-drag-region>
+    <div id="sera" title="세라 — 눌러서 말 걸기">
+      <!-- 그림은 디자인 M4·결정 86② 대기. 오기 전까진 자리표시 원. -->
+      <div id="sera-placeholder"></div>
+    </div>
+    <div id="pill">
+      <button id="btn-fix" title="고치기">🔧</button>
+      <button id="btn-mute" title="소리">🔔</button>
+      <button id="btn-badge" title="알림">
+        <span id="badge-count" hidden>0</span>
+      </button>
+    </div>
+    <div id="chat" hidden>
+      <div id="chat-log"></div>
+      <input id="chat-input" placeholder="세라에게…" />
+    </div>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

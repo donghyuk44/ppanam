@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "세라",
+  "version": "0.1.0",
+  "identifier": "com.ppanam.sera",
+  "build": {
+    "frontendDist": "../"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "세라",
+        "width": 260,
+        "height": 320,
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "skipTaskbar": true,
+        "shadow": false
+      }
+    ]
+  }
+}

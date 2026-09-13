@@ -1,0 +1,18 @@
+[package]
+name = "sera"
+version = "0.1.0"
+edition = "2021"
+
+# 버전 미검증 — 이 세션엔 cargo 가 없어 실제로 받아 본 적이 없다.
+# 빌드 안 되면 `npm create tauri-app@latest` 로 새로 받은 프로젝트의 Cargo.toml 버전으로 맞추는 게 빠르다.
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[[bin]]
+name = "sera"
+path = "src/main.rs"

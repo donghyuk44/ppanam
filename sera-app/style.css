@@ -1,0 +1,41 @@
+/* 창 자체가 투명(tauri.conf.json) — 여기선 배경을 절대 칠하지 않는다. */
+html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+
+#stage {
+  width: 100vw; height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  gap: 8px; padding-bottom: 8px;
+  -webkit-user-select: none; user-select: none;
+}
+
+#sera { width: 96px; height: 96px; cursor: pointer; }
+#sera-placeholder {
+  width: 100%; height: 100%; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe3a8, #f0a840);
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
+
+#pill {
+  display: flex; gap: 6px; padding: 6px 10px;
+  background: rgba(20,20,24,.72); border-radius: 999px;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+#pill button {
+  border: none; background: transparent; font-size: 16px; line-height: 1;
+  padding: 4px; cursor: pointer; position: relative;
+}
+#badge-count {
+  position: absolute; top: -2px; right: -2px;
+  background: #ff4d4f; color: #fff; font-size: 10px; border-radius: 999px;
+  min-width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;
+}
+
+#chat {
+  width: 220px; background: rgba(20,20,24,.85); border-radius: 12px; padding: 8px;
+  color: #f2f2f2; font: 13px/1.4 -apple-system, sans-serif;
+}
+#chat-log { max-height: 160px; overflow-y: auto; margin-bottom: 6px; }
+#chat-input {
+  width: 100%; box-sizing: border-box; border: none; border-radius: 8px;
+  padding: 6px 8px; font: inherit;
+}
