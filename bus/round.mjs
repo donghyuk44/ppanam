@@ -361,8 +361,9 @@ switch (cmd) {
         { round: 4, type: 'message', actor: 'guide', text: '대표님, 정했습니다.\n\n다니엘, 숫자 대조.' },
         { round: 5, type: 'message', actor: 'guide', text: '안젤, 새 라운드 말.' },
         { round: 3, type: 'message', actor: 'review', text: '다니엘, 더 이른 라운드.' },
+        { round: 4, type: 'message', actor: 'outside', text: '안젤, 같은 사람 두 번째 — 차례는 하나.' },
       ], 5, cast, (a) => a !== 'ops');
-      out.push(['닫힌 라운드 호명은 넘어온 차례', sc.map((x) => x.join(':')).join(',') === 'review:4,outside:3' ? '✓ 안젤 R4 · 다니엘 R3(가장 이른 것) · 새 라운드·대표 제외' : '✗ ' + JSON.stringify(sc)]);
+      out.push(['닫힌 라운드 호명은 넘어온 차례', sc.map((x) => x.join(':')).join(',') === 'review:4,outside:3' ? '✓ 안젤 R4(두 번 불려도 하나) · 다니엘 R3(가장 이른 것) · 새 라운드·대표 제외' : '✗ ' + JSON.stringify(sc)]);
       // 알림 목록 (결정 68) — 요약·승인에서 종류 순(대표 차례→승인→막힘→보고), 같은 종류는 최근 것부터, 보고는 ask 아닌 것만, C 승인만,
       // out/ 그림이 있으면 썸네일, 읽음 집합에 있으면 unread:false, 급한 것이 안 읽혔을 때만 urgent.
       {

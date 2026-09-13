@@ -418,15 +418,17 @@ export function noticeEvents(team, events) {
     }
   }
 
+  // 닫힌 라운드의 말이 round_end·round_start 와 한 폴링에 왔다 — 새 라운드의 보통 호명으로 주면 unheard 가 새 라운드만 읽어
+  // 그 말을 못 듣는다 (레오 REVISE R23). 넘어온 차례(carried)로 주고 들려주기를 그 라운드부터 잇는다. **묶음 전체를 한 번에** —
+  // 이벤트마다 부르면 같은 사람을 두 번 부른 묶음이 두 차례가 된다(첫 차례가 바로 나가 busy 라 둘째가 쌓임 — 레오 두 번째 REVISE).
+  if (!isOffice(team)) {
+    for (const [to, from] of staleCalls(events, state.round, cast, (a) => participants(team).includes(a))) carryTurn(team, to, from);
+  }
+
   for (const e of events) {
     if (e.type === 'tool') { if (r.lullTimer) armLull(team); continue; }     // 누가 일하는 중 — 조용함이 아니다
     if (e.type !== 'message' && e.type !== 'verdict') continue;
-    // 닫힌 라운드의 말이 round_end·round_start 와 한 폴링에 왔다 — 새 라운드의 보통 호명으로 주면 unheard 가 새 라운드만 읽어
-    // 그 말을 못 듣는다 (레오 REVISE R23). 넘어온 차례(carried)로 주고 들려주기를 그 라운드부터 잇는다.
-    if (!isOffice(team) && isStale(e, state.round)) {
-      for (const [to, from] of staleCalls([e], state.round, cast, (a) => participants(team).includes(a))) carryTurn(team, to, from);
-      continue;
-    }
+    if (!isOffice(team) && isStale(e, state.round)) continue;   // 위에서 넘어온 차례로 줬다
     if (e.actor === 'system') {
       // 시스템 발언은 차례 계산에서 빠지되, 첫머리에 이름을 불렀으면 그 사람을 깨운다 — 하네스가 "결과 도착" 을
       // 시스템 화자로 남겼는데 아무도 안 깨어 20분 멈춘 일(2026-09-12). codex 자리도 같다.
