@@ -492,7 +492,9 @@ export function decideApproval(id, { by, decision, reason = '', team = null, pro
 /* ── 대리 결정 (대표 결정 85) — 대표가 10분 넘게 답이 없으면 톰·제리 둘의 합의로 ── */
 export const PROXY_WAIT_MS = Number(process.env.PPANAM_PROXY_WAIT_MS || 10 * 60_000);
 /** ④ 돈 나가는 것·바깥으로 나가는 것은 대리 대상이 아니다 — 낱말로 거른다(보수적으로). C 승인에도, 방의 물음(answer)에도 같은 선. 순수. */
-export const proxyForbidden = (text) => /비용|상한|결제|돈|유료|외부|발송|메일|공개|병합/.test(String(text ?? ''));
+// 낱말 하나로 거르면 같이 걸리는 말이 있다 — "외부" 는 우리 자리 이름 "외부 감사"(다섯) 에 걸려 헨리의 도면 승인이 밤새 대리 후보에서 빠졌다(하네스 R24).
+// "돈" 은 "서버가 돈다" 에 걸린다. 그래서 외부 는 뒤에 감사 가 안 올 때만, 돈 은 뒤에 다·되·된·돌 이 안 올 때만.
+export const proxyForbidden = (text) => /비용|상한|결제|돈(?![다되된돌])|유료|과금|외부(?!\s?감사)|발송|메일|공개|병합/.test(String(text ?? ''));
 export function proxyEligible(r) {
   if (!r || r.grade !== 'C' || r.status !== 'pending') return false;
   if (['cost', 'send', 'merge'].includes(r.action?.type)) return false;
