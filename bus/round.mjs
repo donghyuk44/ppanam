@@ -19,7 +19,7 @@ import {
   startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound,
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
   addressees, callsBoss, asksBoss, bossNotesOf, readLog, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
-  castChangeError, updateCastAgent, castChangeText, codexArgs,
+  castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -411,6 +411,20 @@ switch (cmd) {
           && cb.join(' ') === 'exec --skip-git-repo-check --sandbox read-only -m gpt-5.1 -o /tmp/o -';
         out.push(['자리 엔진·모델·강도(결정 69)', eWant && uWant && swWant && cWant && txt === '대표가 테라를 opus·high 로 바꿨습니다 — 다음 턴부터.' && txt2.startsWith('대표가 안젤을')
           ? '✓ 거르기 10경우(외부감사→claude 만 거부) · cast.json 에 씀(바뀐 값만) · 실무→codex 전환 · note 글 을/를 · codex 인자 resume/새 세션' : '✗ ' + JSON.stringify({ errs, up, sw, txt, ca, cb })]);
+      }
+      // codex 자리에 귀로 넣는 말은 방에 note 로 남는다 (레오 FAIL R23 → 대표 "수도꼭지 한 군데만") — session.send 안에서. 대화록에 있어야 codex 가 다음 차례에 읽고,
+      // 부른 쪽(알림자·요청 블록·quiet)은 그대로. claude 아닌 사람(boss)은 refused. 임시 방 cast 의 outside 는 gpt — 프로세스는 안 뜬다.
+      {
+        const { send: sessionSend } = await import('../server/session.mjs');
+        startRound(T, { milestone: 2 });
+        const before = readLog(T).length;
+        const r1 = sessionSend(T, quietText('승인 apr_x 통과 — 톰·제리 PASS'), 'outside');
+        const last = readLog(T).at(-1);
+        const r2 = sessionSend(T, '아무 말', 'boss');
+        const sWant = r1?.noted === last?.id && last?.type === 'note' && last?.meta?.forCodex === 'outside' && last?.text === '레오(codex 자리) 귀에 넣을 말 — 방에 남깁니다: 승인 apr_x 통과 — 톰·제리 PASS'
+          && readLog(T).length === before + 1 && r2?.refused;
+        out.push(['codex 자리 귀 → 방에 note', sWant ? '✓ note 한 줄(들려주기 표 뗌) · id 돌려줌 · boss 는 refused' : '✗ ' + JSON.stringify({ r1, last: last?.text, r2 })]);
+        endRound(T, { summary: '귀 시험 닫음' });
       }
       // 알림 목록 (결정 68) — 요약·승인에서 종류 순(대표 차례→승인→막힘→보고), 같은 종류는 최근 것부터, 보고는 ask 아닌 것만, C 승인만,
       // out/ 그림이 있으면 썸네일, 읽음 집합에 있으면 unread:false, 급한 것이 안 읽혔을 때만 urgent.

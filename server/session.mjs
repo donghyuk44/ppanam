@@ -17,7 +17,7 @@ import path from 'node:path';
 import { spawn as spawnProc } from 'node:child_process';
 import {
   ROOT, emit, listTeams, isOffice, paths, endRound, startRound, readCast, readState, readRoadmap, listRounds,
-  readLog, quiet, appendJournal, journalPrompt, collectJournals, writeTurn,
+  readLog, quiet, RELAY_QUIET, appendJournal, journalPrompt, collectJournals, writeTurn,
 } from '../bus/bus.mjs';
 import { toolPhrase } from './public/toollabel.js';
 
@@ -470,9 +470,16 @@ function alive(s) {
  */
 export function send(team, text, actor = ownerOf(team), { kind = null, extra = '', internal = false } = {}) {
   if (isClosing(team) && !internal) return { refused: true, reason: '라운드가 닫히는 중입니다. 잠시 뒤 다시 보내세요.' };
-  // codex 자리(대표가 바꿨을 수도, 결정 69 ①)에는 claude 세션이 없다 — 여기서 띄우면 그 자리 이름으로 claude 가 말한다. 귀에 넣는 말(알림자·요청 블록)은
-  // codex 가 다음 차례에 커서로 듣고, 차례는 사회자가 outside.mjs 로 준다.
-  if (readCast(team).agents?.[actor]?.model !== 'claude') return { refused: true, reason: `${actor} 는 claude 자리가 아닙니다 — codex 자리는 사회자가 outside.mjs 로 깨웁니다.` };
+  // codex 자리(대표가 바꿨을 수도, 결정 69 ①)에는 claude 세션이 없다 — 여기서 띄우면 그 자리 이름으로 claude 가 말한다. 귀에만 넣는 말(알림자·요청 블록·quiet)은
+  // 대화록에 없어 codex 가 영영 못 듣고, 부른 쪽은 전달된 줄 안다(레오 FAIL R23). 그래서 **여기 한 군데서** 방에 note 로 남긴다 — codex 는 다음 차례에 커서로
+  // 읽고, 호출부 넷(알림자·요청 블록·/api/say·사회자)은 그대로다 (대표 지시 "수도꼭지 한 군데만").
+  const seat = readCast(team).agents?.[actor];
+  if (seat?.model === 'gpt') {
+    const body = String(text ?? '').startsWith(RELAY_QUIET) ? String(text).slice(RELAY_QUIET.length).trim() : String(text ?? '').trim();
+    const rec = emit(team, { actor: 'system', type: 'note', text: `${seat.name ?? actor}(codex 자리) 귀에 넣을 말 — 방에 남깁니다: ${body}`, meta: { forCodex: actor } });
+    return { queued: 0, noted: rec.id };
+  }
+  if (seat?.model !== 'claude') return { refused: true, reason: `${actor} 는 세션이 있는 자리가 아닙니다.` };
   return enqueue(team, actor, { text, resolve: null, kind, extra });
 }
 
