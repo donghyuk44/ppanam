@@ -185,7 +185,10 @@ switch (cmd) {
       out.push(['도구 줄 접기(진행 중)', live === '파일 1개 읽고 2개 고치는 중 (app.js, style.css)' ? '✓ ' + live : '✗ ' + live]);
       out.push(['도구 줄 접기(끝남)', done === '파일 1개 읽고 2개 고침 (app.js, style.css)' ? '✓ ' + done : '✗ ' + done]);
       // 관제탑 카드의 마지막 줄 (독립검수 #10) — 발언 뒤에 도구 줄·note 가 와도 lastText 는 발언, 도구 줄은 lastTool 로 따로.
-      const { toolPhrase } = await import('../server/public/toollabel.js');
+      const { toolPhrase, ga } = await import('../server/public/toollabel.js');
+      // 주격 조사 — "헨리이 불렀습니다" 가 떴다 (레오 R15 B 감사). 받침 유무로 이/가.
+      const gaAll = ['헨리', '톰', '테라', '하영', 'Leo'].map(ga).join(' ');
+      out.push(['이/가 조사', gaAll === '헨리가 톰이 테라가 하영이 Leo가' ? '✓ ' + gaAll : '✗ ' + gaAll]);
       emit(T, { actor: 'guide', type: 'message', text: '마지막 말' });
       emit(T, { actor: 'guide', type: 'tool', text: '/a/b/app.js', meta: { tool: 'Edit' } });
       emit(T, { actor: 'system', type: 'note', text: '안내 한 줄' });

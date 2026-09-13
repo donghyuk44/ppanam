@@ -4,7 +4,7 @@
 // 위로 스크롤하면 지난 라운드가 계속 나온다.
 
 import * as World from '/world/world.js';
-import { toolLabel, toolPhrase, baseName } from '/toollabel.js';
+import { toolLabel, toolPhrase, baseName, ga } from '/toollabel.js';
 
 const $ = (id) => document.getElementById(id);
 const app = $('app'), feed = $('feed'), stream = $('stream');
@@ -166,7 +166,7 @@ function bossTurns() {
 function bossWhyOf(t) {
   const s = summaries[t.id] ?? {};
   if (s.needsBoss) return BOSS_WHY[s.needsBossWhy] ?? '대표 판단';
-  if (s.bossCall) return `${s.cast?.[s.bossCall.by]?.name ?? s.bossCall.by}이 불렀습니다 · ${ago(s.bossCall.ts)}`;
+  if (s.bossCall) return `${ga(s.cast?.[s.bossCall.by]?.name ?? s.bossCall.by)} 불렀습니다 · ${ago(s.bossCall.ts)}`;
   return '';
 }
 /**
@@ -999,7 +999,7 @@ function renderTower() {
     const card = el('div', 'tcard');
     // 대표 차례인 카드 — 막힌 방(needsBoss)과 대표를 불렀는데 답이 없는 방(bossCall) 둘 다. 후자는 배지만 알고
     // 카드는 '진행 중' 이라 누가 기다리는지 못 찾았다 (독립검수 #9).
-    const call = s.bossCall ? `${agents[s.bossCall.by]?.name ?? s.bossCall.by}이 불렀습니다 · ${ago(s.bossCall.ts)}` : null;
+    const call = s.bossCall ? `${ga(agents[s.bossCall.by]?.name ?? s.bossCall.by)} 불렀습니다 · ${ago(s.bossCall.ts)}` : null;
     card.dataset.alert = s.needsBoss || call ? '1' : '0';
 
     // 이름과 상태

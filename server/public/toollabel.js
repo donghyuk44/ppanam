@@ -23,6 +23,17 @@ export function toolLabel(items, live, names = 3) {
   return `파일 ${verbs}${shown ? ` (${shown})` : ''}`;
 }
 
+/**
+ * 주격 조사 — 받침이 있으면 "이", 없으면 "가". "헨리이 불렀습니다" 가 화면에 떴다 (레오 R15 B 감사).
+ * 한글 음절이 아닌 끝(영문·숫자)은 "가". 화면과 check 가 같은 것을 쓴다.
+ */
+export function ga(name) {
+  const s = String(name ?? '');
+  const c = s.charCodeAt(s.length - 1);
+  const hangul = c >= 0xac00 && c <= 0xd7a3;
+  return s + (hangul && (c - 0xac00) % 28 !== 0 ? '이' : '가');
+}
+
 /** 도구 줄 하나를 사람 말로 — "app.js 고치는 중". 관제탑 카드의 "지금" 줄과 생존 알림이 쓴다 (결정 31). */
 export function toolPhrase(item, live = true) {
   const v = VERB[item?.tool] ?? '쓰';
