@@ -14,7 +14,7 @@
       "title": "관제탑 팀 / 개인 탭",
       "deliverable": "결정 40 — 관제탑에 서브 탭 둘. '팀' 은 지금의 팀 카드 다섯. '개인' 은 열넷 + 대표 사람 카드(상태 · 마지막 신호 · 하는 일 · 오늘 발언/판정 수 · 대표 호출 · 일지 첫 문장), 헨리의 out/opsroom-tower-tabs.md 대로. 데이터는 새 집계 하나 — `/api/boot` 의 summaries 에 `people`(자리별: claude 자리는 session.statusAll, codex 자리는 대화록 마지막 발언 시각, 오늘 발언/판정은 log 집계, 일지 첫 문장은 journal 첫 문단에서) 을 싣는다. 계약은 docs/event-schema.md 부터. 산출물: out/tower-people.md + 412·데스크톱 스크린샷, 레오가 폰 폭 실측",
       "timebox": "1 라운드",
-      "status": "wait"
+      "status": "pass"
     },
     {
       "n": 3,
