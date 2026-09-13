@@ -17,7 +17,7 @@ import path from 'node:path';
 import { spawn as spawnProc } from 'node:child_process';
 import {
   ROOT, emit, listTeams, isOffice, paths, endRound, startRound, readCast, readState, readRoadmap, listRounds,
-  readLog, quiet, RELAY_QUIET, appendJournal, journalPrompt, collectJournals, writeTurn,
+  readLog, quiet, RELAY_QUIET, appendJournal, journalPrompt, collectJournals, writeTurn, readProgress, progressFresh, progressText,
 } from '../bus/bus.mjs';
 import { toolPhrase } from './public/toollabel.js';
 
@@ -200,9 +200,24 @@ function briefOf(team, actor) {
       : '지금 열린 라운드가 없다.');
     if (rm.cutList?.length) lines.push(`컷리스트(이번엔 하지 않는 것): ${rm.cutList.join(' / ')}`);
     if (last) lines.push(`직전 라운드 ${last.round}: ${last.verdict ?? '판정 없음'}${last.summary ? ' — ' + last.summary : ''}`);
+    // 상황판 (결정 23) — 팀원 모두가 읽고, 실무는 턴 끝·닫기마다 쓴다. 파일이 없거나 낡았으면 그렇다고 말한다.
+    lines.push('', ...progressLines(team, actor === ownerOf(team)));
   }
   lines.push('방의 모든 자리는 각자 살아 있는 세션이다. Agent 툴(서브에이전트)로 동료를 부르지 마라 — 첫머리에 이름을 부르면 그가 답한다("안젤, …"). 외부감사도 같다. 너에게 온 말은 ⟦들려주기⟧ 로 들어오며 이미 대화록에 있다. 방에 남길 말이 없으면 (패스) 한 마디만.');
   return lines.join('\n');
+}
+
+/**
+ * 상황판 절 (결정 23) — teams/<팀>/progress.json 을 프롬프트 글로. 순수(파일 값 → 줄) 부분은 bus.progressText — check 가 돌려본다.
+ * @param owner 실무인가 — 실무에게만 "네가 쓴다" 한 줄
+ */
+function progressLines(team, owner) {
+  const p = readProgress(team);
+  const fresh = progressFresh(team);
+  const head = `## 상황판 (teams/${team}/progress.json${p?.at ? ` · ${p.by ?? '?'} 가 ${p.at.slice(0, 16).replace('T', ' ')} 에 갱신${fresh ? '' : ' — 이 라운드 시작 전이라 낡았다'}` : ' · 아직 없다'})`;
+  const body = p ? progressText(p) : '아직 상황판을 안 썼다.';
+  const rule = owner ? `실무인 너는 턴 끝마다·라운드 닫기 전에 이 파일을 갱신한다: node bus/progress.mjs --team ${team} --doing "…" --blocked "…" --boss "…" --next "…" (준 항목만 바뀜, --clear <항목> 으로 비움).` : '이 파일은 실무가 쓴다. 틀린 게 보이면 방에서 실무에게 말해라.';
+  return [head, body, rule];
 }
 
 /**

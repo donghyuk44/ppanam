@@ -140,13 +140,13 @@ const summaries = () => Object.fromEntries(listTeams().map((t) => [t.id, summary
 const pendingCards = () => listApprovals({ status: 'pending' }).map((r) => ({ ...r, preview: approvalPreview(r), artifacts: approvalArtifacts(r) }));
 
 /**
- * teams/<팀>/progress.json — 지금 어디까지 왔나. 로드맵이 목적지라면 이건 현재 위치다.
- * 한 것 · 하는 중 · 남은 것 · 이슈. 로드맵(C 등급)과 분리해 두므로 누구든 갱신할 수 있다.
- * 없으면 null — 카드는 그 블록을 그리지 않는다.
+ * teams/<팀>/progress.json — 지금 어디까지 왔나 (결정 23). 로드맵이 목적지라면 이건 현재 위치다. 실무가 bus/progress.mjs 로 턴 끝·닫기마다 쓴다.
+ * 계약 모양(doing·blocked·boss·next·done)으로 읽는다 — 옛 issues·left 는 bus.normalizeProgress 가 blocked·next 로. 없으면 null.
+ * fresh: 이 라운드 시작 뒤 갱신됐나 — 상황판이 "낡음" 을 표시한다.
  */
 function readProgress(team) {
-  try { return JSON.parse(fs.readFileSync(path.join(paths(team).dir, 'progress.json'), 'utf8')); }
-  catch { return null; }
+  const p = bus.readProgress(team);
+  return p ? { ...p, fresh: bus.progressFresh(team) } : null;
 }
 
 /** teams/<팀>/journal/<자리>.md 의 맨 위 문단. 상황판의 "어제" 다. */

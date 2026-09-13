@@ -639,6 +639,54 @@ export function readCast(team) {
   return readJSON(paths(team).cast, { agents: {} });
 }
 
+/* ── 상황판 progress.json (대표 결정 23) ──
+ * 로드맵이 목적지라면 이건 현재 위치다. 실무가 턴 끝·닫기마다 bus/progress.mjs 로 갱신한다. 계약은 docs/event-schema.md 3절 "상황판".
+ */
+export const PROGRESS_KEYS = ['doing', 'blocked', 'boss', 'next', 'done'];
+const progressPath = (team) => path.join(paths(team).dir, 'progress.json');
+/** 파일 그대로가 아니라 계약 모양으로 — 옛 모양(issues·left)은 blocked·next 로 읽는다. 없으면 null. */
+export function readProgress(team) {
+  const raw = readJSON(progressPath(team), null);
+  return raw ? normalizeProgress(raw) : null;
+}
+export function normalizeProgress(raw) {
+  const list = (v) => (Array.isArray(v) ? v.map((x) => String(x)).filter(Boolean) : []);
+  return {
+    at: raw.at ?? null, by: raw.by ?? null, round: raw.round ?? null,
+    doing: list(raw.doing), blocked: list(raw.blocked ?? raw.issues), boss: list(raw.boss), next: list(raw.next ?? raw.left), done: list(raw.done),
+  };
+}
+/**
+ * 갱신 — 준 항목만 통째로 바뀌고 안 준 항목은 그대로. clear 에 든 항목은 빈다. 순수 부분(mergeProgress)은 check 가 돌려본다.
+ * @param patch { doing?, blocked?, boss?, next?, done? } 배열 · @param clear 비울 항목 이름들
+ */
+export function mergeProgress(prev, patch, { clear = [], by = null, round = null, now = new Date() } = {}) {
+  const base = prev ? normalizeProgress(prev) : normalizeProgress({});
+  const out = { ...base, at: now.toISOString(), by: by ?? base.by, round: round ?? base.round };
+  for (const k of PROGRESS_KEYS) {
+    if (clear.includes(k)) out[k] = [];
+    else if (Array.isArray(patch?.[k]) && patch[k].length) out[k] = patch[k].map((x) => String(x).trim()).filter(Boolean);
+  }
+  return out;
+}
+export function writeProgress(team, patch, opts = {}) {
+  const next = mergeProgress(readJSON(progressPath(team), null), patch, { ...opts, round: opts.round ?? readState(team).round });
+  writeJSON(progressPath(team), next);
+  return next;
+}
+/** 프롬프트·화면용 네 줄 — "하는 것: a · b / 막힌 것: (없음) / 대표 차례: … / 다음: …". 순수. */
+export function progressText(p) {
+  const n = normalizeProgress(p ?? {});
+  const line = (label, xs) => `${label}: ${xs.length ? xs.join(' · ') : '(없음)'}`;
+  return [line('하는 것', n.doing), line('막힌 것', n.blocked), line('대표 차례', n.boss), line('다음', n.next)].join('\n');
+}
+/** 이 라운드 동안 갱신됐나 — round.mjs end 의 경고에 쓴다. 파일이 없거나 at 이 라운드 시작보다 앞이면 false. */
+export function progressFresh(team) {
+  const p = readProgress(team); const st = readState(team);
+  if (!p?.at || !st.startedAt) return false;
+  return new Date(p.at).getTime() >= new Date(st.startedAt).getTime();
+}
+
 /* ── 자리의 엔진·모델·추론 강도 (대표 결정 69) ──
  * 대표가 관제탑 개인 카드에서 고른다. cast.json 은 C 잠금 파일이라 화면 요청을 서버가 대신 쓴다(updateCastAgent).
  * 목록은 여기 하나 — 화면(/api/boot 의 castOptions)·검증·outside.mjs 가 같은 것을 본다. 계약은 docs/event-schema.md 1절.

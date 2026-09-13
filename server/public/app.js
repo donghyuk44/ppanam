@@ -387,6 +387,25 @@ setInterval(renderWork, 30_000);
 /* ── 오른쪽 상황판 ── */
 
 function renderSide() {
+  // 첫 카드 — 지금 어디까지 왔나 (결정 23, 계약 3절 "상황판"). 실무가 progress.mjs 로 쓴 것을 그대로. 안 썼으면 안 쓴 채로 보이게.
+  const pg = $('cardProgress');
+  pg.replaceChildren();
+  pg.appendChild(el('div', 'card__k', '지금 어디까지'));
+  const p = summary.progress;
+  if (!p) {
+    pg.appendChild(el('div', 'card__note', '아직 상황판을 안 썼습니다 — 실무가 progress.mjs 로 씁니다.'));
+  } else {
+    for (const [k, label] of [['doing', '하는 것'], ['blocked', '막힌 것'], ['boss', '대표 차례'], ['next', '다음']]) {
+      const items = p[k] ?? [];
+      const row = el('div', 'prog__row'); row.dataset.k = k; row.dataset.n = String(items.length);
+      row.appendChild(el('div', 'prog__k', label));
+      if (!items.length) row.appendChild(el('div', 'prog__none', '없음'));
+      else { const ul = el('ul', 'prog__list'); for (const it of items) ul.appendChild(el('li', null, it)); row.appendChild(ul); }
+      pg.appendChild(row);
+    }
+    pg.appendChild(el('div', `card__note${p.fresh === false ? ' prog__stale' : ''}`, `${p.at ? `갱신 ${ago(p.at)}` : '갱신 시각 없음'}${p.by ? ' · ' + p.by : ''}${p.fresh === false ? ' · 이 라운드 시작 전이라 낡음' : ''}`));
+  }
+
   // 이번 라운드
   const r = $('cardRound');
   r.replaceChildren();
@@ -1511,8 +1530,8 @@ function renderTowerTeams(grid) {
       const prog = el('details', 'tcard__prog');
       const n = (k) => (p[k]?.length ?? 0);
       prog.appendChild(el('summary', null,
-        `상황 · 하는 중 ${n('doing')} · 한 것 ${n('done')} · 남은 것 ${n('left')}` + (n('issues') ? ` · 이슈 ${n('issues')}` : '')));
-      for (const [k, label] of [['doing', '하는 중'], ['issues', '이슈'], ['done', '한 것'], ['left', '남은 것']]) {
+        `상황 · 하는 것 ${n('doing')} · 막힌 것 ${n('blocked')} · 대표 차례 ${n('boss')} · 다음 ${n('next')}` + (p.fresh === false ? ' · 낡음' : '')));
+      for (const [k, label] of [['doing', '하는 것'], ['blocked', '막힌 것'], ['boss', '대표 차례'], ['next', '다음'], ['done', '한 것']]) {
         const items = p[k] ?? [];
         if (!items.length) continue;
         const h = el('div', 'tcard__progk', label); h.dataset.k = k;

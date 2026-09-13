@@ -20,6 +20,7 @@ import {
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
   addressees, callsBoss, asksBoss, bossNotesOf, readLog, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
+  mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -99,6 +100,8 @@ switch (cmd) {
     break;
   }
   case 'end': {
+    // 상황판(결정 23)이 이 라운드 동안 갱신되지 않았으면 한 줄 경고 — 거부는 아니다. 닫히면 다음 세션이 이 파일로 자리를 잡는다.
+    if (!progressFresh(team)) console.error(`경고: teams/${team}/progress.json 이 이 라운드 동안 갱신되지 않았습니다 — node bus/progress.mjs --team ${team} --doing "…" --next "…" 로 먼저 쓰세요.`);
     // --next: 닫은 그 자리에서 다음 라운드를 연다 (결정 25). 주제는 --topic 만 — 남은 단어는 이 라운드의 요약이다.
     const next = o.next ? { milestone: o.milestone, topic: o.topic } : null;
     const r = await viaServer({ team, action: 'end', verdict: o.verdict, summary, next });
@@ -425,6 +428,24 @@ switch (cmd) {
           && readLog(T).length === before + 1 && r2?.refused;
         out.push(['codex 자리 귀 → 방에 note', sWant ? '✓ note 한 줄(들려주기 표 뗌) · id 돌려줌 · boss 는 refused' : '✗ ' + JSON.stringify({ r1, last: last?.text, r2 })]);
         endRound(T, { summary: '귀 시험 닫음' });
+      }
+      // 상황판 (결정 23) — 옛 모양(issues·left)을 계약 모양으로, 준 항목만 통째로 바뀜, --clear 로 비움, 프롬프트 네 줄, 이 라운드 동안 갱신됐나.
+      {
+        const old = normalizeProgress({ at: '2026-09-13T01:00:00Z', doing: ['a'], issues: ['막힘 1'], left: ['다음 1'], done: ['한 것'] });
+        const m1 = mergeProgress(old, { doing: ['b', ' c '], boss: ['골라 주세요'] }, { by: '테라', round: 9, now: new Date('2026-09-13T02:00:00Z') });
+        const m2 = mergeProgress(m1, {}, { clear: ['blocked'], now: new Date('2026-09-13T02:01:00Z') });
+        const txt = progressText(m1);
+        startRound(T, { milestone: 2 });
+        const staleBefore = progressFresh(T);   // 파일 없음 → false
+        const w = writeProgress(T, { doing: ['시험'] }, { by: '테라' });
+        const freshNow = progressFresh(T) && readProgress(T).round === readState(T).round && w.round === readState(T).round;
+        endRound(T, { summary: '상황판 시험 닫음' });
+        const pWant = old.blocked[0] === '막힘 1' && old.next[0] === '다음 1'
+          && m1.doing.join(',') === 'b,c' && m1.blocked[0] === '막힘 1' && m1.boss[0] === '골라 주세요' && m1.next[0] === '다음 1' && m1.done[0] === '한 것' && m1.by === '테라' && m1.round === 9 && m1.at === '2026-09-13T02:00:00.000Z'
+          && m2.blocked.length === 0 && m2.doing.join(',') === 'b,c' && m2.by === '테라'
+          && txt === '하는 것: b · c\n막힌 것: 막힘 1\n대표 차례: 골라 주세요\n다음: 다음 1'
+          && staleBefore === false && freshNow;
+        out.push(['상황판 progress(결정 23)', pWant ? '✓ 옛 모양 읽기 · 준 항목만 바뀜 · clear · 네 줄 글 · 라운드 안 갱신 판별' : '✗ ' + JSON.stringify({ old, m1, m2, txt, staleBefore, freshNow })]);
       }
       // codex 가 도는 중 표시 — outside.mjs 가 두고 지우는 파일. 내 pid 로 두면 참, 지우면 null, 죽은 pid 는 무시(SIGKILL 로 못 지운 표시).
       {
