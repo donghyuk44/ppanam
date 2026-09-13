@@ -250,6 +250,13 @@ export function callsBoss(text, cast) {
   if (addressees(text, cast).includes('boss')) return true;
   return /(^|\n\s*\n)\s*(대표님|대표|댄)\s*(씨|님)?\s*[,，、:·]/.test(String(text ?? ''));
 }
+/** 결정이 필요한 말의 표 (결정 52) — 물음표 · "정해 주세요·골라·답해". 이게 없으면 대표를 불렀어도 보고다. */
+export const ASK_RE = /[?？]|정해\s*주|골라|답해/;
+/**
+ * 대표에게 결정을 청했나 (결정 52) — 부른 것(`callsBoss`)에 물음이 있어야 한다. 종 배지(`bossCall`)는 이것만 본다.
+ * "대표님, 정리했습니다." 는 보고라 종이 안 울리고 관제탑 "오늘 보고" 줄로 간다 — 하영·헨리 보고가 승인 요청으로 읽힌 09-13 건.
+ */
+export const asksBoss = (text, cast) => callsBoss(text, cast) && ASK_RE.test(String(text ?? ''));
 export const quiet = (text) => `${RELAY_QUIET}\n${text}`;
 
 /**
@@ -964,7 +971,7 @@ export function teamSummary(team) {
   const done = roadmap.milestones?.filter((m) => m.status === 'pass').length ?? 0;
 
   // 마지막 판정이 무엇이었는지 — FAIL 이면 레일에 경고가 뜬다. 같은 훑기로 이 라운드의 마지막 발언 시각과
-  // "대표를 불렀는데 아직 답이 없는" 발언도 찾는다.
+  // "대표에게 결정을 청했는데 아직 답이 없는" 발언도 찾는다 — 부르기만 한 보고는 종이 아니다 (결정 52, asksBoss).
   let lastVerdict = null, lastSpokeAt = null, bossCall = null, bossAnswered = false;
   const cast = readCast(team).agents ?? {};
   for (let i = log.length - 1; i >= 0; i--) {
@@ -973,7 +980,7 @@ export function teamSummary(team) {
     if (e.type === 'verdict' && lastVerdict == null) lastVerdict = e.meta?.verdict ?? null;
     if ((e.type === 'message' || e.type === 'verdict') && !lastSpokeAt) lastSpokeAt = e.ts;
     if (e.type === 'message' && e.actor === 'boss') bossAnswered = true;
-    if (!bossCall && !bossAnswered && e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && callsBoss(e.text, cast)) {
+    if (!bossCall && !bossAnswered && e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && asksBoss(e.text, cast)) {
       bossCall = { id: e.id, ts: e.ts, by: e.actor };
     }
   }
@@ -1075,8 +1082,8 @@ export function peopleOf(log, cast, { now = Date.now() } = {}) {
       if (e.type === 'message') p.todaySay += 1;
       else if (p.todayVerdict != null) p.todayVerdict += 1;
     }
-    // 이 라운드에서 대표를 불렀는데 그 뒤 대표가 말하지 않았다 — teamSummary.bossCall 과 같은 판별, 인용문만 더한다.
-    if (inRound && !bossAnswered && !p.bossCall && e.type === 'message' && callsBoss(e.text, agents)) {
+    // 이 라운드에서 대표에게 결정을 청했는데 그 뒤 대표가 말하지 않았다 — teamSummary.bossCall 과 같은 판별(결정 52), 인용문만 더한다.
+    if (inRound && !bossAnswered && !p.bossCall && e.type === 'message' && asksBoss(e.text, agents)) {
       p.bossCall = { id: e.id, ts, text: String(e.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 80) };
     }
   }
@@ -1104,7 +1111,7 @@ export function workStateOf(p, phase, now = Date.now()) {
 
 /**
  * 오늘 대표에게 한 말 (결정 50·52) — 관제탑 "전체" 의 "오늘 보고" 줄. 대표를 부른(`callsBoss`) 오늘의 발언을 최근 것부터 30건까지.
- * `ask` 는 결정이 필요한 말인가 — 물음표 · "정해 주세요·골라·답해" (결정 52 의 판별). 아니면 보고다. 종 배지는 아직 이 구분을 안 쓴다(M4).
+ * `ask` 는 결정이 필요한 말인가 — `asksBoss` 와 같은 표(ASK_RE, 결정 52). 아니면 보고다. 종 배지(`bossCall`)도 같은 판별이라 종은 `ask` 인 것만.
  */
 export function bossNotesOf(log, cast, { now = Date.now(), limit = 30 } = {}) {
   const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
@@ -1114,7 +1121,7 @@ export function bossNotesOf(log, cast, { now = Date.now(), limit = 30 } = {}) {
     if (new Date(e.ts ?? 0).getTime() < dayStart.getTime()) break;
     if (e.type !== 'message' || e.actor === 'boss' || e.actor === 'system' || !callsBoss(e.text, cast)) continue;
     const text = String(e.text ?? '').replace(/\s+/g, ' ').trim();
-    out.push({ id: e.id, ts: e.ts, by: e.actor, text: text.slice(0, 160), ask: /[?？]|정해\s*주|골라|답해/.test(text) });
+    out.push({ id: e.id, ts: e.ts, by: e.actor, text: text.slice(0, 160), ask: ASK_RE.test(text) });
   }
   return out;
 }
