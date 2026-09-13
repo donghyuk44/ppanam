@@ -220,15 +220,37 @@ function stash(team, why, round = readState(team).round) {
     note(team, `${why} 차례 ${dropped.length}건(${dropped.map((a) => nameOf(team, a)).join('·')})을 버립니다 — 침묵·판정 차례는 넘기지 않습니다.`);
   }
 }
+/** 닫힌 라운드의 이벤트인가 — round_end·round_start 와 한 묶음으로 온 지난 라운드의 말. */
+const isStale = (e, round) => e.round != null && round != null && e.round < round;
+/**
+ * 닫힌 라운드의 말에서 호명된 참여자 — [[자리, 그 말의 라운드]]. 같은 자리는 가장 이른 라운드 한 번. 순수 — round.mjs check 가 돌려본다.
+ * 자기 자신·대표·참여자 아닌 자리는 뺀다(보통 호명과 같은 규칙).
+ */
+export function staleCalls(events, round, cast, isParticipant) {
+  const out = new Map();
+  for (const e of events) {
+    if (!isStale(e, round) || (e.type !== 'message' && e.type !== 'verdict')) continue;
+    for (const to of addressees(e.text, cast)) {
+      if (to === e.actor || to === 'boss' || !isParticipant(to)) continue;
+      out.set(to, Math.min(out.get(to) ?? e.round, e.round));
+    }
+  }
+  return [...out];
+}
+/** 넘어온 차례 하나 — 들려주기는 그 말이 있던 라운드부터(가장 이른 것). 새 라운드가 열린 뒤 차례를 받는다. */
+function carryTurn(team, actor, fromRound) {
+  const r = room(team);
+  r.carryFrom = r.carryFrom ? Math.min(r.carryFrom, fromRound) : fromRound;
+  enqueue(team, actor, 'carried');
+}
 /** 새 라운드가 열렸다 — 넘겨 둔 차례를 첫 턴으로 준다. 들려주기는 닫힌 라운드의 못 들은 말부터(giveTurn 의 carried). */
 function restoreCarry(team) {
   const r = room(team);
   if (!r.carry) return;
   const { round, items } = r.carry;
-  r.carryFrom = round;
   r.carry = null;
   note(team, `라운드 ${round} 이 닫히며 넘어온 차례 ${items.length}건(${items.map(([a]) => nameOf(team, a)).join('·')}) — 이 라운드 첫 턴으로 줍니다.`);
-  for (const [actor] of items) enqueue(team, actor, 'carried');
+  for (const [actor] of items) carryTurn(team, actor, round);
 }
 
 /** 예약된 차례 중 지금 줄 수 있는 것을 준다. 한 자리에 한 번에 하나, 놀고 있을 때만. */
@@ -386,7 +408,7 @@ export function noticeEvents(team, events) {
     if (state.round !== r.round) {
       // --next 로 닫고 바로 열리면 round_end·round_start 가 한 묶음으로 와서 idle 을 못 본다 — 남은 차례는 지난 라운드 것이라 여기서 넘긴다.
       if (r.pending.size) stash(team, `라운드 ${r.round} 이 닫혀`, r.round);
-      r.round = state.round; r.recent = []; r.loopNoted = false; r.flow = null;
+      r.round = state.round; r.recent = []; r.loopNoted = false; r.flow = null; r.carryFrom = null;
       if (state.phase === 'running') restoreCarry(team);   // 지난 라운드가 닫히며 넘긴 차례 → 이 라운드 첫 턴 (결정 25)
     }
     if (state.phase !== 'running') {   // idle·blocked: 차례 없음. 막 닫혔으면(idle) 쌓인 차례는 버리지 않고 넘긴다.
@@ -399,6 +421,12 @@ export function noticeEvents(team, events) {
   for (const e of events) {
     if (e.type === 'tool') { if (r.lullTimer) armLull(team); continue; }     // 누가 일하는 중 — 조용함이 아니다
     if (e.type !== 'message' && e.type !== 'verdict') continue;
+    // 닫힌 라운드의 말이 round_end·round_start 와 한 폴링에 왔다 — 새 라운드의 보통 호명으로 주면 unheard 가 새 라운드만 읽어
+    // 그 말을 못 듣는다 (레오 REVISE R23). 넘어온 차례(carried)로 주고 들려주기를 그 라운드부터 잇는다.
+    if (!isOffice(team) && isStale(e, state.round)) {
+      for (const [to, from] of staleCalls([e], state.round, cast, (a) => participants(team).includes(a))) carryTurn(team, to, from);
+      continue;
+    }
     if (e.actor === 'system') {
       // 시스템 발언은 차례 계산에서 빠지되, 첫머리에 이름을 불렀으면 그 사람을 깨운다 — 하네스가 "결과 도착" 을
       // 시스템 화자로 남겼는데 아무도 안 깨어 20분 멈춘 일(2026-09-12). codex 자리도 같다.
