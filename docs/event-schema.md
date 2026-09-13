@@ -158,7 +158,9 @@ teams/<방>/
 | 필드 | 무엇 | 어디서 |
 | --- | --- | --- |
 | `busy` | 지금 일하는 중인가 | claude 자리는 `sessions[자리].busy`, codex 자리는 사회자의 `outsideBusy`(`server/conductor.mjs`) — codex 는 세션이 없어 돌아가는 프로세스가 있는지가 전부다 |
+| `alive` | 세션이 떠 있나 — true·false, codex 자리는 **null**(세션이 없다) | claude 자리는 `sessions[자리].alive` |
 | `lastSignal` | 마지막 신호 시각(ISO) 또는 null | claude 자리는 `sessions[자리].lastSignal`(10초 단위). codex 자리는 **대화록의 마지막 발언(`message`·`verdict`) 시각** — 스트림이 없으니 말한 시각이 신호다 |
+| `state` | 일 상태 — `working`·`bossCall`·`blocked`·`waiting`·`resting` | `bus.workStateOf(p, phase, now)` (아래). 화면은 이 값으로 알약을 고른다 — **마을 시계는 안 본다**(결정 58) |
 | `lastSaidAt` | 마지막 발언 시각 또는 null | 대화록 전체에서 그 자리의 마지막 `message`·`verdict`. `(패스)` 로 시작하는 줄은 발언이 아니다 |
 | `doing` | 지금 하는 일 한 줄 또는 null | 마지막 발언 **뒤에** 그 자리의 도구 줄이 있으면 `{ tool, text, ts }`(화면이 `toolPhrase` 로 "app.js 고치는 중" 을 만든다), 없으면 마지막 발언의 첫 문장 `{ text, ts }` |
 | `todaySay` | 오늘 발언 수 | 서버의 오늘(현지 날짜) `message` 수. `(패스)` 제외 |
@@ -170,10 +172,25 @@ teams/<방>/
 한 지시 수, 오늘 이 방의 승인 요청에 대표(`by: 'boss'`)가 내린 판정 수. 대표가 **직접 친 말만** — 총괄이 옮겨온 것(`meta.via`, 4절)은
 결정 원문이라 안 센다(`bus/dispatch.mjs lastBossSay` 와 같은 규칙). 대표는 한 사람이라 화면이 다섯 방의 값을 **합쳐서** 카드 하나로
 그린다 — 지시·판정은 합, 마지막 지시는 가장 늦은 것. 대표 카드의 상태 알약(`자리에`·`자리 비움`)은 화면이 마지막 지시 10분 안인지로 정한다.
+대표 카드의 "하는 일" 줄은 **대표 발언을 인용하지 않는다**(결정 58 ② — 6시간 전 말이 "하는 일" 로 떴다) — 화면이 `오늘 지시 N · 승인 대기 N ·
+차례인 방 개발·디자인` 로 만든다(지시는 다섯 방 `todaySay` 합, 승인 대기는 대기 카드 수, 차례인 방은 종 배지와 같은 `needsBoss`·`bossCall` 방).
+`lastText` 는 계약에 남지만 관제탑은 안 쓴다.
 
-"오늘" 은 서버 프로세스의 현지 날짜다 — 마을 시계(`world.mjs`)의 `debugHour` 는 시각만 바꾸고 날짜는 안 바꾼다. 상태 알약 다섯
-(`일하는 중`·`대표 부름`·`막힘`·`대기`·`잠`) 은 서버가 정하지 않는다: 화면이 `busy` → `bossCall` → 팀의 `phase === 'blocked'` →
-마을 시계 `night`·`rest` 순서로 고른다. 집계는 순수 함수 `bus/bus.mjs peopleOf(log, cast, { now })` 라 `round.mjs check` 가 돌려본다.
+"오늘" 은 서버 프로세스의 현지 날짜다 — 마을 시계(`world.mjs`)의 `debugHour` 는 시각만 바꾸고 날짜는 안 바꾼다.
+
+**일 상태 `state`** (결정 58 ①) — 관제탑은 마을 시계가 아니라 **일 상태**를 보여 준다. 일요일 저녁에 라운드가 돌아도 열넷이 "잠" 으로 뜨던
+버그. 순수 함수 `bus/bus.mjs workStateOf(p, phase, now)` 가 정하고 서버가 `people[자리].state` 로 싣는다. 먼저 맞는 것이 이긴다:
+
+| `state` | 알약 | 언제 |
+| --- | --- | --- |
+| `working` | 일하는 중 | `busy`, 또는 (대표 부름·막힘이 아닌데) `lastSignal` 이 **5분 안** — 턴이 막 끝나도 5분은 일하는 중이다 |
+| `bossCall` | 대표 부름 | `bossCall` 이 있다(대표가 아직 답 안 함). `busy` 보다 뒤, 신호 5분보다 앞 — 부르고 기다리는 사람이 "일하는 중" 으로 가려지면 안 된다 |
+| `blocked` | 막힘 | 팀의 `phase === 'blocked'` |
+| `waiting` | 대기 | 세션이 떠 있다(`alive`), 또는 라운드가 없다(`phase !== 'running'`) — 차례나 라운드를 기다린다 |
+| `resting` | 쉼 | 라운드가 도는데 세션이 없고 신호도 오래됐다 — 이 라운드에 안 끼어 있다. codex 는 세션이 없으니 5분 넘게 말이 없으면 여기 |
+
+마을 시계(`night`·`rest`)는 마을 탭에만. 집계는 순수 함수 `bus/bus.mjs peopleOf(log, cast, { now })`·`workStateOf` 라 `round.mjs check` 가 돌려본다.
+사람 카드의 "하는 일" 줄(`doing`)은 `working` 이 아니면 뒤에 `· N분 전` 을 붙인다 — 옛 발언을 지금 일로 읽지 않게.
 
 **관제탑 탭 넷** (결정 40·50) — `전체`(첫 화면) · `팀`(지금의 팀 카드 다섯) · `개인`(위의 `people` 로 열넷 + 대표) · `요청`(팀 사이 요청 —
 M3 데이터 전까지 빈 상태 문구). 마지막에 본 탭은 브라우저가 기억한다. `전체` 의 "오늘 보고" 줄은 요약의 `bossNotes[]` —

@@ -1002,7 +1002,7 @@ export function peopleOf(log, cast, { now = Date.now() } = {}) {
   const isPass = (e) => /^\(패스\)/.test(String(e.text ?? '').trim());
 
   const people = Object.fromEntries(ids.map((a) => [a, {
-    busy: false, lastSignal: null, lastSaidAt: null, doing: null,
+    busy: false, alive: null, lastSignal: null, state: null, lastSaidAt: null, doing: null,
     todaySay: 0, todayVerdict: JUDGES.has(a) ? 0 : null, bossCall: null, journalFirst: null,
   }]));
   const boss = { lastSaidAt: null, lastText: null, todaySay: 0, todayDecisions: 0 };
@@ -1048,6 +1048,25 @@ export function peopleOf(log, cast, { now = Date.now() } = {}) {
     }
   }
   return { ...people, boss };
+}
+
+/** 신호가 이 안이면 턴이 끝났어도 "일하는 중" (결정 58 ① 의 "5분 내"). */
+export const WORK_FRESH_MS = 5 * 60_000;
+
+/**
+ * 일 상태 (대표 결정 58 ①) — 관제탑 개인 카드의 알약. **마을 시계를 안 본다** — 일요일 저녁이라고 라운드 도는 사람이 "잠" 으로 떴다.
+ * 먼저 맞는 것이 이긴다: working → bossCall → blocked → waiting → resting. 표는 docs/event-schema.md 3절 "일 상태".
+ * 대표 부름이 신호 5분보다 앞인 이유 — 부르고 기다리는 사람은 방금 말했으니 신호가 늘 최근이라, 뒤에 두면 "일하는 중" 에 가려진다.
+ * @param p     people[자리] — busy · alive(codex 는 null) · lastSignal · bossCall
+ * @param phase 팀의 phase — running · blocked · idle (총괄실은 늘 idle)
+ */
+export function workStateOf(p, phase, now = Date.now()) {
+  if (p.busy) return 'working';
+  if (p.bossCall) return 'bossCall';
+  if (phase === 'blocked') return 'blocked';
+  if (p.lastSignal && now - new Date(p.lastSignal).getTime() < WORK_FRESH_MS) return 'working';
+  if (p.alive || phase !== 'running') return 'waiting';
+  return 'resting';
 }
 
 /**

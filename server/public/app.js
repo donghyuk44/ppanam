@@ -708,15 +708,10 @@ function connect() {
       }
       return;
     }
-    // 세상의 시계 — 자리·루틴 (W2). 관제탑 개인 카드의 "잠" 도 이 시계를 본다 — 분이 바뀔 때만 오니 그때 다시 그린다.
-    if (msg.kind === 'world') {
-      World.onWorld(msg.world);
-      const mode = msg.world?.mode ?? null;
-      if (mode !== worldMode) { worldMode = mode; if (view === 'tower' && towerTab === 'people') renderTower(); }
-      return;
-    }
+    // 세상의 시계 — 자리·루틴 (W2). 마을 탭만 본다 — 관제탑은 일 상태다 (결정 58).
+    if (msg.kind === 'world') { World.onWorld(msg.world); return; }
     if (msg.kind === 'hello') {
-      if (msg.world) { World.onWorld(msg.world); worldMode = msg.world.mode ?? null; }
+      if (msg.world) World.onWorld(msg.world);
       // 붙을 때 받은 요약도 쓴다 — 전에는 world 만 쓰고 버려서, 다음 방송(어느 팀이든 요약이 바뀔 때)까지
       // 부팅 때 것이 남았다 (독립검수 #1).
       if (msg.summaries && active) {
@@ -1041,7 +1036,6 @@ function renderApprovals() {
 const TOWER_TABS = new Set(['all', 'teams', 'people', 'asks']);
 let towerTab = (() => { try { return localStorage.getItem('ppanam.towerTab'); } catch { return null; } })();
 if (!TOWER_TABS.has(towerTab)) towerTab = 'all';
-let worldMode = null;   // 마을 시계의 mode — 밤·주말이면 개인 카드가 "잠"
 
 function setTowerTab(tab) {
   if (!TOWER_TABS.has(tab)) tab = 'all';
@@ -1151,7 +1145,6 @@ function renderTowerAll(grid) {
 /* ── 개인 — 열넷 + 대표. 헨리 설계 3절 (1판, 가설). 데이터는 요약의 people ── */
 const openJournal = new Set();   // "팀:자리" — 일지 문단을 펼쳐 둔 카드
 function renderTowerPeople(grid) {
-  const asleep = worldMode === 'night' || worldMode === 'rest';
   const groupKey = (t) => `ppanam.towerGroup.${t}`;
 
   // 대표 카드 — 맨 위, 묶음 밖. 다섯 방의 값을 합친다: 지시·결정은 합, 마지막 지시는 가장 늦은 것.
@@ -1161,8 +1154,11 @@ function renderTowerPeople(grid) {
   const here = lastOrder && Date.now() - new Date(lastOrder.lastSaidAt).getTime() < 10 * 60_000;
   const bc = el('div', 'pcard'); bc.dataset.boss = '1';
   bc.appendChild(pcardTop(bossCast, pill(here ? '자리에' : '자리 비움', here ? 'live' : 'idle')));
-  bc.appendChild(el('div', 'pcard__doing', lastOrder ? firstLine(lastOrder.lastText) : '—'));
-  bc.appendChild(el('div', 'pcard__nums', `오늘 지시 ${bosses.reduce((n, b) => n + (b.todaySay ?? 0), 0)} · 결정 ${bosses.reduce((n, b) => n + (b.todayDecisions ?? 0), 0)}${lastOrder ? ` · 마지막 ${ago(lastOrder.lastSaidAt)}` : ''}`));
+  // 2줄 — 대표 발언 인용이 아니라 대표 앞에 놓인 것의 요약 (결정 58 ②: 6시간 전 말이 "하는 일" 로 떴다). 차례인 방은 종 배지와 같은 셈.
+  const { rooms } = bossTurns();
+  bc.appendChild(el('div', 'pcard__doing',
+    `오늘 지시 ${bosses.reduce((n, b) => n + (b.todaySay ?? 0), 0)} · 승인 대기 ${approvals.length} · 차례인 방 ${rooms.length ? rooms.map((t) => t.name).join('·') : '없음'}`));
+  bc.appendChild(el('div', 'pcard__nums', `결정 ${bosses.reduce((n, b) => n + (b.todayDecisions ?? 0), 0)}${lastOrder ? ` · 마지막 지시 ${ago(lastOrder.lastSaidAt)}` : ''}`));
   grid.appendChild(bc);
 
   for (const t of teams) {
@@ -1179,7 +1175,7 @@ function renderTowerPeople(grid) {
     if (people.some(([, p]) => p.bossCall)) head.appendChild(el('i', 'pgroup__dot'));
     box.appendChild(head);
     const list = el('div', 'pgrid');
-    for (const [id, p] of people) list.appendChild(personCard(t, id, cast[id], p, s, asleep));
+    for (const [id, p] of people) list.appendChild(personCard(t, id, cast[id], p));
     box.appendChild(list);
     grid.appendChild(box);
   }
@@ -1199,14 +1195,18 @@ function pcardTop(a, pillEl) {
 }
 const firstLine = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, 200) || '—';
 
-function personCard(t, id, a, p, s, asleep) {
+/** 일 상태 → 알약 글자·색 (결정 58 ①, 계약 3절 "일 상태"). 서버의 people[자리].state — 마을 시계는 여기 없다. */
+const WORK_PILL = { working: ['일하는 중', 'live'], bossCall: ['대표 부름', 'boss'], blocked: ['막힘', 'bad'], waiting: ['대기', 'idle'], resting: ['쉼', 'idle'] };
+
+function personCard(t, id, a, p) {
   const card = el('div', 'pcard'); card.dataset.actor = `${t.id}:${id}`;
-  // 알약 — 일하는 중 → 대표 부름 → 막힘 → 잠 → 대기 (헨리 설계 3절, 순서는 계약 3절 "사람별 집계").
-  const st = p.busy ? ['일하는 중', 'live'] : p.bossCall ? ['대표 부름', 'boss'] : s.phase === 'blocked' ? ['막힘', 'bad'] : asleep ? ['잠', 'idle'] : ['대기', 'idle'];
+  const st = WORK_PILL[p.state] ?? WORK_PILL.waiting;
   if (p.bossCall) card.dataset.alert = '1';
   card.appendChild(pcardTop(a, pill(st[0], st[1])));
-  // 2줄 지금 하는 일 — 마지막 발언 뒤 도구 줄이면 "app.js 고치는 중", 아니면 마지막 발언 첫 문장. 잠들었으면 —.
-  const doing = asleep && !p.busy ? '—' : p.doing ? (p.doing.tool ? toolPhrase(p.doing, p.busy) : firstLine(p.doing.text)) : '—';
+  // 2줄 지금 하는 일 — 마지막 발언 뒤 도구 줄이면 "app.js 고치는 중", 아니면 마지막 발언 첫 문장.
+  // 일하는 중이 아니면 언제 것인지 붙인다 — 옛 발언을 지금 일로 읽지 않게.
+  const working = p.state === 'working';
+  const doing = p.doing ? (p.doing.tool ? toolPhrase(p.doing, p.busy) : firstLine(p.doing.text)) + (!working && p.doing.ts ? ` · ${ago(p.doing.ts)}` : '') : '—';
   card.appendChild(el('div', 'pcard__doing', doing));
   // 3줄 숫자 줄 — 신호는 claude 세션의 스트림, codex 는 마지막 발언 시각. 판정 수는 감사 자리만(null 이면 항목 없음).
   const nums = [p.lastSignal ? `신호 ${ago(p.lastSignal)}` : '신호 없음', `오늘 발언 ${p.todaySay ?? 0}`];

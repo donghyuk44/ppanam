@@ -99,7 +99,7 @@ const summaryOf = (team) => {
       passedToday: listApprovals({ team, status: 'passed' })
         .filter((r) => (r.decidedAt ?? '').slice(0, 10) === new Date().toISOString().slice(0, 10)).length,
     },
-    people: peopleOf(team, sessions, conductor),
+    people: peopleOf(team, sessions, conductor, s.phase),
     // 오늘 대표에게 한 말 — "전체" 탭의 오늘 보고 줄 (결정 50·52). 판별은 bus.bossNotesOf.
     bossNotes: bus.bossNotesOf(readLog(team), readCast(team).agents ?? {}),
   };
@@ -107,10 +107,11 @@ const summaryOf = (team) => {
 
 /**
  * 사람별 집계 (결정 40 · M2) — 대화록에서 나오는 것(bus.peopleOf)에 세션 상태와 일지 첫 문장을 얹는다.
- * claude 자리는 세션의 busy·lastSignal, codex 자리는 사회자의 outsideBusy 와 마지막 발언 시각(스트림이 없다).
+ * claude 자리는 세션의 alive·busy·lastSignal, codex 자리는 사회자의 outsideBusy 와 마지막 발언 시각(스트림이 없다, alive 는 null).
+ * 일 상태 `state` 는 그 위에서 bus.workStateOf 가 정한다 (결정 58 ① — 마을 시계가 아니라 일 상태).
  * 대표의 오늘 판정 수는 이 방 승인 요청에 대표가 내린 결정 수. 계약은 docs/event-schema.md 3절 "사람별 집계".
  */
-function peopleOf(team, sessions, conductor) {
+function peopleOf(team, sessions, conductor, phase) {
   const cast = readCast(team).agents ?? {};
   const people = bus.peopleOf(readLog(team), cast);
   const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
@@ -120,8 +121,9 @@ function peopleOf(team, sessions, conductor) {
         .filter((d) => d.by === 'boss' && new Date(d.ts ?? 0).getTime() >= dayStart.getTime()).length;
       continue;
     }
-    if (cast[id]?.model === 'gpt') { p.busy = !!conductor.outsideBusy; p.lastSignal = p.lastSaidAt; }
-    else { p.busy = !!sessions[id]?.busy; p.lastSignal = sessions[id]?.lastSignal ?? null; }
+    if (cast[id]?.model === 'gpt') { p.busy = !!conductor.outsideBusy; p.alive = null; p.lastSignal = p.lastSaidAt; }
+    else { p.busy = !!sessions[id]?.busy; p.alive = !!sessions[id]?.alive; p.lastSignal = sessions[id]?.lastSignal ?? null; }
+    p.state = bus.workStateOf(p, phase);
     p.journalFirst = session.journalFirstSentence(team, id);
   }
   return people;
