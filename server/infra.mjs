@@ -76,9 +76,17 @@ export async function probeAll({ port, sessionHealth }) {
 export function readInfra() {
   try { return JSON.parse(fs.readFileSync(INFRA_FILE, 'utf8')); } catch { return null; }
 }
+// 임시 파일에 쓴 뒤 rename — 틱 도중 죽어도 반쪽 JSON 이 안 남는다(레오, R25). 장애를 알리는 파일이 장애가 되면 안 된다.
 function writeInfra(state) {
-  try { fs.mkdirSync(path.dirname(INFRA_FILE), { recursive: true }); fs.writeFileSync(INFRA_FILE, JSON.stringify(state, null, 1) + '\n'); }
-  catch (e) { console.error('[infra] state/infra.json 쓰기 실패 — ' + e.message); }
+  const tmp = `${INFRA_FILE}.${process.pid}.tmp`;
+  try {
+    fs.mkdirSync(path.dirname(INFRA_FILE), { recursive: true });
+    fs.writeFileSync(tmp, JSON.stringify(state, null, 1) + '\n');
+    fs.renameSync(tmp, INFRA_FILE);
+  } catch (e) {
+    console.error('[infra] state/infra.json 쓰기 실패 — ' + e.message);
+    try { fs.rmSync(tmp, { force: true }); } catch { /* 없으면 그만 */ }
+  }
 }
 
 /**
