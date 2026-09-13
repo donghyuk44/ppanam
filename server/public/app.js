@@ -196,6 +196,13 @@ function renderRail() {
     b.addEventListener('click', () => pickTeam(t.id));
     nav.appendChild(b);
   }
+  // 검수 #4 — 폰 위 띠는 가로로 밀리는데 힌트가 없어 화면 밖 방(디자인·경영재무)을 모른다. 지금 방을 보이게 밀고,
+  // 밖에 안 읽은 게 있으면 띠 오른쪽에 "밖 N" 을 붙인다(CSS 페이드와 함께).
+  const cur = nav.querySelector('[aria-current="true"]');
+  if (cur?.scrollIntoView) { try { cur.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch { /* 옛 브라우저 */ } }
+  const hidden = teams.filter((t) => t.id !== active && (unread[t.id] > 0 || summaries[t.id]?.needsBoss || summaries[t.id]?.bossCall)).length;
+  const more = $('railMore');
+  if (more) { more.hidden = !hidden || nav.scrollWidth <= nav.clientWidth + 4; more.textContent = `밖 ${hidden}`; }
   renderBossBadge();
 }
 
@@ -298,6 +305,7 @@ $('bossBadge').addEventListener('click', (e) => {
   if (m.hidden) { renderBellMenu(); m.hidden = false; } else closeBell();
 });
 document.addEventListener('click', (e) => { if (!$('bell').contains(e.target)) closeBell(); });
+$('railMore')?.addEventListener('click', () => { const nav = $('teams'); nav.scrollTo({ left: nav.scrollWidth, behavior: 'smooth' }); });
 
 /* ── 가운데 머리 ── */
 
@@ -814,16 +822,29 @@ function say(text, ms = 6000) {
   if (!text) { box.hidden = true; return; }
   box.textContent = text;
   box.hidden = false;
-  msgTimer = setTimeout(() => { box.hidden = true; }, ms);
+  if (ms > 0) msgTimer = setTimeout(() => { box.hidden = true; }, ms);   // 0 이면 다음 말까지 남는다 (검수 #6)
 }
 
 // 라운드 밖에서 보낸 지시. 열기 폼의 주제가 이걸로 채워지고, 라운드가 열리면 첫 지시로 보낸다.
 let pendingSay = null;
 
+/** 열기 폼의 마일스톤 칸 — 로드맵에서 now 를, 없으면 첫 wait 를 미리 채우고 제목을 옆에 보인다 (검수 #6: 'M' 만 있어 뭔지 몰랐다). */
+function suggestMilestone() {
+  const ms = roadmap.milestones ?? [];
+  const now = ms.find((m) => m.status === 'now') ?? null;
+  const next = ms.find((m) => m.status !== 'pass') ?? null;
+  return { pick: now ?? next, now: !!now, next };
+}
 const showOpen = (on, { topic = '' } = {}) => {
   $('roundOpen').hidden = !on;
-  if (on) { $('roundTopic').value = topic; $('roundMs').value = ''; $('roundTopic').focus(); }
-  else pendingSay = null;
+  if (on) {
+    const { pick, now } = suggestMilestone();
+    $('roundTopic').value = topic;
+    $('roundTopic').placeholder = summary.topic ? `비우면 지난 주제 그대로 — "${summary.topic.slice(0, 40)}"` : '이번 회의에서 무엇을 하나요';
+    $('roundMs').value = pick ? String(pick.n) : '';
+    $('roundMs').title = pick ? `${pick.n}번째 마일스톤 "${pick.title}"${now ? '' : ' — 앞 것이 끝나 다음 것. 착수는 톰·제리 승인(B)이 먼저'}` : '마일스톤 번호';
+    $('roundTopic').focus();
+  } else pendingSay = null;
 };
 
 $('roundBtn').addEventListener('click', async () => {
@@ -835,7 +856,7 @@ $('roundBtn').addEventListener('click', async () => {
   if (!confirm(`라운드 ${summary.round} 을 닫습니다.\n\n대화록은 그대로 남고, 다음 라운드는 새 컨텍스트로 시작합니다.`)) return;
   const r = await post('/api/round', { team: active, action: 'end' });
   if (!r.ok) say(r.data.error ?? '라운드를 닫지 못했습니다.');
-  else if (r.data.deferred) say('실무가 일하는 중입니다. 이 턴이 끝나면 닫힙니다.', 10000);
+  else if (r.data.deferred) say(`${ga(cast.agents?.guide?.name ?? '실무')} 일하는 중입니다. 이 턴이 끝나면 닫힙니다.`, 10000);   // 검수 #7 — '실무' 대신 그 사람 이름, 조사도 ga()
   else if (r.data.accepted) say('닫는 중 — 자리마다 일지 한 문단을 받은 뒤 닫힙니다. 끝나면 방에 안내가 남습니다.', 10000);
 });
 
@@ -851,7 +872,18 @@ $('roundOpen').addEventListener('submit', async (e) => {
     topic: topic || null,
     milestone: ms === '' ? null : Number(ms),
   });
-  if (!r.ok) return say(r.data.error ?? '라운드를 열지 못했습니다.');
+  if (!r.ok) {
+    // 검수 #6 — CLI 문장이 6초 떴다 사라져 왜 안 열리는지 몰랐다. 사람 말로, 사라지지 않게(0 = 다음 말까지).
+    const err = String(r.data.error ?? '');
+    if (/B 승인|now 인 마일스톤이 없습니다/.test(err)) {
+      const { next } = suggestMilestone();
+      return say(next
+        ? `앞 마일스톤이 끝났습니다. 다음은 ${next.n}번째 "${next.title}" — 번호 칸에 ${next.n} 을 적고 시작을 누르면 열립니다. (다음 착수는 톰·제리 승인이 먼저라, 열린 뒤 그 승인을 걸어 주세요.)`
+        : '로드맵의 마일스톤이 전부 끝났습니다. 로드맵을 다시 짜야 합니다(/kickoff).', 0);
+    }
+    if (/전부 pass/.test(err)) return say('로드맵의 마일스톤이 전부 끝났습니다. 로드맵을 다시 짜야 합니다(/kickoff).', 0);
+    return say(err || '라운드를 열지 못했습니다.', 0);
+  }
   const first = pendingSay;
   showOpen(false);
   $('input').focus();
@@ -1482,7 +1514,18 @@ function renderTowerTeams(grid) {
 
   grid.replaceChildren();
 
-  for (const t of teams) {
+  // 카드 순서 (검수 #12) — 대표 차례·부름 → 승인 대기 → 진행 중 → 대기, 총괄실은 맨 아래. 폰 첫 화면에 막힌 방이 먼저 오게.
+  const rank = (t) => {
+    const s = summaries[t.id] ?? {};
+    if (t.kind === 'office') return 9;
+    if (s.needsBoss || s.bossCall) return 0;
+    if (s.approvals?.pending) return 1;
+    if (s.phase === 'running' || s.phase === 'blocked') return 2;
+    return 3;
+  };
+  const ordered = [...teams].sort((a, b) => rank(a) - rank(b));
+
+  for (const t of ordered) {
     const s = summaries[t.id] ?? {};
     const agents = s.cast ?? {};
     const office = t.kind === 'office';       // 총괄실은 라운드가 없다. 늘 열려 있다
@@ -1539,12 +1582,18 @@ function renderTowerTeams(grid) {
 
     // 중간 상황 — teams/<팀>/progress.json. 로드맵이 목적지라면 이건 지금 위치다.
     // 대표가 돌아와 30초 안에 "어디까지 왔고 무엇이 막혔나"를 보는 자리 (M5 의 조각).
+    // 검수 #11: 숫자만 접혀 있으면 이슈가 내 몫인지 모른다 — 막힌 것·대표 차례가 있으면 펼쳐 두고, 요약 줄에 하는 것 첫 항목을 글로. 파일 없는 팀은 한 줄로 말한다.
+    if (!s.progress && !office) {
+      card.appendChild(el('div', 'tcard__quiet', '상황판 없음 — 실무가 턴 끝에 씁니다 (progress.mjs)'));
+    }
     if (s.progress) {
       const p = s.progress;
       const prog = el('details', 'tcard__prog');
       const n = (k) => (p[k]?.length ?? 0);
+      prog.open = n('blocked') > 0 || n('boss') > 0;
+      const first = p.doing?.[0] ? ` — ${String(p.doing[0]).slice(0, 60)}${p.doing[0].length > 60 ? '…' : ''}` : '';
       prog.appendChild(el('summary', null,
-        `상황 · 하는 것 ${n('doing')} · 막힌 것 ${n('blocked')} · 대표 차례 ${n('boss')} · 다음 ${n('next')}` + (p.fresh === false ? ' · 낡음' : '')));
+        `상황${first} · 막힌 것 ${n('blocked')} · 대표 차례 ${n('boss')}` + (p.fresh === false ? ' · 낡음' : '')));
       for (const [k, label] of [['doing', '하는 것'], ['blocked', '막힌 것'], ['boss', '대표 차례'], ['next', '다음'], ['done', '한 것']]) {
         const items = p[k] ?? [];
         if (!items.length) continue;

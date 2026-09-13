@@ -25,6 +25,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams } from '../bus/bus.mjs';
 import * as session from './session.mjs';
+import { ga } from './public/toollabel.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUTSIDE = path.join(REPO, 'bus', 'outside.mjs');
@@ -332,7 +333,8 @@ function onFlowEvent(team, e) {
     if (v === 'PASS' && f.i + 1 < f.steps.length) { f.i += 1; askStep(team); return; }
     r.flow = null;
     if (v === 'PASS') {
-      emit(team, { actor: 'system', type: 'note', text: `판정 완료 — ${f.steps.map((s) => nameOf(team, s)).join('·')} 모두 PASS. 라운드를 PASS 로 닫을 수 있습니다 (node bus/round.mjs end -v PASS "…").`, meta: { verdictFlow: 'pass' } });
+      // 검수 #7 — 이 note 는 대표 화면에 게시된다. CLI 문장은 실무가 안다. 사람 말로.
+      emit(team, { actor: 'system', type: 'note', text: `판정 완료 — ${f.steps.map((s) => nameOf(team, s)).join('·')} 모두 통과. 이제 ${ga(nameOf(team, session.ownerOf(team)))} 이 회의를 통과로 닫을 수 있습니다.`, meta: { verdictFlow: 'pass' } });
     } else if (v === 'REVISE') {
       enqueue(team, session.ownerOf(team), 'called');   // 판정 카드를 듣고 고친다
     }

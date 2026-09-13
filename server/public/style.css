@@ -96,6 +96,7 @@ body {
 .rail__sub { font-size: 11px; color: var(--ink-4); }
 
 .rail__list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+.rail__more { display: none; }   /* 데스크톱은 세로 레일이라 밖이 없다 — 폰 규칙(아래 819)에서만 보인다 */
 
 .team {
   display: flex; align-items: center; gap: 9px; width: 100%;
@@ -859,6 +860,7 @@ button.dash__row:hover b { text-decoration: underline; }
   .views + .rail__list { padding-left: 6px; }
   .tower__grid { grid-template-columns: minmax(0, 1fr); padding: 12px; }
   .tower__head { padding: 14px 16px 11px; }
+  .tower__head p { display: none; }   /* 폰에서는 설명문이 첫 카드를 아래로 민다 (검수 #12) */
   .tabs { padding: 6px 10px; }
   .tabs button { flex: 1; justify-content: center; padding: 5px 6px; }
   /* 개인 탭의 묶음 머리는 위에 붙는다 — 열다섯 장을 내리다 어느 팀인지 잃지 않게 (헨리 설계 4절) */
@@ -872,6 +874,14 @@ button.dash__row:hover b { text-decoration: underline; }
   }
   /* 가로로 밀리는 줄의 padding-right 는 스크롤 끝에서 무시된다 — 마지막 칸("마케팅")이 종 밑에 들어갔다(하네스 실측 R23 ②). 여백을 실제 요소로 둔다. */
   .rail__list::after { content: ''; flex: none; width: 52px; }
+  /* 띠 밖에 방이 더 있다는 힌트 (검수 #4) — 종 왼쪽에 작은 알약 "밖 N". 데스크톱은 세로라 없다. */
+  .rail { position: relative; }
+  .rail__more {
+    display: block; position: absolute; right: 54px; top: 50%; transform: translateY(-50%); z-index: 2;
+    font: inherit; font-size: 10.5px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--bad-line);
+    background: var(--panel); color: var(--bad); cursor: pointer; box-shadow: -10px 0 10px var(--panel);
+  }
+  .rail__more[hidden] { display: none; }
   .approvals { padding-right: 52px; }   /* 첫 카드의 오른쪽 끝(방에서 보기)이 종 밑에 안 들어가게 */
   .rail__list::-webkit-scrollbar { display: none; }
   .team { width: auto; flex: none; padding: 6px 11px; border-color: var(--line); background: var(--panel); }
