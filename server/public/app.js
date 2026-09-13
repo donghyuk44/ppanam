@@ -414,6 +414,17 @@ function renderSide() {
     pg.appendChild(el('div', `card__note${p.fresh === false ? ' prog__stale' : ''}`, `${p.at ? `갱신 ${ago(p.at)}` : '갱신 시각 없음'}${p.by ? ' · ' + p.by : ''}${p.fresh === false ? ' · 이 라운드 시작 전이라 낡음' : ''}`));
   }
 
+  // 이 방이 낀 요청 블록 (6-1절 — 요청한 방·받는 방·총괄실 세 곳) — 열린 것만. 관제탑 요청 탭과 같은 카드(requestCard).
+  const rq = $('cardRequests');
+  const mine = requestsAll.filter((x) => x.status !== 'closed' && (active === 'hq' || x.from.team === active || x.to.team === active));
+  rq.replaceChildren();
+  rq.hidden = !mine.length;
+  if (mine.length) {
+    rq.appendChild(el('div', 'card__k', `요청 ${mine.length}`));
+    for (const x of mine) rq.appendChild(requestCard(x, renderSide));
+  }
+  if (!requestsLoaded || Date.now() - requestsFetchedAt > 30_000) loadRequests().then((changed) => { if (changed && view === 'room') renderSide(); });
+
   // 이번 라운드
   const r = $('cardRound');
   r.replaceChildren();
@@ -1455,7 +1466,7 @@ function requestPill(r) {
 
 const REQ_LINE_LABEL = { goal: '목표', done: '됐다', ack: '받았다', confirm: '확인', stop: '끊음' };
 
-function requestCard(r) {
+function requestCard(r, rerender = renderTower) {
   const card = el('div', 'apr');
   const head = el('div', 'apr__head');
   const [pt, pk] = requestPill(r);
@@ -1487,7 +1498,7 @@ function requestCard(r) {
     }
     if (r.thread.length > 3) {
       const more = el('button', 'apr__link', showAll ? '최근 3줄만' : '전체 보기'); more.type = 'button';
-      more.addEventListener('click', () => { if (showAll) openThreads.delete(r.id); else openThreads.add(r.id); renderTower(); });
+      more.addEventListener('click', () => { if (showAll) openThreads.delete(r.id); else openThreads.add(r.id); rerender(); });
       th.appendChild(more);
     }
     card.appendChild(th);
