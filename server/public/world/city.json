@@ -1,0 +1,65 @@
+{
+  "_note": "무엇이 어디에 — 서울. 좌표는 map.json 칸 그대로(x 동, z 남). 자리(places)·방(rooms)은 map.json 이 정본이고 여기는 그 위에 얹는 그림만. 형식은 teams/dev/out/village-file-contract.md 2판. 다른 도시는 이 파일만 새로 쓴다(결정 57).",
+  "city": "seoul",
+  "camera": { "elevation": 35, "azimuth": 30, "fit": { "1": 60, "2": 30, "3": 16 } },
+  "scenes": {
+    "village": {
+      "base": { "color": "base", "pad": 2 },
+      "ground": [
+        { "kind": "grass", "x": [1, 16], "z": [1, 9] },
+        { "kind": "grass", "x": [46, 55], "z": [10, 18] },
+        { "kind": "plaza", "x": [20, 35], "z": [10, 19] },
+        { "kind": "yard",  "x": [11, 17], "z": [13.8, 19] },
+        { "kind": "road",  "x": [26.4, 28.6], "z": [8.6, 10] },
+        { "kind": "road",  "x": [0, 56], "z": [19, 20] },
+        { "kind": "road",  "x": [0, 56], "z": [24.2, 25.4] },
+        { "kind": "water", "x": [0, 56], "z": [26, 30] }
+      ],
+      "buildings": [
+        { "id": "home.marketing.guide",   "team": "marketing", "part": "villa-l", "at": [2.5, 21.5],  "sign": "마케팅" },
+        { "id": "home.marketing.review",  "team": "marketing", "part": "villa-m", "at": [5.5, 21.5],  "sign": "안젤" },
+        { "id": "home.marketing.outside", "team": "marketing", "part": "villa-s", "at": [8.5, 21.5],  "sign": "다니엘" },
+        { "id": "home.dev.guide",         "team": "dev",       "part": "villa-s", "at": [13.5, 21.5], "sign": "개발" },
+        { "id": "home.dev.ops",           "team": "dev",       "part": "villa-l", "at": [16.5, 21.5], "sign": "솔라" },
+        { "id": "home.dev.outside",       "team": "dev",       "part": "villa-m", "at": [19.5, 21.5], "sign": "레오" },
+        { "id": "home.design.guide",      "team": "design",    "part": "villa-m", "at": [24.5, 21.5], "sign": "디자인" },
+        { "id": "home.design.ops",        "team": "design",    "part": "villa-s", "at": [27.5, 21.5], "sign": "클레멘타인" },
+        { "id": "home.design.outside",    "team": "design",    "part": "villa-l", "at": [30.5, 21.5], "sign": "마크" },
+        { "id": "home.finance.guide",     "team": "finance",   "part": "villa-l", "at": [35.5, 21.5], "sign": "경영재무" },
+        { "id": "home.finance.review",    "team": "finance",   "part": "villa-s", "at": [38.5, 21.5], "sign": "노라" },
+        { "id": "home.finance.outside",   "team": "finance",   "part": "villa-m", "at": [41.5, 21.5], "sign": "빅터" },
+        { "id": "home.hq.chief",          "team": "hq",        "part": "villa-l", "at": [46.5, 21.5], "sign": "총괄" },
+        { "id": "home.hq.outside",        "team": "hq",        "part": "villa-s", "at": [49.5, 21.5], "sign": "제리" },
+        { "id": "cafe",                   "part": "cafe-body", "at": [13.6, 12.5], "sign": "찻집" },
+        { "id": "cafe.awning.1", "part": "awning-wide", "at": [12.6, 13.85], "rotY": 0 },
+        { "id": "cafe.awning.2", "part": "awning-wide", "at": [14.6, 13.85], "rotY": 0 },
+        { "id": "cafe.parasol.1", "part": "parasol", "at": [11.5, 16.2] },
+        { "id": "cafe.parasol.2", "part": "parasol", "at": [13.5, 16.2] },
+        { "id": "cafe.parasol.3", "part": "parasol", "at": [15.5, 16.2] },
+        { "id": "shop.1", "part": "shop-e", "at": [4, 12.5], "sign": "분식" },
+        { "id": "shop.2", "part": "shop-a", "at": [7.5, 12.5] },
+        { "id": "shop.3", "part": "shop-c", "at": [38, 12.5], "rotY": 90 }
+      ],
+      "landmarks": [
+        { "id": "castle",     "kind": "hanok", "x": [19, 36], "z": [2, 8], "wallH": 2.9, "tiers": 2, "columns": 10, "sign": "회사" },
+        { "id": "home.boss",  "kind": "hanok", "x": [40, 45], "z": [11, 15], "wallH": 1.9, "tiers": 2, "columns": 6, "sign": "댄의 집" },
+        { "id": "namsan",     "kind": "namsan-tower", "at": [50, 4], "hillR": 5, "hillH": 3.2, "towerH": 7, "deckR": 1.1 },
+        { "id": "han-bridge", "kind": "bridge", "x": [26.8, 28.2], "z": [25.4, 30] },
+        { "id": "fountain",   "kind": "fountain", "at": [27.5, 13.2], "r": 1.1 }
+      ],
+      "props": [
+        { "part": "tree-large", "at": [20.6, 10.6] }, { "part": "tree-large", "at": [34.4, 10.6] },
+        { "part": "tree-large", "at": [20.6, 18.4] }, { "part": "tree-large", "at": [34.4, 18.4] },
+        { "part": "tree-large", "at": [3, 3] }, { "part": "tree-small", "at": [6, 5.5] }, { "part": "tree-large", "at": [9, 2.5] },
+        { "part": "tree-small", "at": [12, 6] }, { "part": "tree-large", "at": [14.5, 3] }, { "part": "tree-small", "at": [4.5, 7.5] },
+        { "part": "tree-large", "at": [48, 11.5] }, { "part": "tree-small", "at": [52, 14] }, { "part": "tree-large", "at": [49.5, 16.5] },
+        { "part": "tree-large", "at": [39.2, 11.2] }, { "part": "tree-small", "at": [45.8, 15.8] },
+        { "part": "planter", "at": [4, 22.7] }, { "part": "planter", "at": [7, 22.7] }, { "part": "planter", "at": [15, 22.7] }, { "part": "planter", "at": [18, 22.7] },
+        { "part": "planter", "at": [26, 22.7] }, { "part": "planter", "at": [29, 22.7] }, { "part": "planter", "at": [37, 22.7] }, { "part": "planter", "at": [40, 22.7] }, { "part": "planter", "at": [48, 22.7] },
+        { "part": "fence-low", "at": [40.9, 15.6], "rotY": 0 }, { "part": "fence-low", "at": [44.1, 15.6], "rotY": 0 },
+        { "part": "fence-low", "at": [39.6, 13], "rotY": 90 }, { "part": "fence-low", "at": [45.4, 13], "rotY": 90 }
+      ]
+    },
+    "castle": { "kind": "interior", "wallH": 1.2 }
+  }
+}

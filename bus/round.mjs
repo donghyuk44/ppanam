@@ -605,6 +605,36 @@ switch (cmd) {
       const j2 = spawnSync('node', [path.join(ROOT, 'bus', 'outside.mjs'), '--team', 'dev', '--actor', 'guide', '--turn', 'called', '--dry'], { cwd: ROOT, encoding: 'utf8', timeout: 20_000 });
       out.push(['outside.mjs --actor claude 자리 → 거부', devGuide !== 'claude' ? `— dev guide 가 ${devGuide} 라 시험 안 함` : j2.status === 2 && j2.stderr.includes('codex 자리가 아닙니다') ? `✓ exit 2 · ${j2.stderr.trim().split('\n')[0]}` : `✗ exit ${j2.status} · ${(j2.stdout + j2.stderr).trim().slice(0, 200)}`]);
       endRound(T, { summary: '일지 시험' });
+
+      // M5 — 마을 파일 형식(teams/dev/out/village-file-contract.md 2판). city.json 이 부르는 부품·수정 표가 parts.json 에 있고,
+      // parts.json 이 가리키는 glb 가 server/public 에 실제로 있는지. 화면을 안 열고도 "없는 부품을 부른다" 를 잡는다.
+      {
+        const W = path.join(ROOT, 'server/public/world');
+        const bad = [];
+        try {
+          const city = JSON.parse(fs.readFileSync(path.join(W, 'city.json'), 'utf8'));
+          const parts = JSON.parse(fs.readFileSync(path.join(W, 'parts.json'), 'utf8'));
+          const map = JSON.parse(fs.readFileSync(path.join(W, 'map.json'), 'utf8'));
+          const onDisk = (url) => fs.existsSync(path.join(ROOT, 'server/public', decodeURIComponent(url)));
+          for (const [name, p] of Object.entries(parts.parts)) {
+            if (!parts.kits[p.kit]) bad.push(`parts.${name}: kit '${p.kit}' 없음`);
+            else if (!onDisk(parts.kits[p.kit] + p.file)) bad.push(`parts.${name}: 파일 없음 ${p.file}`);
+            if (!Array.isArray(p.size) || p.size.length !== 3) bad.push(`parts.${name}: size 는 [w,h,d]`);
+            for (const m of p.mods ?? []) if (!parts.mods[m]) bad.push(`parts.${name}: 수정 표 '${m}' 없음`);
+          }
+          for (const [id, c] of Object.entries(parts.characters)) {
+            if (!onDisk(parts.kits.characters + c.model)) bad.push(`characters.${id}: 파일 없음 ${c.model}`);
+            if (c.prop?.kind === 'kenney' && !onDisk(parts.kits.characters + c.prop.file)) bad.push(`characters.${id}: 부착물 없음 ${c.prop.file}`);
+          }
+          const sc = city.scenes.village;
+          for (const b of [...sc.buildings, ...sc.props]) if (!parts.parts[b.part]) bad.push(`city ${b.id ?? b.part}: 부품 '${b.part}' 없음`);
+          for (const b of sc.buildings) if (b.id?.startsWith('home.') && !map.places[b.id]) bad.push(`city ${b.id}: map.json 에 그 자리 없음`);
+          for (const g of sc.ground) if (!parts.colors[g.kind]) bad.push(`city 바닥 '${g.kind}': colors 에 없음`);
+          for (const [team, seats] of Object.entries(map.cast)) for (const seat of seats) if (!parts.characters[`${team}-${seat}`]) bad.push(`characters: ${team}-${seat} 없음`);
+          if (!parts.characters.boss) bad.push('characters: boss 없음');
+        } catch (e) { bad.push(`읽기 실패: ${e.message}`); }
+        out.push(['마을 파일 형식(M5) — city ↔ parts ↔ glb', bad.length ? `✗ ${bad.slice(0, 4).join(' · ')}${bad.length > 4 ? ` (+${bad.length - 4})` : ''}` : '✓ 부품·수정 표·인형 열여섯·집 자리 전부 맞음']);
+      }
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
