@@ -65,26 +65,27 @@ function castOf(team) {
  * 관제탑은 안 보고 있는 팀까지 한 화면에 놓으므로, 그 팀의 캐스트 이름과
  * 지금 마일스톤 제목까지 함께 실어야 카드가 말이 된다.
  */
-const summaries = () => Object.fromEntries(listTeams().map((t) => {
-  const s = teamSummary(t.id);
-  const roadmap = readRoadmap(t.id);
+const summaryOf = (team) => {
+  const s = teamSummary(team);
+  const roadmap = readRoadmap(team);
   const now = roadmap.milestones?.find((m) => m.n === s.milestone) ?? null;
-  return [t.id, {
+  return {
     ...s,
-    session: session.status(t.id),
-    sessions: session.statusAll(t.id),   // 자리별 — 참여 카드의 상태 점
-    conductor: snapshot(t.id),           // 누구 차례가 쌓여 있나, 판정 흐름은 어디까지 왔나
+    session: session.status(team),
+    sessions: session.statusAll(team),   // 자리별 — 참여 카드의 상태 점
+    conductor: snapshot(team),           // 누구 차례가 쌓여 있나, 판정 흐름은 어디까지 왔나
     milestoneTitle: now?.title ?? null,
     deliverable: now?.deliverable ?? null,
-    progress: readProgress(t.id),
-    cast: castOf(t.id).agents ?? {},
+    progress: readProgress(team),
+    cast: castOf(team).agents ?? {},
     approvals: {
-      pending: listApprovals({ team: t.id, status: 'pending' }).length,
-      passedToday: listApprovals({ team: t.id, status: 'passed' })
+      pending: listApprovals({ team, status: 'pending' }).length,
+      passedToday: listApprovals({ team, status: 'passed' })
         .filter((r) => (r.decidedAt ?? '').slice(0, 10) === new Date().toISOString().slice(0, 10)).length,
     },
-  }];
-}));
+  };
+};
+const summaries = () => Object.fromEntries(listTeams().map((t) => [t.id, summaryOf(t.id)]));
 
 /**
  * teams/<팀>/progress.json — 지금 어디까지 왔나. 로드맵이 목적지라면 이건 현재 위치다.
@@ -177,7 +178,9 @@ const server = http.createServer((req, res) => {
       cast: castOf(team),
       roadmap: readRoadmap(team),
       rounds: listRounds(team).slice(0, 40),
-      summary: teamSummary(team),
+      // 부팅·방송과 같은 요약이어야 한다. state+log 만 든 얇은 것을 주면 방에 들어간 직후 세션·차례가 비어
+      // 일하는 사람이 "자는 중" 으로 보였다 (독립검수 #1, 2026-09-13).
+      summary: summaryOf(team),
       journal: latestJournal(team),
       ...readTail(team, { limit: PAGE }),
     });

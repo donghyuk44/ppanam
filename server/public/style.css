@@ -542,8 +542,14 @@ body {
   min-height: 42px;
 }
 .tcard__last .chip { flex: none; }
-.tcard__lastt { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tcard__lastt { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+/* 카드 안의 발언은 말풍선 모양 없이 — 굵게·코드 정리만 빌린다. 표·코드블록은 카드에서는 접힌 채 두지 않고 뺀다. */
+.tcard__lastt .bub { background: none; border: 0; padding: 0; border-radius: 0; white-space: normal; }
+.tcard__lastt .bub__fold { display: none; }
 .tcard__quiet { color: var(--ink-4); font-style: italic; }
+/* 지금 만지는 것 — "테라 · app.js 고치는 중 · 2분 전" (독립검수 #10) */
+.tcard__tool { font-size: 11.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tcard__tool b { font-weight: 600; color: var(--ink-2); }
 
 /* 중간 상황 — 접혀 있다가 펼치면 하는 중·이슈·한 것·남은 것 */
 .tcard__prog { font-size: 12px; color: var(--ink-2); border-top: 1px dashed var(--ink-4); padding-top: 6px; }

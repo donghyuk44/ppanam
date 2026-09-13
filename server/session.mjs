@@ -361,11 +361,13 @@ function drain(s) {
 
 /* ── 보내기 ── */
 
-/** 무응답 타이머를 (다시) 잰다. 턴을 보낼 때, 그리고 스트림 이벤트가 올 때마다. */
+/** 무응답 타이머를 (다시) 잰다. 턴을 보낼 때, 그리고 스트림 이벤트가 올 때마다. 그 시각이 화면의 "마지막 신호" 다 (결정 31). */
 function arm(s) {
+  s.lastSignal = Date.now();
   clearTimeout(s.timer);
   s.timer = setTimeout(() => {
-    die(s, `${name(s)}이 ${Math.round(TURN_TIMEOUT / 60_000)}분 동안 아무 신호가 없어(도구 호출도 출력도) 세션을 닫았습니다.`);
+    // "무응답" 이 아니다 — 신호가 없었던 것이고, 다음 지시가 오면 새 세션으로 이어진다 (결정 31 ③).
+    die(s, `${name(s)} — ${Math.round(TURN_TIMEOUT / 60_000)}분 동안 신호 없음(도구 호출도 출력도). 세션을 닫았습니다. 다음 지시로 이어집니다.`);
   }, TURN_TIMEOUT);
 }
 
@@ -416,12 +418,17 @@ function enqueue(team, actor, turn) {
   return { queued: 0 };
 }
 
-/** 한 자리의 상태. 화면의 "일하는 중" 과 사회자의 busy 검사가 읽는다. */
+/**
+ * 한 자리의 상태. 화면의 "일하는 중" 과 사회자의 busy 검사가 읽는다.
+ * lastSignal 은 10초 단위로 깎는다 — 요약은 값이 바뀔 때만 방송되는데, 출력 조각마다 시각이 바뀌면 초당 몇 번씩
+ * 다섯 방 요약을 다시 보낸다. 화면은 "N분 전" 까지만 쓴다.
+ */
 export function status(team, actor = ownerOf(team)) {
   const s = sessions.get(keyOf(team, actor));
   if (!s) return { alive: false, busy: false, queued: 0, sessionId: storedId(team, actor) };
   if (s.closing) return { alive: false, closing: true, busy: false, queued: s.pendingAfterClose.length, sessionId: storedId(team, actor) };
-  return { alive: true, busy: s.busy, queued: s.queue.length, sessionId: s.id, startedAt: s.startedAt };
+  const lastSignal = s.lastSignal ? new Date(Math.floor(s.lastSignal / 10_000) * 10_000).toISOString() : null;
+  return { alive: true, busy: s.busy, queued: s.queue.length, sessionId: s.id, startedAt: s.startedAt, lastSignal };
 }
 
 /** 방의 모든 claude 자리 상태. */

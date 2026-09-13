@@ -811,8 +811,16 @@ export function resumeRound(team, { text = null } = {}) {
 export function teamSummary(team) {
   const state = readState(team);
   const log = readLog(team);
-  const last = log[log.length - 1] ?? null;
   const roadmap = readRoadmap(team);
+
+  // 마지막 발언 — 관제탑 카드의 본문. 도구 줄과 note 는 발언이 아니다: 마지막 줄을 그냥 집으면 카드가
+  // "/Users/…/world.mjs" 를 보여 줬다 (독립검수 #10, 2026-09-13). 발언 뒤에 온 도구 줄은 따로 — "app.js 고치는 중".
+  let last = null, lastTool = null;
+  for (let i = log.length - 1; i >= 0 && !last; i--) {
+    const e = log[i];
+    if (e.type === 'message' || e.type === 'verdict') last = e;
+    else if (e.type === 'tool' && !lastTool) lastTool = e;
+  }
   const done = roadmap.milestones?.filter((m) => m.status === 'pass').length ?? 0;
 
   // 마지막 판정이 무엇이었는지 — FAIL 이면 레일에 경고가 뜬다. 같은 훑기로 이 라운드의 마지막 발언 시각과
@@ -844,6 +852,8 @@ export function teamSummary(team) {
     lastAt: last?.ts ?? null,
     lastText: last?.text ?? null,
     lastActor: last?.actor ?? null,
+    // 마지막 발언 뒤의 도구 줄 — 누가 무엇을 만지는 중인가. 없으면 null.
+    lastTool: lastTool ? { actor: lastTool.actor, tool: lastTool.meta?.tool ?? null, text: lastTool.text, ts: lastTool.ts } : null,
     lastSpokeAt,
     logCount: log.length,
     milestonesDone: done,

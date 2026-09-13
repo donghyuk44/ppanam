@@ -22,3 +22,10 @@ export function toolLabel(items, live, names = 3) {
   const shown = uniq.slice(0, names).join(', ') + (uniq.length > names ? ' …' : '');
   return `파일 ${verbs}${shown ? ` (${shown})` : ''}`;
 }
+
+/** 도구 줄 하나를 사람 말로 — "app.js 고치는 중". 관제탑 카드의 "지금" 줄과 생존 알림이 쓴다 (결정 31). */
+export function toolPhrase(item, live = true) {
+  const v = VERB[item?.tool] ?? '쓰';
+  const what = baseName(item?.text) || item?.tool || '무언가';
+  return `${what} ${live ? v + '는 중' : DONE[v]}`;
+}

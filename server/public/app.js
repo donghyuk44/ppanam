@@ -4,7 +4,7 @@
 // 위로 스크롤하면 지난 라운드가 계속 나온다.
 
 import * as World from '/world/world.js';
-import { toolLabel, baseName } from '/toollabel.js';
+import { toolLabel, toolPhrase, baseName } from '/toollabel.js';
 
 const $ = (id) => document.getElementById(id);
 const app = $('app'), feed = $('feed'), stream = $('stream');
@@ -42,7 +42,7 @@ function callsBoss(text) {
 }
 
 /** 자리의 살아 있음. 세션이 있나(듣는 중), 일하는 중인가, 지금 차례가 잡혀 있나. codex 자리는 사회자의 busy 로. */
-const STATE_LABEL = { off: '자는 중', idle: '듣는 중', busy: '말하는 중', turn: '차례 대기' };
+const STATE_LABEL = { off: '자는 중', idle: '듣는 중', busy: '작업 중', turn: '차례 대기' };
 function stateOf(id) {
   const c = summary.conductor ?? {};
   const a = cast.agents?.[id];
@@ -158,10 +158,11 @@ function renderBossBadge() {
   const b = $('bossBadge');
   const { rooms, cards, n } = bossTurns();
   b.hidden = n === 0;
-  if (n) {
-    b.textContent = `대표 차례 ${n}`;
-    b.title = [...rooms.map((t) => `${t.name}: ${summaries[t.id].needsBoss ? BOSS_WHY[summaries[t.id].needsBossWhy] ?? '대표 판단' : (summaries[t.id].cast?.[summaries[t.id].bossCall.by]?.name ?? summaries[t.id].bossCall.by) + '이 불렀습니다'}`), ...cards.map((r) => `승인: ${r.what}`)].join('\n');
-  }
+  // 숨길 때 글자도 지운다 — "대표 차례 2" 가 hidden 인 채 남아 DOM 만 본 사람이 고장으로 읽었다 (R15).
+  b.textContent = n ? `대표 차례 ${n}` : '';
+  b.title = n
+    ? [...rooms.map((t) => `${t.name}: ${summaries[t.id].needsBoss ? BOSS_WHY[summaries[t.id].needsBossWhy] ?? '대표 판단' : (summaries[t.id].cast?.[summaries[t.id].bossCall.by]?.name ?? summaries[t.id].bossCall.by) + '이 불렀습니다'}`), ...cards.map((r) => `승인: ${r.what}`)].join('\n')
+    : '대표 차례 — 누르면 관제탑';
 }
 const BOSS_WHY = { blocked: '대표 결정 기다리는 중 (FAIL)', attempts: '고쳐 오기 3번 다 씀', silent: '하루 넘게 말이 없음' };
 $('bossBadge').addEventListener('click', () => {
@@ -175,9 +176,6 @@ $('bossBadge').addEventListener('click', () => {
 function renderHead() {
   const t = teams.find((x) => x.id === active);
   $('roomName').textContent = t?.room ?? '작전실';
-  $('roomWho').textContent = Object.entries(cast.agents ?? {})
-    .filter(([id]) => id !== 'boss' && id !== 'system')
-    .map(([, a]) => a.name).join(', ');
   // 총괄실은 대표와의 1:1 이라 라운드가 없다. 늘 열려 있다.
   const office = t?.kind === 'office';
   // 라운드가 "있다" 는 번호가 아니라 phase 다. 번호는 닫힌 뒤에도 남아서, 번호로 그리면 닫힌 방이
@@ -201,11 +199,7 @@ function renderHead() {
   $('rprog').textContent = [turnNote, open && summary.attempt > 0 ? `반박 ${summary.attempt}/3` : ''].filter(Boolean).join(' · ');
   app.dataset.alert = (open && summary.attempt > 0) || summary.needsBoss ? '1' : '0';
 
-  // 누가 지금 일하는 중인가. 총괄실도 일한다 — 라운드 번호가 0 이라고 숨기지 않는다.
-  const sess = summary.session ?? {};
-  const work = $('rwork');
-  work.hidden = !sess.busy;
-  work.textContent = sess.queued ? `${office ? '톰' : '실무'}이 일하는 중 · 대기 ${sess.queued}` : `${office ? '톰' : '실무'}이 일하는 중`;
+  renderWork();
 
   const rb = $('roundBtn');
   // 막힌 방(FAIL)은 대표가 말해 풀기 전엔 닫히지 않는다 — 버튼을 보여 주면 누르고 거부당한다 (가드 R13).
@@ -234,11 +228,35 @@ function renderHead() {
     c.title = `${a.name} — ${a.role ?? ''} · ${STATE_LABEL[st]}`;
     crew.appendChild(c);
   }
-  const dot = el('div', 'live');
-  dot.id = 'liveDot';
-  dot.dataset.on = String(Number(ws?.readyState === 1));
-  crew.appendChild(dot);
 }
+
+/**
+ * 누가 지금 무엇을 하는가 — 헤더 둘째 줄과 라운드 줄의 생존 표시 (결정 28 ①·31 ①, 독립검수 #5).
+ * 둘째 줄은 자리마다 "테라 작업 중 · 솔라 듣는 중 · 레오 자는 중" — 폰에서는 상태 칩이 숨으니 이 글자가 전부다.
+ * 라운드 줄은 일하는 세션이 있으면 항상 "테라 작업 중 · 마지막 신호 2분 전". 시각은 30초마다 다시 센다.
+ * 총괄실도 일한다 — 라운드 번호가 0 이라고 숨기지 않는다.
+ */
+function renderWork() {
+  const agents = Object.entries(cast.agents ?? {}).filter(([id]) => id !== 'boss' && id !== 'system');
+  const states = agents.map(([id, a]) => [id, a, stateOf(id)]);
+  const off = ws?.readyState !== 1 ? '화면이 서버와 끊김 — 다시 붙는 중 · ' : '';
+  $('roomWho').textContent = off + states.map(([, a, st]) => `${a.name} ${STATE_LABEL[st]}`).join(' · ');
+
+  const busy = states.filter(([, , st]) => st === 'busy');
+  const work = $('rwork');
+  work.hidden = !busy.length;
+  if (!busy.length) { work.textContent = ''; return; }
+  const sessions = summary.sessions ?? {};
+  // 마지막 신호 — 서버가 세션의 스트림 이벤트(도구 호출·출력)를 받은 시각. codex 자리는 신호 시각이 없다.
+  const signals = busy.map(([id]) => sessions[id]?.lastSignal).filter(Boolean).map((ts) => new Date(ts).getTime());
+  const queued = busy.reduce((n, [id]) => n + (sessions[id]?.queued ?? 0), 0);
+  work.textContent = [
+    `${busy.map(([, a]) => a.name).join('·')} 작업 중`,
+    signals.length ? `마지막 신호 ${ago(Math.max(...signals))}` : '',
+    queued ? `대기 ${queued}` : '',
+  ].filter(Boolean).join(' · ');
+}
+setInterval(renderWork, 30_000);
 
 /* ── 오른쪽 상황판 ── */
 
@@ -508,7 +526,9 @@ async function selectTeam(id) {
   active = id;
   unread[id] = 0;
   const r = await fetch(`/api/team?team=${encodeURIComponent(id)}`).then((x) => x.json());
-  cast = r.cast; roadmap = r.roadmap; summary = r.summary; journal = r.journal ?? {};
+  cast = r.cast; roadmap = r.roadmap; journal = r.journal ?? {};
+  // /api/team 의 요약은 부팅·방송과 같은 모양(세션·차례 포함)이다. 레일·관제탑이 읽는 summaries 에도 넣어 둘이 어긋나지 않게.
+  summary = r.summary; summaries[id] = r.summary;
   oldest = r.events[0]?.id ?? null;
   hasMore = r.more;
   $('loadMore').hidden = !hasMore;
@@ -575,13 +595,15 @@ function connect() {
 
   ws.onopen = () => {
     retry = 0;
-    const d = $('liveDot'); if (d) d.dataset.on = '1';
+    $('liveDot').dataset.on = '1';
+    if (active) renderWork();
     // 끊겼다 붙었다. 그 사이 발언은 소켓으로 안 왔다 — 보던 방을 다시 불러온다. 안 그러면 화면이 조용히 빠진다.
     if (everOpened && active) selectTeam(active).then(() => { if (view === 'tower') renderTower(); if (view === 'analysis') loadAnalysis(); });
     everOpened = true;
   };
   ws.onclose = () => {
-    const d = $('liveDot'); if (d) d.dataset.on = '0';
+    $('liveDot').dataset.on = '0';
+    if (active) renderWork();   // 폰에는 점만으로 모자라다 — 둘째 줄에 "끊김" 글자
     retry = Math.min(retry + 1, 6);
     setTimeout(connect, 400 * 2 ** (retry - 1));
   };
@@ -608,7 +630,16 @@ function connect() {
       return;
     }
     if (msg.kind === 'world') { World.onWorld(msg.world); return; }   // 세상의 시계 — 자리·루틴 (W2)
-    if (msg.kind === 'hello' && msg.world) World.onWorld(msg.world);
+    if (msg.kind === 'hello') {
+      if (msg.world) World.onWorld(msg.world);
+      // 붙을 때 받은 요약도 쓴다 — 전에는 world 만 쓰고 버려서, 다음 방송(어느 팀이든 요약이 바뀔 때)까지
+      // 부팅 때 것이 남았다 (독립검수 #1).
+      if (msg.summaries && active) {
+        summaries = msg.summaries; summary = summaries[active] ?? summary;
+        renderRail(); renderHead(); renderSide();
+      }
+      return;
+    }
     if (msg.kind === 'events') {
       World.onEvents(msg.team, msg.events);          // 마을은 모든 방을 한 화면에 본다
       if (msg.team === active) {
@@ -905,7 +936,12 @@ function renderTower() {
     meta.appendChild(g);
     meta.append(`대화록 ${s.logCount ?? 0}건`);
     if (s.approvals?.pending) meta.appendChild(el('span', 'rwork', `승인 대기 ${s.approvals.pending}`));
-    if (s.session?.busy) meta.appendChild(el('span', 'rwork', '일하는 중'));
+    // 일하는 자리 이름으로 — "일하는 중" 만으로는 누가인지 모른다. 신호 시각은 방 헤더와 같은 값 (결정 31 ①).
+    const busy = Object.entries(s.sessions ?? {}).filter(([, x]) => x.busy);
+    if (busy.length) {
+      const sig = busy.map(([, x]) => x.lastSignal).filter(Boolean).map((ts) => new Date(ts).getTime());
+      meta.appendChild(el('span', 'rwork', `${busy.map(([id]) => agents[id]?.name ?? id).join('·')} 작업 중${sig.length ? ` · 신호 ${ago(Math.max(...sig))}` : ''}`));
+    }
     card.appendChild(meta);
 
     // 중간 상황 — teams/<팀>/progress.json. 로드맵이 목적지라면 이건 지금 위치다.
@@ -929,7 +965,15 @@ function renderTower() {
       card.appendChild(prog);
     }
 
-    // 마지막 발언
+    // 지금 만지는 것 — 마지막 발언 뒤에 온 도구 줄. "테라 · app.js 고치는 중 · 2분 전" (독립검수 #10).
+    if (s.lastTool) {
+      const tl = el('div', 'tcard__tool');
+      tl.appendChild(el('b', null, agents[s.lastTool.actor]?.name ?? s.lastTool.actor));
+      tl.append(` · ${toolPhrase(s.lastTool, !!s.sessions?.[s.lastTool.actor]?.busy)} · ${ago(s.lastTool.ts)}`);
+      card.appendChild(tl);
+    }
+
+    // 마지막 발언 — 발언(message·verdict)만. 도구 경로·note 는 서버(teamSummary)가 이미 거른다.
     const last = el('div', 'tcard__last');
     if (s.lastText) {
       const a = agents[s.lastActor] ?? FALLBACK;
@@ -938,7 +982,8 @@ function renderTower() {
       av.title = a.name ?? s.lastActor;
       last.appendChild(av);
       const body = el('div', 'tcard__lastt');
-      body.appendChild(el('div', null, s.lastText.replace(/\s+/g, ' ').slice(0, 160)));
+      // 굵게·기호는 방의 말풍선과 같은 규칙으로 — "**apr_… 는**" 별표가 그대로 보였다. 길이는 CSS 가 세 줄로 자른다.
+      body.appendChild(bubble(s.lastText.slice(0, 600)));
       body.appendChild(el('div', 'tcard__quiet', ago(s.lastAt)));
       last.appendChild(body);
     } else {

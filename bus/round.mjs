@@ -182,6 +182,15 @@ switch (cmd) {
       const live = toolLabel(items, true), done = toolLabel(items, false);
       out.push(['도구 줄 접기(진행 중)', live === '파일 1개 읽고 2개 고치는 중 (app.js, style.css)' ? '✓ ' + live : '✗ ' + live]);
       out.push(['도구 줄 접기(끝남)', done === '파일 1개 읽고 2개 고침 (app.js, style.css)' ? '✓ ' + done : '✗ ' + done]);
+      // 관제탑 카드의 마지막 줄 (독립검수 #10) — 발언 뒤에 도구 줄·note 가 와도 lastText 는 발언, 도구 줄은 lastTool 로 따로.
+      const { toolPhrase } = await import('../server/public/toollabel.js');
+      emit(T, { actor: 'guide', type: 'message', text: '마지막 말' });
+      emit(T, { actor: 'guide', type: 'tool', text: '/a/b/app.js', meta: { tool: 'Edit' } });
+      emit(T, { actor: 'system', type: 'note', text: '안내 한 줄' });
+      const ts = teamSummary(T);
+      out.push(['카드 마지막 줄은 발언', ts.lastText === '마지막 말' && ts.lastActor === 'guide' ? '✓' : `✗ ${ts.lastText}`]);
+      const phrase = ts.lastTool ? `${ts.lastTool.actor} · ${toolPhrase(ts.lastTool, true)}` : '(없음)';
+      out.push(['도구 줄은 따로', phrase === 'guide · app.js 고치는 중' ? '✓ ' + phrase : '✗ ' + phrase]);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
