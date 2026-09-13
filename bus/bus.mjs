@@ -491,11 +491,12 @@ export function decideApproval(id, { by, decision, reason = '', team = null, pro
 
 /* ── 대리 결정 (대표 결정 85) — 대표가 10분 넘게 답이 없으면 톰·제리 둘의 합의로 ── */
 export const PROXY_WAIT_MS = Number(process.env.PPANAM_PROXY_WAIT_MS || 10 * 60_000);
-/** ④ 돈 나가는 것·바깥으로 나가는 것은 대리 대상이 아니다 — 낱말과 행동 종류로 거른다(보수적으로). 순수. */
+/** ④ 돈 나가는 것·바깥으로 나가는 것은 대리 대상이 아니다 — 낱말로 거른다(보수적으로). C 승인에도, 방의 물음(answer)에도 같은 선. 순수. */
+export const proxyForbidden = (text) => /비용|상한|결제|돈|유료|외부|발송|메일|공개|병합/.test(String(text ?? ''));
 export function proxyEligible(r) {
   if (!r || r.grade !== 'C' || r.status !== 'pending') return false;
   if (['cost', 'send', 'merge'].includes(r.action?.type)) return false;
-  return !/비용|상한|결제|돈|외부|발송|메일|공개|병합/.test(`${r.what ?? ''} ${r.detail ?? ''}`);
+  return !proxyForbidden(`${r.what ?? ''} ${r.detail ?? ''}`);
 }
 /** 대표가 마지막으로 말한 지 얼마나 됐나(ms) — 어느 방이든. 대표가 방금 말했으면 대리는 안 한다. 말한 적 없으면 Infinity. */
 export function bossQuietFor(now = Date.now()) {
@@ -533,7 +534,10 @@ export function proxyCandidates({ now = Date.now(), wait = PROXY_WAIT_MS } = {})
     const s = teamSummary(t.id);
     if (s.bossCall) {
       const call = log.find((e) => e.id === s.bossCall.id);
-      items.push({ key: `answer:${s.bossCall.id}`, kind: 'answer', team: t.id, ref: s.bossCall.id, what: `${readCast(t.id).agents?.[s.bossCall.by]?.name ?? s.bossCall.by}: ${String(call?.text ?? '').replace(/\s+/g, ' ').slice(0, 120)}`, since: s.bossCall.ts });
+      // 물음도 같은 선(④) — "유료 결제를 허용해 주세요" 를 질문 경로로 대리하면 금지선을 우회한다 (레오 REVISE R23). 그건 대표만.
+      if (!proxyForbidden(call?.text)) {
+        items.push({ key: `answer:${s.bossCall.id}`, kind: 'answer', team: t.id, ref: s.bossCall.id, what: `${readCast(t.id).agents?.[s.bossCall.by]?.name ?? s.bossCall.by}: ${String(call?.text ?? '').replace(/\s+/g, ' ').slice(0, 120)}`, since: s.bossCall.ts });
+      }
     }
   }
   return overdue(items, { now, wait });

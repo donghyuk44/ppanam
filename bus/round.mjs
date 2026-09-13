@@ -20,7 +20,7 @@ import {
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
   addressees, callsBoss, asksBoss, bossNotesOf, readLog, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
-  mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, overdue,
+  mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, overdue,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -462,9 +462,11 @@ switch (cmd) {
         const qlog = [{ id: 'q1', ts: qat(0), actor: 'system', type: 'round_start', text: '시작' }, { id: 'q2', ts: qat(1), actor: 'guide', type: 'message', text: '대표님, A 와 B 중 골라 주세요.' }];
         const before = peopleOf(qlog, pcast2, { now: q0.getTime() + 20 * 60_000 }).guide.bossCall;
         const after = peopleOf([...qlog, { id: 'q3', ts: qat(12), actor: 'system', type: 'note', text: '대리 결정 — 톰·제리: A', meta: { proxyAnswer: 'q2' } }], pcast2, { now: q0.getTime() + 20 * 60_000 }).guide.bossCall;
+        // 물음도 같은 선 — "유료 결제를 허용해 주세요" 는 대리 답 후보가 아니다 (레오 REVISE R23).
+        const fb = [proxyForbidden('대표님, 유료 결제를 허용해 주세요.'), proxyForbidden('대표님, A 와 B 중 골라 주세요.'), proxyForbidden('대표님, 외부에 보내도 될까요?')];
         const xWant = el.join(',') === 'true,false,false,false,false,false,false' && od.join(',') === 'a' && un?.phase === 'running' && unNote?.text?.startsWith('대리 결정(톰·제리)으로 재개')
-          && unNote?.meta?.proxy?.length === 2 && before?.id === 'q2' && after === null;
-        out.push(['대리 결정(결정 85)', xWant ? '✓ 돈·바깥·병합·B·끝난 것 안 올림 · 10분 넘은 것만 · FAIL 대리 풀기 note · 대리 답이면 부름 사라짐' : '✗ ' + JSON.stringify({ el, od, un: un?.phase, note: unNote?.text, before, after })]);
+          && unNote?.meta?.proxy?.length === 2 && before?.id === 'q2' && after === null && fb.join(',') === 'true,false,true';
+        out.push(['대리 결정(결정 85)', xWant ? '✓ 돈·바깥·병합·B·끝난 것 안 올림 · 물음도 같은 선(유료 결제·외부 발송 제외) · 10분 넘은 것만 · FAIL 대리 풀기 note · 대리 답이면 부름 사라짐' : '✗ ' + JSON.stringify({ el, od, un: un?.phase, note: unNote?.text, before, after, fb })]);
       }
       // 상황판 (결정 23) — 옛 모양(issues·left)을 계약 모양으로, 준 항목만 통째로 바뀜, --clear 로 비움, 프롬프트 네 줄, 이 라운드 동안 갱신됐나.
       {
