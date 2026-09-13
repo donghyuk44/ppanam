@@ -835,6 +835,39 @@ export function outsideRunning(team, actor) {
   return v;
 }
 
+/* ── codex 계정 한도 — 쿨다운 ──
+ * 외부 감사 다섯 자리가 한 ChatGPT 계정을 쓴다. 한도에 걸리면 "You've hit your usage limit … try again at Sep 20th, 2026 3:38 PM" 이 오고,
+ * 그 뒤로 사회자가 조용할 때마다 codex 를 또 불러 5분마다 "부르지 못했습니다" 가 쌓였다(R25, 엿새). 한도 오류를 읽으면 state/outside-cooldown.json
+ * 에 { until, reason, noted[] } 를 두고, 그때까지 침묵 차례는 codex 자리를 건너뛰고(conductor.quietest) 호명·판정은 방마다 한 번만 알린다(outside.mjs).
+ * 계정이 하나라 파일도 하나 — 방·자리 구분 없음. until 이 지나면 없는 것과 같다.
+ */
+const cooldownPath = path.join(ROOT, 'state', 'outside-cooldown.json');
+export const USAGE_LIMIT_RE = /usage limit/i;
+/** 오류 문장에서 "try again at <시각>" 을 읽는다. 못 읽으면 지금부터 6시간 — 무한히 부르지 않게. 순수 함수. */
+export function parseUsageLimit(message, now = Date.now()) {
+  const s = String(message ?? '');
+  if (!USAGE_LIMIT_RE.test(s)) return null;
+  const m = /try again at ([A-Za-z]{3} \d{1,2}(?:st|nd|rd|th)?,? \d{4},? \d{1,2}:\d{2} ?[AP]M)/i.exec(s);
+  let until = null;
+  if (m) { const t = Date.parse(m[1].replace(/(\d)(st|nd|rd|th)/, '$1')); if (Number.isFinite(t)) until = t; }
+  if (until == null || until <= now) until = now + 6 * 3600_000;
+  return { until: new Date(until).toISOString(), reason: s.replace(/\x1b\[[0-9;]*m/g, '').replace(/\s+/g, ' ').trim().slice(0, 200) };
+}
+export function setOutsideCooldown(cd) {
+  fs.mkdirSync(path.dirname(cooldownPath), { recursive: true });
+  fs.writeFileSync(cooldownPath, JSON.stringify({ until: cd.until, reason: cd.reason, noted: cd.noted ?? [] }) + '\n');
+}
+/** 쿨다운 중이면 { until, reason, noted[] }, 아니면 null(파일 없음·지남·깨짐). */
+export function outsideCooldown(now = Date.now()) {
+  let v; try { v = JSON.parse(fs.readFileSync(cooldownPath, 'utf8')); } catch { return null; }
+  const t = Date.parse(v?.until ?? '');
+  if (!Number.isFinite(t) || t <= now) return null;
+  return { until: v.until, reason: v.reason ?? '', noted: Array.isArray(v.noted) ? v.noted : [] };
+}
+export function clearOutsideCooldown() {
+  try { fs.rmSync(cooldownPath, { force: true }); } catch { /* 이미 없음 */ }
+}
+
 /** note 한 줄 — "대표가 테라를 opus·high 로 바꿨습니다". 바뀐 값만, 엔진은 이름으로. */
 export function castChangeText(name, to) {
   const words = [];

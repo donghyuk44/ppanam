@@ -691,6 +691,25 @@ switch (cmd) {
       const storeAfter = fs.existsSync(storePath) ? fs.readFileSync(storePath, 'utf8') : null;
       fs.rmSync(fakeDir, { recursive: true, force: true });
       out.push(['outside.mjs 없는 방 → 거부 · 세션 저장소 그대로', j1.status === 2 && storeBefore === storeAfter && !fs.existsSync(path.join(dir, 'journal', 'outside.md')) ? `✓ exit 2 · ${j1.stderr.trim().split('\n')[0]}` : `✗ exit ${j1.status} · 저장소 ${storeBefore === storeAfter ? '그대로' : '바뀜'} · ${(j1.stdout + j1.stderr).trim().slice(0, 200)}`]);
+      // 계정 한도 쿨다운(R25) — 오류 문장에서 "try again at" 을 읽고, 못 읽으면 6시간, 한도 아니면 null. 파일은 지나면 없는 것과 같다. 진짜 파일은 시험 뒤 되돌린다.
+      {
+        const { parseUsageLimit, setOutsideCooldown, outsideCooldown, clearOutsideCooldown } = await import('./bus.mjs');
+        const cdPath = path.join(ROOT, 'state', 'outside-cooldown.json');
+        const cdBefore = fs.existsSync(cdPath) ? fs.readFileSync(cdPath, 'utf8') : null;
+        const real = '\x1b[1m\x1b[31mERROR:\x1b[0m\x1b[0m You\'ve hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Sep 20th, 2026 3:38 PM. \x1b[2mtokens used\x1b[0m';
+        const cNow = Date.parse('2026-09-14T00:00:00+09:00');
+        const p1 = parseUsageLimit(real, cNow), p2 = parseUsageLimit('usage limit reached, please wait', cNow), p3 = parseUsageLimit('ENOENT codex', cNow);
+        const untilOk = p1 && new Date(p1.until).getTime() > cNow + 5 * 86_400_000 && new Date(p1.until).getTime() < cNow + 7 * 86_400_000;
+        setOutsideCooldown({ until: new Date(cNow - 1000).toISOString(), reason: '지남' });
+        const gone = outsideCooldown(cNow);
+        setOutsideCooldown({ until: new Date(cNow + 3600_000).toISOString(), reason: '한도', noted: ['dev'] });
+        const live = outsideCooldown(cNow);
+        clearOutsideCooldown();
+        const cleared = outsideCooldown(cNow);
+        if (cdBefore != null) fs.writeFileSync(cdPath, cdBefore); else clearOutsideCooldown();
+        out.push(['codex 한도 쿨다운(R25)', untilOk && !p1.reason.includes('\x1b') && p2 && new Date(p2.until).getTime() === cNow + 6 * 3600_000 && p3 === null && gone === null && live?.noted?.[0] === 'dev' && cleared === null
+          ? `✓ 실제 오류에서 ${p1.until.slice(0, 10)} 읽음 · ANSI 뗌 · 시각 없으면 6시간 · 한도 아니면 null · 지난 파일 null · 산 파일 noted · 지움` : '✗ ' + JSON.stringify({ p1, p2, p3, gone, live, cleared })]);
+      }
       // claude 자리로 codex 를 띄우면 거부 (결정 69 ① — --actor 는 cast.json 이 gpt 인 자리만). 진짜 방(dev)의 guide 는 claude 다. --dry 라 codex 는 안 뜬다.
       const devGuide = readCast('dev').agents?.guide?.model;
       const j2 = spawnSync('node', [path.join(ROOT, 'bus', 'outside.mjs'), '--team', 'dev', '--actor', 'guide', '--turn', 'called', '--dry'], { cwd: ROOT, encoding: 'utf8', timeout: 20_000 });

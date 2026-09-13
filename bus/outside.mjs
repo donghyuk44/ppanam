@@ -27,7 +27,7 @@ import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readLog, readCast, readState, appendJournal,
   defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, headSha, codexModelOf, codexArgs,
-  markOutsideRunning, clearOutsideRunning,
+  markOutsideRunning, clearOutsideRunning, outsideCooldown, setOutsideCooldown, parseUsageLimit,
 } from './bus.mjs';
 // 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
 import { assemblePrompt, personaOf as seatPersonaOf } from '../server/session.mjs';
@@ -240,6 +240,17 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
     console.error('외부감사 설정 안 됨 — node bus/outside.mjs --setup');
     return 1;
   }
+  // 계정 한도 쿨다운(R25) — 그때까지는 부르지 않는다. 방마다 한 번만 알리고 조용히 1 로 나간다(사회자는 1 을 "이미 방에 남겼다" 로 본다).
+  const cd = dry ? null : outsideCooldown();
+  if (cd) {
+    if (!cd.noted.includes(team)) {
+      const when = new Date(cd.until).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      emit(team, { actor: ACTOR, type: 'note', text: `외부 감사 계정이 사용 한도에 걸려 ${when} 까지 부르지 못합니다 — 그때까지 이 자리는 조용히 건너뜁니다. 크레딧은 대표님 몫(결정 85 ④).` });
+      setOutsideCooldown({ ...cd, noted: [...cd.noted, team] });
+    }
+    console.error(`외부 감사 쿨다운 — ${cd.until} 까지`);
+    return 1;
+  }
 
   // 승인 대조(apr_…)를 시키는 쪽을 먼저 본다. --team 은 다른 방의 외부감사를 빌려 묻는 데 쓰라고 열어둔 것인데
   // (룸메이트 렌즈), 개발팀 세션이 --team hq --ask "승인 요청 apr_x 대조" 로 제리에게 자기 요청의 대조를 기록하게 할 수
@@ -303,6 +314,14 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
     res = await runCodex(input, { resume: prior, model: codexModelFor(team), effort: effortFor(team) });
   } catch (e) {
     clear();
+    // 계정 한도면 쿨다운을 적어 두고 그 뒤 호출은 위에서 조용히 건너뛴다. 세션은 버리지 않는다 — 한도 때문이지 세션이 썩은 게 아니다.
+    const limit = parseUsageLimit(e.message);
+    if (limit) {
+      setOutsideCooldown({ ...limit, noted: [team] });
+      emit(team, { actor: ACTOR, type: 'note', text: `외부 모델을 부르지 못했습니다 — 계정 사용 한도. ${limit.reason.slice(0, 160)}` });
+      console.error('실패(한도): ' + limit.until + ' 까지');
+      return 1;
+    }
     // 이어붙이기가 깨졌으면 세션을 버리고 다음에 새로 연다.
     if (prior) forget(team);
     emit(team, {

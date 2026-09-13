@@ -23,7 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams, outsideCooldown } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { ga } from './public/toollabel.js';
 
@@ -450,7 +450,9 @@ function quietest(team) {
   const lastSpoke = new Map();
   for (const e of log) lastSpoke.set(e.actor, e.ts);
   const lastActor = log.length ? log[log.length - 1].actor : null;
-  const cands = participants(team).filter((a) => a !== lastActor && !busy(team, a));
+  // 계정 한도 쿨다운(R25) 중엔 codex 자리는 침묵 차례에서 뺀다 — 안 그러면 제일 오래 조용한 게 늘 그라 시간당 상한을 헛되이 쓴다. 호명·판정은 그대로(outside.mjs 가 한 번 알린다).
+  const cd = outsideCooldown();
+  const cands = participants(team).filter((a) => a !== lastActor && !busy(team, a) && !(cd && isOutside(team, a)));
   if (!cands.length) return null;
   cands.sort((a, b) => (lastSpoke.get(a) ?? '') < (lastSpoke.get(b) ?? '') ? -1 : 1);
   return cands[0];
