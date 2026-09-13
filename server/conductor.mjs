@@ -244,13 +244,28 @@ function carryTurn(team, actor, fromRound) {
   enqueue(team, actor, 'carried');
 }
 /** 새 라운드가 열렸다 — 넘겨 둔 차례를 첫 턴으로 준다. 들려주기는 닫힌 라운드의 못 들은 말부터(giveTurn 의 carried). */
-function restoreCarry(team) {
+/**
+ * 넘어온 차례를 한 집합으로 — 닫힐 때 넘겨 둔 것(carry)과 이 묶음에 섞여 온 닫힌 라운드의 호명(staleCalls)을 합쳐 자리당 하나,
+ * 라운드는 가장 이른 것. 따로 주면 같은 사람이 두 차례를 받는다 — 복원한 차례가 바로 나가 busy 라 stale 쪽이 또 쌓였다(레오 FAIL R23).
+ * 순수 — round.mjs check 가 돌려본다.
+ */
+export function mergeCarry(carry, stale) {
+  const out = new Map();
+  for (const [a] of carry?.items ?? []) out.set(a, carry.round);
+  for (const [a, from] of stale) out.set(a, Math.min(out.get(a) ?? from, from));
+  return [...out];
+}
+/** 새 라운드가 열렸다(또는 닫힌 라운드의 호명이 섞여 왔다) — 넘어온 차례를 첫 턴으로 준다. 자리당 한 번. */
+function restoreCarry(team, stale, round) {
   const r = room(team);
-  if (!r.carry) return;
-  const { round, items } = r.carry;
-  r.carry = null;
-  note(team, `라운드 ${round} 이 닫히며 넘어온 차례 ${items.length}건(${items.map(([a]) => nameOf(team, a)).join('·')}) — 이 라운드 첫 턴으로 줍니다.`);
-  for (const [actor] of items) carryTurn(team, actor, round);
+  // 닫히는 중(아직 같은 라운드)에 넘겨 둔 것은 새 라운드가 열린 뒤에만 꺼낸다 — 닫히는 라운드에 도로 주면 안 된다.
+  const carry = r.carry && r.carry.round !== round ? r.carry : null;
+  if (carry) r.carry = null;
+  const items = mergeCarry(carry, stale);
+  if (!items.length) return;
+  const from = Math.min(...items.map(([, n]) => n));
+  note(team, `라운드 ${from} 이 닫히며 넘어온 차례 ${items.length}건(${items.map(([a]) => nameOf(team, a)).join('·')}) — 이 라운드 첫 턴으로 줍니다.`);
+  for (const [actor, n] of items) carryTurn(team, actor, n);
 }
 
 /** 예약된 차례 중 지금 줄 수 있는 것을 준다. 한 자리에 한 번에 하나, 놀고 있을 때만. */
@@ -409,20 +424,16 @@ export function noticeEvents(team, events) {
       // --next 로 닫고 바로 열리면 round_end·round_start 가 한 묶음으로 와서 idle 을 못 본다 — 남은 차례는 지난 라운드 것이라 여기서 넘긴다.
       if (r.pending.size) stash(team, `라운드 ${r.round} 이 닫혀`, r.round);
       r.round = state.round; r.recent = []; r.loopNoted = false; r.flow = null; r.carryFrom = null;
-      if (state.phase === 'running') restoreCarry(team);   // 지난 라운드가 닫히며 넘긴 차례 → 이 라운드 첫 턴 (결정 25)
     }
     if (state.phase !== 'running') {   // idle·blocked: 차례 없음. 막 닫혔으면(idle) 쌓인 차례는 버리지 않고 넘긴다.
       clearTimeout(r.lullTimer); r.lullTimer = null;
       if (state.phase === 'idle') stash(team, '라운드가 닫혀'); else r.pending.clear();
       return;
     }
-  }
-
-  // 닫힌 라운드의 말이 round_end·round_start 와 한 폴링에 왔다 — 새 라운드의 보통 호명으로 주면 unheard 가 새 라운드만 읽어
-  // 그 말을 못 듣는다 (레오 REVISE R23). 넘어온 차례(carried)로 주고 들려주기를 그 라운드부터 잇는다. **묶음 전체를 한 번에** —
-  // 이벤트마다 부르면 같은 사람을 두 번 부른 묶음이 두 차례가 된다(첫 차례가 바로 나가 busy 라 둘째가 쌓임 — 레오 두 번째 REVISE).
-  if (!isOffice(team)) {
-    for (const [to, from] of staleCalls(events, state.round, cast, (a) => participants(team).includes(a))) carryTurn(team, to, from);
+    // 넘어온 차례 (결정 25) — 지난 라운드가 닫히며 넘겨 둔 것(carry)과, 닫힌 라운드의 말이 round_end·round_start 와 한 폴링에
+    // 섞여 온 호명(staleCalls — 새 라운드의 보통 호명으로 주면 unheard 가 새 라운드만 읽어 그 말을 못 듣는다, 레오 REVISE R23)을
+    // **한 집합으로 한 번에** 준다 — 따로 주거나 이벤트마다 주면 같은 사람이 두 차례를 받는다(레오 두 번째 REVISE·FAIL R23).
+    restoreCarry(team, staleCalls(events, state.round, cast, (a) => participants(team).includes(a)), state.round);
   }
 
   for (const e of events) {

@@ -351,7 +351,7 @@ switch (cmd) {
         endRound(T, { summary: '이어 열기 시험 닫음' });
       }
       // 닫히는 중 쌓인 차례는 다음 라운드로 (결정 25) — 호명·제3자만 넘기고 판정·침묵·점심은 버린다. 순수 함수 pickCarry.
-      const { pickCarry, staleCalls } = await import('../server/conductor.mjs');
+      const { pickCarry, staleCalls, mergeCarry } = await import('../server/conductor.mjs');
       const carried = pickCarry(new Map([['review', { kind: 'called' }], ['outside', { kind: 'verdict' }], ['ops', { kind: 'lull' }], ['guide', { kind: 'third' }], ['chief', { kind: 'lunch' }]]));
       out.push(['닫히는 중 차례 넘기기', carried.map((x) => x.join(':')).join(',') === 'review:called,guide:third' ? '✓ 호명·제3자 넘김 · 판정·침묵·점심 버림' : '✗ ' + JSON.stringify(carried)]);
       // 닫힌 라운드의 호명이 round_end·round_start 와 한 폴링에 오면 새 라운드의 보통 호명이 아니라 넘어온 차례다 (레오 REVISE R23) —
@@ -364,6 +364,10 @@ switch (cmd) {
         { round: 4, type: 'message', actor: 'outside', text: '안젤, 같은 사람 두 번째 — 차례는 하나.' },
       ], 5, cast, (a) => a !== 'ops');
       out.push(['닫힌 라운드 호명은 넘어온 차례', sc.map((x) => x.join(':')).join(',') === 'review:4,outside:3' ? '✓ 안젤 R4(두 번 불려도 하나) · 다니엘 R3(가장 이른 것) · 새 라운드·대표 제외' : '✗ ' + JSON.stringify(sc)]);
+      // 앞 폴링에서 넘겨 둔 것(carry)과 마지막 묶음의 호명이 같은 사람이면 차례는 하나 (레오 FAIL R23) — 라운드는 가장 이른 것.
+      const mc = mergeCarry({ round: 4, items: [['review', 'called'], ['guide', 'third']] }, sc);
+      const mc0 = mergeCarry(null, []);
+      out.push(['넘겨 둔 것 + 묶음 호명 합치기', mc.map((x) => x.join(':')).join(',') === 'review:4,guide:4,outside:3' && mc0.length === 0 ? '✓ 안젤 하나(carry 와 묶음 둘 다) · 테라 carry 만 · 다니엘 묶음만 · 둘 다 없으면 0' : '✗ ' + JSON.stringify(mc)]);
       // 알림 목록 (결정 68) — 요약·승인에서 종류 순(대표 차례→승인→막힘→보고), 같은 종류는 최근 것부터, 보고는 ask 아닌 것만, C 승인만,
       // out/ 그림이 있으면 썸네일, 읽음 집합에 있으면 unread:false, 급한 것이 안 읽혔을 때만 urgent.
       {
