@@ -12,6 +12,8 @@
   <link rel="stylesheet" href="/world/world.css">
   <!-- 마을 3D (M5) — three 는 jsDelivr(결정 39)에서, 판은 고정. world/draw3d.js 만 쓰고 world.js 가 늦게 불러서 CDN 이 죽어도 작전실은 산다. -->
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }</script>
+  <!-- 길찾기 EasyStar.js — 전역 EasyStar. 못 오면 world.js 가 제 bfs 로 간다 (snapshot().pathfinder 로 어느 쪽인지 본다). -->
+  <script src="https://cdn.jsdelivr.net/npm/easystarjs@0.4.4/bin/easystar-0.4.4.min.js" defer></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>💬</text></svg>">
 </head>
 <body>

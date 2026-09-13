@@ -115,6 +115,34 @@ function bfs(sc, from, to) {
   return path.reverse();
 }
 
+/* ── 길찾기 — EasyStar.js(jsDelivr, 결정 39)가 있으면 그것, 안 왔으면 위 bfs. 같은 격자·4방향이라 답이 같다. 목표 칸이 막힌 칸(책상 앞 자리)이어도 간다 — bfs 와 같은 규칙. ── */
+const finders = new Map();
+function finderFor(name) {
+  if (!globalThis.EasyStar?.js) return null;
+  if (!finders.has(name)) {
+    const sc = S.map.scenes[name];
+    const rows = Array.from({ length: sc.h }, (_, y) => Array.from({ length: sc.w }, (_, x) => (sc.collision[y * sc.w + x] ? 1 : 0)));
+    const es = new globalThis.EasyStar.js(); es.setGrid(rows); es.setAcceptableTiles([0]); es.enableSync();
+    finders.set(name, { es, rows });
+  }
+  return finders.get(name);
+}
+function findPath(name, from, to) {
+  const sc = S.map.scenes[name], f = finderFor(name);
+  if (!f) return bfs(sc, from, to);
+  if (from.x === to.x && from.y === to.y) return [];
+  const inside = (p) => p.x >= 0 && p.y >= 0 && p.x < sc.w && p.y < sc.h;
+  if (!inside(from) || !inside(to)) return null;
+  // 출발 칸(책상 앞에 서 있다)과 목표 칸은 막힌 칸이어도 된다 — EasyStar 는 둘 다 걸을 수 있어야 하므로 잠깐 연다
+  const opened = [from, to].filter((p) => f.rows[p.y][p.x] !== 0);
+  for (const p of opened) f.rows[p.y][p.x] = 0;
+  let out = null;
+  try { f.es.findPath(from.x, from.y, to.x, to.y, (p) => { out = p; }); f.es.calculate(); }
+  finally { for (const p of opened) f.rows[p.y][p.x] = 1; }
+  return out ? out.slice(1).map((p) => [p.x, p.y]) : null;
+}
+const pathfinder = () => (globalThis.EasyStar?.js ? 'easystar' : 'bfs');
+
 function teleport(a, p) {
   a.path = []; a.onArrive = null; a.x = p.x; a.y = p.y; a.px = p.x * TP; a.py = p.y * TP; a.hidden = false;
   if (p.scene) a.scene = p.scene;
@@ -124,7 +152,7 @@ function teleport(a, p) {
 function walkTo(a, p, done) {
   if (!p) return;
   a.hidden = false;
-  const path = (p.scene && p.scene !== a.scene) ? null : bfs(sceneOf(a), { x: a.x, y: a.y }, p);
+  const path = (p.scene && p.scene !== a.scene) ? null : findPath(a.scene, { x: a.x, y: a.y }, p);
   if (!path) { teleport(a, p); done?.(); return; }
   a.path = path;
   a.onArrive = () => { if (p.dir) a.dir = DIR[p.dir]; done?.(); };
@@ -771,6 +799,7 @@ export function snapshot() {
     scene: S.scene,
     actors: everyone().map((a) => ({ key: a.key, name: a.name, scene: a.scene, x: a.x, y: a.y, hidden: a.hidden, walking: a.path.length > 0, routine: a.routine ?? null, act: a.act ?? null })),
     draw: S.gl ? S.gl.stats() : null,               // 그림 엔진 — three · glb 몇 개 왔고 몇 개 못 왔나 · 아직 상자인 부품 수
+    pathfinder: pathfinder(),                        // easystar(CDN 이 왔을 때) 또는 bfs
     bubbles: [...S.bubbles].map((b) => ({ who: b.a.key, kind: b.kind, text: b.el.textContent.slice(0, 40) })),
     replay: { team: R.team, round: R.round, i: R.i, n: R.events.length, playing: R.playing },
     world: S.world ? { hour: S.world.hour, mode: S.world.mode, debug: S.world.debug } : null,
