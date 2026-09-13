@@ -1308,8 +1308,15 @@ function castRow(t, id, a) {
   const row = el('div', 'pcard__cast');
   const engine = a.model === 'gpt' ? 'codex' : a.model === 'claude' ? 'claude' : null;
   if (!engine) return row;
-  const eng = pill(engine, engine === 'codex' ? 'boss' : 'idle'); eng.classList.add('pcard__engine'); eng.title = '엔진 바꾸기는 아직 — 다음 갈래';
-  row.appendChild(eng);
+  // 엔진 알약 둘(결정 69 ①) — 지금 것이 켜져 있고, 다른 쪽은 보이되 못 누른다. 하나만 그리면 보는 건지 바꾸는 건지 모른다(하네스 실측 R23 ③).
+  const engines = el('span', 'pcard__engines'); engines.setAttribute('role', 'group'); engines.title = '엔진 — 바꾸기는 다음 갈래';
+  for (const name of ['claude', 'codex']) {
+    const b = el('button', 'pcard__engine', name); b.type = 'button'; b.disabled = true;
+    b.setAttribute('aria-pressed', name === engine ? 'true' : 'false');
+    if (name !== engine) b.title = '엔진 바꾸기는 아직 안 됩니다 — 다음 갈래';
+    engines.appendChild(b);
+  }
+  row.appendChild(engines);
   const opts = castOptions ?? {};
   const models = engine === 'codex' ? (opts.codex ?? []) : (opts.claude ?? []);
   const field = engine === 'codex' ? 'codexModel' : 'llm';
