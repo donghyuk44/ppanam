@@ -84,6 +84,7 @@ teams/<방>/
 | `codexModel` | codex 모델 — `CODEX_MODELS` 목록(`bus/bus.mjs`) | 환경 `PPANAM_CODEX_MODEL`, 그것도 없으면 목록 첫 것 | `codex exec -m` · `resume -c model=` (전엔 전 자리 공통 환경변수 하나) |
 | `geminiModel` | gemini 모델 — `GEMINI_MODELS` 목록(`gemini-3.6-flash` · `gemini-3.1-pro`) | 목록 첫 것 | 물음 파일의 `model` |
 | `effort` | 추론 강도 — `low` · `medium` · `high` · `xhigh` | 엔진 기본(플래그 안 붙임) | `claude --effort` · `codex -c model_reasoning_effort=` (gemini 는 안 씀) |
+| `fallback` | 기본 엔진이 못 돌면 누가 인계받나(결정 116 ②) — `gpt` · `gemini` · `none`(대표께 올림) | 다른 회사 엔진 중 나머지 하나(`bus.fallbackOf`) — 빈칸은 없다 | codex 계정 한도(쿨다운) 때 `outside.mjs` 가 이 호출을 폴백으로 돌리고 방에 한 번 알린다. 판정문 `meta.engine` 은 답한 엔진 |
 
 **"다른 회사 엔진"** 은 `gpt`·`gemini` 둘 — 코드는 `'gpt'` 를 직접 비교하지 않고 `bus.isForeign(model)` 하나를 쓴다(흩어진 비교가 하나 빠지면 그 자리가 조용히 죽는다 — 결정 77).
 `engineName(model)` 이 사람 말(`codex` · `gemini` · `claude`)이고 판정문 `meta.engine` 에는 부른 이름이 아니라 **답한 것**을 적는다(결정 78) — "gemini · gemini-3.6-flash".

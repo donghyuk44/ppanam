@@ -27,7 +27,7 @@ import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readLog, readCast, readState, appendJournal,
   defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, headSha, codexModelOf, codexArgs,
-  markOutsideRunning, clearOutsideRunning, outsideCooldown, setOutsideCooldown, parseUsageLimit, geminiModelOf, isForeign,
+  markOutsideRunning, clearOutsideRunning, outsideCooldown, setOutsideCooldown, parseUsageLimit, geminiModelOf, isForeign, fallbackOf, engineName,
 } from './bus.mjs';
 // 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
 import { assemblePrompt, personaOf as seatPersonaOf } from '../server/session.mjs';
@@ -48,7 +48,8 @@ const geminiModelFor = (team) => geminiModelOf(seatOf(team));
 const effortFor = (team) => seatOf(team)?.effort ?? null;
 // 이 자리의 엔진 — cast.json 의 model. 'gpt' 면 codex CLI, 'gemini' 면 파일로(runGemini). 라벨은 답한 것을 적는다(결정 78).
 const engineKindOf = (team) => seatOf(team)?.model ?? 'gpt';
-const engineOf = (team) => (engineKindOf(team) === 'gemini' ? `gemini · ${geminiModelFor(team)}` : `codex · ${codexModelFor(team)}`);
+const engineLabel = (team, kind) => (kind === 'gemini' ? `gemini · ${geminiModelFor(team)}` : `codex · ${codexModelFor(team)}`);
+const engineOf = (team) => engineLabel(team, engineKindOf(team));
 
 const STORE = path.join(ROOT, 'state', 'outside-sessions.json');
 // --debug: codex 의 stderr 머리말을 그대로 보여준다 — 세션 id 를 못 읽을 때 무엇이 오는지 보려고 (2026-09-13).
@@ -277,25 +278,35 @@ const TURN = {
  * 그의 답은 그가 직접 대화록에 남기고, 다른 자리들은 각자 다음 차례에 듣는다 — 들려주기는 사회자의 일이다.
  */
 async function ask(team, question, { talk = false, lull = false, turn = null, text = null, dry = false, fromRound = null } = {}) {
-  const ENGINE = engineOf(team);   // 이 호출이 쓰는 엔진 — meta.engine 에 그대로 남는다 (자리별 모델, 결정 69 · 답한 것을 적는다, 결정 78)
-  const KIND = engineKindOf(team); // 'gpt' → codex CLI · 'gemini' → 파일
+  let KIND = engineKindOf(team);   // 'gpt' → codex CLI · 'gemini' → 파일. 기본이 못 돌면 아래서 폴백으로 바뀐다(결정 116 ②)
+  // 계정 한도 쿨다운(R25) — codex 계정 것이라 gpt 자리에만. 폴백(자리의 fallback, 기본은 나머지 다른 회사 엔진)이 있으면 그걸로 이 호출을 돈다 —
+  // 오늘 codex 하나가 끊겨 다섯 팀이 다 섰는데 인계받을 사람이 어디에도 안 적혀 있었다. 폴백이 'none' 이면 대표께 올리고 조용히 1 로 나간다(방마다 한 번 알림).
+  const cd = dry || KIND !== 'gpt' ? null : outsideCooldown();
+  if (cd) {
+    const fb = fallbackOf(seatOf(team));
+    const when = new Date(cd.until).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    if (fb && fb !== KIND) {
+      if (!cd.noted.includes(`${team}:fb`)) {
+        emit(team, { actor: ACTOR, type: 'note', text: `외부 감사 계정(codex)이 사용 한도에 걸려 ${when} 까지 못 부릅니다 — 이 자리에 적힌 폴백 ${engineName(fb)} 로 대신 돕니다(결정 116 ②). 판정문에는 답한 엔진이 적힙니다.` });
+        setOutsideCooldown({ ...cd, noted: [...cd.noted, `${team}:fb`] });
+      }
+      KIND = fb;
+    } else {
+      if (!cd.noted.includes(team)) {
+        emit(team, { actor: ACTOR, type: 'note', text: `외부 감사 계정이 사용 한도에 걸려 ${when} 까지 부르지 못합니다 — 대신할 엔진이 적혀 있지 않아 대표께 올립니다(결정 116 ②). 그때까지 이 자리는 조용히 건너뜁니다. 크레딧은 대표님 몫(결정 85 ④).` });
+        setOutsideCooldown({ ...cd, noted: [...cd.noted, team] });
+      }
+      console.error(`외부 감사 쿨다운 — ${cd.until} 까지`);
+      return 1;
+    }
+  }
+  const ENGINE = engineLabel(team, KIND);   // 이 호출이 쓰는 엔진 — meta.engine 에 그대로 남는다 (자리별 모델, 결정 69 · 답한 것을 적는다, 결정 78)
   if (!dry && KIND === 'gpt' && !await hasCodex()) {
     emit(team, {
       actor: ACTOR, type: 'note',
       text: '외부 모델이 연결되어 있지 않습니다. 교차검증 없이 진행합니다.',
     });
     console.error('외부감사 설정 안 됨 — node bus/outside.mjs --setup');
-    return 1;
-  }
-  // 계정 한도 쿨다운(R25) — codex 계정 것이라 gpt 자리에만. 그때까지는 부르지 않는다. 방마다 한 번만 알리고 조용히 1 로 나간다(사회자는 1 을 "이미 방에 남겼다" 로 본다).
-  const cd = dry || KIND !== 'gpt' ? null : outsideCooldown();
-  if (cd) {
-    if (!cd.noted.includes(team)) {
-      const when = new Date(cd.until).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-      emit(team, { actor: ACTOR, type: 'note', text: `외부 감사 계정이 사용 한도에 걸려 ${when} 까지 부르지 못합니다 — 그때까지 이 자리는 조용히 건너뜁니다. 크레딧은 대표님 몫(결정 85 ④).` });
-      setOutsideCooldown({ ...cd, noted: [...cd.noted, team] });
-    }
-    console.error(`외부 감사 쿨다운 — ${cd.until} 까지`);
     return 1;
   }
 

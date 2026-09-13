@@ -479,6 +479,13 @@ switch (cmd) {
           && castChangeText('레오', gsw.to) === `대표가 레오를 gemini·${GEMINI_MODELS[0]} 로 바꿨습니다 — 다음 턴부터.`
           && isForeign('gpt') && isForeign('gemini') && !isForeign('claude') && !isForeign(null) && engineName('gemini') === 'gemini' && engineName('gpt') === 'codex';
         updateCastAgent(T, 'outside', { model: 'gpt' });
+        // 폴백(결정 116 ②) — 자리에 없으면 나머지 다른 회사 엔진, 'none' 은 대표께 올림(null), 클로드 자리는 없음, 목록 밖은 거부.
+        const { fallbackOf } = await import('./bus.mjs');
+        const fWant = fallbackOf({ model: 'gpt' }) === 'gemini' && fallbackOf({ model: 'gemini' }) === 'gpt' && fallbackOf({ model: 'gpt', fallback: 'none' }) === null
+          && fallbackOf({ model: 'claude' }) === null && fallbackOf({ model: 'gpt', fallback: 'gemini' }) === 'gemini'
+          && castChangeError('outside', ag.outside, { fallback: 'claude' })?.includes('폴백') && castChangeError('outside', ag.outside, { fallback: 'none' }) === null
+          && castChangeText('레오', { fallback: 'gemini' }) === '대표가 레오를 폴백 gemini 로 바꿨습니다 — 다음 턴부터.';
+        out.push(['외부 감사 폴백(결정 116 ②)', fWant ? '✓ gpt↔gemini 기본 · none 은 대표께 · 클로드 없음 · claude 폴백 거부 · note' : '✗']);
         out.push(['gemini 임시 외부 감사(09-14)', gWant ? '✓ outside→gemini 통과 · geminiModel 목록 · note gemini · isForeign 셋' : '✗ ' + JSON.stringify({ gErrs, to: gsw.to })]);
         const txt = castChangeText('테라', up.to), txt2 = castChangeText('안젤', { effort: 'low' });
         const ca = codexArgs({ model: 'gpt-5.1', effort: 'high', resume: 'sid' }), cb = codexArgs({ model: 'gpt-5.1', outPath: '/tmp/o' });

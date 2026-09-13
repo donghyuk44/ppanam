@@ -756,7 +756,16 @@ export const CODEX_MODELS = ['gpt-5.6-sol', 'gpt-5.1'];
 export const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3.1-pro'];
 export const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
 export const ENGINES = ['claude', 'gpt', 'gemini'];
-export const CAST_FIELDS = ['model', 'llm', 'codexModel', 'geminiModel', 'effort'];
+export const CAST_FIELDS = ['model', 'llm', 'codexModel', 'geminiModel', 'effort', 'fallback'];
+/**
+ * 폴백 — 기본 엔진이 못 돌면 누가 인계받나(결정 116 ② — codex 계정 하나가 끊겨 다섯 팀이 다 섰는데 어디에도 안 적혀 있었다).
+ * 자리의 `fallback` 이 먼저(`'none'` 은 "대표께 올림" — 대신 안 부른다), 없으면 다른 회사 엔진 중 나머지 하나. 클로드 자리는 폴백이 없다.
+ */
+export const fallbackOf = (agent) => {
+  if (agent?.fallback === 'none') return null;
+  if (agent?.fallback) return agent.fallback;
+  return agent?.model === 'gpt' ? 'gemini' : agent?.model === 'gemini' ? 'gpt' : null;
+};
 /**
  * 클로드가 아닌 다른 회사 엔진인가 — 'gpt'(codex) · 'gemini'. 뜻은 "외부 감사가 될 수 있는 것".
  * 비교가 흩어져 있으면 하나가 빠질 때 그 자리가 조용히 죽는다(결정 77 — codex 자리가 관제탑에서 늘 "쉼"). 'gpt' 를 직접 비교하지 말고 이것을 쓴다.
@@ -798,6 +807,7 @@ export function castChangeError(actorId, agent, patch) {
   if (patch.llm !== undefined && !CLAUDE_MODELS.includes(patch.llm)) return `claude 모델은 ${CLAUDE_MODELS.join(' · ')} 중 하나입니다: ${patch.llm}`;
   if (patch.codexModel !== undefined && !CODEX_MODELS.includes(patch.codexModel)) return `codex 모델은 ${CODEX_MODELS.join(' · ')} 중 하나입니다: ${patch.codexModel}`;
   if (patch.geminiModel !== undefined && !GEMINI_MODELS.includes(patch.geminiModel)) return `gemini 모델은 ${GEMINI_MODELS.join(' · ')} 중 하나입니다: ${patch.geminiModel}`;
+  if (patch.fallback !== undefined && patch.fallback !== 'none' && !isForeign(patch.fallback)) return `폴백은 다른 회사 엔진(gpt · gemini) 또는 'none'(대표께 올림)입니다: ${patch.fallback}`;
   if (patch.effort !== undefined && !EFFORTS.includes(patch.effort)) return `추론 강도는 ${EFFORTS.join(' · ')} 중 하나입니다: ${patch.effort}`;
   return null;
 }
@@ -887,6 +897,7 @@ export function castChangeText(name, to) {
   if (to.codexModel) words.push(to.codexModel);
   if (to.geminiModel) words.push(to.geminiModel);
   if (to.effort) words.push(to.effort);
+  if (to.fallback) words.push(to.fallback === 'none' ? '폴백 없음(대표께 올림)' : `폴백 ${engineName(to.fallback)}`);
   return `대표가 ${eul(name)} ${words.join('·')} 로 바꿨습니다 — 다음 턴부터.`;
 }
 
