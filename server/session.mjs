@@ -535,6 +535,15 @@ export function statusAll(team) {
 
 export const anyBusy = (team) => Object.values(statusAll(team)).some((x) => x.busy);
 
+/** 밑바닥 재기(server/infra.mjs)용 — 메모리의 세션 중 프로세스는 끝났는데 맵에 남은 것이 좀비다. close 가 지우니 보통 0 이어야 한다. */
+export function health() {
+  let alive = 0, zombie = 0;
+  for (const s of sessions.values()) {
+    if (s.child.exitCode === null && s.child.signalCode === null) alive += 1; else zombie += 1;
+  }
+  return { alive, zombie };
+}
+
 /**
  * 한 자리의 세션을 닫는다. 세션 id 는 남겨두므로 다음 턴에 --resume 으로 이어붙는다.
  * stdin 만 닫고 잊으면 안 된다. 끝나기를 기다리고, 30초 안에 안 끝나면 SIGTERM, 10초 더 지나면 SIGKILL.

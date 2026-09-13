@@ -262,6 +262,10 @@ M3 데이터 전까지 빈 상태 문구). 마지막에 본 탭은 브라우저�
 `infra` 는 잰 값이 없으면 항목도 없다(안 잰 것은 막힘이 아니다). `ok:false` 면 `state:'down'`, 잰 시각이 `timeout` 보다 오래됐으면 **`ok` 가 무엇이든** `state:'unknown'` —
 마지막 성공값이 남아 죽은 밑바닥이 산 것처럼 보이면 안 된다(레오, R25). `ok:true` 이고 시각이 신선하면 항목 없음. 잰 값에는 `at`·`timeout` 이 반드시 있다 — 없으면 `unknown`. 경계: 딱 `timeout` 은 신선, 넘으면 `unknown`.
 **미래 시각**도 허용 시차(`INFRA_SKEW_MS` 1분)를 넘으면 `unknown` — 시계가 크게 틀린 기계의 값이 영원히 살아 있으면 안 된다(레오, R25).
+재는 쪽은 `server/infra.mjs` — **2분마다**(하네스 밤 시계와 같은 틱) 넷을 재고 `state/infra.json` 에 **덮어쓴다**(자라는 파일 아님). 서버는 자기 자신에게 HTTP(`/api/approvals` 200) ·
+codex 는 `which codex` · 세션은 메모리 맵의 좀비 수(`session.health`) · 디스크는 `df -k` 남은 양 3G 기준. 재기 하나가 10초 안에 안 끝나면 그 항목만 `ok:false`.
+`timeout` 은 세 틱(6분). 화면에는 `/api/boot.infra` · ws `hello.infra` 로 오고 **틱마다** ws `{ kind:'infra', infra }` 가 온다(값이 같아도 `at` 이 새로워야 한다).
+서버가 막 켜져 첫 재기 전이면 `null` — 안 잰 것은 막힘이 아니다.
 `id` 는 `<kind>:<이벤트 id · 승인 id · 요청 id · 팀 · infra 키>` — 같은 일은 한 항목이라 알림의 읽음 목록과 같은 열쇠를 쓴다.
 
 **한 것 — 한 목록** (결정 92 "누가 뭘 했나", M6 준비 — 위와 짝). 지금 화면은 "오늘 몇 번 말했나"(`people[].todaySay`)와 "마지막 한 문장"(`doing`)뿐이라

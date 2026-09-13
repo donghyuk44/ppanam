@@ -25,8 +25,11 @@ import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
 import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues } from './conductor.mjs';
 import * as world from './world.mjs';
+import { startInfra } from './infra.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
+// 밑바닥 넷(서버·codex·세션·디스크) — 2분마다 재서 값만 넘긴다(결정 92 "막힌 것" 의 infra, M6 준비). 첫 재기 전엔 null — 안 잰 것은 막힘이 아니다.
+let infra = { latest: () => null };
 
 // 기본은 이 PC 안에서만. 입력창에 쓴 지시가 실무에게 그대로 가기 때문에,
 // 열어두면 같은 네트워크의 누구나 이 PC 에서 파일을 읽고 명령을 실행할 수 있다.
@@ -208,6 +211,8 @@ const server = http.createServer((req, res) => {
       approvals: pendingCards(),
       told: notified(),
       grades: APPROVAL_GRADES,
+      infra: infra.latest(),   // 밑바닥 넷 — blockedOf 의 infra 입력. 바뀌면 ws `infra` 로 온다
+
       // 개인 카드의 엔진·모델·강도 고르기 (결정 69) — 목록은 bus.mjs 하나.
       castOptions: { engines: bus.ENGINES, claude: bus.CLAUDE_MODELS, codex: bus.CODEX_MODELS, efforts: bus.EFFORTS },
     });
@@ -560,7 +565,7 @@ setInterval(() => {
 }, POLL_MS);
 
 wss.on('connection', (ws) => {
-  ws.send(JSON.stringify({ kind: 'hello', summaries: summaries(), world: world.snapshot() }));
+  ws.send(JSON.stringify({ kind: 'hello', summaries: summaries(), world: world.snapshot(), infra: infra.latest() }));
 });
 
 // 기동 시 이미 쌓여 있던 대화록의 끝으로 커서를 옮긴다 (다시 밀지 않기 위해).
@@ -575,6 +580,9 @@ for (const sig of ['SIGINT', 'SIGTERM']) {
 }
 
 server.listen(PORT, HOST, () => {
+  // 리스너가 선 뒤에 잰다 — 첫 재기가 자기 자신에게 HTTP 로 묻는다. 틱마다 방송한다(2분에 한 번, 작다) — `at` 이 새로워야
+  // 화면의 blockedOf 가 산 값을 unknown 으로 안 읽는다. 값이 같아도 시각은 다르다.
+  infra = startInfra({ port: PORT, sessionHealth: session.health, onChange: (st) => broadcast({ kind: 'infra', infra: st }) });
   console.log('');
   console.log(`  ppanam 작전실   http://localhost:${PORT}`);
   console.log(`  팀 ${listTeams().map((t) => t.name).join(' · ')}`);

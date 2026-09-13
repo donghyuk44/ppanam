@@ -598,6 +598,16 @@ switch (cmd) {
         out.push(['밑바닥 넷(레오 세 경우 + 경계)', bInfra === 'infra:sessions=unknown,infra:codex=down,infra:disk=unknown' && b3.length === 0 && b2[1].text.includes('codex 없음') && b2[0].text.includes('30분째')
           && bEdge === 'none,unknown,unknown,none,unknown,unknown'
           ? '✓ 신선 ok 없음 · down · 잔존 ok 는 unknown · 시각 없음 unknown · 안 잰 것 없음 · 딱 timeout 신선 · +1ms unknown · 미래 1분 넘으면 unknown' : '✗ ' + JSON.stringify({ bInfra, b3: b3.length, bEdge, t: b2.map((i) => i.text) })]);
+        // 재는 쪽(server/infra.mjs) — df 파싱은 순수, probeAll 은 넷 다 { ok, at, timeout, detail } 을 돌려주고 하나가 죽어도(안 듣는 포트) 나머지는 잰다. 잰 값은 blockedOf 에 그대로 들어간다.
+        const { parseDf, probeAll, INFRA_KEYS, INFRA_TIMEOUT_MS } = await import('../server/infra.mjs');
+        const dfMac = 'Filesystem    1024-blocks      Used Available Capacity iused ifree %iused  Mounted on\n/dev/disk3s5    971350180 850000000   5872640    99% 1234  5678   18%   /System/Volumes/Data\n';
+        const dfSp = 'Filesystem 1024-blocks Used Available Capacity Mounted on\nmy disk name 100 50 2048 50% /\n';
+        const pr = await probeAll({ port: 1, sessionHealth: () => ({ alive: 2, zombie: 0 }) });   // 포트 1 — 아무도 안 듣는다
+        const prOk = INFRA_KEYS.every((k) => pr[k] && typeof pr[k].ok === 'boolean' && pr[k].at && pr[k].timeout === INFRA_TIMEOUT_MS && typeof pr[k].detail === 'string')
+          && pr.server.ok === false && pr.sessions.ok === true && pr.sessions.detail === '살아 있음 2 · 좀비 0' && typeof pr.disk.ok === 'boolean';
+        const prBlocked = blockedOf({ teams: [], infra: pr }, { now: Date.parse(pr.server.at) + 1000 }).map((i) => i.id);
+        out.push(['밑바닥 재기(server/infra.mjs)', parseDf(dfMac) === 5872640 * 1024 && parseDf(dfSp) === 2048 * 1024 && parseDf('') === null && prOk && prBlocked.includes('infra:server')
+          ? `✓ df 파싱(맥·공백 이름·빈 것) · 넷 다 at·timeout·detail · 안 듣는 포트는 down · 세션 좋음 · blockedOf 에 그대로(${prBlocked.join(',') || '없음'})` : '✗ ' + JSON.stringify({ df: [parseDf(dfMac), parseDf(dfSp)], pr, prBlocked })]);
       }
       // 생존 알림 문장 (결정 31 ②) — 신호가 최근이면 "아직 작업 중 (N분째, 마지막: …)", 신호도 끊겼으면 그렇게.
       const { aliveNoteText } = await import('../server/session.mjs');
