@@ -387,26 +387,61 @@ body {
   border: 1px solid var(--line); background: var(--panel); color: var(--ink-3); cursor: pointer;
 }
 .bell__btn:hover { color: var(--ink); }
-.bell[data-n]:not([data-n="0"]) .bell__btn { color: var(--ink); border-color: var(--bad-line); }
+.bell[data-n]:not([data-n="0"]) .bell__btn { color: var(--ink); }
+.bell[data-urgent="1"] .bell__btn { border-color: var(--bad-line); }
 .bell__n {
   position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
-  background: var(--bad); color: var(--bad-bg); font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; font-weight: 500;
+  background: var(--ink-3); color: var(--panel); font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; font-weight: 500;
   display: grid; place-items: center; border: 2px solid var(--panel);
 }
+.bell[data-urgent="1"] .bell__n { background: var(--bad); color: var(--bad-bg); }
 .bell__n[hidden] { display: none; }
+/* 알림 패널 (결정 68) — 목록. 항목 = 아바타 · 누가·무슨 일·언제 · 오른쪽 썸네일/방 아이콘 · 안 읽음 점. 폰 412 에서 전체 폭. */
 .bell__menu {
-  position: absolute; top: 42px; right: 0; width: min(320px, calc(100vw - 24px));
-  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px;
+  position: absolute; top: 42px; right: 0; width: min(380px, calc(100vw - 24px)); max-height: min(72vh, 640px); overflow: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0 0 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, .12); font-size: 12.5px;
 }
 .bell__menu[hidden] { display: none; }
-.bell__menu button {
-  display: block; width: 100%; text-align: left; font: inherit; font-size: 12.5px; color: var(--ink);
-  background: transparent; border: 0; border-radius: 6px; padding: 8px 10px; cursor: pointer; min-height: 40px;
+.bell__menu .bell__empty { padding: 14px 12px; color: var(--ink-4); font-size: 12px; }
+.nt__head {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px 8px; background: var(--panel); border-bottom: 1px solid var(--line); font-size: 14px;
 }
-.bell__menu button:hover { background: var(--sunk); }
-.bell__menu button small { display: block; font-size: 11px; color: var(--ink-4); }
-.bell__menu .bell__empty { padding: 8px 10px; color: var(--ink-4); font-size: 12px; }
+.nt__tools { display: flex; gap: 4px; }
+.nt__tools button {
+  font: inherit; font-size: 11.5px; color: var(--ink-3); background: transparent; border: 1px solid var(--line);
+  border-radius: 999px; padding: 3px 9px; cursor: pointer; min-height: 26px;
+}
+.nt__tools button:disabled { color: var(--ink-4); cursor: default; opacity: .6; }
+.nt__tools button:not(:disabled):hover { background: var(--sunk); color: var(--ink); }
+.nt__gear { width: 26px; padding: 0 !important; }
+.nt__kind { padding: 8px 12px 3px; font-size: 10.5px; letter-spacing: .04em; color: var(--ink-4); text-transform: uppercase; }
+.nt__kind--boss { color: var(--bad); }
+.nt__row {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) 44px; gap: 10px; align-items: center; width: 100%; text-align: left;
+  font: inherit; font-size: 12.5px; color: var(--ink); background: transparent; border: 0; padding: 8px 12px; cursor: pointer; min-height: 56px;
+}
+.nt__row:hover { background: var(--sunk); }
+.nt__row.is-unread { background: color-mix(in srgb, var(--panel) 92%, var(--ink) 8%); }
+.nt__row.is-unread:hover { background: var(--sunk); }
+.nt__av {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 600; align-self: start;
+}
+.nt__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.nt__who { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nt__who b { color: var(--ink); font-weight: 600; }
+.nt__text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; overflow-wrap: anywhere; }
+.nt__when { font-size: 11px; color: var(--ink-4); }
+.nt__side { position: relative; width: 44px; height: 44px; display: grid; place-items: center; }
+.nt__side img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); }
+.nt__room {
+  width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; background: var(--sunk); color: var(--ink-3); font-size: 11px;
+}
+.nt__dot { position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); border: 2px solid var(--panel); }
+@media (max-width: 819px) {
+  .bell__menu { position: fixed; top: 52px; left: 0; right: 0; width: auto; max-height: calc(100vh - 60px); border-radius: 0 0 12px 12px; }
+}
 /* 종이 덮는 자리를 비운다 */
 .side__head, .tower__head, .world__bar { padding-right: 56px; }
 
@@ -712,6 +747,15 @@ button.dash__row:hover b { text-decoration: underline; }
 .pcard__who span { font-size: 11px; color: var(--ink-4); overflow: hidden; text-overflow: ellipsis; }
 .pcard__doing { font-size: 12.5px; color: var(--ink-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .pcard__nums { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-4); }
+/* 엔진 · 모델 · 추론 강도 (결정 69) — 엔진 알약(못 누름) + select 둘 + 저장 메시지. 폰에서 select 는 네이티브 선택기. */
+.pcard__cast { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.pcard__engine { opacity: .8; }
+.pcard__sel {
+  font: inherit; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-2); background: var(--sunk);
+  border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; min-height: 26px; max-width: 128px;
+}
+.pcard__castmsg { font-size: 10.5px; color: var(--ink-4); }
+.pcard__castmsg[data-bad="1"] { color: var(--bad); }
 .pcard__call, .pcard__journal {
   font: inherit; text-align: left; background: none; border: 0; padding: 0; cursor: pointer;
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-height: 24px;

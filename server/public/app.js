@@ -6,6 +6,7 @@
 import * as World from '/world/world.js';
 import { toolLabel, toolPhrase, baseName, ga } from '/toollabel.js';
 import { findOutPaths, linkOutPaths } from '/outlink.js';
+import { notificationsOf } from '/notify.js';
 
 const $ = (id) => document.getElementById(id);
 const app = $('app'), feed = $('feed'), stream = $('stream');
@@ -215,37 +216,79 @@ function bossWhyOf(t) {
   return '';
 }
 /**
- * 종 — 모든 탭 오른쪽 위, 빨간 배지에 대표 차례 수 (네이버 폰 화면 기준, 결정 34). 0 이면 회색 종만.
- * 누르면 항목 목록(막힌 방 · 부른 방 · 승인)이 열리고, 고르면 그 방 또는 관제탑으로 간다 (독립검수 #9 — 전에는
- * C 카드가 하나라도 있으면 무조건 관제탑, 이유는 툴팁뿐이라 폰에서 안 보였다).
+ * 종 — 모든 탭 오른쪽 위 (네이버 폰 화면 기준, 결정 34). 누르면 **알림 패널** (결정 68 — "배지만 있고 내용이 없으면 대충 구현").
+ * 목록은 notify.js notificationsOf 가 요약·승인에서 만든다(계약 event-schema 3절 "알림 패널"): 대표 차례 → 승인 대기 → 막힘 → 보고.
+ * 배지 숫자는 안 읽은 수, 빨강은 급한 것(대표 차례·승인·막힘)이 안 읽혔을 때. 읽음은 브라우저가 기억한다(localStorage) — 새 저장소 없음.
  */
+const READ_KEY = 'ppanam.notify.read';
+const readIds = () => { try { return new Set(JSON.parse(localStorage.getItem(READ_KEY) ?? '[]')); } catch { return new Set(); } };
+const saveRead = (set) => { try { localStorage.setItem(READ_KEY, JSON.stringify([...set].slice(-500))); } catch { /* 저장소 없음 */ } };
+const notifications = () => notificationsOf({ teams, summaries, approvals }, { read: readIds() });
+function markRead(ids) { const r = readIds(); for (const id of ids) r.add(id); saveRead(r); renderBossBadge(); }
+
 function renderBossBadge() {
-  const { rooms, cards, n } = bossTurns();
-  $('bell').dataset.n = String(n);
+  const { items, unread: n, urgent } = notifications();
+  const bell = $('bell');
+  bell.dataset.n = String(n);
+  bell.dataset.urgent = urgent ? '1' : '0';
   const num = $('bellN');
   num.hidden = n === 0;
   num.textContent = n ? (n > 99 ? '99+' : String(n)) : '';
-  $('bossBadge').title = n ? [...rooms.map((t) => `${t.name}: ${bossWhyOf(t)}`), ...cards.map((r) => `승인: ${r.what}`)].join('\n') : '대표 차례 없음';
+  $('bossBadge').title = n ? `안 읽은 알림 ${n}` : (items.length ? `알림 ${items.length} · 다 읽음` : '알림 없음');
   if (!$('bellMenu').hidden) renderBellMenu();
 }
 const BOSS_WHY = { blocked: '대표 결정 기다리는 중 (FAIL)', attempts: '고쳐 오기 3번 다 씀', silent: '하루 넘게 말이 없음' };
+const KIND_LABEL = { boss: '대표 차례', approval: '승인 대기', blocked: '막힘', report: '보고' };
 function renderBellMenu() {
   const m = $('bellMenu');
   m.replaceChildren();
-  const { rooms, cards } = bossTurns();
-  if (!rooms.length && !cards.length) { m.appendChild(el('div', 'bell__empty', '대표 차례가 없습니다. 팀이 달리는 중입니다.')); return; }
-  for (const t of rooms) {
-    const b = el('button', null, `${t.room ?? t.name}`); b.type = 'button';
-    b.appendChild(el('small', null, bossWhyOf(t)));
-    b.addEventListener('click', () => { closeBell(); pickTeam(t.id); setView('room'); });
-    m.appendChild(b);
-  }
-  for (const r of cards) {
-    const t = teams.find((x) => x.id === r.team);
-    const b = el('button', null, `승인 [${r.grade}] ${r.what}`); b.type = 'button';
-    b.appendChild(el('small', null, `${t?.name ?? r.team} · ${(summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by} · ${ago(r.ts)}`));
-    b.addEventListener('click', () => { closeBell(); setView('tower'); });
-    m.appendChild(b);
+  const { items } = notifications();
+  // 머리 — "알림" + 설정(자리만) + 모두 읽음
+  const head = el('div', 'nt__head');
+  head.appendChild(el('b', null, '알림'));
+  const tools = el('div', 'nt__tools');
+  const all = el('button', 'nt__all', '모두 읽음'); all.type = 'button';
+  all.disabled = !items.some((it) => it.unread);
+  all.addEventListener('click', (e) => { e.stopPropagation(); markRead(items.map((it) => it.id)); renderBellMenu(); });
+  const gear = el('button', 'nt__gear', '⚙'); gear.type = 'button'; gear.title = '알림 설정 — 아직 자리만'; gear.disabled = true;
+  tools.append(all, gear);
+  head.appendChild(tools);
+  m.appendChild(head);
+  if (!items.length) { m.appendChild(el('div', 'bell__empty', '알림이 없습니다. 팀이 달리는 중입니다.')); return; }
+  let lastKind = null;
+  for (const it of items) {
+    if (it.kind !== lastKind) { m.appendChild(el('div', `nt__kind nt__kind--${it.kind}`, KIND_LABEL[it.kind] ?? it.kind)); lastKind = it.kind; }
+    const row = el('button', `nt__row${it.unread ? ' is-unread' : ''}`); row.type = 'button';
+    row.dataset.kind = it.kind;
+    // ① 누가 — 팀 색 아바타 + 이름. 자리가 없는 항목(막힘)은 방 아이콘.
+    const a = it.by ? summaries[it.team]?.cast?.[it.by] : null;
+    const av = el('span', 'nt__av', a?.initial ?? (it.teamName ?? '?').slice(0, 1));
+    av.style.background = a?.color ?? 'var(--ink-4)';
+    row.appendChild(av);
+    const body = el('span', 'nt__body');
+    const who = el('span', 'nt__who');
+    who.appendChild(el('b', null, it.name ?? it.by ?? it.teamName));
+    who.append(` · ${it.teamName}`);
+    body.appendChild(who);
+    // ② 무슨 일 — 한 줄 · ③ 언제
+    body.appendChild(el('span', 'nt__text', it.text));
+    body.appendChild(el('span', 'nt__when', it.ts ? ago(it.ts) : ''));
+    row.appendChild(body);
+    // ④ 오른쪽 미리보기 — out/ 그림이 있으면 썸네일, 없으면 방 아이콘
+    const side = el('span', 'nt__side');
+    if (it.thumb) { const img = document.createElement('img'); img.src = it.thumb; img.alt = ''; img.loading = 'lazy'; side.appendChild(img); }
+    else side.appendChild(el('span', 'nt__room', (teams.find((t) => t.id === it.team)?.name ?? '?').slice(0, 2)));
+    // ⑤ 안 읽음 점
+    if (it.unread) side.appendChild(el('i', 'nt__dot'));
+    row.appendChild(side);
+    row.addEventListener('click', () => {
+      markRead([it.id]); closeBell();
+      const t = it.target ?? {};
+      // 승인 카드는 모든 탭 맨 위(#approvals)에 떠 있다 — 관제탑 첫 화면으로 가면 보인다.
+      if (t.view === 'tower') { setView('tower'); setTowerTab(t.approval ? 'all' : 'asks'); }
+      else jumpTo(t.team, t.event ?? null);
+    });
+    m.appendChild(row);
   }
 }
 const closeBell = () => { $('bellMenu').hidden = true; };
@@ -1241,6 +1284,8 @@ function personCard(t, id, a, p) {
     c.addEventListener('click', () => jumpTo(t.id, p.bossCall.id));
     card.appendChild(c);
   }
+  // 엔진 · 모델 · 추론 강도 (결정 69) — 대표가 카드 안에서 고른다. 바꾸면 서버가 cast.json 에 쓰고 다음 턴부터.
+  card.appendChild(castRow(t, id, a));
   // 5줄 일지 첫 문장 — 누르면 문단 전체(/api/actor 의 journal.latest). 일지가 없으면 줄 없음.
   if (p.journalFirst) {
     const key = `${t.id}:${id}`;
@@ -1255,6 +1300,49 @@ function personCard(t, id, a, p) {
   }
   return card;
 }
+/**
+ * 엔진 · 모델 · 추론 강도 줄 (결정 69, 계약 1절 "자리의 엔진·모델·추론 강도"). 엔진 알약은 보이되 못 누른다(엔진 바꾸기는 다음 갈래).
+ * 모델·강도는 <select> — 폰에서 네이티브 선택기가 뜬다. 고르면 POST /api/cast, 서버가 cast.json 에 쓰고 방에 note. 지금 도는 턴은 안 끊는다.
+ */
+function castRow(t, id, a) {
+  const row = el('div', 'pcard__cast');
+  const engine = a.model === 'gpt' ? 'codex' : a.model === 'claude' ? 'claude' : null;
+  if (!engine) return row;
+  const eng = pill(engine, engine === 'codex' ? 'boss' : 'idle'); eng.classList.add('pcard__engine'); eng.title = '엔진 바꾸기는 아직 — 다음 갈래';
+  row.appendChild(eng);
+  const opts = castOptions ?? {};
+  const models = engine === 'codex' ? (opts.codex ?? []) : (opts.claude ?? []);
+  const field = engine === 'codex' ? 'codexModel' : 'llm';
+  const current = a[field] ?? (engine === 'codex' ? models[0] : (teams.find((x) => x.id === t.id)?.model ?? models[0]));
+  const modelSel = select(models, current, null);   // 값이 없으면 방 기본(state/teams.json)이 골라져 보인다 — 실제로 도는 모델
+  modelSel.title = a[field] == null ? '방 기본값 — 고르면 이 자리에 고정' : '이 자리의 모델';
+  const effortSel = select(opts.efforts ?? [], a.effort ?? '', '강도 기본');
+  effortSel.title = '추론 강도';
+  const msg = el('span', 'pcard__castmsg', '');
+  const send = async (patch) => {
+    msg.textContent = '저장 중…'; msg.dataset.bad = '0';
+    try {
+      const r = await fetch('/api/cast', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ team: t.id, actor: id, ...patch }) }).then((x) => x.json());
+      if (r.error) { msg.textContent = r.error; msg.dataset.bad = '1'; return; }
+      if (summaries[t.id]?.cast?.[id]) Object.assign(summaries[t.id].cast[id], r.agent);
+      msg.textContent = Object.keys(r.to ?? {}).length ? (r.restart === 'after-turn' ? '저장됨 · 지금 턴 끝나면' : '저장됨 · 다음 턴부터') : '그대로';
+    } catch { msg.textContent = '서버가 답하지 않습니다'; msg.dataset.bad = '1'; }
+  };
+  modelSel.addEventListener('change', () => { if (modelSel.value) send({ [field]: modelSel.value }); });
+  effortSel.addEventListener('change', () => { if (effortSel.value) send({ effort: effortSel.value }); });
+  row.append(modelSel, effortSel, msg);
+  return row;
+}
+/** 작은 <select> — 값 목록 + 지금 값. blank 가 있으면 "값 없음" 자리를 맨 위에 둔다(고를 수는 없다 — 비우는 길은 없다). */
+function select(values, current, blank) {
+  const s = document.createElement('select'); s.className = 'pcard__sel';
+  if (blank != null) { const o = document.createElement('option'); o.value = ''; o.textContent = blank; o.disabled = true; s.appendChild(o); }
+  for (const v of values) { const o = document.createElement('option'); o.value = v; o.textContent = v; s.appendChild(o); }
+  s.value = values.includes(current) ? current : '';
+  return s;
+}
+let castOptions = {};
+
 /** 일지 문단 전체 — 한 번 읽으면 둔다. 첫 문장이 바뀌면(새 일지) 다시 읽는다. 카드는 요약이 바뀔 때마다 다시 그려진다. */
 const journalFull = {};
 async function loadJournal(key, first, team, actor) {
@@ -1671,6 +1759,7 @@ summaries = boot.summaries ?? {};
 approvals = boot.approvals ?? [];
 told = boot.told ?? {};
 grades = boot.grades ?? {};
+castOptions = boot.castOptions ?? {};
 for (const t of teams) unread[t.id] = 0;
 pendingMark = Object.values(summaries).reduce((n, s) => n + (s.approvals?.pending ?? 0), 0);
 connect();
