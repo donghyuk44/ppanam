@@ -349,7 +349,18 @@ switch (cmd) {
         const nWant = noNow.startsWith('✓') && s.round === before + 1 && s.milestone === 2 && readState(T).phase === 'running'
           && okText.includes(`라운드 ${s.round} 을 이어 엽니다 · 마일스톤 2 — 이어 열기`) && badText.includes('다음 라운드를 열지 못했습니다');
         out.push(['닫으면서 이어 열기(--next)', nWant ? `✓ now 없으면 B 거부 · 번호 주면 R${before}→R${s.round} · note 글 둘` : '✗ ' + JSON.stringify({ noNow, s, okText, badText })]);
+        // 라운드가 닫히면 codex 세션 칸을 비운다 — 외부감사(`방`)와 codex 로 바뀐 자리(`방:자리`, 결정 69 ①) 둘 다. `방` 만 지우면 codex 실무의
+        // 세션이 다음 라운드로 이어진다(레오 REVISE R23 · 솔라 "고아 세션"). 진짜 저장소에 _check 칸 둘을 심고 닫은 뒤 없어졌는지 본다.
+        const osPath = path.join(ROOT, 'state', 'outside-sessions.json');
+        const osBefore = fs.existsSync(osPath) ? fs.readFileSync(osPath, 'utf8') : null;
+        const seeded = { ...(osBefore ? JSON.parse(osBefore) : {}), [T]: { id: 'x1', lastSeen: null }, [`${T}:guide`]: { id: 'x2', lastSeen: null }, [`${T}x`]: { id: 'x3', lastSeen: null } };
+        fs.mkdirSync(path.dirname(osPath), { recursive: true }); fs.writeFileSync(osPath, JSON.stringify(seeded, null, 2) + '\n');
         endRound(T, { summary: '이어 열기 시험 닫음' });
+        const osAfter = JSON.parse(fs.readFileSync(osPath, 'utf8'));
+        const swept = !(T in osAfter) && !(`${T}:guide` in osAfter) && (`${T}x` in osAfter);
+        delete osAfter[`${T}x`];
+        if (osBefore == null) fs.rmSync(osPath, { force: true }); else fs.writeFileSync(osPath, JSON.stringify(osAfter, null, 2) + '\n');
+        out.push(['닫히면 codex 칸 비움(방·방:자리)', swept ? '✓ 방 · 방:guide 지움 · 다른 방(방x)은 그대로' : '✗ ' + JSON.stringify(Object.keys(osAfter).filter((k) => k.startsWith(T)))]);
       }
       // 닫히는 중 쌓인 차례는 다음 라운드로 (결정 25) — 호명·제3자만 넘기고 판정·침묵·점심은 버린다. 순수 함수 pickCarry.
       const { pickCarry, staleCalls, mergeCarry } = await import('../server/conductor.mjs');

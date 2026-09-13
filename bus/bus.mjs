@@ -945,11 +945,14 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
   // 외부감사도 이 방의 참여자라 자기 세션을 갖는다. 라운드가 끝나면 같이 비운다 —
   // 비워지는 건 AI 컨텍스트뿐이라는 규칙은 다른 회사 모델에도 똑같이 적용된다.
   // (대화록은 그대로 남는다. 위 emit 이 이미 구분선을 그었다.)
+  // 칸 이름은 외부감사가 `방`, 대표가 codex 로 바꾼 다른 자리는 `방:자리`(outside.mjs slotKey, 결정 69 ①) — 둘 다 지운다.
+  // `방` 만 지우면 codex 가 된 실무의 세션이 다음 라운드로 이어진다(레오 REVISE R23).
   const outStore = path.join(ROOT, 'state', 'outside-sessions.json');
   try {
     const all = JSON.parse(fs.readFileSync(outStore, 'utf8'));
-    if (team in all) {
-      delete all[team];
+    const gone = Object.keys(all).filter((k) => k === team || k.startsWith(team + ':'));
+    if (gone.length) {
+      for (const k of gone) delete all[k];
       fs.writeFileSync(outStore, JSON.stringify(all, null, 2) + '\n');
     }
   } catch { /* 파일이 없으면 열린 세션도 없다 */ }
