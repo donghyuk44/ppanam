@@ -164,7 +164,7 @@ function contextOf(team, { since = null } = {}) {
 
   const lines = [];
   for (const e of events) {
-    if (e.type === 'tool') continue;
+    if (e.type === 'tool' || e.meta?.alive) continue;   // 도구 줄·생존 알림(결정 31 ②)은 화면용
     const who = cast[e.actor]?.name ?? e.actor;
     const tag = e.type === 'verdict' ? ` [${e.meta?.verdict ?? ''}]` : '';
     lines.push(`${who}${tag}: ${e.text.replace(/\s+/g, ' ').slice(0, 600)}`);

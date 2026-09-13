@@ -113,6 +113,7 @@ function unheard(team, actor) {
   for (const e of events) {
     last = e.id;
     if (e.type === 'tool' || e.type === 'enter') continue;
+    if (e.meta?.alive) continue;   // 생존 알림은 대표 화면용 — 5분마다 한 줄씩 참여자 귀에 넣지 않는다 (결정 31 ②)
     if (e.actor === actor && e.type !== 'verdict') continue;
     if (e.actor === 'boss') {
       // /api/say 가 대표의 말을 주인(또는 대표가 부른 사람)에게 바로 넣었다. 그에게는 다시 들려주지 않는다.

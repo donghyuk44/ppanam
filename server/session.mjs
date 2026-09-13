@@ -19,6 +19,7 @@ import {
   ROOT, emit, listTeams, isOffice, paths, endRound, readCast, readState, readRoadmap, listRounds,
   readLog, quiet, appendJournal, TURN_JOURNAL, writeTurn,
 } from '../bus/bus.mjs';
+import { toolPhrase } from './public/toollabel.js';
 
 const STORE = path.join(ROOT, 'state', 'sessions.json');
 
@@ -374,6 +375,7 @@ function arm(s) {
 function write(s, turn) {
   s.busy = true;
   s.inflight = turn;
+  s.turnStartedAt = Date.now();
   // 턴의 종류(판정·일지)는 stdin 에 쓰기 전에 적는다. 훅의 UserPromptSubmit 도 적지만 비동기라 늦을 수 있다.
   if (turn.kind) { try { writeTurn(s.team, s.actor, turn.kind, turn.extra ?? '', s.id); } catch { /* 훅이 적는다 */ } }
   arm(s);
@@ -388,6 +390,46 @@ function next(s) {
   if (s.busy || !s.queue.length) return;
   write(s, s.queue.shift());
 }
+
+/* ── 생존 알림 (대표 결정 31 ②) ──
+ * "적어도 5분에 한 번은 '저 작업 중이에요 안 죽었어요'". 일하는 중인데 이만큼 방에 아무 줄도 안 남으면 서버가
+ * 대신 한 줄 남긴다. 그 줄이 대화록에 남으니 다음 알림은 다시 5분 뒤다. 참여자에게는 안 들려준다(meta.alive —
+ * conductor.unheard 가 건너뛴다). 대표 화면용이다. */
+const ALIVE_NOTE_MS = Number(process.env.PPANAM_ALIVE_NOTE_MS || 5 * 60_000);
+
+/**
+ * 알림 문장. 신호가 최근이면 "아직 작업 중 (N분째, 마지막: app.js 고치는 중)", 신호도 끊겼으면 그렇게 말한다 —
+ * 서버가 아무것도 못 받았는데 "작업 중" 이라고 하면 거짓이다. 순수 함수라 check 가 돌려본다.
+ * @param s   { name, actor, turnStartedAt, lastSignal }
+ * @param log 그 방의 대화록
+ */
+export function aliveNoteText(s, log, now = Date.now()) {
+  const mins = Math.max(1, Math.round((now - (s.turnStartedAt ?? now)) / 60_000));
+  const sigAgo = now - (s.lastSignal ?? 0);
+  if (sigAgo >= ALIVE_NOTE_MS) {
+    return `${s.name} ${Math.round(sigAgo / 60_000)}분째 신호 없음 (도구 호출도 출력도) — ${Math.round(TURN_TIMEOUT / 60_000)}분이면 세션을 닫습니다`;
+  }
+  let tool = null;
+  for (let i = log.length - 1; i >= 0; i--) {
+    const e = log[i];
+    if (new Date(e.ts).getTime() < (s.turnStartedAt ?? 0)) break;
+    if (e.type === 'tool' && e.actor === s.actor) { tool = e; break; }
+  }
+  return `${s.name} 아직 작업 중 (${mins}분째${tool ? `, 마지막: ${toolPhrase({ tool: tool.meta?.tool, text: tool.text })}` : ''})`;
+}
+
+function aliveNotes() {
+  const now = Date.now();
+  for (const s of sessions.values()) {
+    if (!s.busy || s.closing) continue;
+    const log = readLog(s.team);
+    const last = log[log.length - 1];
+    if (last && now - new Date(last.ts).getTime() < ALIVE_NOTE_MS) continue;
+    const text = aliveNoteText({ name: name(s), actor: s.actor, turnStartedAt: s.turnStartedAt, lastSignal: s.lastSignal }, log, now);
+    try { emit(s.team, { actor: 'system', type: 'note', text, meta: { alive: true } }); } catch { /* 기록 실패는 삼킨다 */ }
+  }
+}
+setInterval(aliveNotes, 30_000).unref();   // CLI(bus/cast.mjs)도 이 모듈을 읽는다 — 프로세스를 붙들지 않는다
 
 function alive(s) {
   return s && !s.closing && s.child.exitCode === null && s.child.signalCode === null;
