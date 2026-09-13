@@ -5,6 +5,6 @@
     { "id": "marketing", "name": "마케팅", "room": "마케팅 작전실", "model": "opus" },
     { "id": "dev",       "name": "개발",   "room": "개발 작전실",   "model": "opus" },
     { "id": "design",    "name": "디자인", "room": "디자인 작전실", "model": "opus" },
-    { "id": "finance",   "name": "경영재무", "room": "경영재무 작전실", "model": "opus" }
+    { "id": "finance",   "name": "경영", "room": "경영 작전실", "model": "opus" }
   ]
 }
