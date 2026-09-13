@@ -470,12 +470,16 @@ function alive(s) {
  */
 export function send(team, text, actor = ownerOf(team), { kind = null, extra = '', internal = false } = {}) {
   if (isClosing(team) && !internal) return { refused: true, reason: '라운드가 닫히는 중입니다. 잠시 뒤 다시 보내세요.' };
+  // codex 자리(대표가 바꿨을 수도, 결정 69 ①)에는 claude 세션이 없다 — 여기서 띄우면 그 자리 이름으로 claude 가 말한다. 귀에 넣는 말(알림자·요청 블록)은
+  // codex 가 다음 차례에 커서로 듣고, 차례는 사회자가 outside.mjs 로 준다.
+  if (readCast(team).agents?.[actor]?.model !== 'claude') return { refused: true, reason: `${actor} 는 claude 자리가 아닙니다 — codex 자리는 사회자가 outside.mjs 로 깨웁니다.` };
   return enqueue(team, actor, { text, resolve: null, kind, extra });
 }
 
 /** 턴을 보내고 답(result)을 기다린다. 일지 턴처럼 서버가 답을 받아 써야 하는 경우. 세션이 죽으면 null. */
 export function sendAndWait(team, text, actor = ownerOf(team), { kind = null, extra = '', internal = false } = {}) {
   if (isClosing(team) && !internal) return Promise.resolve(null);
+  if (readCast(team).agents?.[actor]?.model !== 'claude') return Promise.resolve(null);   // codex 자리 — 위 send 와 같은 이유
   return new Promise((resolve) => enqueue(team, actor, { text, resolve, kind, extra }));
 }
 
