@@ -56,7 +56,9 @@ function castOf(team) {
   const cast = readCast(team);
   if (isOffice(team) || cast.agents?.chief) return cast;
   const chief = readCast('hq').agents?.chief;
-  return chief ? { ...cast, agents: { ...cast.agents, chief } } : cast;
+  // 옮겨온 말(meta.from)의 화자로만 빌린다. `from` 을 달아 두면 화면이 이 방 사람 명단(헤더·칩)에서 뺀다 —
+  // 개발실 헤더에 "톰 자는 중" 이 떴다 (레오 R15 감사).
+  return chief ? { ...cast, agents: { ...cast.agents, chief: { ...chief, from: 'hq' } } } : cast;
 }
 
 /**

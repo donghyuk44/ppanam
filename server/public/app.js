@@ -41,12 +41,19 @@ function callsBoss(text) {
   return new RegExp(`(^|\\n\\s*\\n)\\s*(${names.join('|')})\\s*(씨|님)?\\s*[,，、:·]`).test(s);
 }
 
-/** 자리의 살아 있음. 세션이 있나(듣는 중), 일하는 중인가, 지금 차례가 잡혀 있나. codex 자리는 사회자의 busy 로. */
+/** 이 방 사람들 — 대표·시스템과, 옮겨온 말 때문에 빌려 온 총괄(from) 은 뺀다. 헤더 둘째 줄·상태 칩이 같은 명단을 쓴다. */
+const roomAgents = () => Object.entries(cast.agents ?? {}).filter(([id, a]) => id !== 'boss' && id !== 'system' && !a.from);
+
+/**
+ * 자리의 살아 있음. 세션이 있나(듣는 중), 일하는 중인가, 지금 차례가 잡혀 있나.
+ * codex 자리는 세션이 없다 — 부를 때만 프로세스가 뜬다. 사회자가 돌리는 중이면 busy, 차례가 잡혔으면 turn, 아니면
+ * off 다. 쉬는 codex 를 "듣는 중" 으로 그렸었다 (레오 R15 감사).
+ */
 const STATE_LABEL = { off: '자는 중', idle: '듣는 중', busy: '작업 중', turn: '차례 대기' };
 function stateOf(id) {
   const c = summary.conductor ?? {};
   const a = cast.agents?.[id];
-  if (a?.model === 'gpt') return c.outsideBusy ? 'busy' : (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'idle';
+  if (a?.model === 'gpt') return c.outsideBusy ? 'busy' : (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'off';
   const s = summary.sessions?.[id];
   if (!s || !s.alive) return (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'off';
   if (s.busy) return 'busy';
@@ -219,8 +226,7 @@ function renderHead() {
 
   const crew = $('crew');
   crew.replaceChildren();
-  for (const [id, a] of Object.entries(cast.agents ?? {})) {
-    if (id === 'boss' || id === 'system') continue;
+  for (const [id, a] of roomAgents()) {
     const c = el('div', 'chip', a.initial ?? '?');
     c.style.background = a.color ?? FALLBACK.color;
     const st = stateOf(id);
@@ -237,8 +243,7 @@ function renderHead() {
  * 총괄실도 일한다 — 라운드 번호가 0 이라고 숨기지 않는다.
  */
 function renderWork() {
-  const agents = Object.entries(cast.agents ?? {}).filter(([id]) => id !== 'boss' && id !== 'system');
-  const states = agents.map(([id, a]) => [id, a, stateOf(id)]);
+  const states = roomAgents().map(([id, a]) => [id, a, stateOf(id)]);
   const off = ws?.readyState !== 1 ? '화면이 서버와 끊김 — 다시 붙는 중 · ' : '';
   $('roomWho').textContent = off + states.map(([, a, st]) => `${a.name} ${STATE_LABEL[st]}`).join(' · ');
 
@@ -328,7 +333,7 @@ function renderSide() {
   c.replaceChildren();
   c.appendChild(el('div', 'card__k', '참여'));
   for (const [id, a] of Object.entries(cast.agents ?? {})) {
-    if (id === 'system') continue;
+    if (id === 'system' || a.from) continue;   // 빌려 온 총괄은 이 방 참여자가 아니다
     const row = el('div', 'who__row');
     const av = el('div', 'chip', a.initial ?? '?');
     av.style.background = a.color ?? FALLBACK.color;
