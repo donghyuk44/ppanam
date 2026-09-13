@@ -391,6 +391,17 @@ switch (cmd) {
       const mc = mergeCarry({ round: 4, items: [['review', 'called'], ['guide', 'third']] }, sc);
       const mc0 = mergeCarry(null, []);
       out.push(['넘겨 둔 것 + 묶음 호명 합치기', mc.map((x) => x.join(':')).join(',') === 'review:4,guide:4,outside:3' && mc0.length === 0 ? '✓ 안젤 하나(carry 와 묶음 둘 다) · 테라 carry 만 · 다니엘 묶음만 · 둘 다 없으면 0' : '✗ ' + JSON.stringify(mc)]);
+      // 서버 재시작에 차례가 살아남는다 (결정 104) — 순수 restoreQueue. 같은 라운드면 pending·inflight 그대로(죽은 턴의 커서는 되돌림),
+      // 라운드가 바뀌었으면 pickCarry 규칙으로 carry 에(판정·침묵은 버림), 저장이 없으면 빈손.
+      {
+        const { restoreQueue } = await import('../server/conductor.mjs');
+        const saved = { round: 7, pending: [['review', 'called'], ['ops', 'lull']], inflight: [['guide', 'called', 'ev_before']], carry: null, carryFrom: null };
+        const same = restoreQueue(saved, 7), later = restoreQueue(saved, 8), none = restoreQueue(null, 8);
+        const ok = same.pending.map((x) => x.join(':')).join(',') === 'review:called,ops:lull,guide:called' && same.cursors.map((x) => x.join(':')).join(',') === 'guide:ev_before' && !same.carry
+          && later.pending.length === 0 && later.carry?.round === 7 && later.carry.items.map((x) => x.join(':')).join(',') === 'review:called,guide:called' && later.cursors.length === 1
+          && none.pending.length === 0 && !none.carry;
+        out.push(['서버 재시작 뒤 차례 되살리기(결정 104)', ok ? '✓ 같은 라운드 3건 그대로(나가 있던 턴 포함·커서 되돌림) · 다음 라운드면 호명 2건만 carry · 침묵 버림 · 저장 없으면 0' : '✗ ' + JSON.stringify({ same, later, none })]);
+      }
       // 자리의 엔진·모델·추론 강도 (결정 69) — 순수 castChangeError 가 거르고, updateCastAgent 가 임시 방 cast.json 에 쓴다. 엔진 바꾸기는 아직 거부(같은 값은 통과).
       {
         fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));

@@ -23,7 +23,7 @@ import { listRequests, requestCounts } from '../bus/requests.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
-import { noticeEvents, startVerdict, snapshot, setClock, wake } from './conductor.mjs';
+import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues } from './conductor.mjs';
 import * as world from './world.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
@@ -565,6 +565,9 @@ wss.on('connection', (ws) => {
 
 // 기동 시 이미 쌓여 있던 대화록의 끝으로 커서를 옮긴다 (다시 밀지 않기 위해).
 for (const t of listTeams()) pollTeam(t.id);
+// 그 다음 — 지난 서버가 저장해 둔 차례를 되살린다 (결정 104). 커서를 맞춘 뒤라야 되살린 차례가 새 사건으로 두 번 안 온다.
+// 세션은 여기서 안 띄운다 — 차례를 줄 때 session.send 가 그 자리 세션을 띄우고 나서 쓴다.
+try { restoreQueues(); } catch (e) { console.error('conductor restore:', e.message); }
 
 // 서버가 내려가면 팀 세션도 같이 닫는다. 세션 id 는 남기므로 다시 띄우면 이어진다.
 for (const sig of ['SIGINT', 'SIGTERM']) {

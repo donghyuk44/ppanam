@@ -39,11 +39,12 @@ const HEAR_LINES = 40;    // 한 턴에 들려주는 최대 줄
 const HEAR_CHARS = 600;   // 한 줄 최대 길이
 
 const rooms = new Map();
-session.onTurnEnd((team) => dispatch(team));
+session.onTurnEnd((team, actor) => { room(team).inflight.delete(actor); persist(team); dispatch(team); });
 function room(team) {
   if (!rooms.has(team)) {
     rooms.set(team, {
       pending: new Map(),   // actor → { kind, from: [] }
+      inflight: new Map(),  // actor → { kind, cursor } — 지금 나가 있는 차례. 서버가 죽으면 세션도 죽으니 이것도 되살린다 (결정 104)
       recent: [],           // 최근 발언자 (브레이크)
       lullTimer: null,
       lastLull: 0,
@@ -72,6 +73,59 @@ function setCursor(team, actor, id) {
   (all[team] ??= {})[actor] = id;
   fs.mkdirSync(path.dirname(STORE), { recursive: true });
   fs.writeFileSync(STORE, JSON.stringify(all, null, 2) + '\n');
+}
+
+/* ── 차례 저장 (결정 104) — 서버가 꺼져도 기다리던 차례가 살아남는다 ──
+ * 전에는 pending 이 메모리에만 있어 재시작마다 방이 멈췄다("마케팅팀 왜 멈췄어"). 같은 파일(state/conductor.json)의 `_queue` 칸에
+ * 방마다 { round, pending, inflight, carry, carryFrom } 을 쓴다 — enqueue·stash·dispatch·giveTurn 으로 바뀔 때마다. 작은 파일이라 매번 써도 된다.
+ * 나가 있던 차례(inflight)는 커서를 주기 전 값으로 되돌려 되살린다 — 안 그러면 죽은 턴이 들은 말을 다음 턴이 못 듣는다. */
+const QUEUE_KEY = '_queue';
+function persist(team) {
+  const r = room(team);
+  const all = readStore();
+  (all[QUEUE_KEY] ??= {})[team] = {
+    round: r.round, savedAt: new Date().toISOString(),
+    pending: [...r.pending].map(([a, p]) => [a, p.kind]),
+    inflight: [...r.inflight].map(([a, p]) => [a, p.kind, p.cursor ?? null]),
+    carry: r.carry, carryFrom: r.carryFrom ?? null,
+  };
+  try { fs.mkdirSync(path.dirname(STORE), { recursive: true }); fs.writeFileSync(STORE, JSON.stringify(all, null, 2) + '\n'); }
+  catch (e) { note(team, `차례를 저장하지 못했습니다 — ${String(e.message).slice(0, 120)}. 서버가 꺼지면 이 방의 대기 차례가 사라질 수 있습니다.`); }
+}
+/**
+ * 서버가 켜질 때 — 저장해 둔 차례를 되살린다. 순수한 부분(어느 것을 살리고 어느 것을 넘기나)은 restoreQueue 로 갈라 둔다 — round.mjs check 가 돌려본다.
+ * 같은 라운드면 pending·inflight 를 그대로 pending 으로. 라운드가 바뀌었으면(닫혔다 열림) pickCarry 규칙(결정 25)으로 carry 에 넘긴다.
+ * 조용히 살아나지 않는다 — 그 방에 한 줄 남긴다. 되살린 차례는 send 가 그 자리 세션을 띄운 뒤 쓴다(session.enqueue 가 없으면 spawn).
+ */
+export function restoreQueue(saved, round) {
+  if (!saved) return { pending: [], carry: null, carryFrom: null, cursors: [] };
+  const items = [...(saved.pending ?? []), ...(saved.inflight ?? []).map(([a, k]) => [a, k])];
+  const cursors = (saved.inflight ?? []).filter(([, , c]) => c != null).map(([a, , c]) => [a, c]);
+  if (saved.round === round) return { pending: items, carry: saved.carry ?? null, carryFrom: saved.carryFrom ?? null, cursors };
+  const carried = pickCarry(new Map(items.map(([a, k]) => [a, { kind: k }])));
+  const prev = saved.carry?.items ?? [];
+  const merged = [...prev, ...carried.filter(([a]) => !prev.some(([b]) => b === a))];
+  return { pending: [], carry: merged.length ? { round: saved.carry?.round ?? saved.round, items: merged } : null, carryFrom: null, cursors };
+}
+export function restoreQueues() {
+  const all = readStore()[QUEUE_KEY] ?? {};
+  for (const [team, saved] of Object.entries(all)) {
+    let state; try { state = readState(team); } catch { continue; }
+    const r = room(team);
+    const got = restoreQueue(saved, state.round);
+    for (const [actor, cursor] of got.cursors) setCursor(team, actor, cursor);   // 죽은 턴이 들은 말을 다시 듣게
+    for (const [actor, kind] of got.pending) { const cur = r.pending.get(actor); if (!cur || (RANK[kind] ?? 0) > (RANK[cur.kind] ?? 0)) r.pending.set(actor, { kind }); }
+    if (got.carry) r.carry = got.carry;
+    if (got.carryFrom) r.carryFrom = got.carryFrom;
+    const n = got.pending.length + (got.carry?.items.length ?? 0);
+    if (n) {
+      const names = [...got.pending.map(([a]) => a), ...(got.carry?.items ?? []).map(([a]) => a)].map((a) => nameOf(team, a));
+      note(team, `서버가 다시 떴습니다 — 기다리던 차례 ${n}건(${names.join('·')})을 이어갑니다.${got.carry ? ' 라운드가 바뀌어 다음 라운드 첫 턴으로 넘깁니다.' : ''}`);
+    }
+    persist(team);
+    if (got.carry && !isOffice(team) && state.phase === 'running') restoreCarry(team, [], state.round);   // 이미 새 라운드가 열려 있으면 바로 첫 턴으로
+    dispatch(team);
+  }
 }
 
 function note(team, text) { try { emit(team, { actor: 'system', type: 'note', text }); } catch { /* 삼킨다 */ } }
@@ -153,6 +207,7 @@ function giveTurn(team, actor, kind) {
   if (isOutside(team, actor)) {
     // codex 는 프로세스가 턴마다 뜬다. outside.mjs 가 자기 커서(lastSeen)로 못 들은 말을 붙이므로 여기선 종류만 넘긴다.
     r.outsideBusy = true;
+    r.inflight.set(actor, { kind, cursor: null }); persist(team);   // codex 도 서버의 자식이라 같이 죽는다 — 되살릴 수 있게 적어 둔다
     const args = [OUTSIDE, '--team', team, '--actor', actor, '--turn', kind];   // 자리 이름으로 띄운다 — outside 가 아닌 codex 자리도 (결정 69 ①)
     if (kind === 'verdict') args.push('--text', target);
     if (kind === 'carried' && r.carryFrom) args.push('--from-round', String(r.carryFrom));   // 닫힌 라운드의 못 들은 말부터 (결정 25)
@@ -160,15 +215,15 @@ function giveTurn(team, actor, kind) {
     try {
       child = spawn('node', args, { cwd: REPO, stdio: ['ignore', 'ignore', 'pipe'], env: { ...process.env } });
     } catch (e) {
-      r.outsideBusy = false;
+      r.outsideBusy = false; r.inflight.delete(actor); persist(team);
       note(team, `${nameOf(team, actor)}을 깨우지 못했습니다 — ${String(e.message).slice(0, 160)}`);
       return;
     }
     let err = '';
     child.stderr.on('data', (d) => { err = (err + d).slice(-600); });
-    child.on('error', (e) => { r.outsideBusy = false; note(team, `${nameOf(team, actor)}을 깨우지 못했습니다 — ${String(e.message).slice(0, 160)}`); });
+    child.on('error', (e) => { r.outsideBusy = false; r.inflight.delete(actor); persist(team); note(team, `${nameOf(team, actor)}을 깨우지 못했습니다 — ${String(e.message).slice(0, 160)}`); });
     child.on('close', (code) => {
-      r.outsideBusy = false;
+      r.outsideBusy = false; r.inflight.delete(actor); persist(team);
       // 1 은 outside.mjs 가 이미 방에 사유를 남긴 경우다. 그 밖의 비정상만 알린다.
       if (code && code !== 1) {
         const lastLine = err.trim().split('\n').filter(Boolean).slice(-1)[0] ?? '';
@@ -184,9 +239,11 @@ function giveTurn(team, actor, kind) {
   // 턴마다 이름을 한 번 불러 준다 — 긴 세션에서 말투가 모델 기본값으로 흘러가는 것을 막는 닻 (docs/cases.md 24·25).
   const anchor = kind === 'verdict' ? '' : `너는 ${nameOf(team, actor)}다. `;
   const body = (lines.length ? `그동안 이 방에서 오간 말:\n\n${lines.join('\n')}\n\n---\n` : '') + anchor + instruction;
+  const before = cursorOf(team, actor);               // 서버가 이 턴 중에 죽으면 여기로 되돌린다 (결정 104)
   if (last) setCursor(team, actor, last);
+  r.inflight.set(actor, { kind, cursor: before }); persist(team);
   const sent = session.send(team, quiet(body), actor, kind === 'verdict' ? { kind: 'verdict', extra: target.slice(0, 200) } : {});
-  if (sent?.refused) note(team, `${nameOf(team, actor)}의 차례를 주지 못했습니다 — ${sent.reason}`);
+  if (sent?.refused) { r.inflight.delete(actor); persist(team); note(team, `${nameOf(team, actor)}의 차례를 주지 못했습니다 — ${sent.reason}`); }
 }
 
 /** 차례를 예약한다. 같은 자리에 쌓이면 더 센 종류로 합친다. */
@@ -195,6 +252,7 @@ function enqueue(team, actor, kind) {
   const r = room(team);
   const cur = r.pending.get(actor);
   if (!cur || (RANK[kind] ?? 0) > (RANK[cur.kind] ?? 0)) r.pending.set(actor, { kind });
+  persist(team);
   dispatch(team);
 }
 
@@ -220,6 +278,7 @@ function stash(team, why, round = readState(team).round) {
   } else {
     note(team, `${why} 차례 ${dropped.length}건(${dropped.map((a) => nameOf(team, a)).join('·')})을 버립니다 — 침묵·판정 차례는 넘기지 않습니다.`);
   }
+  persist(team);
 }
 /** 닫힌 라운드의 이벤트인가 — round_end·round_start 와 한 묶음으로 온 지난 라운드의 말. */
 const isStale = (e, round) => e.round != null && round != null && e.round < round;
@@ -275,16 +334,18 @@ function dispatch(team) {
   const state = readState(team);
   if (!isOffice(team) && state.phase !== 'running') {
     // 막 닫혔다(idle) — 닫히는 동안 dispatch 가 안 돌았으면 여기서 넘긴다. blocked 는 대표 차례라 버린다.
-    if (state.phase === 'idle') stash(team, '라운드가 닫혀'); else r.pending.clear();
+    if (state.phase === 'idle') stash(team, '라운드가 닫혀'); else { r.pending.clear(); persist(team); }
     return;
   }
   // 라운드가 닫히는 중이다(일지를 받는 동안). 쌓인 차례는 닫히는 라운드의 것 — 버리지 않고 다음 라운드 첫 턴으로 (결정 25).
   if (session.isClosing(team)) { stash(team, '라운드가 닫히는 중이라'); return; }
+  let gave = false;
   for (const [actor, p] of [...r.pending]) {
     if (busy(team, actor)) continue;
-    r.pending.delete(actor);
+    r.pending.delete(actor); gave = true;
     giveTurn(team, actor, p.kind);
   }
+  if (gave) persist(team);
 }
 
 /* ── 판정 흐름 ── */
@@ -427,10 +488,11 @@ export function noticeEvents(team, events) {
       // --next 로 닫고 바로 열리면 round_end·round_start 가 한 묶음으로 와서 idle 을 못 본다 — 남은 차례는 지난 라운드 것이라 여기서 넘긴다.
       if (r.pending.size) stash(team, `라운드 ${r.round} 이 닫혀`, r.round);
       r.round = state.round; r.recent = []; r.loopNoted = false; r.flow = null; r.carryFrom = null;
+      persist(team);
     }
     if (state.phase !== 'running') {   // idle·blocked: 차례 없음. 막 닫혔으면(idle) 쌓인 차례는 버리지 않고 넘긴다.
       clearTimeout(r.lullTimer); r.lullTimer = null;
-      if (state.phase === 'idle') stash(team, '라운드가 닫혀'); else r.pending.clear();
+      if (state.phase === 'idle') stash(team, '라운드가 닫혀'); else if (r.pending.size) { r.pending.clear(); persist(team); }
       return;
     }
     // 넘어온 차례 (결정 25) — 지난 라운드가 닫히며 넘겨 둔 것(carry)과, 닫힌 라운드의 말이 round_end·round_start 와 한 폴링에
