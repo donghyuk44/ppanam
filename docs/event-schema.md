@@ -91,6 +91,9 @@ teams/<방>/
 `state/gemini/ask/<id>.json { id, team, actor, model, prompt, resume, ts }` 를 쓰고(임시 파일 → rename), 하네스가 창을 몰아 `state/gemini/answer/<id>.json { id, answer, sessionId, ts }`
 (또는 `{ error }`)를 쓰면 2초마다 보던 outside.mjs 가 읽고 **둘 다 지운다**. `PPANAM_OUTSIDE_TIMEOUT`(기본 5분) 안에 답이 없으면 codex 실패와 같은 길(방에 note, exit 1) — 세션은 안 버린다.
 느리다(30초~1분, 하네스 세션이 돌 때만) — 판정 같은 큰 것에만. codex 계정 한도 쿨다운(`state/outside-cooldown.json`)은 gpt 자리에만 걸린다.
+**프롬프트 크기**(대표 지적 09-14 — 마크 첫 호출 17,126자, 67% 가 방 대화록): ① 다른 회사 엔진은 침묵·제3자 차례를 안 받는다(5-1절 4·5) ② gemini 는 인격·확정조항·일지를
+**대화마다 한 번** — 이어가는 호출(`resume`)엔 새 말만(codex 는 세션 압축 때문에 턴마다, M1 인격 이음) ③ 방 대화록에서 `note` 와 밤 시계 깨우기는 뺀다, 시스템 말은 300자.
+세션 칸 `state/outside-sessions.json` 에 `engine` 이 붙는다 — 이어붙임은 같은 엔진 것만(codex → gemini 로 바꾼 자리에 codex id 가 남아 있어도 안 쓴다).
 
 `POST /api/cast { team, actor, model?, llm?, codexModel?, geminiModel?, effort? }` — 순수 `bus.castChangeError(agent, patch)` 가 거르고(없는 자리·`boss`·`system`·
 목록 밖 값·엔진에 안 맞는 모델 → `400`), 통과하면 **서버가** `cast.json` 을 쓴다(`bus.updateCastAgent` — 파일은 C 잠금이라 화면 요청을 서버가
@@ -429,8 +432,8 @@ codex 는 `which codex` · 세션은 메모리 맵의 좀비 수(`session.health
 | 1 호명 | 첫머리가 X 의 이름이면 X 차례. 대표가 부른 사람은 `/api/say` 가 바로 그에게 넣는다 |
 | 2 판정 | `⟦판정 요청⟧` 턴은 서버가 만든다 (`/api/verdict`) |
 | 3 대표 | 대표 발언은 주인(또는 대표가 부른 사람)에게 바로. 사회자는 다시 주지 않는다 |
-| 4 침묵 | `PPANAM_LULL_MS`(기본 90초) 동안 message·tool 이 없고 아무도 busy 아니면, 가장 오래 침묵한 참여자 한 명. (패스) 가능. 방당 시간당 `PPANAM_LULL_PER_HOUR`(기본 30) |
-| 5 브레이크 | 같은 둘이 `PPANAM_MAX_EXCHANGE`(3)회 왕복이면 호명이어도 제3자에게. 제3자가 없으면 쉰다. 한 자리에 한 번에 한 턴 — 일하는 중이면 쌓이고, 쌓인 차례는 합쳐서 한 턴 |
+| 4 침묵 | `PPANAM_LULL_MS`(기본 90초) 동안 message·tool 이 없고 아무도 busy 아니면, 가장 오래 침묵한 **클로드 자리** 한 명. (패스) 가능. 방당 시간당 `PPANAM_LULL_PER_HOUR`(기본 30). **다른 회사 엔진(codex·gemini)은 침묵·제3자 차례를 안 받는다** — 판정과 이름 불린 말에만(대표 지적 09-14: "(패스) 한 마디 받자고 17,000자") |
+| 5 브레이크 | 같은 둘이 `PPANAM_MAX_EXCHANGE`(3)회 왕복이면 호명이어도 제3자(클로드 자리)에게. 제3자가 없으면 쉰다. 한 자리에 한 번에 한 턴 — 일하는 중이면 쌓이고, 쌓인 차례는 합쳐서 한 턴 |
 | 6 문 | 라운드가 idle 이면 차례 없음(총괄실 예외). blocked 면 대표만. 세상의 시계(마을)가 근무 시간 밖의 침묵 차례를 끈다. **닫히는 중에 쌓인 차례는 버리지 않고 다음 라운드 첫 턴으로**(`carried`, 결정 25 — 7절 "닫는 정본") |
 
 **판정 규약 — 첫 줄 한 단어.** 사회자가 `⟦판정 요청⟧ <대상>` 턴을 주면(`/api/verdict` · `round.mjs verdict`) 답의 첫 줄이

@@ -23,7 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams, outsideCooldown, isForeign } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams, isForeign } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { ga } from './public/toollabel.js';
 
@@ -451,10 +451,9 @@ function quietest(team) {
   const lastSpoke = new Map();
   for (const e of log) lastSpoke.set(e.actor, e.ts);
   const lastActor = log.length ? log[log.length - 1].actor : null;
-  // 계정 한도 쿨다운(R25) 중엔 codex 자리는 침묵 차례에서 뺀다 — 안 그러면 제일 오래 조용한 게 늘 그라 시간당 상한을 헛되이 쓴다. 호명·판정은 그대로(outside.mjs 가 한 번 알린다).
-  const cd = outsideCooldown();
-  const agents = readCast(team).agents ?? {};
-  const cands = participants(team).filter((a) => a !== lastActor && !busy(team, a) && !(cd && agents[a]?.model === 'gpt'));   // 한도는 codex 계정 것 — gemini 자리는 그대로
+  // 다른 회사 엔진 자리(codex·gemini)는 침묵 차례를 안 받는다 — 판정과 이름 불린 말에만 온다(대표 지적 09-14: "(패스) 한 마디 받자고 17,000자").
+  // codex 때도 낭비였다. 호명·판정은 그대로. (전에는 쿨다운 중에만 뺐다 — R25)
+  const cands = participants(team).filter((a) => a !== lastActor && !busy(team, a) && !isOutside(team, a));
   if (!cands.length) return null;
   cands.sort((a, b) => (lastSpoke.get(a) ?? '') < (lastSpoke.get(b) ?? '') ? -1 : 1);
   return cands[0];
@@ -496,7 +495,8 @@ function inLoop(team) {
 
 /** 두 사람 사이 핑퐁이면 제3자에게. 없으면 null. */
 function thirdParty(team, a, b) {
-  return participants(team).find((x) => x !== a && x !== b && !busy(team, x)) ?? null;
+  // 제3자도 클로드 자리에서만 — 다른 회사 엔진은 판정·호명에만(대표 지적 09-14). 오늘 밤 "레오에게 차례를 넘깁니다" 가 열 번 넘게 codex 를 헛돌렸다.
+  return participants(team).find((x) => x !== a && x !== b && !busy(team, x) && !isOutside(team, x)) ?? null;
 }
 
 /* ── 입구 ── */

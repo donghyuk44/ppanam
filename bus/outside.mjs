@@ -68,16 +68,16 @@ function writeStore(all) {
 /** 세션 칸 이름 — 외부감사는 방 이름 그대로(옛 저장소 호환), 다른 자리는 "방:자리". */
 const slotKey = (team) => (ACTOR === 'outside' ? team : `${team}:${ACTOR}`);
 
-/** 예전 형식({팀: "세션id"})도 읽는다. */
+/** 예전 형식({팀: "세션id"})도 읽는다. engine 이 없으면 codex 것이다(gemini 이전에 쓴 칸). */
 function slotOf(team) {
   const v = readStore()[slotKey(team)];
   if (!v) return null;
-  return typeof v === 'string' ? { id: v, lastSeen: null } : v;
+  return typeof v === 'string' ? { id: v, lastSeen: null, engine: 'gpt' } : { engine: 'gpt', ...v };
 }
 
-function remember(team, id, lastSeen) {
+function remember(team, id, lastSeen, engine = 'gpt') {
   const all = readStore();
-  all[slotKey(team)] = { id, lastSeen: lastSeen ?? slotOf(team)?.lastSeen ?? null };
+  all[slotKey(team)] = { id, lastSeen: lastSeen ?? slotOf(team)?.lastSeen ?? null, engine };
   writeStore(all);
 }
 
@@ -228,9 +228,13 @@ function contextOf(team, { since = null, fromRound = null } = {}) {
   const lines = [];
   for (const e of events) {
     if (e.type === 'tool' || e.meta?.alive) continue;   // 도구 줄·생존 알림(결정 31 ②)은 화면용
+    // 시스템 살림살이는 감사 재료가 아니다(대표 지적 09-14 — 마크 첫 호출 17,126자 중 67% 가 방 대화록, 밤 시계 깨우기까지 들어감).
+    // note(승인·요청 블록·차례 안내)와 밤 시계 깨우기(out/watchdogs/nightwatch.mjs 의 문장)는 뺀다. 사람 말·판정 카드·라운드 경계만 남는다.
+    if (e.type === 'note') continue;
+    if (e.actor === 'system' && e.type === 'message' && /밤 시계가 깨웁니다/.test(e.text ?? '')) continue;
     const who = cast[e.actor]?.name ?? e.actor;
     const tag = e.type === 'verdict' ? ` [${e.meta?.verdict ?? ''}]` : '';
-    lines.push(`${who}${tag}: ${e.text.replace(/\s+/g, ' ').slice(0, 600)}`);
+    lines.push(`${who}${tag}: ${e.text.replace(/\s+/g, ' ').slice(0, e.actor === 'system' ? 300 : 600)}`);
   }
   return lines.slice(-40).join('\n');
 }
@@ -309,7 +313,8 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   }
 
   const slot = slotOf(team);
-  const prior = slot?.id ?? null;
+  // 이어붙일 세션은 **같은 엔진 것**만 — 대표가 codex → gemini 로 바꾼 자리에 codex 세션 id 가 남아 있으면 그걸 gemini resume 으로 넘기고 인격까지 빼 버린다.
+  const prior = slot?.engine === KIND ? (slot?.id ?? null) : null;
   const name = readCast(team).agents?.outside?.name ?? '외부감사';
   // 지금 라운드를 잡아둔다. 생각하는 5분 사이 라운드가 바뀌면 답은 이 번호로 남고 판정으로 세지 않는다.
   const round = readState(team).round;
@@ -324,9 +329,12 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   // 이 턴이 들은 마지막 말. 커서를 여기 둔다 — 자기 발언 id 로 두면 생각하는 동안(최대 5분)
   // 도착한 말이 since 밖으로 떨어져 영영 못 듣는다 (Fable 감사, 2026-09-02).
   const seenId = lastEventId(team);
+  // 인격은 codex 는 턴마다(세션이 압축되며 인격이 먼저 밀려난다 — M1 인격 이음), gemini 는 **대화마다 한 번** — 이어가는 호출(resume)이면
+  // 인격·확정조항·일지를 빼고 새 말만 보낸다(대표 지적 09-14 — 매번 똑같은 2,900자). 하네스 창의 대화가 곧 세션이라 앞을 기억한다.
+  const persona = KIND === 'gemini' && prior ? null : personaOf(team);
   const input = [
-    personaOf(team),
-    '\n---\n',
+    persona,
+    persona ? '\n---\n' : null,
     ctx ? `그동안 이 방에서 오간 말:\n\n${ctx}\n\n---\n` : null,
     turn === 'verdict'
       ? VERDICT_TURN(text || question)
@@ -386,7 +394,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
 
   // 일지는 대화록에 남지 않는다. 자기 일지 파일에 붙인다 — 이 프로세스가 곧 그다.
   if (turn === 'journal') {
-    if (res.sessionId) remember(team, res.sessionId, seenId);
+    if (res.sessionId) remember(team, res.sessionId, seenId, KIND);
     const ok = appendJournal(team, ACTOR, body, { round });
     console.log(`[${ENGINE}] ${team} · 일지 ${ok ? '한 문단' : '(패스)'}`);
     // (패스)·빈 답은 "일지 없음" 이다 — 0 으로 나가면 journalAll(server/session.mjs) 이 성공으로 세어
@@ -404,7 +412,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   // 대화에서 할 말이 없으면 (패스). 기록하지도 들려주지도 않는다 — 클로드 세션과 같은 약속.
   // 커서만 앞으로 옮겨 다음 차례에 같은 말을 또 듣지 않게 한다.
   if (talk && /^(?:[^\s,，、:·]{1,12}\s*[,，、:·]\s*)?\(?\s*패스\s*\)?[.。]?$/.test(body.trim())) {
-    if (res.sessionId) remember(team, res.sessionId, seenId);
+    if (res.sessionId) remember(team, res.sessionId, seenId, KIND);
     console.log(`[${ENGINE}] ${team} · (패스)`);
     return 0;
   }
@@ -425,7 +433,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   }
 
   // 방금 남긴 것까지가 "이미 본 것"이다. 다음 턴에는 이 뒤로 새로 온 말만 받는다.
-  if (res.sessionId) remember(team, res.sessionId, seenId);
+  if (res.sessionId) remember(team, res.sessionId, seenId, KIND);
 
   console.log(`[${ENGINE}] ${team} · ${rec.type}${verdict ? ' ' + rec.meta.verdict : ''}`);
   console.log(body);
