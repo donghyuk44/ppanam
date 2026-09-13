@@ -1019,6 +1019,9 @@ export function peopleOf(log, cast, { now = Date.now() } = {}) {
     if (e.actor === 'boss') {
       if (e.type !== 'message') continue;
       if (inRound) bossAnswered = true;
+      // 총괄이 옮겨온 것(meta.via)은 대표가 이 방에서 친 말이 아니다 — 결정 파일 원문이 대표 카드의 "하는 일" 로 떴다 (R21).
+      // dispatch.mjs lastBossSay 와 같은 규칙.
+      if (e.meta?.via) continue;
       if (boss.lastSaidAt == null) { boss.lastSaidAt = ts; boss.lastText = String(e.text ?? '').slice(0, 200); unsaid.delete('boss'); }
       if (isToday(ts)) boss.todaySay += 1;
       continue;
