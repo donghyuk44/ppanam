@@ -172,19 +172,29 @@ function latestJournal(team) {
 }
 
 /** teams/<팀>/out/ 의 산출물. 라운드의 통과 조건은 완료율이 아니라 제출 가능한 물건이다. */
+/**
+ * teams/<팀>/out/ 의 파일 — 하위 폴더까지(깊이 3). 전에는 바로 밑만 읽어 `out/shots/`·`out/screens/` 의 그림이 안 세졌다 —
+ * 분석 탭 "산출물" 수가 적게 나오고, 아침 보고서(결정 80 ⑤ "어제 나온 그림")가 읽을 것이 없었다(M6 준비 실측). `name` 은 out/ 기준 상대 경로.
+ */
+const OUT_DEPTH = 3;
 function listOut(team) {
-  const dir = paths(team).out;
-  let names;
-  try { names = fs.readdirSync(dir); } catch { return []; }
+  const root = paths(team).out;
   const out = [];
-  for (const name of names) {
-    if (name.startsWith('.')) continue;
-    try {
-      const st = fs.statSync(path.join(dir, name));
-      if (!st.isFile()) continue;
-      out.push({ name, size: st.size, at: st.mtime.toISOString() });
-    } catch { /* 읽는 사이에 사라졌다면 넘어간다 */ }
-  }
+  const walk = (dir, rel, depth) => {
+    let names;
+    try { names = fs.readdirSync(dir); } catch { return; }
+    for (const name of names) {
+      if (name.startsWith('.')) continue;
+      const file = path.join(dir, name), r = rel ? `${rel}/${name}` : name;
+      try {
+        const st = fs.statSync(file);
+        if (st.isDirectory()) { if (depth < OUT_DEPTH) walk(file, r, depth + 1); continue; }
+        if (!st.isFile()) continue;
+        out.push({ name: r, size: st.size, at: st.mtime.toISOString() });
+      } catch { /* 읽는 사이에 사라졌다면 넘어간다 */ }
+    }
+  };
+  walk(root, '', 1);
   return out.sort((a, b) => b.at.localeCompare(a.at));
 }
 
