@@ -89,7 +89,7 @@ function execText(r, d) {
 }
 
 /** 통과한 요청에 박힌 행동 중 서버가 상태로 실행하는 것. 셸 실행(푸시)은 executor.mjs 의 몫이다. */
-function applyAction(r) {
+function applyAction(r, store) {
   const a = r.action;
   if (!a) return null;
   if (r.grade === 'B' && a.type === 'milestone' && Number.isInteger(a.n)) {
@@ -125,7 +125,7 @@ function applyAction(r) {
       return text;
     }
   }
-  if (r.grade === 'B' && a.type === 'proxy') return applyProxy(r);
+  if (r.grade === 'B' && a.type === 'proxy') return applyProxy(r, store);
   return null;
 }
 
@@ -133,7 +133,7 @@ function applyAction(r) {
  * 대리 결정 실행 (결정 85) — 톰·제리 둘 다 PASS 한 대리 요청. 방에는 "대리 결정" 으로 남고, hq/out/proxy-decisions.md 맨 위에 한 줄.
  * 실패해도 조용히 넘기지 않는다 — 그 방에 note.
  */
-function applyProxy(r) {
+function applyProxy(r, store) {
   const a = r.action;
   const who = ['chief', 'outside'];
   const reasons = r.decisions.map((d) => `${nameOf('hq', d.by)}: ${d.reason || '(이유 없음)'}`).join(' · ');
@@ -156,14 +156,32 @@ function applyProxy(r) {
     return text;
   }
   // ③ 일일보고서 맨 위 "대표님 대신 정한 것" — 대표가 아침에 보고 뒤집을 수 있게. 최신이 위.
-  try {
-    const file = path.join(paths('hq').out, 'proxy-decisions.md');
-    const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').replace(/^# [^\n]*\n(?:[^\n]*\n)?\n?/, '') : '';
-    const line = `- ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · ${a.kind} · ${a.team ?? '-'} · ${r.what} — ${reasons} (${r.id})\n`;
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, `# 대표님 대신 정한 것 (결정 85 — 톰·제리 대리 결정, 최신이 위)\n대표가 뒤집으려면 그 방에 한마디 — 그 말이 곧 판단이다.\n\n${line}${old}`);
-  } catch (e) { console.error('[notifier] proxy-decisions.md 쓰기 실패 — ' + String(e.message).slice(0, 120)); }
+  // 결정은 이미 실행됐으니 이 줄이 빠지면 아침 검토 기록이 사라진다 — 못 쓰면 store 에 두고 다음 살피기에 다시 쓴다(레오 REVISE R23).
+  const line = `- ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · ${a.kind} · ${a.team ?? '-'} · ${r.what} — ${reasons} (${r.id})\n`;
+  (store.proxyLines ??= []).push(line);
+  flushProxyLines(store);
   return text;
+}
+
+const PROXY_FILE = path.join(paths('hq').out, 'proxy-decisions.md');
+/** 대리 결정 줄을 파일 맨 위에 쓴다. 실패하면 줄은 store 에 남고 총괄실에 note(같은 오류면 한 번), 다음 살피기(30초)에 다시. */
+function flushProxyLines(store) {
+  const lines = store.proxyLines ?? [];
+  if (!lines.length) return false;
+  try {
+    const old = fs.existsSync(PROXY_FILE) ? fs.readFileSync(PROXY_FILE, 'utf8').replace(/^# [^\n]*\n(?:[^\n]*\n)?\n?/, '') : '';
+    fs.mkdirSync(path.dirname(PROXY_FILE), { recursive: true });
+    fs.writeFileSync(PROXY_FILE, `# 대표님 대신 정한 것 (결정 85 — 톰·제리 대리 결정, 최신이 위)\n대표가 뒤집으려면 그 방에 한마디 — 그 말이 곧 판단이다.\n\n${lines.slice().reverse().join('')}${old}`);
+    store.proxyLines = [];
+    store.proxyLinesError = null;
+    return true;
+  } catch (e) {
+    const msg = String(e.message).slice(0, 120);
+    console.error('[notifier] proxy-decisions.md 쓰기 실패 — ' + msg);
+    if (store.proxyLinesError !== msg) emit('hq', { actor: 'system', type: 'note', text: `대리 결정 기록(hq/out/proxy-decisions.md)을 쓰지 못했습니다 — ${msg}. 줄 ${lines.length}개를 들고 30초 뒤 다시 씁니다.` });
+    store.proxyLinesError = msg;
+    return true;   // store 가 바뀌었다(줄·오류) — 저장
+  }
 }
 
 /**
@@ -177,6 +195,7 @@ function runProxy(store) {
   proxyCheckedAt = Date.now();
   let changed = false;
   store.proxied ??= {};
+  if (flushProxyLines(store)) changed = true;   // 지난번에 못 쓴 대리 결정 줄이 있으면 먼저 다시 쓴다
   const { items, excluded } = proxyCandidates({ withExcluded: true });
   // ④ 돈·바깥으로 나가는 것 — 대리 후보가 아니다. 조용히 빠지면 대표가 아침에 왜 답이 없었는지 모른다 — 총괄실에 한 번 남긴다.
   for (const it of excluded) {
@@ -292,7 +311,7 @@ export function runNotifier({ send = (team, text) => session.send(team, quiet(te
     // 알림 가능 여부가 행동까지 막고 있었다 (레오 감사, 2026-09-12). 적용은 한 번뿐이므로 send 와 무관하게 먼저 기록한다.
     if (r.status === 'passed' && !t.applied) {
       t.applied = now();
-      t.appliedText = applyAction(r);
+      t.appliedText = applyAction(r, store);
       changed = true;
     }
 
