@@ -4,6 +4,7 @@
 // 위로 스크롤하면 지난 라운드가 계속 나온다.
 
 import * as World from '/world/world.js';
+import { toolLabel, baseName } from '/toollabel.js';
 
 const $ = (id) => document.getElementById(id);
 const app = $('app'), feed = $('feed'), stream = $('stream');
@@ -415,20 +416,8 @@ function draw(e) {
  * 펼치면 목록. 다른 이벤트가 오면 "…중" 이 "…함" 으로 바뀐다. */
 let toolGroup = null;   // { actor, node, sum, list, items: [{tool, text}] }
 
-const VERB = { Read: '읽', Edit: '고치', Write: '고치', NotebookEdit: '고치', MultiEdit: '고치', WebFetch: '가져오', WebSearch: '찾' };
-const DONE = { 읽: '읽음', 고치: '고침', 가져오: '가져옴', 찾: '찾음', 쓰: '씀' };
-const baseName = (s) => String(s ?? '').replace(/[?#].*$/, '').split('/').filter(Boolean).pop() ?? '';
-
-function groupLabel(g, live) {
-  const by = {};
-  for (const it of g.items) { const v = VERB[it.tool] ?? '쓰'; by[v] = (by[v] ?? 0) + 1; }
-  const parts = Object.entries(by);
-  // 어간 + 어미: "읽고" · "읽는 중" · "읽음". 끝난 꼴(DONE)은 어간을 포함한 온전한 말이라 어간을 다시 붙이지 않는다 (레오 감사).
-  const verbs = parts.map(([v, n], i) => `${n}개 ${i < parts.length - 1 ? v + '고' : live ? v + '는 중' : DONE[v]}`).join(' ');
-  const names = [...new Set(g.items.map((it) => baseName(it.text)).filter(Boolean))];
-  const shown = names.slice(0, 3).join(', ') + (names.length > 3 ? ' …' : '');
-  return `${who(g.actor).name} · 파일 ${verbs}${shown ? ` (${shown})` : ''}`;
-}
+// 문자열은 /toollabel.js 가 만든다 — node 에서도 돌려볼 수 있게 (bus/round.mjs check).
+const groupLabel = (g, live) => `${who(g.actor).name} · ${toolLabel(g.items, live)}`;
 
 function closeToolGroup() {
   if (!toolGroup) return;
