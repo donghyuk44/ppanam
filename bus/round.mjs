@@ -462,6 +462,15 @@ switch (cmd) {
         const sw = updateCastAgent(T, 'guide', { model: 'gpt' });
         const swWant = sw.to.model === 'gpt' && sw.from.model === 'claude' && readCast(T).agents.guide.model === 'gpt' && castChangeText('테라', sw.to) === '대표가 테라를 codex 로 바꿨습니다 — 다음 턴부터.';
         updateCastAgent(T, 'guide', { model: 'claude' });
+        // gemini — 임시 외부 감사(대표 결정 09-14). 외부감사를 gemini 로는 되고 claude 로는 안 되고, geminiModel 은 목록 안, note 는 'gemini'. isForeign 이 셋 다 가른다.
+        const { isForeign, engineName, GEMINI_MODELS } = await import('./bus.mjs');
+        const gErrs = [castChangeError('outside', ag.outside, { model: 'gemini' }), castChangeError('outside', ag.outside, { geminiModel: GEMINI_MODELS[1] }), castChangeError('outside', ag.outside, { geminiModel: 'gemini-9' })];
+        const gsw = updateCastAgent(T, 'outside', { model: 'gemini', geminiModel: GEMINI_MODELS[0] });
+        const gWant = gErrs[0] === null && gErrs[1] === null && gErrs[2]?.includes('gemini 모델') && readCast(T).agents.outside.model === 'gemini'
+          && castChangeText('레오', gsw.to) === `대표가 레오를 gemini·${GEMINI_MODELS[0]} 로 바꿨습니다 — 다음 턴부터.`
+          && isForeign('gpt') && isForeign('gemini') && !isForeign('claude') && !isForeign(null) && engineName('gemini') === 'gemini' && engineName('gpt') === 'codex';
+        updateCastAgent(T, 'outside', { model: 'gpt' });
+        out.push(['gemini 임시 외부 감사(09-14)', gWant ? '✓ outside→gemini 통과 · geminiModel 목록 · note gemini · isForeign 셋' : '✗ ' + JSON.stringify({ gErrs, to: gsw.to })]);
         const txt = castChangeText('테라', up.to), txt2 = castChangeText('안젤', { effort: 'low' });
         const ca = codexArgs({ model: 'gpt-5.1', effort: 'high', resume: 'sid' }), cb = codexArgs({ model: 'gpt-5.1', outPath: '/tmp/o' });
         const cWant = ca.join(' ') === 'exec resume sid --skip-git-repo-check -c model=gpt-5.1 -c sandbox_mode=read-only -c model_reasoning_effort=high -'

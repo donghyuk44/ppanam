@@ -18,6 +18,7 @@ import { spawn as spawnProc } from 'node:child_process';
 import {
   ROOT, emit, listTeams, isOffice, paths, endRound, startRound, readCast, readState, readRoadmap, listRounds,
   readLog, quiet, RELAY_QUIET, appendJournal, journalPrompt, collectJournals, writeTurn, readProgress, progressFresh, progressText,
+  isForeign, engineName,
 } from '../bus/bus.mjs';
 import { toolPhrase } from './public/toollabel.js';
 
@@ -186,7 +187,7 @@ function briefOf(team, actor) {
   const me = cast[actor]?.name ?? actor;
   const people = Object.entries(cast)
     .filter(([id]) => id !== 'boss' && id !== 'system')
-    .map(([id, a]) => `${a.name}(${id}${a.model === 'gpt' ? ', 다른 회사 모델' : ''})`).join(' · ');
+    .map(([id, a]) => `${a.name}(${id}${isForeign(a.model) ? ', 다른 회사 모델' : ''})`).join(' · ');
   const lines = ['## 지금 이 방', `너는 ${me}(${actor})다. 이 방 사람: ${people}. 대표: ${cast.boss?.name ?? '대표'}.`];
   if (isOffice(team)) {
     lines.push('총괄실은 라운드가 없다 — 늘 열려 있다.');
@@ -489,9 +490,9 @@ export function send(team, text, actor = ownerOf(team), { kind = null, extra = '
   // 대화록에 없어 codex 가 영영 못 듣고, 부른 쪽은 전달된 줄 안다(레오 FAIL R23). 그래서 **여기 한 군데서** 방에 note 로 남긴다 — codex 는 다음 차례에 커서로
   // 읽고, 호출부 넷(알림자·요청 블록·/api/say·사회자)은 그대로다 (대표 지시 "수도꼭지 한 군데만").
   const seat = readCast(team).agents?.[actor];
-  if (seat?.model === 'gpt') {
+  if (isForeign(seat?.model)) {   // codex 든 gemini 든 — 여기 빠지면 그 자리에 넣은 말이 조용히 사라진다(결정 76 의 수도꼭지)
     const body = String(text ?? '').startsWith(RELAY_QUIET) ? String(text).slice(RELAY_QUIET.length).trim() : String(text ?? '').trim();
-    const rec = emit(team, { actor: 'system', type: 'note', text: `${seat.name ?? actor}(codex 자리) 귀에 넣을 말 — 방에 남깁니다: ${body}`, meta: { forCodex: actor } });
+    const rec = emit(team, { actor: 'system', type: 'note', text: `${seat.name ?? actor}(${engineName(seat.model)} 자리) 귀에 넣을 말 — 방에 남깁니다: ${body}`, meta: { forCodex: actor } });
     return { queued: 0, noted: rec.id };
   }
   if (seat?.model !== 'claude') return { refused: true, reason: `${actor} 는 세션이 있는 자리가 아닙니다.` };
@@ -642,14 +643,14 @@ async function journalAll(team, round) {
     // 일지는 정체성의 연결고리다 — 라운드가 바뀌고 컨텍스트가 비워져도 다음 세션이 이 문단을 읽고 '어제의 나' 를 잇는다 (대표 지시 2026-09-13).
     // 지시문은 bus.mjs 의 journalPrompt 하나 — codex 자리(outside.mjs)도 같은 문장을 받는다.
     const p = journalPrompt(round);
-    if (cast[actor]?.model === 'gpt') return journalOutside(team, actor);
+    if (isForeign(cast[actor]?.model)) return journalOutside(team, actor);
     return Promise.race([sendAndWait(team, quiet(p), actor, { kind: 'journal', internal: true }), new Promise((r) => setTimeout(() => r(null), JOURNAL_TIMEOUT))]);
   };
-  const actors = [...spoke].filter((a) => cast[a]?.model === 'claude' || cast[a]?.model === 'gpt');
+  const actors = [...spoke].filter((a) => cast[a]?.model === 'claude' || isForeign(cast[a]?.model));
   const once = async (a) => {
     try {
       const text = await ask(a);
-      if (cast[a]?.model === 'gpt') return !!text;   // outside.mjs 가 제 일지에 썼다 — exit 0 일 때만 'ok', (패스)·빈 답은 exit 3 → null
+      if (isForeign(cast[a]?.model)) return !!text;   // outside.mjs 가 제 일지에 썼다 — exit 0 일 때만 'ok', (패스)·빈 답은 exit 3 → null
       return appendJournal(team, a, text, { round });
     } catch { return false; }
   };

@@ -128,7 +128,7 @@ function peopleOf(team, sessions, conductor, phase) {
         .filter((d) => d.by === 'boss' && new Date(d.ts ?? 0).getTime() >= dayStart.getTime()).length;
       continue;
     }
-    if (cast[id]?.model === 'gpt') {
+    if (bus.isForeign(cast[id]?.model)) {   // codex·gemini — 결정 77 의 그 자리. 'gpt' 직접 비교 금지
       // 사회자가 띄운 호출(outsideBusy) 이든 CLI --ask 든, outside.mjs 가 도는 동안은 일하는 중 — 표시 파일(bus.outsideRunning). 도는 중이면 신호는 시작 시각.
       const running = bus.outsideRunning(team, id);
       p.busy = !!conductor.outsideBusy || !!running; p.alive = null; p.lastSignal = running?.since ?? p.lastSaidAt;
@@ -224,23 +224,23 @@ const server = http.createServer((req, res) => {
       infra: infra.latest(),   // 밑바닥 넷 — blockedOf 의 infra 입력. 바뀌면 ws `infra` 로 온다
 
       // 개인 카드의 엔진·모델·강도 고르기 (결정 69) — 목록은 bus.mjs 하나.
-      castOptions: { engines: bus.ENGINES, claude: bus.CLAUDE_MODELS, codex: bus.CODEX_MODELS, efforts: bus.EFFORTS },
+      castOptions: { engines: bus.ENGINES, claude: bus.CLAUDE_MODELS, codex: bus.CODEX_MODELS, gemini: bus.GEMINI_MODELS, efforts: bus.EFFORTS },
     });
   }
 
   // 자리의 엔진·모델·추론 강도 (결정 69) — 대표가 관제탑 개인 카드에서 고른다. 이 서버는 이 PC 안에서만 열려 있어 화면 = 대표다.
   // cast.json 은 C 잠금 파일이라 서버가 대신 쓴다. 다음 턴부터 — claude 자리는 턴이 끝난 뒤 세션을 내리고(id 는 남김), codex 는 매 턴 읽는다.
   if (url.pathname === '/api/cast' && req.method === 'POST') {
-    readBody(req, res, ({ team: t, actor, model, llm, codexModel, effort }) => {
+    readBody(req, res, ({ team: t, actor, model, llm, codexModel, geminiModel, effort }) => {
       if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
       let r;
-      try { r = bus.updateCastAgent(t, actor, { model, llm, codexModel, effort }); }
+      try { r = bus.updateCastAgent(t, actor, { model, llm, codexModel, geminiModel, effort }); }
       catch (e) { return json(res, 400, { error: e.message }); }
       let restart = null;
       if (Object.keys(r.to).length) {
         emit(t, { actor: 'system', type: 'note', text: bus.castChangeText(r.agent.name ?? actor, r.to), meta: { castChange: { actor, from: r.from, to: r.to } } });
-        // 엔진이 claude 인 자리만 세션이 있다. gpt 로 바뀐 자리의 claude 세션은 그냥 내린다 — 다음 차례는 outside.mjs 가 받는다.
-        restart = r.agent.model === 'claude' || r.to.model === 'gpt' ? session.restartAfterTurn(t, actor) : null;
+        // 엔진이 claude 인 자리만 세션이 있다. codex·gemini 로 바뀐 자리의 claude 세션은 그냥 내린다 — 다음 차례는 outside.mjs 가 받는다.
+        restart = r.agent.model === 'claude' || bus.isForeign(r.to.model) ? session.restartAfterTurn(t, actor) : null;
       }
       return json(res, 200, { agent: r.agent, from: r.from, to: r.to, restart });
     });
@@ -373,14 +373,14 @@ const server = http.createServer((req, res) => {
         const to = q ? null : addressee(say, cast);
         // 대표가 외부감사(codex)를 불렀다. codex 는 세션이 없어 넣을 곳이 없다 — 서버가 대표 말풍선을 직접 남기고
         // 사회자가 그를 깨운다. 주인은 다음 차례에 듣는다 (레오 감사, 2026-09-12: 다니엘은 대표가 불러도 안 깼다).
-        if (to && cast[to]?.model === 'gpt') {
+        if (to && bus.isForeign(cast[to]?.model)) {
           const rec = emit(t, { actor: 'boss', type: 'message', text: say });
           return json(res, 200, { ok: true, to, queued: 0, event: rec.id });
         }
         // 주인이 codex 자리다 (결정 69 ① — 대표가 실무를 codex 로 바꿨다). 세션이 없으니 말풍선을 남기고 사회자가 깨운다.
         // 들려주기(quiet)는 codex 가 다음 차례에 커서로 듣는다 — 넣을 곳이 없어 그냥 받은 것으로.
         const owner = session.ownerOf(t);
-        if (!to && cast[owner]?.model === 'gpt') {
+        if (!to && bus.isForeign(cast[owner]?.model)) {
           if (q) return json(res, 200, { ok: true, to: owner, queued: 0 });
           const rec = emit(t, { actor: 'boss', type: 'message', text: say });
           wake(t, owner);
@@ -421,7 +421,7 @@ const server = http.createServer((req, res) => {
       .filter((e) => e.actor === actor && (e.type === 'message' || e.type === 'verdict') && !/^\(패스\)/.test(String(e.text ?? '').trim()))
       .slice(-8)
       .map((e) => ({ id: e.id, ts: e.ts, type: e.type, round: e.round ?? null, verdict: e.meta?.verdict ?? null, text: String(e.text ?? '').slice(0, 300) }));
-    const st = a.model === 'gpt' ? { engine: 'codex' } : session.status(team, actor);
+    const st = bus.isForeign(a.model) ? { engine: bus.engineName(a.model) } : session.status(team, actor);
     return json(res, 200, {
       team, actor, name: a.name ?? actor, title: a.title ?? null, does: a.does ?? null, color: a.color ?? null, model: a.model ?? null,   // title(직책)·does(하는 일) — req_94013782
       persona, journal: journal ? { first: session.journalFirstSentence(team, actor), latest: journal.text.slice(0, 900), total: journal.total } : null,

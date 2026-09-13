@@ -8,7 +8,7 @@
 //   snapshot()        { hour, mode, debug, actors: { '<팀>:<자리>': { place, act } } }   place 는 map.json 의 자리 이름
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, listTeams, readCast, isOffice } from '../bus/bus.mjs';
+import { ROOT, listTeams, readCast, isOffice, isForeign } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 
 const FILE = path.join(ROOT, 'state', 'world.json');
@@ -53,7 +53,7 @@ export function snapshot() {
     const cast = readCast(t.id).agents ?? {};
     const st = session.statusAll(t.id);
     for (const [id, a] of Object.entries(cast)) {
-      if (id === 'boss' || id === 'system' || !(a.model === 'claude' || a.model === 'gpt')) continue;
+      if (id === 'boss' || id === 'system' || !(a.model === 'claude' || isForeign(a.model))) continue;   // gemini 자리도 마을에 선다
       let place, act = 'idle';
       if (mode === 'night') { place = `home.${t.id}.${id}`; act = 'sleep'; }
       else if (mode === 'rest' || mode === 'evening') { place = `home.${t.id}.${id}`; }

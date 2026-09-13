@@ -79,12 +79,20 @@ teams/<방>/
 
 | 값 | 무엇 | 없으면 | 어디에 닿나 |
 | --- | --- | --- | --- |
-| `model` | 엔진 — `claude` · `gpt`(codex) | — | 자리의 세션 종류. claude 는 `server/session.mjs`, gpt 는 `bus/outside.mjs` |
+| `model` | 엔진 — `claude` · `gpt`(codex) · `gemini`(임시 외부 감사) | — | 자리의 세션 종류. claude 는 `server/session.mjs`, gpt·gemini 는 `bus/outside.mjs` |
 | `llm` | claude 모델 — `opus` · `sonnet` · `haiku` | 방의 모델(`state/teams.json`) | `claude --model` |
 | `codexModel` | codex 모델 — `CODEX_MODELS` 목록(`bus/bus.mjs`) | 환경 `PPANAM_CODEX_MODEL`, 그것도 없으면 목록 첫 것 | `codex exec -m` · `resume -c model=` (전엔 전 자리 공통 환경변수 하나) |
-| `effort` | 추론 강도 — `low` · `medium` · `high` · `xhigh` | 엔진 기본(플래그 안 붙임) | `claude --effort` · `codex -c model_reasoning_effort=` |
+| `geminiModel` | gemini 모델 — `GEMINI_MODELS` 목록(`gemini-3.6-flash` · `gemini-3.1-pro`) | 목록 첫 것 | 물음 파일의 `model` |
+| `effort` | 추론 강도 — `low` · `medium` · `high` · `xhigh` | 엔진 기본(플래그 안 붙임) | `claude --effort` · `codex -c model_reasoning_effort=` (gemini 는 안 씀) |
 
-`POST /api/cast { team, actor, model?, llm?, codexModel?, effort? }` — 순수 `bus.castChangeError(agent, patch)` 가 거르고(없는 자리·`boss`·`system`·
+**"다른 회사 엔진"** 은 `gpt`·`gemini` 둘 — 코드는 `'gpt'` 를 직접 비교하지 않고 `bus.isForeign(model)` 하나를 쓴다(흩어진 비교가 하나 빠지면 그 자리가 조용히 죽는다 — 결정 77).
+`engineName(model)` 이 사람 말(`codex` · `gemini` · `claude`)이고 판정문 `meta.engine` 에는 부른 이름이 아니라 **답한 것**을 적는다(결정 78) — "gemini · gemini-3.6-flash".
+**gemini 는 임시다**(대표 결정 09-14 — codex 계정 한도가 9/20 까지). Antigravity 앱은 명령줄이 없어 **파일로 주고받는다**: `outside.mjs runGemini` 가
+`state/gemini/ask/<id>.json { id, team, actor, model, prompt, resume, ts }` 를 쓰고(임시 파일 → rename), 하네스가 창을 몰아 `state/gemini/answer/<id>.json { id, answer, sessionId, ts }`
+(또는 `{ error }`)를 쓰면 2초마다 보던 outside.mjs 가 읽고 **둘 다 지운다**. `PPANAM_OUTSIDE_TIMEOUT`(기본 5분) 안에 답이 없으면 codex 실패와 같은 길(방에 note, exit 1) — 세션은 안 버린다.
+느리다(30초~1분, 하네스 세션이 돌 때만) — 판정 같은 큰 것에만. codex 계정 한도 쿨다운(`state/outside-cooldown.json`)은 gpt 자리에만 걸린다.
+
+`POST /api/cast { team, actor, model?, llm?, codexModel?, geminiModel?, effort? }` — 순수 `bus.castChangeError(agent, patch)` 가 거르고(없는 자리·`boss`·`system`·
 목록 밖 값·엔진에 안 맞는 모델 → `400`), 통과하면 **서버가** `cast.json` 을 쓴다(`bus.updateCastAgent` — 파일은 C 잠금이라 화면 요청을 서버가
 대신 쓰는 것) + 방에 `note` "대표가 테라를 opus·high 로 바꿨습니다"(`meta.castChange { actor, from, to }`). **다음 턴부터** — claude 자리는
 도는 턴을 안 끊고 턴이 끝나면(놀고 있으면 바로) 세션을 내려서 다음 `send` 가 새 인자로 다시 띄운다(id 는 남겨 `--resume` 으로 잇는다);
@@ -92,9 +100,9 @@ codex 자리는 `outside.mjs` 가 매번 `cast.json` 을 읽으니 저절로. **
 codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>` 로 띄우고(그 자리 이름으로 말하고, 그 자리의 인격·일지·세션 칸
 `방:자리` 를 쓴다 — 외부감사는 옛 칸 이름 `방` 그대로), claude 자리로는 `outside.mjs` 가 뜨지 않는다(exit 2). 대표가 이름 없이 말했는데
 주인이 codex 자리면 `/api/say` 가 말풍선을 남기고 사회자를 깨운다(`conductor.wake`). 한 방의 codex 자리들은 한 번에 하나만 돈다(`outsideBusy`).
-**외부감사만은 codex 고정** — 클로드가 외부감사인 척하지 않는다(CLAUDE.md), 판정 흐름도 `outside = gpt` 를 전제. 화면의 알약은 켜진 쪽이
-disabled, 다른 쪽을 누르면 바뀐다(외부감사는 둘 다 못 누름). 응답 `{ agent, from, to, restart: 'now' | 'after-turn' | null }`.
-`/api/boot` 의 `castOptions { engines, claude, codex, efforts }` 가 화면의 목록이다.
+**외부감사는 다른 회사 엔진 고정** — 클로드가 외부감사인 척하지 않는다(CLAUDE.md), 판정 흐름도 `isForeign(outside.model)` 을 전제. 화면의 알약 셋(claude · codex · gemini)은
+켜진 쪽이 disabled, 다른 쪽을 누르면 바뀐다(외부감사는 claude 만 못 누름 — codex ↔ gemini 는 된다). 응답 `{ agent, from, to, restart: 'now' | 'after-turn' | null }`.
+`/api/boot` 의 `castOptions { engines, claude, codex, gemini, efforts }` 가 화면의 목록이다.
 
 ---
 

@@ -23,7 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams, outsideCooldown } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams, outsideCooldown, isForeign } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { ga } from './public/toollabel.js';
 
@@ -155,9 +155,10 @@ function note(team, text) { try { emit(team, { actor: 'system', type: 'note', te
 /** 이 방에서 차례를 받을 수 있는 자리. claude 자리 + 외부감사. */
 function participants(team) {
   const agents = readCast(team).agents ?? {};
-  return Object.keys(agents).filter((a) => agents[a]?.model === 'claude' || agents[a]?.model === 'gpt');
+  return Object.keys(agents).filter((a) => agents[a]?.model === 'claude' || isForeign(agents[a]?.model));
 }
-const isOutside = (team, actor) => readCast(team).agents?.[actor]?.model === 'gpt';
+// 다른 회사 엔진 자리(codex·gemini) — 프로세스가 턴마다 뜨는 자리. 'gpt' 를 직접 비교하지 않는다(bus.isForeign — 결정 77 의 그 버그).
+const isOutside = (team, actor) => isForeign(readCast(team).agents?.[actor]?.model);
 // 이 방에 없는 자리는 총괄실 것이다 — 총괄실에서 옮겨온 발언(meta.from)의 화자.
 const nameOf = (team, actor) => readCast(team).agents?.[actor]?.name ?? readCast('hq').agents?.[actor]?.name ?? actor;
 
@@ -382,8 +383,8 @@ export function startVerdict(team, target) {
   if (state.phase !== 'running') throw new Error(state.phase === 'blocked' ? '대표 판단 대기 중입니다.' : '라운드를 먼저 여세요.');
   if (r.flow) throw new Error(`이미 판정이 돌고 있습니다 (${r.flow.step}).`);
   const cast = readCast(team).agents ?? {};
-  // 내부감사는 엔진이 무엇이든(대표가 codex 로 바꿨을 수도, 결정 69 ①) 그 자리가 있으면 한 걸음. 외부감사는 gpt 여야 한다(CLAUDE.md).
-  const steps = [cast.review?.model ? 'review' : null, cast.outside?.model === 'gpt' ? 'outside' : null].filter(Boolean);
+  // 내부감사는 엔진이 무엇이든(대표가 codex 로 바꿨을 수도, 결정 69 ①) 그 자리가 있으면 한 걸음. 외부감사는 다른 회사 엔진이어야 한다(CLAUDE.md — codex 든 gemini 든).
+  const steps = [cast.review?.model ? 'review' : null, isForeign(cast.outside?.model) ? 'outside' : null].filter(Boolean);
   if (!steps.length) throw new Error('이 방에는 감사역이 없습니다.');
   r.round = state.round;
   r.flow = { target: String(target ?? '').trim() || '이번 라운드 산출물', steps, i: 0, asked: 0 };
@@ -452,7 +453,8 @@ function quietest(team) {
   const lastActor = log.length ? log[log.length - 1].actor : null;
   // 계정 한도 쿨다운(R25) 중엔 codex 자리는 침묵 차례에서 뺀다 — 안 그러면 제일 오래 조용한 게 늘 그라 시간당 상한을 헛되이 쓴다. 호명·판정은 그대로(outside.mjs 가 한 번 알린다).
   const cd = outsideCooldown();
-  const cands = participants(team).filter((a) => a !== lastActor && !busy(team, a) && !(cd && isOutside(team, a)));
+  const agents = readCast(team).agents ?? {};
+  const cands = participants(team).filter((a) => a !== lastActor && !busy(team, a) && !(cd && agents[a]?.model === 'gpt'));   // 한도는 codex 계정 것 — gemini 자리는 그대로
   if (!cands.length) return null;
   cands.sort((a, b) => (lastSpoke.get(a) ?? '') < (lastSpoke.get(b) ?? '') ? -1 : 1);
   return cands[0];

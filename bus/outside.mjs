@@ -27,7 +27,7 @@ import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readLog, readCast, readState, appendJournal,
   defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, headSha, codexModelOf, codexArgs,
-  markOutsideRunning, clearOutsideRunning, outsideCooldown, setOutsideCooldown, parseUsageLimit,
+  markOutsideRunning, clearOutsideRunning, outsideCooldown, setOutsideCooldown, parseUsageLimit, geminiModelOf, isForeign,
 } from './bus.mjs';
 // 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
 import { assemblePrompt, personaOf as seatPersonaOf } from '../server/session.mjs';
@@ -44,8 +44,11 @@ const API_MODEL = process.env.PPANAM_OUTSIDE_MODEL || 'gpt-5.1';
 let ACTOR = 'outside';
 const seatOf = (team) => readCast(team).agents?.[ACTOR] ?? null;
 const codexModelFor = (team) => codexModelOf(seatOf(team));
+const geminiModelFor = (team) => geminiModelOf(seatOf(team));
 const effortFor = (team) => seatOf(team)?.effort ?? null;
-const engineOf = (team) => `codex · ${codexModelFor(team)}`;
+// 이 자리의 엔진 — cast.json 의 model. 'gpt' 면 codex CLI, 'gemini' 면 파일로(runGemini). 라벨은 답한 것을 적는다(결정 78).
+const engineKindOf = (team) => seatOf(team)?.model ?? 'gpt';
+const engineOf = (team) => (engineKindOf(team) === 'gemini' ? `gemini · ${geminiModelFor(team)}` : `codex · ${codexModelFor(team)}`);
 
 const STORE = path.join(ROOT, 'state', 'outside-sessions.json');
 // --debug: codex 의 stderr 머리말을 그대로 보여준다 — 세션 id 를 못 읽을 때 무엇이 오는지 보려고 (2026-09-13).
@@ -141,9 +144,48 @@ function runCodex(input, { resume = null, model = codexModelOf(null), effort = n
   });
 }
 
+/* ── gemini — 파일로 주고받기 ──
+ * 임시 외부 감사(대표 결정 09-14 — codex 계정 한도 엿새). Antigravity 앱은 명령줄이 없어 outside.mjs 가 직접 못 부른다. ChatGPT 그림 뽑을 때 쓰던 길 그대로:
+ *   state/gemini/ask/<id>.json     { id, team, actor, model, prompt, resume, ts }   ← 여기서 쓴다
+ *   state/gemini/answer/<id>.json  { id, answer, sessionId, ts }                    ← 하네스가 창을 몰아 쓴다
+ * runCodex 와 같은 모양 { answer, sessionId } 를 돌려준다. 느리다(30초~1분) — 판정 같은 큰 것에만 건다.
+ */
+export const GEMINI_DIR = path.join(ROOT, 'state', 'gemini');
+const GEMINI_POLL_MS = 2000;
+function runGemini(input, { resume = null, model = geminiModelOf(null), team = null } = {}) {
+  const id = `gem_${crypto.randomBytes(4).toString('hex')}`;
+  const askDir = path.join(GEMINI_DIR, 'ask'), ansDir = path.join(GEMINI_DIR, 'answer');
+  const askPath = path.join(askDir, `${id}.json`), ansPath = path.join(ansDir, `${id}.json`);
+  fs.mkdirSync(askDir, { recursive: true }); fs.mkdirSync(ansDir, { recursive: true });
+  // 임시 파일에 쓴 뒤 rename — 하네스가 반쪽 JSON 을 읽지 않게.
+  const tmp = `${askPath}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify({ id, team, actor: ACTOR, model, prompt: input, resume, ts: new Date().toISOString() }, null, 1) + '\n');
+  fs.renameSync(tmp, askPath);
+  if (DEBUG) console.error(`[debug] gemini 물음 ${askPath} (${input.length}자)`);
+
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
+    const cleanup = () => { try { fs.rmSync(askPath, { force: true }); } catch { /* 없으면 그만 */ } try { fs.rmSync(ansPath, { force: true }); } catch { /* 없으면 그만 */ } };
+    const poll = () => {
+      let raw = null;
+      try { raw = fs.readFileSync(ansPath, 'utf8'); } catch { /* 아직 */ }
+      if (raw != null) {
+        let a;
+        try { a = JSON.parse(raw); } catch { return setTimeout(poll, GEMINI_POLL_MS); }   // 쓰는 중일 수 있다 — 한 번 더
+        cleanup();
+        if (a.error) return reject(new Error(`gemini — ${String(a.error).slice(0, 200)}`));
+        return resolve({ answer: String(a.answer ?? '').trim(), sessionId: a.sessionId ?? resume ?? null });
+      }
+      if (Date.now() - started > TIMEOUT) { cleanup(); return reject(new Error(`gemini 답 없음 (${Math.round(TIMEOUT / 1000)}초 초과) — 하네스 세션이 도는 중인가`)); }
+      setTimeout(poll, GEMINI_POLL_MS);
+    };
+    setTimeout(poll, GEMINI_POLL_MS);
+  });
+}
+
 /* ── 참여자로서 말하기 ── */
 
-const DEFAULT_PERSONA = `너는 이 팀의 **외부감사**이다. 다른 회사 모델이고, 그래서 여기 있다.
+const DEFAULT_PERSONA =`너는 이 팀의 **외부감사**이다. 다른 회사 모델이고, 그래서 여기 있다.
 클로드끼리 합의한 지점이야말로 네가 봐야 하는 곳이다.
 
 본다: 인용된 수치·날짜·링크가 실재하는가. 코드라면 경계 조건과 멱등성.
@@ -231,8 +273,9 @@ const TURN = {
  * 그의 답은 그가 직접 대화록에 남기고, 다른 자리들은 각자 다음 차례에 듣는다 — 들려주기는 사회자의 일이다.
  */
 async function ask(team, question, { talk = false, lull = false, turn = null, text = null, dry = false, fromRound = null } = {}) {
-  const ENGINE = engineOf(team);   // 이 호출이 쓰는 엔진 — meta.engine 에 그대로 남는다 (자리별 모델, 결정 69)
-  if (!dry && !await hasCodex()) {
+  const ENGINE = engineOf(team);   // 이 호출이 쓰는 엔진 — meta.engine 에 그대로 남는다 (자리별 모델, 결정 69 · 답한 것을 적는다, 결정 78)
+  const KIND = engineKindOf(team); // 'gpt' → codex CLI · 'gemini' → 파일
+  if (!dry && KIND === 'gpt' && !await hasCodex()) {
     emit(team, {
       actor: ACTOR, type: 'note',
       text: '외부 모델이 연결되어 있지 않습니다. 교차검증 없이 진행합니다.',
@@ -240,8 +283,8 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
     console.error('외부감사 설정 안 됨 — node bus/outside.mjs --setup');
     return 1;
   }
-  // 계정 한도 쿨다운(R25) — 그때까지는 부르지 않는다. 방마다 한 번만 알리고 조용히 1 로 나간다(사회자는 1 을 "이미 방에 남겼다" 로 본다).
-  const cd = dry ? null : outsideCooldown();
+  // 계정 한도 쿨다운(R25) — codex 계정 것이라 gpt 자리에만. 그때까지는 부르지 않는다. 방마다 한 번만 알리고 조용히 1 로 나간다(사회자는 1 을 "이미 방에 남겼다" 로 본다).
+  const cd = dry || KIND !== 'gpt' ? null : outsideCooldown();
   if (cd) {
     if (!cd.noted.includes(team)) {
       const when = new Date(cd.until).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -311,19 +354,21 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   const clear = () => clearOutsideRunning(team, ACTOR);
   process.once('exit', clear);
   try {
-    res = await runCodex(input, { resume: prior, model: codexModelFor(team), effort: effortFor(team) });
+    res = KIND === 'gemini'
+      ? await runGemini(input, { resume: prior, model: geminiModelFor(team), team })
+      : await runCodex(input, { resume: prior, model: codexModelFor(team), effort: effortFor(team) });
   } catch (e) {
     clear();
-    // 계정 한도면 쿨다운을 적어 두고 그 뒤 호출은 위에서 조용히 건너뛴다. 세션은 버리지 않는다 — 한도 때문이지 세션이 썩은 게 아니다.
-    const limit = parseUsageLimit(e.message);
+    // 계정 한도면 쿨다운을 적어 두고 그 뒤 호출은 위에서 조용히 건너뛴다. 세션은 버리지 않는다 — 한도 때문이지 세션이 썩은 게 아니다. (codex 만 — gemini 는 계정이 다르다)
+    const limit = KIND === 'gpt' ? parseUsageLimit(e.message) : null;
     if (limit) {
       setOutsideCooldown({ ...limit, noted: [team] });
       emit(team, { actor: ACTOR, type: 'note', text: `외부 모델을 부르지 못했습니다 — 계정 사용 한도. ${limit.reason.slice(0, 160)}` });
       console.error('실패(한도): ' + limit.until + ' 까지');
       return 1;
     }
-    // 이어붙이기가 깨졌으면 세션을 버리고 다음에 새로 연다.
-    if (prior) forget(team);
+    // 이어붙이기가 깨졌으면 세션을 버리고 다음에 새로 연다. (codex 만 — gemini 의 sessionId 는 하네스 창의 대화라 답이 늦은 것뿐이다)
+    if (prior && KIND === 'gpt') forget(team);
     emit(team, {
       actor: ACTOR, type: 'note',
       text: `외부 모델을 부르지 못했습니다 — ${String(e.message).split('\n')[0].slice(0, 200)}`,
@@ -426,8 +471,14 @@ async function status() {
       ? `열린 세션: ${open.map((t) => `${t}(${String(slotOf(t)?.id ?? '').slice(0, 8)})`).join(', ')}`
       : '열린 세션 없음');
   }
+  const cd = outsideCooldown();
+  if (cd) lines.push(`codex 계정 사용 한도 — ${cd.until} 까지 부르지 않음`);
+  if (team && engineKindOf(team) === 'gemini') {
+    let waiting = 0; try { waiting = fs.readdirSync(path.join(GEMINI_DIR, 'ask')).filter((f) => f.endsWith('.json')).length; } catch { /* 폴더 없음 */ }
+    lines.push(`gemini 자리(${team}/${ACTOR}) · 모델 ${geminiModelFor(team)} · 파일로 주고받음(state/gemini/) · 기다리는 물음 ${waiting}`);
+  }
   if (process.env.OPENAI_API_KEY) lines.push(`OpenAI API 있음 (모델 ${API_MODEL}) — 한 번 묻기 전용`);
-  return { ok: codex || !!process.env.OPENAI_API_KEY, lines };
+  return { ok: codex || !!process.env.OPENAI_API_KEY || (!!team && engineKindOf(team) === 'gemini'), lines };
 }
 
 const SETUP = `외부감사를 연결하는 법.
@@ -476,8 +527,8 @@ for (let i = 0; i < argv.length; i++) {
 // 제리 일지에 남의 문단을 쓴다 — 2026-09-13 17:24 실제로 그랬다(round.mjs check 가 `--team _check` 로 부름, 테라).
 if (team && !teamExists(team)) { console.error(`오류: 방 '${team}' 이 없습니다 (teams.json). 기본 방으로 넘기지 않습니다.`); process.exit(2); }
 if (!team) team = defaultTeam();
-// 자리가 codex 자리여야 한다 — claude 자리(또는 없는 자리)로 codex 를 띄우면 그 자리 이름으로 남의 말이 남는다. 상태·설정·한 번 묻기는 자리와 무관.
-if (!['setup', 'status', 'check'].includes(mode) && readCast(team).agents?.[ACTOR]?.model !== 'gpt') {
+// 자리가 다른 회사 엔진 자리(codex·gemini)여야 한다 — claude 자리(또는 없는 자리)로 띄우면 그 자리 이름으로 남의 말이 남는다. 상태·설정·한 번 묻기는 자리와 무관.
+if (!['setup', 'status', 'check'].includes(mode) && !isForeign(readCast(team).agents?.[ACTOR]?.model)) {
   console.error(`오류: '${team}' 의 '${ACTOR}' 자리는 codex 자리가 아닙니다 (cast.json model: ${readCast(team).agents?.[ACTOR]?.model ?? '없음'}).`);
   process.exit(2);
 }

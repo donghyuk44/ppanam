@@ -59,7 +59,7 @@ const STATE_LABEL = { off: '자는 중', idle: '듣는 중', busy: '작업 중',
 function stateOf(id) {
   const c = summary.conductor ?? {};
   const a = cast.agents?.[id];
-  if (a?.model === 'gpt') return c.outsideBusy ? 'busy' : (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'off';
+  if (a?.model === 'gpt' || a?.model === 'gemini') return c.outsideBusy ? 'busy' : (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'off';   // 다른 회사 엔진 자리 — 세션 없음(결정 77)
   const s = summary.sessions?.[id];
   if (!s || !s.alive) return (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'off';
   if (s.busy) return 'busy';
@@ -1398,25 +1398,27 @@ function personCard(t, id, a, p) {
  */
 function castRow(t, id, a) {
   const row = el('div', 'pcard__cast');
-  const engine = a.model === 'gpt' ? 'codex' : a.model === 'claude' ? 'claude' : null;
+  // 엔진 이름 ↔ cast.json model 값. gemini 는 임시 외부 감사(대표 결정 09-14 — codex 한도 엿새). 셋 다 여기 표 하나로.
+  const ENGINE_OF = { claude: 'claude', gpt: 'codex', gemini: 'gemini' }, MODEL_OF = { claude: 'claude', codex: 'gpt', gemini: 'gemini' };
+  const engine = ENGINE_OF[a.model] ?? null;
   if (!engine) return row;
-  // 엔진 알약 둘(결정 69 ①) — 지금 것이 켜져 있고, 다른 쪽을 누르면 그 자리의 세션 종류가 바뀐다(다음 턴부터). 외부감사만은 codex 고정(CLAUDE.md).
+  // 엔진 알약 셋(결정 69 ①) — 지금 것이 켜져 있고, 다른 쪽을 누르면 그 자리의 세션 종류가 바뀐다(다음 턴부터). 외부감사는 claude 로 못 간다(CLAUDE.md) — codex ↔ gemini 는 된다.
   const engines = el('span', 'pcard__engines'); engines.setAttribute('role', 'group'); engines.title = '엔진 — 누르면 바뀜, 다음 턴부터';
   const opts = castOptions ?? {};
   const locked = id === 'outside';
-  for (const name of ['claude', 'codex']) {
+  for (const name of ['claude', 'codex', 'gemini']) {
     const b = el('button', 'pcard__engine', name); b.type = 'button';
     b.setAttribute('aria-pressed', name === engine ? 'true' : 'false');
-    b.disabled = name === engine || locked;
-    if (locked && name !== engine) b.title = '외부감사는 다른 회사 모델이어야 합니다 — 바꿀 수 없음';
-    else if (name !== engine) b.title = `${name} 로 바꾸기 — 다음 턴부터`;
-    b.addEventListener('click', () => { if (!b.disabled) send({ model: name === 'codex' ? 'gpt' : 'claude' }, { redraw: true }); });
+    b.disabled = name === engine || (locked && name === 'claude');
+    if (locked && name === 'claude') b.title = '외부감사는 다른 회사 모델이어야 합니다 — 바꿀 수 없음';
+    else if (name !== engine) b.title = `${name} 로 바꾸기 — 다음 턴부터${name === 'gemini' ? ' (임시 외부 감사 — 파일로 주고받아 느림)' : ''}`;
+    b.addEventListener('click', () => { if (!b.disabled) send({ model: MODEL_OF[name] }, { redraw: true }); });
     engines.appendChild(b);
   }
   row.appendChild(engines);
-  const models = engine === 'codex' ? (opts.codex ?? []) : (opts.claude ?? []);
-  const field = engine === 'codex' ? 'codexModel' : 'llm';
-  const current = a[field] ?? (engine === 'codex' ? models[0] : (teams.find((x) => x.id === t.id)?.model ?? models[0]));
+  const models = engine === 'codex' ? (opts.codex ?? []) : engine === 'gemini' ? (opts.gemini ?? []) : (opts.claude ?? []);
+  const field = engine === 'codex' ? 'codexModel' : engine === 'gemini' ? 'geminiModel' : 'llm';
+  const current = a[field] ?? (engine === 'claude' ? (teams.find((x) => x.id === t.id)?.model ?? models[0]) : models[0]);
   const modelSel = select(models, current, null);   // 값이 없으면 방 기본(state/teams.json)이 골라져 보인다 — 실제로 도는 모델
   modelSel.title = a[field] == null ? '방 기본값 — 고르면 이 자리에 고정' : '이 자리의 모델';
   const effortSel = select(opts.efforts ?? [], a.effort ?? '', '강도 기본');

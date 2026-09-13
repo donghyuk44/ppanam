@@ -752,11 +752,21 @@ export function progressFresh(team) {
  */
 export const CLAUDE_MODELS = ['opus', 'sonnet', 'haiku'];
 export const CODEX_MODELS = ['gpt-5.6-sol', 'gpt-5.1'];
+// Gemini 는 임시 외부 감사(대표 결정, 09-14 — codex 계정 한도 엿새). 명령줄이 없어 파일로 주고받는다(outside.mjs runGemini · 창은 하네스가 몬다).
+export const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3.1-pro'];
 export const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
-export const ENGINES = ['claude', 'gpt'];
-export const CAST_FIELDS = ['model', 'llm', 'codexModel', 'effort'];
+export const ENGINES = ['claude', 'gpt', 'gemini'];
+export const CAST_FIELDS = ['model', 'llm', 'codexModel', 'geminiModel', 'effort'];
+/**
+ * 클로드가 아닌 다른 회사 엔진인가 — 'gpt'(codex) · 'gemini'. 뜻은 "외부 감사가 될 수 있는 것".
+ * 비교가 흩어져 있으면 하나가 빠질 때 그 자리가 조용히 죽는다(결정 77 — codex 자리가 관제탑에서 늘 "쉼"). 'gpt' 를 직접 비교하지 말고 이것을 쓴다.
+ */
+export const isForeign = (model) => model === 'gpt' || model === 'gemini';
+/** 사람 말로 부르는 엔진 이름 — 판정문 meta.engine 에는 부른 이름이 아니라 답한 것을 적는다(결정 78). */
+export const engineName = (model) => (model === 'gpt' ? 'codex' : model === 'gemini' ? 'gemini' : model === 'claude' ? 'claude' : null);
 /** 이 자리의 codex 모델 — 자리별 값이 먼저, 없으면 환경(전 자리 공통, 옛 길), 그것도 없으면 목록 첫 것. */
 export const codexModelOf = (agent) => agent?.codexModel ?? process.env.PPANAM_CODEX_MODEL ?? CODEX_MODELS[0];
+export const geminiModelOf = (agent) => agent?.geminiModel ?? GEMINI_MODELS[0];
 /**
  * codex CLI 인자 — 순수, bus/outside.mjs 가 쓰고 round.mjs check 가 돌려본다.
  * 샌드박스는 읽기 전용으로 못 박는다 — 기본값에 맡겼더니 codex 0.154 가 워크트리에 시험 디렉터리와 수정을 남겼다(2026-09-12).
@@ -777,16 +787,17 @@ export function castChangeError(actorId, agent, patch) {
   if (!agent) return `'${actorId}' 자리가 없습니다.`;
   if (actorId === 'boss' || actorId === 'system') return `'${actorId}' 는 사람이거나 장치라 엔진이 없습니다.`;
   const keys = Object.keys(patch ?? {}).filter((k) => patch[k] !== undefined);
-  if (!keys.length) return '바꿀 값이 없습니다 (model · llm · codexModel · effort).';
+  if (!keys.length) return '바꿀 값이 없습니다 (model · llm · codexModel · geminiModel · effort).';
   const bad = keys.find((k) => !CAST_FIELDS.includes(k));
-  if (bad) return `'${bad}' 는 고칠 수 있는 값이 아닙니다 (model · llm · codexModel · effort).`;
+  if (bad) return `'${bad}' 는 고칠 수 있는 값이 아닙니다 (model · llm · codexModel · geminiModel · effort).`;
   if (patch.model !== undefined) {
     if (!ENGINES.includes(patch.model)) return `엔진은 ${ENGINES.join(' · ')} 중 하나입니다: ${patch.model}`;
-    // 외부감사만은 다른 회사 모델이어야 한다 — CLAUDE.md "클로드 둘이 사이좋게 같이 틀릴 때, 그건 다른 엔진에게만 보인다". 판정 흐름도 outside=gpt 전제.
-    if (actorId === 'outside' && patch.model !== 'gpt') return '외부감사(outside)는 다른 회사 모델이어야 합니다 — 클로드가 외부감사인 척하지 않습니다 (CLAUDE.md).';
+    // 외부감사만은 다른 회사 모델이어야 한다 — CLAUDE.md "클로드 둘이 사이좋게 같이 틀릴 때, 그건 다른 엔진에게만 보인다". codex 든 gemini 든 클로드만 아니면 된다.
+    if (actorId === 'outside' && !isForeign(patch.model)) return '외부감사(outside)는 다른 회사 모델이어야 합니다 — 클로드가 외부감사인 척하지 않습니다 (CLAUDE.md).';
   }
   if (patch.llm !== undefined && !CLAUDE_MODELS.includes(patch.llm)) return `claude 모델은 ${CLAUDE_MODELS.join(' · ')} 중 하나입니다: ${patch.llm}`;
   if (patch.codexModel !== undefined && !CODEX_MODELS.includes(patch.codexModel)) return `codex 모델은 ${CODEX_MODELS.join(' · ')} 중 하나입니다: ${patch.codexModel}`;
+  if (patch.geminiModel !== undefined && !GEMINI_MODELS.includes(patch.geminiModel)) return `gemini 모델은 ${GEMINI_MODELS.join(' · ')} 중 하나입니다: ${patch.geminiModel}`;
   if (patch.effort !== undefined && !EFFORTS.includes(patch.effort)) return `추론 강도는 ${EFFORTS.join(' · ')} 중 하나입니다: ${patch.effort}`;
   return null;
 }
@@ -871,9 +882,10 @@ export function clearOutsideCooldown() {
 /** note 한 줄 — "대표가 테라를 opus·high 로 바꿨습니다". 바뀐 값만, 엔진은 이름으로. */
 export function castChangeText(name, to) {
   const words = [];
-  if (to.model) words.push(to.model === 'gpt' ? 'codex' : 'claude');
+  if (to.model) words.push(engineName(to.model) ?? to.model);
   if (to.llm) words.push(to.llm);
   if (to.codexModel) words.push(to.codexModel);
+  if (to.geminiModel) words.push(to.geminiModel);
   if (to.effort) words.push(to.effort);
   return `대표가 ${eul(name)} ${words.join('·')} 로 바꿨습니다 — 다음 턴부터.`;
 }
