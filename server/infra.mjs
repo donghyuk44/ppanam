@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
-import { ROOT } from '../bus/bus.mjs';
+import { ROOT, outsideCooldown } from '../bus/bus.mjs';
 
 export const INFRA_TICK_MS = 2 * 60_000;              // 하네스 밤 시계와 같은 2분
 export const INFRA_TIMEOUT_MS = 3 * INFRA_TICK_MS;    // 세 틱 동안 못 재면 blockedOf 가 unknown 으로
@@ -52,6 +52,9 @@ export async function probeAll({ port, sessionHealth }) {
       return wrap(r.status === 200, `HTTP ${r.status}`);
     },
     codex: async () => {
+      // 바이너리만 보면 한도 소진(R25)이 "산 것" 으로 나온다(솔라) — 쿨다운 파일이 있으면 그게 답이다.
+      const cd = outsideCooldown();
+      if (cd) return wrap(false, `계정 사용 한도 — ${cd.until.slice(0, 16)} 까지`);
       try { const where = (await run('which', ['codex'])).trim(); return wrap(true, where); }
       catch { return wrap(false, 'codex CLI 없음 — node bus/outside.mjs --setup'); }
     },
