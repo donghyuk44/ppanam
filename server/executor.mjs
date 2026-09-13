@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile, execFileSync } from 'node:child_process';
-import { listApprovals, emit, protectedBranch } from '../bus/bus.mjs';
+import { listApprovals, emit, protectedBranch, pushGateError, readLog } from '../bus/bus.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STORE = path.join(REPO, 'state', 'executor.json');
@@ -105,6 +105,18 @@ export async function runExecutor() {
       const meta = { approval: target.id, grade: 'B', executed: 'invalid' };
       emit(target.team, { actor: 'system', type: 'note', text: `승인 ${target.id} — 실행할 수 없는 요청입니다 (${bad}). 밀지 않았습니다. 다시 요청하세요.`, meta });
       if (target.team !== 'hq') emit('hq', { actor: 'system', type: 'note', text: `${target.team} 팀 승인 ${target.id} 실행 불가 — ${bad}`, meta });
+      return;
+    }
+
+    // 푸시 문 (결정 63) — 요청한 라운드에 그 SHA 를 본 외부감사 PASS 카드가 있어야 한다. 요청 때도 봤지만 큐 파일은 손으로도 쓸 수 있어
+    // 실행 직전에 다시 본다. 대화록은 append-only 라 카드는 안 사라진다 — 요청 레코드의 round 로 그 라운드를 찾는다.
+    const gate = pushGateError(readLog(target.team).filter((e) => e.round === target.round), want.sha);
+    if (gate) {
+      store.done[target.id] = { at: new Date().toISOString(), ok: false, out: `unreviewed: ${gate}` };
+      writeStore(store);
+      const meta = { approval: target.id, grade: 'B', executed: 'unreviewed' };
+      emit(target.team, { actor: 'system', type: 'note', text: `승인 ${target.id} — 외부감사 문을 못 열어 밀지 않았습니다 (${gate})`, meta });
+      if (target.team !== 'hq') emit('hq', { actor: 'system', type: 'note', text: `${target.team} 팀 승인 ${target.id} 외부감사 없음 — 밀지 않음`, meta });
       return;
     }
 

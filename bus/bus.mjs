@@ -55,6 +55,27 @@ export function pushAction(branch, sha, remote = 'origin') {
   return { type: 'push', remote, branch, sha };
 }
 
+/** 지금 HEAD 의 SHA — 판정 카드에 박는다 (결정 63). git 이 없거나 저장소가 아니면 null. */
+export function headSha() {
+  try { return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null; }
+  catch { return null; }
+}
+
+/**
+ * 푸시 문 (대표 결정 63) — 톰·제리는 "올려도 되나" 를 보지 코드를 감사하지 않는다. 그래서 B 푸시는 그 방의 외부감사가
+ * 그 커밋을 PASS 한 뒤에만 걸 수 있다. 순수 함수: 현재 라운드의 이벤트와 밀 SHA. 이 라운드의 **마지막** 외부감사 카드(stale 아닌 것)가
+ * PASS 이고 그 meta.sha 가 같아야 한다. 요청(requestApproval)과 실행자(executor.mjs) 둘 다 본다. 못 열면 이유 문장, 열리면 null.
+ */
+export function pushGateError(events, sha, { actor = 'outside' } = {}) {
+  const cards = (events ?? []).filter((e) => e.type === 'verdict' && e.actor === actor && !e.meta?.stale);
+  if (!cards.length) return '이 라운드에 외부감사 판정 카드가 없습니다 — 레오 PASS 뒤에 푸시를 요청합니다 (결정 63).';
+  const last = cards[cards.length - 1];
+  if (last.meta?.verdict !== 'PASS') return `외부감사의 마지막 판정이 ${last.meta?.verdict ?? '?'} 입니다 — PASS 뒤에 푸시를 요청합니다 (결정 63).`;
+  if (!last.meta?.sha) return '외부감사 PASS 카드에 SHA 가 없습니다(문 전의 카드) — 다시 감사받은 뒤 요청합니다 (결정 63).';
+  if (last.meta.sha !== sha) return `외부감사가 PASS 한 것은 ${last.meta.sha.slice(0, 8)} 인데 밀려는 것은 ${String(sha).slice(0, 8)} 입니다 — PASS 뒤에 커밋했으면 다시 감사받습니다 (결정 63).`;
+  return null;
+}
+
 /* ── 총괄 배달 ──
  *
  * 총괄이 대표의 지시를 팀에 옮길 때, 요약만 보내면 팀에는 근거가 남지 않는다.
@@ -313,6 +334,12 @@ export function requestApproval(team, { by = 'guide', grade, what, detail = '', 
   for (const f of outs) {
     const file = outFile(team, f);
     if (!file || !fs.existsSync(file)) throw new Error(`teams/${team}/out/${f} 이 없습니다. 산출물은 out/ 에 두고 그 안의 경로로 적습니다.`);
+  }
+  // 푸시 문 (결정 63) — 이 라운드에 그 SHA 를 본 외부감사 PASS 카드가 있어야 한다. 총괄실은 라운드가 없어 못 건다.
+  if (action?.type === 'push') {
+    if (isOffice(team)) throw new Error('총괄실에서는 푸시를 걸 수 없습니다 — 팀 방에서 외부감사 PASS 뒤에 겁니다 (결정 63).');
+    const bad = pushGateError(readContext(team), action.sha);
+    if (bad) throw new Error(bad);
   }
   const rec = {
     kind: 'request', id: 'apr_' + crypto.randomBytes(4).toString('hex'),
@@ -884,7 +911,8 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
 
   const rec = emit(team, {
     type: 'verdict', actor, text,
-    meta: { verdict: final, target, attempt, max: MAX_ATTEMPTS },
+    // sha — 판정 순간의 HEAD. 외부감사의 PASS 카드가 어느 커밋을 본 것인지 남겨 B 푸시의 문이 대조한다 (결정 63).
+    meta: { verdict: final, target, attempt, max: MAX_ATTEMPTS, sha: headSha() },
   });
 
   if (final === 'FAIL' && !isOffice(team)) {

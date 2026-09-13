@@ -208,6 +208,7 @@ M3 데이터 전까지 빈 상태 문구). 마지막에 본 탭은 브라우저�
 | `FAIL` | 한계 도달 | 사람 호출 |
 
 - `meta.target`: 누구에게 내린 판정인지 (`guide` 등)
+- `meta.sha`: 판정 순간 저장소의 HEAD (40자) 또는 null — B 푸시의 문이 이 값을 본다 (6절 "푸시 문", 결정 63)
 - `meta.attempt`: 이 **마일스톤**의 몇 번째 반박인지 (1~3). **3에서 자동 `FAIL`.** 라운드를 닫고 다시 열어도
   이어진다(`round.json` 의 `attempts[마일스톤]`, 다음 `startRound` 가 물려받는다). 0 으로 돌리는 것은 감사 `PASS`
   카드와 대표의 재개(`resumeRound`)뿐이다.
@@ -376,7 +377,17 @@ note 를 내며 "다시 요청하세요" 라고 한다 — 톰·제리는 그 SH
 같을 때만 `git push origin <sha>:refs/heads/<branch>` 로 **승인된 SHA 를 못 박아** 민다 — 대조와 푸시
 사이에 브랜치가 움직여도 origin 에는 톰·제리가 본 커밋만 간다 (레오 2차 감사가 재현한 틈).
 총괄실에 들려주는 요청문에도 `대상: origin/<branch> @ <sha8>` 이 실린다. 결과는 요청한 방과 총괄실 둘 다에
-`note` 로 남는다 (`meta.executed`: `pushed` · `push-failed` · `stale` · `invalid`).
+`note` 로 남는다 (`meta.executed`: `pushed` · `push-failed` · `stale` · `invalid` · `unreviewed`).
+**푸시 문 — 외부감사 PASS 뒤에만** (대표 결정 63, 2026-09-13 — "외부감사가 왜 있냐"). 톰·제리는 "올려도 되나" 를 보지 코드를 감사하지
+않는다. 그래서 B 푸시는 **레오(그 방의 `outside`) 가 그 커밋을 PASS 한 뒤에만** 걸 수 있다. 순서: 레오 PASS → `--request B --push` → 톰·제리 → 실행자.
+장치: 판정 카드(`verdict`)에 서버가 그 순간의 HEAD 를 `meta.sha` 로 박는다(`recordVerdict` → `headSha()`, git 이 없으면 null). 요청(`requestApproval`)과
+실행자(`executor.mjs`) 둘 다 `pushGateError(현재 라운드 이벤트, sha)` 를 본다 — 이 라운드의 **마지막** 외부감사 카드(`stale` 아닌 것)가 `PASS` 이고 그
+`meta.sha` 가 미는 SHA 와 같아야 한다. 카드가 없으면 "레오 PASS 뒤에", 마지막이 REVISE 면 "PASS 뒤에", SHA 가 다르면 "PASS 뒤에 커밋했다 —
+다시 감사받으라" 로 거부한다. 라운드가 닫혀 있으면(idle) 카드가 없으니 자연히 거부 — 푸시는 라운드 안에서 건다. 총괄실은 라운드가 없어 B 푸시를
+못 건다(총괄실 코드는 팀 방에서 민다). 실행자는 큐 파일이 손으로도 써지므로 실행 직전에 **요청 레코드의 `round`** 이벤트로 다시 본다 —
+못 열면 밀지 않고 `executed: 'unreviewed'` note.
+`meta.sha` 없는 옛 카드는 문을 못 연다 — 오늘(09-13) 나간 두 푸시(ce1614c·785c461)는 이 문 전의 것이고 새 가지라 되돌리지 않는다.
+
 **원격 기본 브랜치는 B 로 못 민다** — 메인 병합은 C 다. 어느 브랜치인지는 `bus.mjs` 의 `protectedBranch()` 하나가
 `git symbolic-ref refs/remotes/origin/HEAD` 에서 읽고, 요청(`pushAction`)과 실행자(`invalidAction`) 둘 다 그것을 본다.
 `main`·`master` 를 박아 두던 때는 기본 브랜치 이름이 다른 이 저장소에서 아무것도 못 막았다 (대표 결정 9, 2026-09-13).
