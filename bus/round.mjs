@@ -188,10 +188,18 @@ switch (cmd) {
       if (ok) out.push(['정식 흐름 → 닫힘 + 로드맵 pass', readRoadmap(T).milestones[0].status === 'pass' && readState(T).phase === 'idle' ? '✓' : '✗ 로드맵이 pass 가 아님']);
       out.push(['닫힌 방의 판정 → stale', recordVerdict(T, { actor: 'outside', verdict: 'REVISE', text: '늦음' }).meta.stale ? '✓' : '✗']);
       startRound(T, { milestone: 2 });
-      recordVerdict(T, { actor: 'outside', verdict: 'REVISE', text: '하나' });
+      // 결정 84 — 받아들여 고친 지적은 반박이 아니다. 첫 REVISE 는 안 세고, 같은 sha 로 다시 받으면(안 고침) 센다.
+      const shaA = 'a'.repeat(40), shaB = 'b'.repeat(40), shaC = 'c'.repeat(40);
+      const d1 = recordVerdict(T, { actor: 'outside', verdict: 'REVISE', text: '하나 — 첫 지적', sha: shaA });
+      const d2 = recordVerdict(T, { actor: 'outside', verdict: 'REVISE', text: '둘 — 고친 뒤 다른 지적', sha: shaB });
+      const d3 = recordVerdict(T, { actor: 'outside', verdict: 'REVISE', text: '셋 — 안 고치고 다시', sha: shaB });
+      const d4 = recordVerdict(T, { actor: 'outside', verdict: 'REVISE', text: '셋 — 안 고치고 다시', sha: shaC });
+      const dWant = d1.meta.counted === false && d1.meta.attempt === 0 && d2.meta.counted === false && d2.meta.attempt === 0
+        && d3.meta.counted === true && d3.meta.attempt === 1 && d4.meta.counted === true && d4.meta.attempt === 2 && readState(T).phase === 'running';
+      out.push(['받아들인 지적은 반박 아님(결정 84)', dWant ? '✓ 첫 REVISE 0 · 고친 뒤 다른 지적 0 · 같은 sha 다시 1 · 같은 지적 되풀이 2' : '✗ ' + JSON.stringify([d1.meta, d2.meta, d3.meta, d4.meta])]);
       endRound(T, { summary: '닫고' });
       const s = startRound(T, { milestone: 2 });
-      out.push(['반박 횟수를 다음 라운드가 물려받음', s.attempt === 1 ? '✓ 1/3' : `✗ ${s.attempt}`]);
+      out.push(['반박 횟수를 다음 라운드가 물려받음', s.attempt === 2 ? '✓ 2/3' : `✗ ${s.attempt}`]);
       recordVerdict(T, { actor: 'outside', verdict: 'FAIL', text: '명백' });
       out.push(['FAIL(blocked) 뒤 닫기', refuses(() => endRound(T, {}), '대표가 이 방에 말해')]);
       resumeRound(T, { text: '풀어라' });

@@ -1042,6 +1042,19 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
  * sha — 감사가 **본** 커밋. 부르는 쪽(outside.mjs)이 감사를 시작할 때 잡은 HEAD 를 넘긴다. 안 넘기면 지금 HEAD 인데, 그건
  * 감사 도중 들어온 커밋이 안 본 채로 찍히는 틈이다(레오 REVISE, R22) — 정식 경로는 늘 넘긴다. 푸시 문(결정 63)이 이 값을 본다.
  */
+/** 지적의 열쇠 — 첫 줄에서 공백·문장 부호를 떼고 앞 40자. 같은 지적이 되풀이되는지 대충 본다(결정 84 ②). */
+const issueKey = (t) => String(t ?? '').split('\n')[0].replace(/[\s\p{P}\p{S}]+/gu, '').slice(0, 40);
+export const sameIssue = (a, b) => { const x = issueKey(a), y = issueKey(b); return !!x && x === y; };
+/**
+ * 이 REVISE 가 반박으로 세는가 (결정 84) — 받아들여 고친 지적은 반박이 아니다. 앞 REVISE(이 라운드) 가 없으면 갈린 게 아니다.
+ * ① 앞 REVISE 뒤 고친 커밋 없이 같은 sha 로 다시 받았다("그건 틀렸다") · ② 같은 지적이 되풀이된다. 순수 — check 가 돌려본다.
+ */
+export function countsAsDispute(prev, { sha, text }) {
+  if (!prev) return false;
+  if (prev.meta?.sha && sha && prev.meta.sha === sha) return true;
+  return sameIssue(prev.text, text);
+}
+
 export function recordVerdict(team, { actor, verdict, text, target = 'guide', round = null, sha = undefined }) {
   const v = String(verdict || '').toUpperCase();
   if (!VERDICTS.has(v)) throw new Error(`판정은 ${[...VERDICTS].join(' / ')} 중 하나여야 합니다.`);
@@ -1067,14 +1080,20 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
 
   let attempt = state.attempt || 0;
   let final = v;
+  let counted = null;   // REVISE 만 — 반박으로 셌나 (결정 84)
 
   // 반박 카운터는 마일스톤의 것이다. 총괄실은 라운드가 없어 리셋될 길이 없는데
   // 제리의 대조 REVISE 가 여기 쌓여 총괄실이 대표 호출로 잠길 뻔했다 (Fable 감사, 2026-09-02).
   // 총괄실의 REVISE 는 그냥 REVISE 다 — 세지 않는다.
   if (!isOffice(team)) {
     if (v === 'REVISE') {
-      attempt = Math.min(attempt + 1, MAX_ATTEMPTS);
-      if (attempt >= MAX_ATTEMPTS) final = 'FAIL';
+      // 받아들여 고친 지적은 반박이 아니다 (결정 84) — 이 라운드의 앞 REVISE 와 견줘 갈린 것(같은 sha 로 다시 · 같은 지적)만 센다.
+      const prev = readLog(team).filter((e) => e.round === state.round && e.type === 'verdict' && e.meta?.verdict === 'REVISE' && !e.meta?.stale).at(-1) ?? null;
+      counted = countsAsDispute(prev, { sha: seen, text });
+      if (counted) {
+        attempt = Math.min(attempt + 1, MAX_ATTEMPTS);
+        if (attempt >= MAX_ATTEMPTS) final = 'FAIL';
+      }
     }
     // 감사 PASS 는 이 마일스톤의 반박 횟수를 0 으로 돌린다 — 0 복귀는 이것과 대표의 재개뿐이다.
     if (v === 'PASS') attempt = 0;
@@ -1085,8 +1104,8 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
 
   const rec = emit(team, {
     type: 'verdict', actor, text,
-    // sha — 감사가 본 커밋(감사 시작 때의 HEAD). B 푸시의 문이 이 값을 대조한다 (결정 63).
-    meta: { verdict: final, target, attempt, max: MAX_ATTEMPTS, sha: seen },
+    // sha — 감사가 본 커밋(감사 시작 때의 HEAD). B 푸시의 문이 이 값을 대조한다 (결정 63). counted — REVISE 가 반박으로 셌나 (결정 84).
+    meta: { verdict: final, target, attempt, max: MAX_ATTEMPTS, sha: seen, ...(counted === null ? {} : { counted }) },
   });
 
   if (final === 'FAIL' && !isOffice(team)) {
