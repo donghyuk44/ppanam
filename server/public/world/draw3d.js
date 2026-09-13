@@ -20,7 +20,8 @@ const DIR_NAME = ['down', 'left', 'up', 'right'];   // world.js 의 DIR 번호 �
 const D = {
   stage: null, renderer: null, labels: null, camera: null, controls: null, scene: null,
   city: null, parts: null, map: null, groups: {}, current: null, roomEls: {},
-  lights: {}, loader: new GLTFLoader(), cache: new Map(), loaded: 0, failed: 0, placeholders: 0,
+  lights: {}, loader: new GLTFLoader(), cache: new Map(), loaded: 0, failed: 0, placeholders: 0, shirts: 0,
+  cuts: [], cut: false,   // 컷어웨이 — 잘리는 건물들, 지금 잘려 있나
   goal: null, fitZ: 2, w: 1, h: 1, mode: null,
 };
 
@@ -40,7 +41,8 @@ export async function init({ stage, onClick }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
+  renderer.localClippingEnabled = true;   // 컷어웨이 — 재질마다 자르는 면
   renderer.domElement.className = 'world__gl';
   stage.appendChild(renderer.domElement);
   const labels = new CSS2DRenderer(); labels.domElement.className = 'world__labels';
@@ -134,21 +136,52 @@ const TEAM_COLORS = {};
 export function setTeamColors(colors) { Object.assign(TEAM_COLORS, colors); }
 const teamColorOf = (team) => (team ? TEAM_COLORS[team] ?? '#8a7320' : null);
 
-/** 부품 하나를 자리에 놓는다. glb 가 오기 전엔 size 크기의 상자, 오면 바꿔 끼운다. 수정 표(mods)는 부품 위에 얹는다. */
+/** 부품 하나를 자리에 놓는다. glb 가 오기 전엔 size 크기의 상자, 오면 바꿔 끼운다. 수정 표(mods)는 부품 위에 얹는다. 지붕 층이 있는 건물(집·찻집·가게)은 확대하면 잘려 안이 보인다(컷어웨이). */
 function placePart(entry, teamColor) {
   const part = D.parts.parts[entry.part];
   const g = new THREE.Group(); g.name = entry.id ?? entry.part;
   if (!part) return g;
-  const k = part.scale ?? D.parts.scale, [sw, sh, sd] = part.size.map((v, i) => v * k);
+  const k = part.scale ?? D.parts.scale, [sw, sh, sd] = part.size.map((v) => v * k);
   g.position.set(entry.at[0], 0, entry.at[1]); g.rotation.y = (entry.rotY ?? 0) * DEG;
+  const cut = (part.mods ?? []).includes('roof-tile') ? makeCut(g, entry, [sw, sh, sd], teamColor) : null;
   const ph = box(sw, sh, sd, '#e6dccb'); ph.position.y = sh / 2; g.add(ph); D.placeholders += 1;
   loadGlb(D.parts.kits[part.kit] + part.file).then((src) => {
     const m = src.clone(); m.scale.setScalar(k);
     m.traverse((o) => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; if (o.material) { o.material.roughness = 1; o.material.metalness = 0; } } });
     g.remove(ph); g.add(m); D.placeholders -= 1;
+    if (cut) cut.apply(m);
   }).catch(() => { /* 없으면 상자 그대로 */ });
-  for (const name of part.mods ?? []) { const mod = D.parts.mods[name]; if (mod) g.add(buildMod(mod, [sw, sh, sd], entry, teamColor)); }
+  for (const name of part.mods ?? []) { const mod = D.parts.mods[name]; if (mod) { const o = buildMod(mod, [sw, sh, sd], entry, teamColor); g.add(o); if (cut) cut.apply(o); } }
   return g;
+}
+
+/* ── 컷어웨이 — 확대하면(칸 ≥ 22px) 집의 위와 앞 반을 잘라 안이 보인다(참고 그림 Airbnb Buck 의 모서리 컷). 자르는 면은 세계 좌표라 건물마다 둘. ── */
+const CUT_Y = 1.7, FAR = 1e6;
+function makeCut(g, entry, [sw, sh, sd], teamColor) {
+  const [cx, cz] = entry.at;
+  const planes = [new THREE.Plane(new THREE.Vector3(0, -1, 0), FAR), new THREE.Plane(new THREE.Vector3(0, 0, -1), FAR)];
+  const c = { planes, y: CUT_Y, z: cz, apply(root) {
+    root.traverse((o) => { if (o.isMesh && o.material) { o.material = o.material.clone(); o.material.clippingPlanes = planes; o.material.side = THREE.DoubleSide; o.material.clipShadows = true; } });
+  } };
+  // 집 안 — 바닥·침대·책상·의자. 뒷반쪽에 둔다(앞반은 잘려 나간다). 팀 집이면 이불이 팀 색.
+  const inner = new THREE.Group();
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(sw - 0.16, sd - 0.16), mat('#e9d9bf')); floor.rotation.x = -Math.PI / 2; floor.position.y = 0.06; floor.receiveShadow = true; inner.add(floor);
+  const bz = -sd / 4;
+  const bed = box(Math.min(0.7, sw * 0.38), 0.22, Math.min(0.42, sd * 0.4), '#fdfbf7', 0.05); bed.position.set(-sw / 4, 0.17, bz); inner.add(bed);
+  const quilt = box(Math.min(0.7, sw * 0.38) - 0.06, 0.08, Math.min(0.42, sd * 0.4) - 0.14, teamColor ?? '#5f8fbf', 0.03); quilt.position.set(-sw / 4, 0.32, bz + 0.04); inner.add(quilt);
+  const desk = box(Math.min(0.55, sw * 0.3), 0.32, 0.3, 'desk', 0.03); desk.position.set(sw / 4, 0.22, bz - 0.02); inner.add(desk);
+  const screen = box(0.28, 0.2, 0.03, '#2b3a4a', 0.01); screen.position.set(sw / 4, 0.48, bz - 0.1); inner.add(screen);
+  const chair = box(0.22, 0.22, 0.22, 'chair', 0.04); chair.position.set(sw / 4, 0.17, bz + 0.26); inner.add(chair);
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshStandardMaterial({ color: '#ffd98a', emissive: '#ffb347', emissiveIntensity: 0.8, roughness: 1 })); lamp.position.set(-sw / 4, 0.55, bz - 0.25); inner.add(lamp);
+  inner.position.y = 0.1;   // Kenney 건물 바닥 판 위로
+  g.add(inner); c.apply(inner);
+  D.cuts.push(c);
+  return c;
+}
+/** 확대 정도에 따라 컷어웨이를 켜고 끈다 — 자르는 면의 상수만 바꾼다. */
+function setCut(on) {
+  if (on === D.cut) return; D.cut = on;
+  for (const c of D.cuts) { c.planes[0].constant = on ? c.y : FAR; c.planes[1].constant = on ? c.z : FAR; }
 }
 
 /** 수정 표 — cap(지붕 위 상자) · front(앞면 낱장). 새 종류는 계약 문서에 먼저. */
@@ -304,7 +337,53 @@ function buildRoomLabels(g, name) {
 
 /* ── 사람 ── */
 
-/** 인형 하나를 만든다. 오기 전엔 팀 색 캡슐, 오면 Kenney 인형(원색 — colormap 은 디자인이 주면 갈아 끼운다). */
+/**
+ * 팀 색 옷 — Kenney 인형은 세트 전체가 colormap 한 장이라 재질 색을 곱하면 살·머리까지 물든다. 그래서 그림 한 장을 사람마다 복사해
+ * **몸통 높이(35~62%)의 삼각형이 가리키는 색 띠 하나**(= 윗옷)만 팀 색으로 칠해 끼운다. 디자인이 사람별 colormap 을 주면(parts.characters.colormap) 그게 이긴다.
+ * UV 는 glTF 라 위가 0(flipY=false) — 픽셀 = (u·w, v·h).
+ */
+const recolored = new Map();   // `${model}|${color}` → CanvasTexture
+function shirtTexture(model, meshes, teamColor) {
+  const key = `${model}|${teamColor}`;
+  if (recolored.has(key)) return recolored.get(key);
+  const src = meshes.find((m) => m.material?.map?.image)?.material.map;
+  if (!src) return null;
+  const img = src.image, w = img.width, h = img.height;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
+  const px = x.getImageData(0, 0, w, h);
+  // 몸통 띠에 걸린 삼각형의 면적을 색별로 더한다 — 제일 넓은 색이 윗옷
+  const bb = new THREE.Box3(); for (const m of meshes) bb.expandByObject(m);
+  const y0 = bb.min.y + (bb.max.y - bb.min.y) * 0.35, y1 = bb.min.y + (bb.max.y - bb.min.y) * 0.62;
+  const tally = new Map(); const A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3(), ab = new THREE.Vector3(), ac = new THREE.Vector3();
+  for (const m of meshes) {
+    const g = m.geometry, pos = g.attributes.position, uv = g.attributes.uv; if (!pos || !uv) continue;
+    const idx = g.index ? g.index.array : null, n = idx ? idx.length : pos.count;
+    for (let i = 0; i < n; i += 3) {
+      const [i0, i1, i2] = idx ? [idx[i], idx[i + 1], idx[i + 2]] : [i, i + 1, i + 2];
+      A.fromBufferAttribute(pos, i0); B.fromBufferAttribute(pos, i1); C.fromBufferAttribute(pos, i2);
+      m.localToWorld(A); m.localToWorld(B); m.localToWorld(C);
+      const cy = (A.y + B.y + C.y) / 3; if (cy < y0 || cy > y1) continue;
+      const area = ab.subVectors(B, A).cross(ac.subVectors(C, A)).length() / 2;
+      const u = (uv.getX(i0) + uv.getX(i1) + uv.getX(i2)) / 3, v = (uv.getY(i0) + uv.getY(i1) + uv.getY(i2)) / 3;
+      const p = (Math.min(h - 1, Math.max(0, Math.floor(v * h))) * w + Math.min(w - 1, Math.max(0, Math.floor(u * w)))) * 4;
+      const k = (px.data[p] << 16) | (px.data[p + 1] << 8) | px.data[p + 2];
+      tally.set(k, (tally.get(k) ?? 0) + area);
+    }
+  }
+  if (!tally.size) return null;
+  const shirt = [...tally].sort((p, q) => q[1] - p[1])[0][0];
+  const hex = parseInt(String(teamColor).replace('#', ''), 16) || 0x8a7320, r = (hex >> 16) & 255, gg = (hex >> 8) & 255, b = hex & 255;   // 색 관리 안 거치고 sRGB 바이트 그대로
+  for (let p = 0; p < px.data.length; p += 4) {
+    if (((px.data[p] << 16) | (px.data[p + 1] << 8) | px.data[p + 2]) === shirt) { px.data[p] = r; px.data[p + 1] = gg; px.data[p + 2] = b; }
+  }
+  x.putImageData(px, 0, 0);
+  const tex = new THREE.CanvasTexture(c); tex.flipY = false; tex.colorSpace = THREE.SRGBColorSpace; tex.magFilter = src.magFilter; tex.minFilter = src.minFilter;
+  recolored.set(key, tex);
+  return tex;
+}
+
+/** 인형 하나를 만든다. 오기 전엔 팀 색 캡슐, 오면 Kenney 인형에 팀 색 윗옷(위 shirtTexture). 디자인 colormap 이 오면 그것으로. */
 function addActor(a, { key, name, color: teamColor, boss = false }) {
   const spec = D.parts.characters[key] ?? null;
   const k = D.parts.scale, height = spec ? spec.sourceHeight * k : 1.0;
@@ -315,10 +394,14 @@ function addActor(a, { key, name, color: teamColor, boss = false }) {
   ring.rotation.x = -Math.PI / 2; ring.position.y = 0.03; g.add(ring);   // 발밑 팀 색 고리 — 옷을 못 물들이는 동안의 팀 표시
   if (spec) {
     loadGlb(D.parts.kits.characters + spec.model).then((src) => {
-      const m = src.clone(); m.scale.setScalar(k);
-      m.traverse((o) => { if (o.isMesh) { o.castShadow = true; if (o.material) { o.material = o.material.clone(); o.material.roughness = 1; o.material.metalness = 0; } } });
-      if (spec.colormap) {                                           // 디자인이 준 사람 색 한 장 — 있으면 갈아 끼운다
-        new THREE.TextureLoader().load(`/world/assets/colormaps/people/${spec.colormap}`, (tex) => { tex.colorSpace = THREE.SRGBColorSpace; tex.flipY = false; m.traverse((o) => { if (o.isMesh && o.material.map) { o.material.map = tex; o.material.needsUpdate = true; } }); });
+      const m = src.clone(); m.scale.setScalar(k); m.updateMatrixWorld(true);
+      const meshes = [];
+      m.traverse((o) => { if (o.isMesh) { o.castShadow = true; if (o.material) { o.material = o.material.clone(); o.material.roughness = 1; o.material.metalness = 0; } meshes.push(o); } });
+      const swap = (tex) => { for (const o of meshes) if (o.material.map) { o.material.map = tex; o.material.needsUpdate = true; } };
+      if (spec.colormap) {                                           // 디자인이 준 사람 색 한 장 — 있으면 그것이 이긴다
+        new THREE.TextureLoader().load(`/world/assets/colormaps/people/${spec.colormap}`, (tex) => { tex.colorSpace = THREE.SRGBColorSpace; tex.flipY = false; swap(tex); });
+      } else {
+        try { const tex = shirtTexture(spec.model, meshes, teamColor); if (tex) { swap(tex); D.shirts += 1; } } catch (e) { console.warn('팀 색 옷 실패', key, e); }
       }
       g.remove(ph); g.add(m);
     }).catch(() => { /* 캡슐 그대로 */ });
@@ -398,13 +481,14 @@ function render(mode) {
   // 멀리서 보면 이름표·말풍선이 마을을 덮는다(폰 폭 "화면 작게" 에서 열여섯 이름표가 한 줄로 겹침, R24 첫 그림). 칸 하나가 10px 아래면 방 이름만 남긴다.
   const ppu = D.w / (D.camera.right - D.camera.left) * D.camera.zoom;
   D.labels.domElement.classList.toggle('world__labels--far', ppu < 10);
+  setCut(ppu >= 22);                                                  // 확대하면 집 안이 보인다 — "화면 크게" 나 핀치로 당겼을 때
   D.renderer.render(D.scene, D.camera);
   D.labels.render(D.scene, D.camera);
 }
 
 /** 시험용 — 화면을 안 보고도 무엇이 섰는지. */
 function stats() {
-  return { engine: 'three', scene: D.current, glbLoaded: D.loaded, glbFailed: D.failed, placeholders: D.placeholders, scenes: Object.keys(D.groups), zoom: D.camera?.zoom ?? null, fit: D.fitZ };
+  return { engine: 'three', scene: D.current, glbLoaded: D.loaded, glbFailed: D.failed, placeholders: D.placeholders, shirts: D.shirts, cutaway: D.cut, scenes: Object.keys(D.groups), zoom: D.camera?.zoom ?? null, fit: D.fitZ };
 }
 
 const api = { showScene, addActor, updateActor, project, lookAt, lookAtXZ, setZoom, banner, render, stats, get roomEls() { return D.roomEls; }, get current() { return D.current; } };
