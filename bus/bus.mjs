@@ -675,9 +675,8 @@ export function castChangeError(actorId, agent, patch) {
   if (bad) return `'${bad}' 는 고칠 수 있는 값이 아닙니다 (model · llm · codexModel · effort).`;
   if (patch.model !== undefined) {
     if (!ENGINES.includes(patch.model)) return `엔진은 ${ENGINES.join(' · ')} 중 하나입니다: ${patch.model}`;
-    // 엔진 바꾸기는 아직 — outside 는 다른 회사 모델이어야 하고(CLAUDE.md: 클로드가 외부감사인 척하지 않는다, 판정 흐름도 outside=gpt 를 전제),
-    // 다른 자리의 codex 화는 outside.mjs·훅·일지가 자리 이름 'outside' 에 묶여 있어 다음 갈래(--actor). 같은 값은 통과(바뀐 게 없다).
-    if (patch.model !== agent.model) return `엔진 바꾸기는 아직 안 됩니다 — ${actorId} 는 ${agent.model === 'gpt' ? 'codex' : 'claude'} 그대로 (다음 갈래). 모델·추론 강도는 바꿀 수 있습니다.`;
+    // 외부감사만은 다른 회사 모델이어야 한다 — CLAUDE.md "클로드 둘이 사이좋게 같이 틀릴 때, 그건 다른 엔진에게만 보인다". 판정 흐름도 outside=gpt 전제.
+    if (actorId === 'outside' && patch.model !== 'gpt') return '외부감사(outside)는 다른 회사 모델이어야 합니다 — 클로드가 외부감사인 척하지 않습니다 (CLAUDE.md).';
   }
   if (patch.llm !== undefined && !CLAUDE_MODELS.includes(patch.llm)) return `claude 모델은 ${CLAUDE_MODELS.join(' · ')} 중 하나입니다: ${patch.llm}`;
   if (patch.codexModel !== undefined && !CODEX_MODELS.includes(patch.codexModel)) return `codex 모델은 ${CODEX_MODELS.join(' · ')} 중 하나입니다: ${patch.codexModel}`;

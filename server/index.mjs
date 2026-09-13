@@ -23,7 +23,7 @@ import { listRequests, requestCounts } from '../bus/requests.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
-import { noticeEvents, startVerdict, snapshot, setClock } from './conductor.mjs';
+import { noticeEvents, startVerdict, snapshot, setClock, wake } from './conductor.mjs';
 import * as world from './world.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
@@ -355,6 +355,15 @@ const server = http.createServer((req, res) => {
         if (to && cast[to]?.model === 'gpt') {
           const rec = emit(t, { actor: 'boss', type: 'message', text: say });
           return json(res, 200, { ok: true, to, queued: 0, event: rec.id });
+        }
+        // 주인이 codex 자리다 (결정 69 ① — 대표가 실무를 codex 로 바꿨다). 세션이 없으니 말풍선을 남기고 사회자가 깨운다.
+        // 들려주기(quiet)는 codex 가 다음 차례에 커서로 듣는다 — 넣을 곳이 없어 그냥 받은 것으로.
+        const owner = session.ownerOf(t);
+        if (!to && cast[owner]?.model === 'gpt') {
+          if (q) return json(res, 200, { ok: true, to: owner, queued: 0 });
+          const rec = emit(t, { actor: 'boss', type: 'message', text: say });
+          wake(t, owner);
+          return json(res, 200, { ok: true, to: owner, queued: 0, event: rec.id });
         }
         const actor = to && (cast[to]?.model === 'claude') ? to : undefined;
         const sent = session.send(t, q ? quiet(say) : say, actor);

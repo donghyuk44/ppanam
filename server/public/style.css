@@ -749,12 +749,14 @@ button.dash__row:hover b { text-decoration: underline; }
 .pcard__nums { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-4); }
 /* 엔진 · 모델 · 추론 강도 (결정 69) — 엔진 알약(못 누름) + select 둘 + 저장 메시지. 폰에서 select 는 네이티브 선택기. */
 .pcard__cast { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
-/* 엔진 알약 둘 — 켜진 쪽만 진하게. 둘 다 disabled 지만 켜진 쪽은 흐리지 않다(상태 표시), 꺼진 쪽은 흐리다(아직 못 누름). */
+/* 엔진 알약 둘 — 켜진 쪽만 진하게(disabled, 상태 표시). 다른 쪽은 누르면 바뀐다. 외부감사는 둘 다 disabled(codex 고정). */
 .pcard__engines { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
 .pcard__engine {
-  font: inherit; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; padding: 3px 8px; min-height: 24px; border: 0; cursor: default;
-  background: transparent; color: var(--ink-4); opacity: .55;
+  font: inherit; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; padding: 3px 8px; min-height: 24px; border: 0; cursor: pointer;
+  background: transparent; color: var(--ink-4); opacity: .7;
 }
+.pcard__engine:not(:disabled):hover { background: var(--sunk); color: var(--ink); opacity: 1; }
+.pcard__engine:disabled { cursor: default; opacity: .45; }
 .pcard__engine[aria-pressed="true"] { background: var(--sunk); color: var(--ink-2); opacity: 1; font-weight: 600; }
 .pcard__sel {
   font: inherit; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-2); background: var(--sunk);

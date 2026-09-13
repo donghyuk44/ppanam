@@ -1308,16 +1308,20 @@ function castRow(t, id, a) {
   const row = el('div', 'pcard__cast');
   const engine = a.model === 'gpt' ? 'codex' : a.model === 'claude' ? 'claude' : null;
   if (!engine) return row;
-  // 엔진 알약 둘(결정 69 ①) — 지금 것이 켜져 있고, 다른 쪽은 보이되 못 누른다. 하나만 그리면 보는 건지 바꾸는 건지 모른다(하네스 실측 R23 ③).
-  const engines = el('span', 'pcard__engines'); engines.setAttribute('role', 'group'); engines.title = '엔진 — 바꾸기는 다음 갈래';
+  // 엔진 알약 둘(결정 69 ①) — 지금 것이 켜져 있고, 다른 쪽을 누르면 그 자리의 세션 종류가 바뀐다(다음 턴부터). 외부감사만은 codex 고정(CLAUDE.md).
+  const engines = el('span', 'pcard__engines'); engines.setAttribute('role', 'group'); engines.title = '엔진 — 누르면 바뀜, 다음 턴부터';
+  const opts = castOptions ?? {};
+  const locked = id === 'outside';
   for (const name of ['claude', 'codex']) {
-    const b = el('button', 'pcard__engine', name); b.type = 'button'; b.disabled = true;
+    const b = el('button', 'pcard__engine', name); b.type = 'button';
     b.setAttribute('aria-pressed', name === engine ? 'true' : 'false');
-    if (name !== engine) b.title = '엔진 바꾸기는 아직 안 됩니다 — 다음 갈래';
+    b.disabled = name === engine || locked;
+    if (locked && name !== engine) b.title = '외부감사는 다른 회사 모델이어야 합니다 — 바꿀 수 없음';
+    else if (name !== engine) b.title = `${name} 로 바꾸기 — 다음 턴부터`;
+    b.addEventListener('click', () => { if (!b.disabled) send({ model: name === 'codex' ? 'gpt' : 'claude' }, { redraw: true }); });
     engines.appendChild(b);
   }
   row.appendChild(engines);
-  const opts = castOptions ?? {};
   const models = engine === 'codex' ? (opts.codex ?? []) : (opts.claude ?? []);
   const field = engine === 'codex' ? 'codexModel' : 'llm';
   const current = a[field] ?? (engine === 'codex' ? models[0] : (teams.find((x) => x.id === t.id)?.model ?? models[0]));
@@ -1326,13 +1330,15 @@ function castRow(t, id, a) {
   const effortSel = select(opts.efforts ?? [], a.effort ?? '', '강도 기본');
   effortSel.title = '추론 강도';
   const msg = el('span', 'pcard__castmsg', '');
-  const send = async (patch) => {
+  const send = async (patch, { redraw = false } = {}) => {
     msg.textContent = '저장 중…'; msg.dataset.bad = '0';
     try {
       const r = await fetch('/api/cast', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ team: t.id, actor: id, ...patch }) }).then((x) => x.json());
       if (r.error) { msg.textContent = r.error; msg.dataset.bad = '1'; return; }
       if (summaries[t.id]?.cast?.[id]) Object.assign(summaries[t.id].cast[id], r.agent);
       msg.textContent = Object.keys(r.to ?? {}).length ? (r.restart === 'after-turn' ? '저장됨 · 지금 턴 끝나면' : '저장됨 · 다음 턴부터') : '그대로';
+      // 엔진이 바뀌면 모델 목록도 바뀐다 — 줄을 새로 그린다(요약 방송이 오기 전에).
+      if (redraw && Object.keys(r.to ?? {}).length) row.replaceWith(castRow(t, id, summaries[t.id]?.cast?.[id] ?? r.agent));
     } catch { msg.textContent = '서버가 답하지 않습니다'; msg.dataset.bad = '1'; }
   };
   modelSel.addEventListener('change', () => { if (modelSel.value) send({ [field]: modelSel.value }); });

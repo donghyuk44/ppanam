@@ -607,7 +607,7 @@ async function journalAll(team, round) {
     // 일지는 정체성의 연결고리다 — 라운드가 바뀌고 컨텍스트가 비워져도 다음 세션이 이 문단을 읽고 '어제의 나' 를 잇는다 (대표 지시 2026-09-13).
     // 지시문은 bus.mjs 의 journalPrompt 하나 — codex 자리(outside.mjs)도 같은 문장을 받는다.
     const p = journalPrompt(round);
-    if (cast[actor]?.model === 'gpt') return journalOutside(team);
+    if (cast[actor]?.model === 'gpt') return journalOutside(team, actor);
     return Promise.race([sendAndWait(team, quiet(p), actor, { kind: 'journal', internal: true }), new Promise((r) => setTimeout(() => r(null), JOURNAL_TIMEOUT))]);
   };
   const actors = [...spoke].filter((a) => cast[a]?.model === 'claude' || cast[a]?.model === 'gpt');
@@ -625,11 +625,11 @@ async function journalAll(team, round) {
 }
 
 /** 외부감사의 일지는 outside.mjs 가 쓴다. 끝나기만 기다린다. exit 0 만 'ok' — (패스)·빈 답은 outside.mjs 가 exit 3 을 낸다. */
-function journalOutside(team) {
+function journalOutside(team, actor = 'outside') {
   return new Promise((resolve) => {
     let child;
     try {
-      child = spawnProc('node', [path.join(ROOT, 'bus', 'outside.mjs'), '--team', team, '--turn', 'journal'], { cwd: ROOT, stdio: ['ignore', 'ignore', 'ignore'] });
+      child = spawnProc('node', [path.join(ROOT, 'bus', 'outside.mjs'), '--team', team, '--actor', actor, '--turn', 'journal'], { cwd: ROOT, stdio: ['ignore', 'ignore', 'ignore'] });
     } catch { return resolve(null); }
     const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* 이미 죽음 */ } resolve(null); }, JOURNAL_TIMEOUT);
     child.on('error', () => { clearTimeout(t); resolve(null); });

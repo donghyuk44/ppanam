@@ -376,8 +376,8 @@ switch (cmd) {
         const errs = [
           castChangeError('guide', ag.guide, { llm: 'opus', effort: 'high' }),          // 통과
           castChangeError('guide', ag.guide, { model: 'claude', effort: 'low' }),       // 같은 엔진은 통과
-          castChangeError('guide', ag.guide, { model: 'gpt' }),                         // 엔진 바꾸기 거부
-          castChangeError('outside', ag.outside, { model: 'claude' }),                  // outside 도 거부
+          castChangeError('guide', ag.guide, { model: 'gpt' }),                         // 실무를 codex 로 — 통과 (결정 69 ①)
+          castChangeError('outside', ag.outside, { model: 'claude' }),                  // 외부감사를 claude 로 — 거부 (CLAUDE.md)
           castChangeError('guide', ag.guide, { llm: 'gpt-5' }),                         // 목록 밖
           castChangeError('guide', ag.guide, { effort: 'max' }),                        // 목록 밖
           castChangeError('boss', ag.boss, { effort: 'high' }),                         // 사람
@@ -385,17 +385,21 @@ switch (cmd) {
           castChangeError('guide', ag.guide, {}),                                       // 빈 패치
           castChangeError('outside', ag.outside, { codexModel: 'gpt-5.1', effort: 'xhigh' }),   // 통과
         ];
-        const eWant = errs[0] === null && errs[1] === null && errs[2]?.includes('아직') && errs[3]?.includes('아직') && errs[4]?.includes('claude 모델') && errs[5]?.includes('추론 강도')
+        const eWant = errs[0] === null && errs[1] === null && errs[2] === null && errs[3]?.includes('다른 회사 모델') && errs[4]?.includes('claude 모델') && errs[5]?.includes('추론 강도')
           && errs[6]?.includes('사람') && errs[7]?.includes('없습니다') && errs[8]?.includes('바꿀 값') && errs[9] === null;
         const up = updateCastAgent(T, 'guide', { llm: 'opus', effort: 'high', model: 'claude' });
         const again = readCast(T).agents.guide;
         const uWant = up.to.llm === 'opus' && up.to.effort === 'high' && up.to.model === undefined && up.from.llm === null && again.llm === 'opus' && again.effort === 'high' && again.model === 'claude';
+        // 실무를 codex 로 바꾸면 cast.json 의 model 이 gpt — 사회자가 outside.mjs --actor guide 로 띄우고, outside.mjs 는 claude 자리로는 뜨지 않는다(아래 exit 2).
+        const sw = updateCastAgent(T, 'guide', { model: 'gpt' });
+        const swWant = sw.to.model === 'gpt' && sw.from.model === 'claude' && readCast(T).agents.guide.model === 'gpt' && castChangeText('테라', sw.to) === '대표가 테라를 codex 로 바꿨습니다 — 다음 턴부터.';
+        updateCastAgent(T, 'guide', { model: 'claude' });
         const txt = castChangeText('테라', up.to), txt2 = castChangeText('안젤', { effort: 'low' });
         const ca = codexArgs({ model: 'gpt-5.1', effort: 'high', resume: 'sid' }), cb = codexArgs({ model: 'gpt-5.1', outPath: '/tmp/o' });
         const cWant = ca.join(' ') === 'exec resume sid --skip-git-repo-check -c model=gpt-5.1 -c sandbox_mode=read-only -c model_reasoning_effort=high -'
           && cb.join(' ') === 'exec --skip-git-repo-check --sandbox read-only -m gpt-5.1 -o /tmp/o -';
-        out.push(['자리 엔진·모델·강도(결정 69)', eWant && uWant && cWant && txt === '대표가 테라를 opus·high 로 바꿨습니다 — 다음 턴부터.' && txt2.startsWith('대표가 안젤을')
-          ? '✓ 거르기 10경우 · cast.json 에 씀(바뀐 값만) · note 글 을/를 · codex 인자 resume/새 세션' : '✗ ' + JSON.stringify({ errs, up, txt, ca, cb })]);
+        out.push(['자리 엔진·모델·강도(결정 69)', eWant && uWant && swWant && cWant && txt === '대표가 테라를 opus·high 로 바꿨습니다 — 다음 턴부터.' && txt2.startsWith('대표가 안젤을')
+          ? '✓ 거르기 10경우(외부감사→claude 만 거부) · cast.json 에 씀(바뀐 값만) · 실무→codex 전환 · note 글 을/를 · codex 인자 resume/새 세션' : '✗ ' + JSON.stringify({ errs, up, sw, txt, ca, cb })]);
       }
       // 알림 목록 (결정 68) — 요약·승인에서 종류 순(대표 차례→승인→막힘→보고), 같은 종류는 최근 것부터, 보고는 ask 아닌 것만, C 승인만,
       // out/ 그림이 있으면 썸네일, 읽음 집합에 있으면 unread:false, 급한 것이 안 읽혔을 때만 urgent.
@@ -500,6 +504,10 @@ switch (cmd) {
       const storeAfter = fs.existsSync(storePath) ? fs.readFileSync(storePath, 'utf8') : null;
       fs.rmSync(fakeDir, { recursive: true, force: true });
       out.push(['outside.mjs 없는 방 → 거부 · 세션 저장소 그대로', j1.status === 2 && storeBefore === storeAfter && !fs.existsSync(path.join(dir, 'journal', 'outside.md')) ? `✓ exit 2 · ${j1.stderr.trim().split('\n')[0]}` : `✗ exit ${j1.status} · 저장소 ${storeBefore === storeAfter ? '그대로' : '바뀜'} · ${(j1.stdout + j1.stderr).trim().slice(0, 200)}`]);
+      // claude 자리로 codex 를 띄우면 거부 (결정 69 ① — --actor 는 cast.json 이 gpt 인 자리만). 진짜 방(dev)의 guide 는 claude 다. --dry 라 codex 는 안 뜬다.
+      const devGuide = readCast('dev').agents?.guide?.model;
+      const j2 = spawnSync('node', [path.join(ROOT, 'bus', 'outside.mjs'), '--team', 'dev', '--actor', 'guide', '--turn', 'called', '--dry'], { cwd: ROOT, encoding: 'utf8', timeout: 20_000 });
+      out.push(['outside.mjs --actor claude 자리 → 거부', devGuide !== 'claude' ? `— dev guide 가 ${devGuide} 라 시험 안 함` : j2.status === 2 && j2.stderr.includes('codex 자리가 아닙니다') ? `✓ exit 2 · ${j2.stderr.trim().split('\n')[0]}` : `✗ exit ${j2.status} · ${(j2.stdout + j2.stderr).trim().slice(0, 200)}`]);
       endRound(T, { summary: '일지 시험' });
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });

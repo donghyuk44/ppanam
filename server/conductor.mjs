@@ -152,7 +152,7 @@ function giveTurn(team, actor, kind) {
   if (isOutside(team, actor)) {
     // codex 는 프로세스가 턴마다 뜬다. outside.mjs 가 자기 커서(lastSeen)로 못 들은 말을 붙이므로 여기선 종류만 넘긴다.
     r.outsideBusy = true;
-    const args = [OUTSIDE, '--team', team, '--turn', kind];
+    const args = [OUTSIDE, '--team', team, '--actor', actor, '--turn', kind];   // 자리 이름으로 띄운다 — outside 가 아닌 codex 자리도 (결정 69 ①)
     if (kind === 'verdict') args.push('--text', target);
     if (kind === 'carried' && r.carryFrom) args.push('--from-round', String(r.carryFrom));   // 닫힌 라운드의 못 들은 말부터 (결정 25)
     let child;
@@ -300,7 +300,8 @@ export function startVerdict(team, target) {
   if (state.phase !== 'running') throw new Error(state.phase === 'blocked' ? '대표 판단 대기 중입니다.' : '라운드를 먼저 여세요.');
   if (r.flow) throw new Error(`이미 판정이 돌고 있습니다 (${r.flow.step}).`);
   const cast = readCast(team).agents ?? {};
-  const steps = [cast.review?.model === 'claude' ? 'review' : null, cast.outside?.model === 'gpt' ? 'outside' : null].filter(Boolean);
+  // 내부감사는 엔진이 무엇이든(대표가 codex 로 바꿨을 수도, 결정 69 ①) 그 자리가 있으면 한 걸음. 외부감사는 gpt 여야 한다(CLAUDE.md).
+  const steps = [cast.review?.model ? 'review' : null, cast.outside?.model === 'gpt' ? 'outside' : null].filter(Boolean);
   if (!steps.length) throw new Error('이 방에는 감사역이 없습니다.');
   r.round = state.round;
   r.flow = { target: String(target ?? '').trim() || '이번 라운드 산출물', steps, i: 0, asked: 0 };
@@ -496,6 +497,13 @@ function crossPost(team, e) {
     if (readState(t.id).phase === 'idle') { note(team, `${nameOf(team, e.actor)}이 ${t.name} 팀 ${there.map((x) => cast[x]?.name ?? x).join('·')}을 불렀지만 그 방은 라운드가 닫혀 있어 옮기지 못했습니다.`); continue; }
     emit(t.id, { actor: e.actor, type: 'message', text: e.text, meta: { from: team, origin: e.id } });
   }
+}
+
+/** 서버가 자리 하나를 깨운다 — 대표가 이름 없이 말했는데 주인이 codex 자리일 때(/api/say, 결정 69 ①). 호명 차례와 같다. */
+export function wake(team, actor) {
+  if (!participants(team).includes(actor)) return false;
+  enqueue(team, actor, 'called');
+  return true;
 }
 
 /** 화면·시험용. */

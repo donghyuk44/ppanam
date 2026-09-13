@@ -84,9 +84,12 @@ teams/<방>/
 목록 밖 값·엔진에 안 맞는 모델 → `400`), 통과하면 **서버가** `cast.json` 을 쓴다(`bus.updateCastAgent` — 파일은 C 잠금이라 화면 요청을 서버가
 대신 쓰는 것) + 방에 `note` "대표가 테라를 opus·high 로 바꿨습니다"(`meta.castChange { actor, from, to }`). **다음 턴부터** — claude 자리는
 도는 턴을 안 끊고 턴이 끝나면(놀고 있으면 바로) 세션을 내려서 다음 `send` 가 새 인자로 다시 띄운다(id 는 남겨 `--resume` 으로 잇는다);
-codex 자리는 `outside.mjs` 가 매번 `cast.json` 을 읽으니 저절로. **엔진(`model`) 바꾸기는 아직 거부한다**(같은 값만 통과) — `outside` 는
-다른 회사 모델이어야 하고(CLAUDE.md, 판정 흐름도 `outside = gpt` 를 전제), 다른 자리의 codex 화는 `outside.mjs`·훅·일지가 자리 이름
-`outside` 에 묶여 있어 그 뒤 갈래(`--actor`). 화면의 엔진 알약은 보이되 누를 수 없다. 응답 `{ agent, from, to, restart: 'now' | 'after-turn' | null }`.
+codex 자리는 `outside.mjs` 가 매번 `cast.json` 을 읽으니 저절로. **엔진(`model`) 을 바꾸면 그 자리의 세션 종류가 바뀐다**(결정 69 ①) —
+codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>` 로 띄우고(그 자리 이름으로 말하고, 그 자리의 인격·일지·세션 칸
+`방:자리` 를 쓴다 — 외부감사는 옛 칸 이름 `방` 그대로), claude 자리로는 `outside.mjs` 가 뜨지 않는다(exit 2). 대표가 이름 없이 말했는데
+주인이 codex 자리면 `/api/say` 가 말풍선을 남기고 사회자를 깨운다(`conductor.wake`). 한 방의 codex 자리들은 한 번에 하나만 돈다(`outsideBusy`).
+**외부감사만은 codex 고정** — 클로드가 외부감사인 척하지 않는다(CLAUDE.md), 판정 흐름도 `outside = gpt` 를 전제. 화면의 알약은 켜진 쪽이
+disabled, 다른 쪽을 누르면 바뀐다(외부감사는 둘 다 못 누름). 응답 `{ agent, from, to, restart: 'now' | 'after-turn' | null }`.
 `/api/boot` 의 `castOptions { engines, claude, codex, efforts }` 가 화면의 목록이다.
 
 ---

@@ -38,7 +38,10 @@ const API_MODEL = process.env.PPANAM_OUTSIDE_MODEL || 'gpt-5.1';
 // codex 는 모델이 아니라 CLI 다. 그 안에서 도는 모델을 여기서 못 박는다 — 기본값에 얹어두면 어느 엔진이 판정했는지 기록에 남지 않는다.
 // 모델은 자리별이다 (결정 69): cast.json 의 codexModel 이 먼저, 없으면 환경 PPANAM_CODEX_MODEL(옛 길, 전 자리 공통), 그것도 없으면 목록 첫 것.
 // 추론 강도(effort)도 cast.json — 없으면 안 넘겨 codex 기본. 대표가 관제탑에서 바꾸면 다음 호출이 여기서 새로 읽는다.
-const seatOf = (team) => readCast(team).agents?.outside ?? null;
+// 어느 자리인가 — 기본은 외부감사(outside). 대표가 다른 자리를 codex 로 바꾸면(결정 69 ①) 사회자가 --actor <자리> 로 띄운다.
+// 이 프로세스는 그 자리로 말하고(emit actor), 그 자리의 인격·일지·세션 칸을 쓴다. 자리 이름이 곧 화자다.
+let ACTOR = 'outside';
+const seatOf = (team) => readCast(team).agents?.[ACTOR] ?? null;
 const codexModelFor = (team) => codexModelOf(seatOf(team));
 const effortFor = (team) => seatOf(team)?.effort ?? null;
 const engineOf = (team) => `codex · ${codexModelFor(team)}`;
@@ -58,23 +61,26 @@ function writeStore(all) {
   fs.writeFileSync(STORE, JSON.stringify(all, null, 2) + '\n');
 }
 
+/** 세션 칸 이름 — 외부감사는 방 이름 그대로(옛 저장소 호환), 다른 자리는 "방:자리". */
+const slotKey = (team) => (ACTOR === 'outside' ? team : `${team}:${ACTOR}`);
+
 /** 예전 형식({팀: "세션id"})도 읽는다. */
 function slotOf(team) {
-  const v = readStore()[team];
+  const v = readStore()[slotKey(team)];
   if (!v) return null;
   return typeof v === 'string' ? { id: v, lastSeen: null } : v;
 }
 
 function remember(team, id, lastSeen) {
   const all = readStore();
-  all[team] = { id, lastSeen: lastSeen ?? slotOf(team)?.lastSeen ?? null };
+  all[slotKey(team)] = { id, lastSeen: lastSeen ?? slotOf(team)?.lastSeen ?? null };
   writeStore(all);
 }
 
 function forget(team) {
   const all = readStore();
-  if (!(team in all)) return false;
-  delete all[team];
+  if (!(slotKey(team) in all)) return false;
+  delete all[slotKey(team)];
   writeStore(all);
   return true;
 }
@@ -150,8 +156,8 @@ const DEFAULT_PERSONA = `너는 이 팀의 **외부감사**이다. 다른 회사
  * 첫 턴에만 주면 세션이 라운드를 넘기며 압축될 때 인격이 먼저 사라진다 (M1 인격 이음, 2026-09-13). 인격 파일이 없는 방은 공용 인격.
  */
 function personaOf(team) {
-  const full = assemblePrompt(team, 'outside');
-  return seatPersonaOf(team, 'outside') ? full : [DEFAULT_PERSONA, full].filter(Boolean).join('\n\n---\n\n');
+  const full = assemblePrompt(team, ACTOR);
+  return seatPersonaOf(team, ACTOR) ? full : [DEFAULT_PERSONA, full].filter(Boolean).join('\n\n---\n\n');
 }
 
 /**
@@ -227,7 +233,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   const ENGINE = engineOf(team);   // 이 호출이 쓰는 엔진 — meta.engine 에 그대로 남는다 (자리별 모델, 결정 69)
   if (!dry && !await hasCodex()) {
     emit(team, {
-      actor: 'outside', type: 'note',
+      actor: ACTOR, type: 'note',
       text: '외부 모델이 연결되어 있지 않습니다. 교차검증 없이 진행합니다.',
     });
     console.error('외부감사 설정 안 됨 — node bus/outside.mjs --setup');
@@ -294,7 +300,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
     // 이어붙이기가 깨졌으면 세션을 버리고 다음에 새로 연다.
     if (prior) forget(team);
     emit(team, {
-      actor: 'outside', type: 'note',
+      actor: ACTOR, type: 'note',
       text: `외부 모델을 부르지 못했습니다 — ${String(e.message).split('\n')[0].slice(0, 200)}`,
     });
     console.error('실패: ' + e.message);
@@ -310,7 +316,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   // 일지는 대화록에 남지 않는다. 자기 일지 파일에 붙인다 — 이 프로세스가 곧 그다.
   if (turn === 'journal') {
     if (res.sessionId) remember(team, res.sessionId, seenId);
-    const ok = appendJournal(team, 'outside', body, { round });
+    const ok = appendJournal(team, ACTOR, body, { round });
     console.log(`[${ENGINE}] ${team} · 일지 ${ok ? '한 문단' : '(패스)'}`);
     // (패스)·빈 답은 "일지 없음" 이다 — 0 으로 나가면 journalAll(server/session.mjs) 이 성공으로 세어
     // note·재시도가 안 돈다(레오 REVISE, R19). 1 은 codex 호출 실패, 2 는 사용법 오류라 3 을 쓴다.
@@ -320,7 +326,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   // 승인 대조였으면 그 판정을 외부감사 이름으로 큐에 남긴다 (시키는 쪽은 위에서 이미 걸렀다 — 총괄실 세션뿐).
   // codex 샌드박스는 파일을 못 쓰므로 그녀 대신 이 프로세스가 쓴다 — 이 프로세스가 곧 그녀다.
   if (apr && verdict && verdict !== 'FAIL') {
-    try { decideApproval(apr, { by: 'outside', decision: verdict, reason: body.split('\n')[0].slice(0, 200), team }); }
+    try { decideApproval(apr, { by: ACTOR, decision: verdict, reason: body.split('\n')[0].slice(0, 200), team }); }
     catch (e) { emit(team, { actor: 'system', type: 'note', text: `${name} 의 승인 판정을 못 남겼습니다 — ${e.message}` }); }
   }
 
@@ -335,16 +341,16 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   let rec;
   if (verdict && !apr) {
     try {
-      rec = recordVerdict(team, { actor: 'outside', verdict, text: body, target: 'guide', round, sha });
+      rec = recordVerdict(team, { actor: ACTOR, verdict, text: body, target: 'guide', round, sha });
     } catch (e) {
       // 방이 막혀 있다(FAIL 뒤 대표 판단 대기). 판정으로 세지 않고 말로만 남긴다.
-      rec = emit(team, { round, actor: 'outside', type: 'message', text: `[${verdict} — 판정으로 세지 않음: ${e.message}] ${body}`, meta: { engine: ENGINE } });
+      rec = emit(team, { round, actor: ACTOR, type: 'message', text: `[${verdict} — 판정으로 세지 않음: ${e.message}] ${body}`, meta: { engine: ENGINE } });
     }
   } else {
     // 판정 차례였는데 첫 줄에 판정이 없다 — 말로 남기되 표시한다. 사회자가 한 번 더 묻고, 두 번이면 멈춘다 (레오 감사).
     // --ask 도 판정 경로다(첫 줄 규약). 의견을 물은 것이면 표시가 붙어도 사회자는 기다리는 자리가 아니라 무시한다.
     const missed = !talk && !apr && !verdict;
-    rec = emit(team, { round, actor: 'outside', type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...(apr ? { approval: apr } : {}), ...(missed ? { noVerdict: true } : {}) } });
+    rec = emit(team, { round, actor: ACTOR, type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...(apr ? { approval: apr } : {}), ...(missed ? { noVerdict: true } : {}) } });
   }
 
   // 방금 남긴 것까지가 "이미 본 것"이다. 다음 턴에는 이 뒤로 새로 온 말만 받는다.
@@ -432,6 +438,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--turn') { mode = 'turn'; turnKind = argv[++i]; question = `(차례: ${turnKind})`; }
   else if (a === '--text') turnText = argv[++i];
   else if (a === '--from-round') fromRound = Number(argv[++i]) || null;   // 넘어온 차례(carried) — 닫힌 라운드의 못 들은 말부터 (결정 25)
+  else if (a === '--actor') ACTOR = String(argv[++i] ?? 'outside');        // 어느 자리로 말하나 (결정 69 ① — codex 로 바뀐 자리)
   else if (a === '--check' || a === '-c') { mode = 'check'; question = argv[++i]; }
   else if (a === '--reset') mode = 'reset';
   else if (a === '--status') mode = 'status';
@@ -443,6 +450,11 @@ for (let i = 0; i < argv.length; i++) {
 // 제리 일지에 남의 문단을 쓴다 — 2026-09-13 17:24 실제로 그랬다(round.mjs check 가 `--team _check` 로 부름, 테라).
 if (team && !teamExists(team)) { console.error(`오류: 방 '${team}' 이 없습니다 (teams.json). 기본 방으로 넘기지 않습니다.`); process.exit(2); }
 if (!team) team = defaultTeam();
+// 자리가 codex 자리여야 한다 — claude 자리(또는 없는 자리)로 codex 를 띄우면 그 자리 이름으로 남의 말이 남는다. 상태·설정·한 번 묻기는 자리와 무관.
+if (!['setup', 'status', 'check'].includes(mode) && readCast(team).agents?.[ACTOR]?.model !== 'gpt') {
+  console.error(`오류: '${team}' 의 '${ACTOR}' 자리는 codex 자리가 아닙니다 (cast.json model: ${readCast(team).agents?.[ACTOR]?.model ?? '없음'}).`);
+  process.exit(2);
+}
 
 if (mode === 'setup') { console.log(SETUP); process.exit(0); }
 
@@ -463,6 +475,7 @@ if (!question) {
   console.error('        outside.mjs --team <팀> --turn <called|lull|lunch|third|carried> [--from-round N]   사회자가 주는 차례 (판정 없음)');
   console.error('        outside.mjs --team <팀> --turn verdict --text "<대상>"       판정 차례 (첫 줄 PASS/REVISE)');
   console.error('        outside.mjs --team <팀> --turn journal                    일지 한 문단 (대화록에 안 남음)');
+  console.error('        … --actor <자리>                                        외부감사가 아닌 codex 자리로 (결정 69 ① — 기본 outside)');
   console.error('        … --dry                                              codex 를 안 부르고 이 턴이 받을 입력만 출력 (기록 없음)');
   console.error('        outside.mjs --check "한 번만 물어볼 것"');
   console.error('        outside.mjs --setup');
