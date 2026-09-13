@@ -5,6 +5,7 @@
 
 import * as World from '/world/world.js';
 import { toolLabel, toolPhrase, baseName, ga } from '/toollabel.js';
+import { findOutPaths, linkOutPaths } from '/outlink.js';
 
 const $ = (id) => document.getElementById(id);
 const app = $('app'), feed = $('feed'), stream = $('stream');
@@ -77,7 +78,7 @@ const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
  * 보여주면 읽히지 않는다(** 와 | 가 그대로 떴다). 굵게·인라인 코드·줄바꿈만 살리고, 표와 코드블록은
  * 접어 둔다 — 방은 채팅이지 문서가 아니다. 먼저 이스케이프한 뒤 기호를 바꾸므로 HTML 이 새지 않는다.
  */
-function bubble(text) {
+function bubble(text, team = active) {
   const n = el('div', 'bub');
   const src = String(text ?? '');
   const blocks = [];
@@ -90,12 +91,52 @@ function bubble(text) {
     .replace(/`([^`\n]+)`/g, '<code>$1</code>')
     .replace(/^#{1,6}\s+(.+)$/gm, '<b>$1</b>')
     .replace(/^[ \t]*[-*]\s+/gm, '· ');
+  // 산출물 경로는 링크로 (대표 결정 36). 이스케이프한 뒤라 경로엔 &<>" 가 없고, url 은 encodeURIComponent 를 거쳤다.
+  html = linkOutPaths(html, team, outAnchor);
   html = html.replace(/\u0000(\d+)\u0000/g, (_, i) => {
     const [kind, content] = blocks[Number(i)];
     return `<details class="bub__fold"><summary>${kind} 보기</summary><pre>${escapeHtml(content)}</pre></details>`;
   });
   n.innerHTML = html.trim();
+  // 그림은 말풍선 안에, md·글은 눌러 펼쳐 읽게. 여섯 개까지 — 나머지는 링크로 족하다.
+  for (const f of findOutPaths(body, team).filter((f) => f.kind !== 'file').slice(0, 6)) n.appendChild(outFileNode(f));
   return n;
+}
+
+const outAnchor = (f) => `<a class="outa" href="${f.url}" target="_blank" rel="noopener">${f.raw}</a>`;
+
+const fmtSize = (n) => (n >= 1_048_576 ? `${(n / 1_048_576).toFixed(1)}MB` : n >= 1024 ? `${Math.round(n / 1024)}KB` : `${n}B`);
+
+/**
+ * 산출물 하나 — 링크, 그림은 그 자리에, md·글은 펼치면 서버(/out/<팀>/…)에서 읽어 온다 (대표 결정 36).
+ * 발언 밑과 승인 카드가 같은 것을 쓴다. 파일이 없으면 그렇다고 — 모르면서 승인하게 두지 않는다.
+ */
+function outFileNode(f) {
+  const box = el('div', 'outf'); box.dataset.kind = f.kind;
+  const a = el('a', 'outa', `${f.team}/out/${f.rel}`); a.href = f.url; a.target = '_blank'; a.rel = 'noopener';
+  box.appendChild(a);
+  if (f.missing) { box.appendChild(el('span', 'outf__miss', ' — 파일이 없습니다')); return box; }
+  if (f.size != null) box.appendChild(el('span', 'outf__meta', ` ${fmtSize(f.size)}`));
+  if (f.kind === 'image') {
+    const link = el('a'); link.href = f.url; link.target = '_blank'; link.rel = 'noopener';
+    const img = el('img', 'outf__img'); img.src = f.url; img.alt = f.rel; img.loading = 'lazy';
+    img.addEventListener('error', () => { link.replaceWith(el('span', 'outf__miss', ' — 그림을 못 불러왔습니다')); });
+    link.appendChild(img);
+    box.appendChild(link);
+  } else if (f.kind === 'md' || f.kind === 'text') {
+    const d = el('details', 'outf__fold');
+    d.appendChild(el('summary', null, '읽기'));
+    const pre = el('pre'); d.appendChild(pre);
+    d.addEventListener('toggle', async () => {
+      if (!d.open || pre.dataset.loaded) return;
+      pre.dataset.loaded = '1';
+      pre.textContent = '불러오는 중…';
+      try { const r = await fetch(f.url); pre.textContent = r.ok ? await r.text() : `읽지 못했습니다 (${r.status})`; }
+      catch (e) { pre.textContent = `읽지 못했습니다 — ${e.message}`; }
+    });
+    box.appendChild(d);
+  }
+  return box;
 }
 
 function svg(d, size = 9, width = 3) {
@@ -942,11 +983,20 @@ function renderApprovals() {
       head.appendChild(link);
     }
     row.appendChild(head);
-    row.appendChild(el('div', 'apr__what', r.what));
+    // 주제·왜 에 적힌 out/… 경로는 링크 (결정 36). 이스케이프 뒤에 잇는다 — 말풍선과 같은 순서.
+    const linked = (cls, text) => { const d = el('div', cls); d.innerHTML = linkOutPaths(escapeHtml(text), r.team, outAnchor); return d; };
+    row.appendChild(linked('apr__what', r.what));
     // 왜·바뀌는 것 — 요청자가 --detail 에 적은 것. 한 줄로 자르지 않는다 ("옛 M4~M6 픽셀 타일은 컷" 이 … 뒤에 숨었다, 독립검수 #2).
-    row.appendChild(el('div', 'apr__detail', r.detail || '(왜·바뀌는 것이 안 적혔습니다 — 요청자에게 물어보세요)'));
+    row.appendChild(linked('apr__detail', r.detail || '(왜·바뀌는 것이 안 적혔습니다 — 요청자에게 물어보세요)'));
     const pv = previewNode(r);
     if (pv) row.appendChild(pv);
+    // 산출물 — 그림이 있어야 "가" 를 누를 수 있다 (대표 결정 36). 서버가 stat 한 목록: 없는 파일은 없다고 뜬다.
+    if (r.artifacts?.length) {
+      const arts = el('div', 'apr__arts');
+      arts.appendChild(el('div', 'apr__artsk', `산출물 ${r.artifacts.length}`));
+      for (const f of r.artifacts) arts.appendChild(outFileNode(f));
+      row.appendChild(arts);
+    }
     if (r.grade === 'C') {
       const act = el('div', 'apr__act');
       const err = el('div', 'apr__err'); err.hidden = true;
@@ -1087,7 +1137,7 @@ function renderTower() {
       last.appendChild(av);
       const body = el('div', 'tcard__lastt');
       // 굵게·기호는 방의 말풍선과 같은 규칙으로 — "**apr_… 는**" 별표가 그대로 보였다. 길이는 CSS 가 세 줄로 자른다.
-      body.appendChild(bubble(s.lastText.slice(0, 600)));
+      body.appendChild(bubble(s.lastText.slice(0, 600), t.id));
       body.appendChild(el('div', 'tcard__quiet', ago(s.lastAt)));
       last.appendChild(body);
     } else {

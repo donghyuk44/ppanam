@@ -14,6 +14,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { findOutPaths, outItem } from '../server/public/outlink.js';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const TEAMS_PATH = path.join(ROOT, 'state', 'teams.json');
@@ -277,10 +278,16 @@ export function listApprovals({ team = null, status = null } = {}) {
   return out;
 }
 
-export function requestApproval(team, { by = 'guide', grade, what, detail = '', action = null }) {
+export function requestApproval(team, { by = 'guide', grade, what, detail = '', action = null, files = [] }) {
   const g = String(grade || '').toUpperCase();
   if (!APPROVAL_GRADES[g]) throw new Error(`등급은 A / B / C 중 하나여야 합니다.`);
   if (!what?.trim()) throw new Error('무엇을 승인받을지가 비어 있습니다.');
+  // 카드에 붙일 산출물 — teams/<팀>/out/ 기준 상대 경로. 요청 시 있어야 한다 (대표 결정 36).
+  const outs = (files ?? []).map((f) => String(f).trim().replace(/^out\//, '')).filter(Boolean);
+  for (const f of outs) {
+    const file = outFile(team, f);
+    if (!file || !fs.existsSync(file)) throw new Error(`teams/${team}/out/${f} 이 없습니다. 산출물은 out/ 에 두고 그 안의 경로로 적습니다.`);
+  }
   const rec = {
     kind: 'request', id: 'apr_' + crypto.randomBytes(4).toString('hex'),
     ts: new Date().toISOString(), team, by, grade: g, what: what.trim(), detail: String(detail ?? '').trim(),
@@ -288,6 +295,7 @@ export function requestApproval(team, { by = 'guide', grade, what, detail = '', 
     // 실행 대상을 요청에 묶는다. 푸시라면 그때의 브랜치·SHA 다. 실행자는 이 값만 믿는다 —
     // 자유 텍스트를 정규식으로 훑어 "푸시인가"를 짐작하지 않는다 (레오 감사, 2026-09-02).
     ...(action ? { action } : {}),
+    ...(outs.length ? { files: outs } : {}),
   };
   // 방에도 남긴다 — 화면에서 가장 약한 줄이지만, 나중에 "언제 요청했나"를 찾을 수 있어야 한다.
   // 그 줄의 id 를 레코드에 박아 카드의 "방에서 보기" 가 요청자 원문으로 건너간다 (결정 20-2).
@@ -339,6 +347,38 @@ export function approvalPreview(r) {
   } catch (e) {
     return { error: String(e.message).slice(0, 160) };
   }
+}
+
+/**
+ * 카드가 펼칠 산출물 (대표 결정 36 — "그림이 없는데 어떻게 승인해"). 요청의 files(--out)와 what·detail 에 적힌
+ * out/… 경로를 모아 지금 상태로 stat 한다. 큐 파일에는 안 쓴다. 없는 파일은 missing — 모르면서 승인하게 두지 않는다.
+ */
+export function approvalArtifacts(r) {
+  const items = new Map();
+  const add = (f) => { if (!items.has(`${f.team}/${f.rel}`)) items.set(`${f.team}/${f.rel}`, f); };
+  for (const f of r.files ?? []) add(outItem(r.team, String(f).replace(/^out\//, '')));
+  for (const f of findOutPaths(`${r.what ?? ''}\n${r.detail ?? ''}`, r.team)) add(f);
+  return [...items.values()].map((f) => {
+    const file = outFile(f.team, f.rel);
+    try {
+      const st = fs.statSync(file);
+      if (!st.isFile()) throw new Error('not a file');
+      return { ...f, size: st.size, at: st.mtime.toISOString() };
+    } catch { return { ...f, missing: true }; }
+  });
+}
+
+/**
+ * GET /out/<팀>/<경로> 가 여는 실제 파일. teams/<팀>/out/ 밖(..)·숨김 파일·없는 팀은 null.
+ * 읽기 전용 내보내기다 — 서버는 이 경로로 쓰지 않는다 (대표 결정 36).
+ */
+export function outFile(team, rel) {
+  if (!/^[A-Za-z0-9_-]+$/.test(String(team ?? '')) || !teamExists(team)) return null;
+  const parts = String(rel ?? '').split('/');
+  if (!parts.length || parts.some((s) => !s || s === '..' || s.startsWith('.'))) return null;
+  const dir = paths(team).out;
+  const file = path.join(dir, ...parts);
+  return file.startsWith(dir + path.sep) ? file : null;
 }
 
 export function voidApproval(id, reason = '') {

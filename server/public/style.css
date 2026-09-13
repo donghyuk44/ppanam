@@ -288,6 +288,15 @@ body {
 .bub__fold { margin-top: 6px; font-size: 12px; }
 .bub__fold summary { cursor: pointer; color: var(--ink-3); }
 .bub__fold pre { margin: 6px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; white-space: pre; overflow-x: auto; max-width: 100%; background: var(--sunk); padding: 8px; border-radius: 6px; }
+/* 산출물 — 경로는 링크, 그림은 그 자리에, md 는 펼쳐 읽기 (대표 결정 36). 말풍선과 승인 카드가 같이 쓴다. */
+.outa { color: inherit; text-decoration: underline; text-decoration-color: var(--ink-4); text-underline-offset: 2px; word-break: break-all; }
+.outf { margin-top: 8px; font-size: 12px; }
+.outf__meta, .outf__miss { color: var(--ink-4); font-size: 11px; }
+.outf__miss { color: var(--bad); }
+.outf__img { display: block; margin-top: 6px; max-width: 100%; max-height: 360px; border: 1px solid var(--line); border-radius: 6px; background: var(--sunk); }
+.outf__fold { margin-top: 4px; font-size: 12px; }
+.outf__fold summary { cursor: pointer; color: var(--ink-3); }
+.outf__fold pre { margin: 6px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; background: var(--sunk); padding: 8px; border-radius: 6px; }
 .row.me .bub { background: var(--me); border-color: var(--me-line); color: var(--me-ink); border-radius: 14px 3px 14px 14px; }
 .row.me.cont .bub { border-radius: 14px; }
 
@@ -547,6 +556,9 @@ body {
 .apr__act button[data-d="PASS"] { border-color: var(--good-line); background: var(--good-bg); color: var(--good); }
 .apr__act button[data-d="REVISE"] { border-color: var(--bad-line); background: var(--bad-bg); color: var(--bad); }
 .apr__wait { font-size: 11px; color: var(--ink-4); white-space: normal; }
+.apr__arts { font-size: 12px; background: var(--sunk); border-radius: 8px; padding: 8px 10px; }
+.apr__artsk { font-size: 10.5px; color: var(--ink-4); font-family: 'IBM Plex Mono', monospace; }
+.apr__arts .outf { margin-top: 6px; }
 .apr__reason { font: inherit; font-size: 12px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--ink); }
 .apr__reason[hidden], .apr__err[hidden] { display: none; }
 .apr__err { font-size: 11.5px; color: var(--bad); }
@@ -588,7 +600,7 @@ body {
 .tcard__lastt { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 /* 카드 안의 발언은 말풍선 모양 없이 — 굵게·코드 정리만 빌린다. 표·코드블록은 카드에서는 접힌 채 두지 않고 뺀다. */
 .tcard__lastt .bub { background: none; border: 0; padding: 0; border-radius: 0; white-space: normal; }
-.tcard__lastt .bub__fold { display: none; }
+.tcard__lastt .bub__fold, .tcard__lastt .outf { display: none; }
 .tcard__quiet { color: var(--ink-4); font-style: italic; }
 /* 지금 만지는 것 — "테라 · app.js 고치는 중 · 2분 전" (독립검수 #10) */
 .tcard__tool { font-size: 11.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

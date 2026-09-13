@@ -16,7 +16,7 @@ import {
   paths, listTeams, defaultTeam, teamExists, teamSummary,
   readCast, readRoadmap, readTail, listRounds, parseJSONL, emit,
   readState, startRound, assertEndable, resumeRound, readLog, isOffice, quiet, addressee,
-  listApprovals, decideApproval, APPROVAL_GRADES, approvalPreview,
+  listApprovals, decideApproval, APPROVAL_GRADES, approvalPreview, approvalArtifacts, outFile,
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
@@ -37,7 +37,9 @@ const PAGE = 150;
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml', '.png': 'image/png',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
+  // 산출물의 글은 브라우저가 그 자리에서 보여 주게 — text/markdown 은 내려받기가 된다.
+  '.md': 'text/plain; charset=utf-8', '.txt': 'text/plain; charset=utf-8', '.jsonl': 'text/plain; charset=utf-8', '.csv': 'text/plain; charset=utf-8',
 };
 
 const json = (res, code, body) => {
@@ -45,6 +47,15 @@ const json = (res, code, body) => {
   res.writeHead(code, { 'content-type': MIME['.json'], 'content-length': buf.length });
   res.end(buf);
 };
+
+/** 파일 하나를 그대로 낸다. 없거나 폴더면 404. 모르는 확장자는 내려받기. */
+function sendFile(res, file, extra = {}) {
+  fs.readFile(file, (err, data) => {
+    if (err) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('404'); }
+    res.writeHead(200, { 'content-type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream', 'content-length': data.length, ...extra });
+    res.end(data);
+  });
+}
 
 /**
  * 팀 방의 cast 에 총괄실의 chief 를 합친다.
@@ -89,8 +100,8 @@ const summaryOf = (team) => {
 };
 const summaries = () => Object.fromEntries(listTeams().map((t) => [t.id, summaryOf(t.id)]));
 
-/** 대기 중인 승인 카드 — 행동(action)을 지금 상태로 푼 preview 를 붙여서 (결정 20-2). 대기 건수가 바뀔 때만 받아 가므로 git·파일을 읽어도 된다. */
-const pendingCards = () => listApprovals({ status: 'pending' }).map((r) => ({ ...r, preview: approvalPreview(r) }));
+/** 대기 중인 승인 카드 — 행동(action)을 지금 상태로 푼 preview 와 산출물 목록(결정 36)을 붙여서 (결정 20-2). 대기 건수가 바뀔 때만 받아 가므로 git·파일을 읽어도 된다. */
+const pendingCards = () => listApprovals({ status: 'pending' }).map((r) => ({ ...r, preview: approvalPreview(r), artifacts: approvalArtifacts(r) }));
 
 /**
  * teams/<팀>/progress.json — 지금 어디까지 왔나. 로드맵이 목적지라면 이건 현재 위치다.
@@ -380,14 +391,20 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 산출물 보기 (대표 결정 36) — teams/<팀>/out/** 을 읽기 전용으로. 카드와 발언의 그림·md 링크가 여기로 온다.
+  // 어디를 여는지는 bus.outFile 하나가 정한다(.. · 숨김 · 없는 팀은 null). 파일이 바뀌면 바로 새것 — 캐시 없음.
+  if (url.pathname.startsWith('/out/') && req.method === 'GET') {
+    let segs;
+    try { segs = url.pathname.split('/').slice(2).map(decodeURIComponent); } catch { segs = []; }
+    const file = segs.length >= 2 ? outFile(segs[0], segs.slice(1).join('/')) : null;
+    if (!file) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('404'); }
+    return sendFile(res, file, { 'cache-control': 'no-cache' });
+  }
+
   const rel = url.pathname === '/' ? '/index.html' : url.pathname;
   const file = path.join(PUBLIC_DIR, path.normalize(rel));
   if (!file.startsWith(PUBLIC_DIR)) { res.writeHead(403); return res.end('forbidden'); }
-  fs.readFile(file, (err, data) => {
-    if (err) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('404'); }
-    res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' });
-    res.end(data);
-  });
+  sendFile(res, file);
 });
 
 // 세상의 시계가 사회자의 침묵 차례를 켜고 끈다 — 밤·휴식엔 아무도 깨우지 않는다 (W2).

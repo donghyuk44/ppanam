@@ -356,6 +356,18 @@ codex 를 부르기 전에 `note` 로 거부된다.
     펼친다. 파일을 못 읽으면 `{ error }` — 그대로 보여 준다(모르면서 승인하게 두지 않는다).
 - 폰 폭에서 등급 칩이 띠가 되고 팀 라벨이 밖으로 밀리던 것(독립검수 #8)과 승인이 쌓이면 방 대화가 사라지던 것(#13)은 CSS —
   `.apr__what` 은 전체 폭, `.approvals` 는 40vh 안에서 스크롤.
+- **산출물** `artifacts` — 그 요청이 가리키는 `out/` 파일들 (대표 결정 36 — "디자인 그림이 없는데 내가 어떻게 승인해").
+  서버가 카드를 줄 때 붙인다(`bus.approvalArtifacts`, 큐 파일에는 안 쓴다): 요청의 `files`(`approve.mjs --out a.png,b.md`,
+  `teams/<팀>/out/` 기준 상대 경로, 요청 시 있어야 한다) 와 `what`·`detail` 에 적힌 `out/…`·`teams/<팀>/out/…` 경로를 모아
+  `[{ team, rel, url, kind, size?, at?, missing? }]`. `kind` 는 `image`(png·jpg·jpeg·gif·webp·svg) · `md` · `text`(txt·json·jsonl·csv) · `file`.
+  카드는 목록을 링크로 펼치고, 그림은 카드 안에 그리고, md·text 는 눌러 펼쳐 읽는다. 없는 파일은 "파일이 없습니다" 로 —
+  모르면서 승인하게 두지 않는다.
+
+**산출물은 화면에서 열린다** (대표 결정 36). 서버가 `teams/<팀>/out/**` 을 **읽기 전용**으로 `GET /out/<팀>/<경로>` 에 내보낸다
+(`bus.outFile` — `..`·숨김 파일·없는 팀은 404, 쓰기 없음, `cache-control: no-cache`). md·txt·jsonl·csv 는 `text/plain` 으로
+그대로 보이고, 그림은 그림으로, 모르는 확장자는 내려받기. 발언(`bubble`)과 승인 카드의 `what`·`detail` 에 적힌 `out/…` 경로는
+링크가 된다 — 팀이 안 적힌 `out/…` 은 그 방의 것, `teams/<팀>/out/…` 은 그 팀의 것. 경로 찾기는 화면·서버·자가 시험이 같은
+`server/public/outlink.js` 를 쓴다. 발언 밑에는 그림·md 미리보기가 최대 6개까지 붙는다(관제탑 카드의 마지막 말에는 안 붙는다).
 
 ## 7. 무엇이 비워지고 무엇이 남는가
 

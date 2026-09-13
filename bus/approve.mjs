@@ -67,7 +67,7 @@ const me = whoAmI();
 /* ── 인자 ── */
 
 const argv = process.argv.slice(2);
-const o = { team: null, mode: null, grade: null, id: null, as: null, decision: null, detail: '', all: false, push: false, next: false, roadmap: null };
+const o = { team: null, mode: null, grade: null, id: null, as: null, decision: null, detail: '', all: false, push: false, next: false, roadmap: null, out: [] };
 const words = [];
 
 for (let i = 0; i < argv.length; i++) {
@@ -80,6 +80,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--push') o.push = true;
   else if (a === '--next') o.next = true;
   else if (a === '--roadmap') o.roadmap = argv[++i];
+  else if (a === '--out') o.out.push(...String(argv[++i] ?? '').split(',').map((f) => f.trim()).filter(Boolean));
   else if (a === '--list' || a === '-l') o.mode = 'list';
   else if (a === '--all') o.all = true;
   else if (a === '--show' || a === '-s') { o.mode = 'show'; o.id = argv[++i]; }
@@ -91,10 +92,12 @@ for (let i = 0; i < argv.length; i++) {
 function usage() {
   console.log(`승인 — 등급으로 나뉜 게이트.
 
-  --request <A|B|C> "<무엇>" [--detail "..."] [--push | --next | --roadmap <파일>]   요청 (--team 으로 방 지정)
+  --request <A|B|C> "<무엇>" [--detail "..."] [--push | --next | --roadmap <파일>] [--out a.png,b.md]   요청 (--team 으로 방 지정)
       --push     지금의 브랜치·SHA 를 요청에 묶는다. 통과하면 서버가 그 커밋을 origin 에 민다. (B)
       --next     로드맵의 다음 마일스톤을 묶는다. 통과하면 서버가 그것을 now 로 옮긴다. (B)
       --roadmap  teams/<팀>/out/ 의 제안 파일을 묶는다. 통과하면 서버가 roadmap.json 으로 옮긴다. (C)
+      --out      카드에 붙일 산출물 — teams/<팀>/out/ 안의 경로, 쉼표로 여럿. 그림은 카드 안에 뜨고 md 는 펼쳐 읽는다.
+                 --detail 에 적힌 out/… 경로도 같이 붙는다.
   --decide <id> --as <chief|outside|boss> <PASS|REVISE> "<이유>"
   --list [--all]        대기 중인 것 (--all 이면 전부)
   --show <id>
@@ -169,13 +172,14 @@ if (o.mode === 'request') {
     action = { type: 'roadmap', file };
   }
   let r;
-  try { r = requestApproval(team, { by, grade: o.grade, what, detail: o.detail, action }); }
+  try { r = requestApproval(team, { by, grade: o.grade, what, detail: o.detail, action, files: o.out }); }
   catch (e) { console.error('오류: ' + e.message); process.exit(1); }
 
   console.log(fmt(r));
   if (action?.type === 'push') console.log(`푸시 대상: ${action.remote}/${action.branch} @ ${action.sha.slice(0, 8)} — 이 커밋을 통과시키는 것입니다.`);
   if (action?.type === 'milestone') console.log(`착수 대상: 마일스톤 ${action.n}${action.title ? ' ' + action.title : ''} — 통과하면 서버가 now 로 옮깁니다.`);
   if (action?.type === 'roadmap') console.log(`교체 대상: out/${action.file} — 통과하면 서버가 roadmap.json 으로 옮깁니다.`);
+  if (r.files?.length) console.log(`산출물: ${r.files.map((f) => 'out/' + f).join(', ')} — 카드에 링크·미리보기로 붙습니다.`);
 
   if (r.status === 'passed') { console.log('등급 A — 바로 진행하세요.'); process.exit(0); }
 
