@@ -1,0 +1,13 @@
+{
+  "name": "sera-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "떠 있는 세라 — 오늘 밤은 Electron 껍데기(결정 87·88). Tauri 로 옮길 계획은 sera-app/README.md.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^32.0.0"
+  }
+}

@@ -5,19 +5,31 @@
 
 ## 상태 (2026-09-14 새벽, 솔라)
 
-이 자리에 쓴 건 ② "창이 뜬다" 의 뼈대다. **이 세션엔 Rust 툴체인(`cargo`)이 없어 한 번도 빌드해 보지 못했다.**
-`src-tauri/` 는 Tauri 공식 문서 기준으로 적은 구조지, 실제로 컴파일해 확인한 게 아니다.
-대표 맥에서 처음 여는 사람은 이 순서로:
+**오늘 밤은 Electron 으로 간다.** 이 맥에 Rust(`cargo`) 가 없고, 대표가 주무시기 전 마지막 말이
+"아침에 세라가 반겨주면 좋겠다" 였다 — 설치 승인을 기다리면 아침에 못 뜬다. Tauri 는 껍데기만 다시 짜면 되는
+빚으로 남겨 둔다(아래 `src-tauri/` 그대로 둠).
+
+아침에 처음 여는 사람은:
 
 ```
 cd sera-app
-npm create tauri-app@latest -- --manual   # 버전이 안 맞으면 이걸로 새로 뼈대를 받고 index.html·app.js·style.css 만 옮기는 게 더 안전할 수 있다
-# 또는 이미 있는 src-tauri/ 로 바로:
-cd src-tauri && cargo tauri dev
+npm install
+npm start
 ```
 
-`tauri.conf.json` 의 `tauri` 버전 키가 지금(2026-09) 최신과 다를 수 있다 — 첫 빌드에서 나는 오류는
-버전 불일치일 확률이 높다. 뼈대를 못 믿고 새로 받는 쪽이 빠르면 그렇게 해도 된다, 구조(창 옵션·서버 연결 코드)만 맞으면 된다.
+`main.js` 가 창을 연다(투명·테두리 없음·늘 위·크기 고정, 그림자 없음). 화면(`index.html`·`app.js`·`style.css`)은
+Tauri 로 옮길 때도 그대로 쓴다 — `-webkit-app-region: drag` 는 Electron 용, `data-tauri-drag-region` 은 Tauri 용으로 같은 파일에 같이 뒀다.
+
+### 나중에 Tauri 로 옮길 때
+
+`src-tauri/` 는 Tauri 공식 문서 기준으로 적은 구조지, 실제로 컴파일해 확인한 게 아니다. `cargo` 가 생기면:
+
+```
+cd sera-app/src-tauri && cargo tauri dev
+```
+
+`tauri.conf.json` 의 버전 키가 그때 최신과 다를 수 있다 — 안 되면 `npm create tauri-app@latest` 로 새로 받아
+`index.html`·`app.js`·`style.css`·창 옵션만 옮기는 게 더 빠를 수 있다.
 
 ## 구조
 
