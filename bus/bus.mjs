@@ -175,15 +175,34 @@ export function stripSystemBlocks(text) {
  * 하는지"를 알려주는 방식으로 쓴다.
  */
 export function addressee(text, cast, { except = null } = {}) {
-  const head = String(text ?? '').trim().slice(0, 24);
-  for (const [id, a] of Object.entries(cast ?? {})) {
-    if (id === except || id === 'system' || !a?.name) continue;
-    // 이름을 정규식에 그대로 넣으면 "함동혁(댄)" 의 괄호가 그룹이 되어 영영 안 잡힌다.
-    if (new RegExp('^' + escapeRegExp(a.name) + '\\s*(씨|님)?\\s*[,，、:·]').test(head)) return id;
+  return addressees(text, cast, { except })[0] ?? null;
+}
+
+/**
+ * 한 발언이 부른 사람 전부, 부른 순서대로. 첫머리뿐 아니라 문단(빈 줄) 첫머리의 호명도 본다.
+ * "대표님, … / 안젤, … / 다니엘, …" 에서 첫 24자만 보면 안젤·다니엘은 안 깨어 대표가 "죽어 있는 것 같다" 고 봤다
+ * (하영 진단, 2026-09-13 — 대표 결정 22). 같은 사람은 한 번만.
+ */
+export function addressees(text, cast, { except = null } = {}) {
+  const out = [];
+  const paras = String(text ?? '').split(/\n\s*\n/);
+  for (const p of paras) {
+    const head = p.trim().slice(0, 24);
+    for (const [id, a] of Object.entries(cast ?? {})) {
+      if (id === except || id === 'system' || !a?.name || out.includes(id)) continue;
+      // 이름을 정규식에 그대로 넣으면 "함동혁(댄)" 의 괄호가 그룹이 되어 영영 안 잡힌다.
+      if (new RegExp('^' + escapeRegExp(a.name) + '\\s*(씨|님)?\\s*[,，、:·]').test(head)) { out.push(id); break; }
+    }
   }
-  return null;
+  return out;
 }
 const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** 대표를 불렀나. 캐스트의 대표 이름 외에 "대표님·대표·댄" 도 호명이다 — 사람들은 이름보다 직함으로 부른다. */
+export function callsBoss(text, cast) {
+  if (addressees(text, cast).includes('boss')) return true;
+  return /(^|\n\s*\n)\s*(대표님|대표|댄)\s*(씨|님)?\s*[,，、:·]/.test(String(text ?? ''));
+}
 export const quiet = (text) => `${RELAY_QUIET}\n${text}`;
 
 /**
@@ -796,12 +815,28 @@ export function teamSummary(team) {
   const roadmap = readRoadmap(team);
   const done = roadmap.milestones?.filter((m) => m.status === 'pass').length ?? 0;
 
-  // 마지막 판정이 무엇이었는지 — FAIL 이면 레일에 경고가 뜬다.
-  let lastVerdict = null;
+  // 마지막 판정이 무엇이었는지 — FAIL 이면 레일에 경고가 뜬다. 같은 훑기로 이 라운드의 마지막 발언 시각과
+  // "대표를 불렀는데 아직 답이 없는" 발언도 찾는다.
+  let lastVerdict = null, lastSpokeAt = null, bossCall = null, bossAnswered = false;
+  const cast = readCast(team).agents ?? {};
   for (let i = log.length - 1; i >= 0; i--) {
-    if (log[i].type === 'verdict') { lastVerdict = log[i].meta?.verdict ?? null; break; }
-    if (log[i].type === 'round_start') break;
+    const e = log[i];
+    if (e.type === 'round_start') break;
+    if (e.type === 'verdict' && lastVerdict == null) lastVerdict = e.meta?.verdict ?? null;
+    if ((e.type === 'message' || e.type === 'verdict') && !lastSpokeAt) lastSpokeAt = e.ts;
+    if (e.type === 'message' && e.actor === 'boss') bossAnswered = true;
+    if (!bossCall && !bossAnswered && e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && callsBoss(e.text, cast)) {
+      bossCall = { id: e.id, ts: e.ts, by: e.actor };
+    }
   }
+  const running = state.phase === 'running';
+  const silentDay = running && lastSpokeAt != null && Date.now() - new Date(lastSpokeAt).getTime() > 24 * 3600_000;
+
+  // 대표 차례인 이유. 마지막 판정이 아니라 상태다 (전에는 FAIL 뒤에 PASS 가 오면 경고가 꺼졌다).
+  // blocked · 반박 상한 · 하루 넘게 말이 없는 열린 라운드 (대표 결정, 2026-09-13 G-UX).
+  const needsBossWhy = state.phase === 'blocked' ? 'blocked'
+    : (running && state.attempt >= MAX_ATTEMPTS) ? 'attempts'
+      : silentDay ? 'silent' : null;
 
   return {
     ...state,
@@ -809,10 +844,13 @@ export function teamSummary(team) {
     lastAt: last?.ts ?? null,
     lastText: last?.text ?? null,
     lastActor: last?.actor ?? null,
+    lastSpokeAt,
     logCount: log.length,
     milestonesDone: done,
     milestonesTotal: roadmap.milestones?.length ?? 0,
-    // 마지막 판정이 아니라 상태다. 전에는 FAIL 뒤에 PASS 가 오면 경고가 꺼졌다.
-    needsBoss: state.phase === 'blocked',
+    needsBoss: needsBossWhy != null,
+    needsBossWhy,
+    // 이 라운드에서 누가 대표를 불렀는데 그 뒤 대표가 말하지 않았다 — 화면의 호명 배지.
+    bossCall,
   };
 }

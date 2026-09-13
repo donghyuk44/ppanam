@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import {
   startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound,
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
+  addressees, callsBoss,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -46,7 +47,9 @@ const summary = o.summary ?? phrase;
  * 서버에 부탁한다. 라운드를 닫는 정본은 서버다 — 실무가 일하는 중이면 턴이 끝난 뒤 닫고, 그 방의
  * 세션 컨텍스트를 비운다. 세션 안에서 직접 닫으면 그 턴의 마무리 보고가 훅에서 버려지고(phase 가
  * 이미 idle), 세션 id 가 남아 다음 라운드가 지난 컨텍스트를 안고 뜬다 (Fable 재점검, 2026-09-12).
- * 서버가 안 떠 있으면 null — 그때는 직접 닫는다.
+ * 서버가 안 떠 있으면(연결 거부) null — 그때만 직접 닫는다. 응답이 늦는 것은 서버가 없는 게 아니다 —
+ * 5초 시간 초과를 "서버 없음" 으로 보고 직접 닫았더니 서버가 뒤늦게 일지를 받고 "라운드 없음" 으로 던져
+ * 세션 비우기를 건너뛰었다 (R13, 대표 결정 26). 시간 초과면 기다리라고 하고 멈춘다.
  */
 async function viaServer(body, api = '/api/round') {
   const base = process.env.PPANAM_SERVER || 'http://localhost:4321';
@@ -54,9 +57,14 @@ async function viaServer(body, api = '/api/round') {
   try {
     r = await fetch(`${base}${api}`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body), signal: AbortSignal.timeout(5000),
+      body: JSON.stringify(body), signal: AbortSignal.timeout(15000),
     });
-  } catch { return null; }
+  } catch (e) {
+    const code = e?.cause?.code ?? e?.code ?? e?.name;
+    if (code === 'ECONNREFUSED' || code === 'ECONNRESET') return null;
+    console.error(`오류: 서버가 ${code === 'TimeoutError' ? '15초 안에 답하지 않았습니다' : '응답하지 않습니다 (' + code + ')'}. 직접 닫지 않습니다 — 서버가 살아 있으면 지금 닫는 중일 수 있습니다. 방의 note 를 보세요.`);
+    process.exit(1);
+  }
   const data = await r.json().catch(() => ({}));
   if (!r.ok) { console.error('오류: ' + (data.error ?? r.status)); process.exit(1); }
   return data;
@@ -78,6 +86,8 @@ switch (cmd) {
     if (r) {
       if (r.deferred) {
         console.log(`[${team}] 실무 턴이 끝나면 라운드 ${r.round} 이 닫힙니다. 세션 컨텍스트도 그때 비워집니다.`);
+      } else if (r.accepted) {
+        console.log(`[${team}] 서버가 라운드 ${r.round} 을 닫는 중 — 자리마다 일지 한 문단을 받은 뒤 닫히고 세션 컨텍스트를 비웁니다. 끝나면 방에 note 가 남습니다.`);
       } else {
         console.log(`[${team}] 라운드 ${r.round} 종료${o.verdict ? ' · ' + o.verdict : ''}`);
         console.log('대화록은 그대로 남습니다. 다음 라운드부터 AI 컨텍스트만 새로 시작합니다.');
@@ -159,6 +169,11 @@ switch (cmd) {
       const guarded = protectedBranch();
       out.push([`원격 기본 브랜치(${guarded ?? '모름'}) 푸시 요청`, guarded ? refuses(() => pushAction(guarded, '0'.repeat(40)), '원격 기본 브랜치') : '✗ origin/HEAD 없음 — git remote set-head origin -a']);
       out.push(['다른 브랜치 푸시 요청', pushAction('feature/x', '0'.repeat(40)).type === 'push' ? '✓ 허용' : '✗']);
+      // 호명 (결정 22 · 19-2). 문단 첫머리의 이름 전부, 부른 순서대로. "대표님" 은 대표 호명.
+      const cast = { guide: { name: '하영' }, review: { name: '안젤' }, outside: { name: '다니엘' }, boss: { name: '함동혁(댄)' } };
+      const multi = addressees('대표님, 정리했습니다.\n\n안젤, 근거 봐줘.\n\n다니엘, 숫자 대조 부탁.', cast);
+      out.push(['여러 명 호명 순서', multi.join(',') === 'review,outside' ? '✓ 안젤→다니엘' : `✗ ${multi.join(',')}`]);
+      out.push(['대표 호명("대표님,")', callsBoss('대표님, 결정 부탁드립니다.', cast) && !callsBoss('안젤, 대표님께 여쭤봐.', cast) ? '✓' : '✗']);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }

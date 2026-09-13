@@ -468,7 +468,9 @@ function maybeFinishClose(team) {
   if (!closing.has(team) || anyBusy(team)) return;
   const o = closing.get(team);
   closing.delete(team);
-  closeRound(team, o).catch((e) => note(team, `라운드를 닫지 못했습니다 — ${e.message}`));
+  closeRound(team, o)
+    .then((r) => note(team, `라운드 ${r.round} 닫힘 — 일지 ${r.journaled}편. 세션 컨텍스트를 비웠습니다.`))
+    .catch((e) => note(team, `라운드를 닫지 못했습니다 — ${e.message}`));
 }
 
 /**

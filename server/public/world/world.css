@@ -91,7 +91,7 @@
 }
 
 @media (max-width: 1179px) { .app[data-view="world"] { grid-template-columns: 210px minmax(0, 1fr); } }
-@media (max-width: 819px) { .app[data-view="world"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); } .world__hint { display: none; } }
+@media (max-width: 819px) { .app[data-view="world"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); } .world__hint { display: none; } }
 
 /* 세상의 시계 (W2) */
 .world__clock { font: 12px Galmuri11, 'IBM Plex Sans KR', sans-serif; color: var(--ink-2, #6b6357); margin-left: 8px; white-space: nowrap; }

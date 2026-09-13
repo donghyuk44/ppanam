@@ -78,8 +78,12 @@ body {
 .app {
   display: grid;
   grid-template-columns: 224px minmax(0, 1fr) 304px;
+  grid-template-rows: auto minmax(0, 1fr);   /* 첫 줄은 대표 차례(승인 대기) — 없으면 0 */
   height: 100dvh;
 }
+.app > .approvals { grid-column: 1 / -1; grid-row: 1; }
+/* 나머지는 둘째 줄에 — 승인 블록이 숨겨져(display:none) 첫 줄이 비어도 자동 배치가 거기로 올라가지 않게. */
+.rail, .room, .tower, .analysis, .world, .side { grid-row: 2; }
 
 /* ══ 왼쪽 · 팀 레일 ══ */
 
@@ -287,6 +291,19 @@ body {
 }
 .tool span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tool svg { flex: none; }
+/* 연속 도구 줄은 한 줄로 접는다 — "테라 · 파일 7개 읽고 11개 고치는 중 (app.js, style.css …)". 펼치면 목록 (결정 30). */
+.toolgroup {
+  align-self: center; width: 100%; max-width: 420px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-4);
+  border: 1px dashed var(--line); border-radius: 6px; padding: 3px 9px;
+}
+.toolgroup summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; }
+.toolgroup summary::-webkit-details-marker { display: none; }
+.toolgroup summary span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toolgroup svg { flex: none; transition: transform .12s; }
+.toolgroup[open] svg { transform: rotate(90deg); }
+.toolgroup ul { margin: 4px 0 2px 15px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 1px; }
+.toolgroup li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .stamp {
   align-self: center; width: 100%; max-width: 440px; margin: 5px 0;
@@ -326,10 +343,12 @@ body {
   padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
   background: var(--panel); border-top: 1px solid var(--line);
 }
+.composer { align-items: flex-end; }
+/* 여러 줄. Enter 는 보내기, Shift+Enter 는 줄바꿈 — 폰은 ↵ 버튼 (대표 원문 09-13, 결정 19). 높이는 app.js 가 내용에 맞춘다. */
 .composer__in {
-  flex: 1; min-width: 0; font: inherit; font-size: 13.5px; color: var(--ink);
+  flex: 1; min-width: 0; font: inherit; font-size: 13.5px; line-height: 1.45; color: var(--ink);
   background: var(--sunk); border: 1px solid var(--line-2);
-  border-radius: 18px; padding: 8px 14px;
+  border-radius: 18px; padding: 8px 14px; resize: none; max-height: 40vh; overflow-y: auto;
 }
 .composer__in::placeholder { color: var(--ink-4); }
 .composer__in:focus { outline: 2px solid color-mix(in srgb, var(--seal) 50%, transparent); outline-offset: -1px; }
@@ -337,6 +356,24 @@ body {
   flex: none; width: 36px; height: 36px; border-radius: 50%; border: none;
   background: var(--seal); color: var(--seal-ink); display: grid; place-items: center; cursor: pointer;
 }
+.composer__nl {
+  flex: none; display: none; width: 36px; height: 36px; border-radius: 50%; font: inherit; font-size: 15px;
+  border: 1px solid var(--line); background: transparent; color: var(--ink-3); cursor: pointer;
+}
+@media (pointer: coarse) { .composer__nl { display: grid; place-items: center; } }
+
+/* 대표 차례 배지 — 탭 줄에 붙어 어느 화면에서든 보인다 (결정 19-2). */
+.bossbadge {
+  flex: none !important; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px !important;
+  background: var(--bad) !important; color: var(--bad-bg) !important; border-color: var(--bad) !important;
+  padding: 3px 8px !important; border-radius: 999px !important;
+}
+.bossbadge[hidden] { display: none !important; }
+
+/* 대표를 부른 말풍선 — 눈에 걸리게. */
+.row.calls-boss .bub { box-shadow: inset 3px 0 0 var(--bad); }
+.callmark { font-size: 10.5px; color: var(--bad); margin: 0 0 2px 2px; }
+.fromtag { font-size: 10.5px; color: var(--ink-4); margin-left: 6px; font-weight: 400; }
 
 /* ══ 오른쪽 · 상황판 ══ */
 
@@ -593,9 +630,15 @@ body {
 @media (max-width: 819px) {
   .app,
   .app[data-view="tower"], .app[data-view="analysis"] {
-    grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr);
   }
-  .rail { flex-direction: row; border-right: none; border-bottom: 1px solid var(--line); }
+  .rail { grid-row: 2; }
+  .room, .tower, .analysis, .world { grid-row: 3; }
+  .approvals { margin: 8px 10px 0; padding: 10px 12px; }
+  .apr { grid-template-columns: auto minmax(0, 1fr); }
+  .apr__team { grid-column: 2; }
+  .apr__act, .apr__wait { grid-column: 1 / -1; text-align: left; max-width: none; }
+  .rail { flex-direction: row; border-right: none; border-bottom: 1px solid var(--line); min-width: 0; }
   .rail__head { display: none; }
 
   /* 폰에서는 화면 전환과 팀이 위쪽 한 줄에 나란히 선다. */

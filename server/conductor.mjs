@@ -23,7 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -82,7 +82,8 @@ function participants(team) {
   return Object.keys(agents).filter((a) => agents[a]?.model === 'claude' || agents[a]?.model === 'gpt');
 }
 const isOutside = (team, actor) => readCast(team).agents?.[actor]?.model === 'gpt';
-const nameOf = (team, actor) => readCast(team).agents?.[actor]?.name ?? actor;
+// 이 방에 없는 자리는 총괄실 것이다 — 총괄실에서 옮겨온 발언(meta.from)의 화자.
+const nameOf = (team, actor) => readCast(team).agents?.[actor]?.name ?? readCast('hq').agents?.[actor]?.name ?? actor;
 
 function busy(team, actor) {
   if (isOutside(team, actor)) return room(team).outsideBusy;
@@ -120,7 +121,7 @@ function unheard(team, actor) {
       if (got === actor) continue;
     }
     if (e.type === 'round_start' || e.type === 'round_end' || e.type === 'milestone') { lines.push(`[${e.text}]`); continue; }
-    const who = cast[e.actor]?.name ?? e.actor;
+    const who = nameOf(team, e.actor) + (e.meta?.from ? '(총괄실에서)' : '');
     const tag = e.type === 'verdict' ? ` [${e.meta?.verdict ?? ''}]` : e.type === 'note' ? ' (안내)' : '';
     lines.push(`${who}${tag}: ${String(e.text).replace(/\s+/g, ' ').slice(0, HEAR_CHARS)}`);
   }
@@ -354,35 +355,58 @@ export function noticeEvents(team, events) {
     if (e.actor === 'system') {
       // 시스템 발언은 차례 계산에서 빠지되, 첫머리에 이름을 불렀으면 그 사람을 깨운다 — 하네스가 "결과 도착" 을
       // 시스템 화자로 남겼는데 아무도 안 깨어 20분 멈춘 일(2026-09-12). codex 자리도 같다.
-      const to = addressee(e.text, cast);
-      if (to && to !== 'boss' && participants(team).includes(to)) { enqueue(team, to, 'called'); armLull(team); }
+      for (const to of addressees(e.text, cast)) {
+        if (to !== 'boss' && participants(team).includes(to)) { enqueue(team, to, 'called'); armLull(team); }
+      }
       continue;
     }
+
+    // 총괄실에서 다른 방 사람을 불렀다 — 그 방에도 같은 말을 게시한다 (아래 crossPost). 총괄실 세션의 훅은 자기 방에만
+    // 남기므로 톰의 "하영, …" 이 하영 없는 방에만 떴다 (대표 원문 09-13 13:08, 결정 21).
+    if (isOffice(team) && e.type === 'message' && !e.meta?.from) crossPost(team, e);
 
     r.recent.push(e.actor);
     r.recent = r.recent.slice(-MAX_EXCHANGE * 4);
 
     onFlowEvent(team, e);
 
-    const to = addressee(e.text, cast);
-    if (to && to !== e.actor && participants(team).includes(to)) {
-      // 대표가 부른 사람이 claude 자리면 /api/say 가 이미 그에게 넣었다 — 다시 주지 않는다.
+    // 부른 사람 전부, 부른 순서대로 차례 (결정 22). 브레이크는 첫 상대에게만 건다 — 둘이서 도는 것이 문제지 셋을 부른 게 아니다.
+    const called = addressees(e.text, cast).filter((to) => to !== e.actor && participants(team).includes(to));
+    for (const [k, to] of called.entries()) {
+      // 대표가 부른 사람이 claude 자리면 /api/say 가 이미 그에게 넣었다(첫 사람) — 다시 주지 않는다.
       // codex 자리면 넣을 세션이 없어 서버가 말풍선만 남겼다 — 여기서 깨운다 (레오 감사, 2026-09-12).
-      if (e.actor === 'boss' && !isOutside(team, to)) { armLull(team); continue; }
-      if (inLoop(team) && new Set(r.recent.slice(-MAX_EXCHANGE * 2)).has(to)) {
+      if (e.actor === 'boss' && k === 0 && !isOutside(team, to)) continue;
+      if (k === 0 && inLoop(team) && new Set(r.recent.slice(-MAX_EXCHANGE * 2)).has(to)) {
         const z = thirdParty(team, e.actor, to);
         if (!r.loopNoted) {
           r.loopNoted = true;
           note(team, `${nameOf(team, e.actor)}·${nameOf(team, to)} 사이에서 ${MAX_EXCHANGE}번 넘게 오갔습니다. ${z ? nameOf(team, z) + '에게 차례를 넘깁니다.' : '다른 사람이 말할 때까지 쉽니다.'}`);
         }
         if (z) enqueue(team, z, 'third');
-        armLull(team);
         continue;
       }
-      r.loopNoted = false;
+      if (k === 0) r.loopNoted = false;
       enqueue(team, to, 'called');
     }
     armLull(team);
+  }
+}
+
+/**
+ * 총괄실 발언이 다른 방 사람을 첫머리에 불렀으면 그 방에 같은 말을 남긴다 — 화자는 그대로(chief), 출처는 meta.from.
+ * 그 방의 사회자가 이 사본을 보고 불린 사람을 깨운다. 사본은 meta.from 이 있어 다시 옮기지 않는다.
+ * 대표 발언은 옮기지 않는다 — 대표의 지시는 총괄이 배달(dispatch)로 옮긴다.
+ */
+function crossPost(team, e) {
+  if (e.actor === 'boss' || e.actor === 'system') return;
+  for (const t of listTeams()) {
+    if (t.id === team || isOffice(t.id)) continue;
+    // 호명은 이름으로 맞춘다 — 자리 이름(outside)이 방마다 있어도 제리와 다니엘은 다른 이름이다.
+    const cast = readCast(t.id).agents ?? {};
+    const there = addressees(e.text, cast).filter((to) => to !== 'boss');
+    if (!there.length) continue;
+    if (readState(t.id).phase === 'idle') { note(team, `${nameOf(team, e.actor)}이 ${t.name} 팀 ${there.map((x) => cast[x]?.name ?? x).join('·')}을 불렀지만 그 방은 라운드가 닫혀 있어 옮기지 못했습니다.`); continue; }
+    emit(t.id, { actor: e.actor, type: 'message', text: e.text, meta: { from: team, origin: e.id } });
   }
 }
 

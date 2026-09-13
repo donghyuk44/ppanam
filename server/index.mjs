@@ -355,11 +355,14 @@ const server = http.createServer((req, res) => {
           try { assertEndable(t, opts); } catch (e) { return json(res, 409, { error: e.message, refused: true }); }
           // 누가 일하는 중이면 턴이 끝난 뒤 닫는다. 지금 닫으면 마지막 발언이 훅에서 버려진다.
           if (session.closeWhenIdle(t, opts)) return json(res, 202, { deferred: true, round: st.round });
-          // 일지 → 닫기 → 비우기. 일지가 있어야 다음 세션이 어제를 인용한다.
+          // 일지 → 닫기 → 비우기. 일지가 있어야 다음 세션이 어제를 인용한다. 일지는 자리당 최대 3분이라 응답을 기다리게 하면
+          // CLI 가 5초 만에 "서버 없음" 으로 보고 직접 닫았고, 서버는 뒤늦게 "라운드 없음" 으로 던져 세션 비우기를 건너뛰었다
+          // (R13, 대표 결정 26). 받았다고 바로 답하고 뒤에서 닫는다. 끝나면 note 가 방에 남는다.
+          if (session.isClosing(t)) return json(res, 409, { error: '이미 닫는 중입니다.' });
           session.closeRound(t, opts)
-            .then((r) => json(res, 200, r))
-            .catch((e) => json(res, 400, { error: e.message }));
-          return;
+            .then((r) => emit(t, { actor: 'system', type: 'note', text: `라운드 ${r.round} 닫힘 — 일지 ${r.journaled}편. 세션 컨텍스트를 비웠습니다.`, meta: { closed: r.round } }))
+            .catch((e) => emit(t, { actor: 'system', type: 'note', text: `라운드를 닫지 못했습니다 — ${e.message}` }));
+          return json(res, 202, { accepted: true, round: st.round });
         }
         return json(res, 400, { error: 'action 은 start 또는 end 입니다.' });
       } catch (e) {

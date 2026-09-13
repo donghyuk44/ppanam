@@ -15,6 +15,9 @@
 <body>
 <div class="app" id="app" data-view="room">
 
+  <!-- 맨 위: 대표 차례. 승인 대기가 있으면 어느 탭에서든 여기 뜬다 — 관제탑에만 있어서 대표가 못 찾았다 (결정 20). -->
+  <section class="approvals" id="approvals" hidden></section>
+
   <!-- 왼쪽: 팀 레일. 탭이 아니라 계기판이다. -->
   <aside class="rail">
     <div class="rail__head">
@@ -26,6 +29,7 @@
       <button type="button" data-view="tower">관제탑</button>
       <button type="button" data-view="analysis">분석</button>
       <button type="button" data-view="world">마을</button>
+      <button type="button" class="bossbadge" id="bossBadge" hidden title="대표 차례 — 누르면 관제탑"></button>
     </nav>
     <nav class="rail__list" id="teams" aria-label="팀"></nav>
   </aside>
@@ -74,7 +78,8 @@
     <div class="composer__msg" id="composerMsg" hidden></div>
 
     <form class="composer" id="composer">
-      <input class="composer__in" id="input" type="text" autocomplete="off" placeholder="실무에게 지시하기">
+      <textarea class="composer__in" id="input" rows="1" autocomplete="off" placeholder="실무에게 지시하기" enterkeyhint="send"></textarea>
+      <button class="composer__nl" id="composerNl" type="button" aria-label="줄바꿈" title="줄바꿈 (컴퓨터에서는 Shift+Enter)">↵</button>
       <button class="composer__go" type="submit" aria-label="보내기">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 19V5M5 12l7-7 7 7"/>
@@ -89,7 +94,6 @@
       <h1>관제탑</h1>
       <p>모든 작전실을 한 화면에서 봅니다. 카드에서 바로 지시할 수 있습니다.</p>
     </header>
-    <section class="approvals" id="approvals" hidden></section>
     <div class="tower__grid" id="towerGrid"></div>
   </section>
 

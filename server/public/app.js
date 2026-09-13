@@ -17,7 +17,8 @@ let roadmap = { milestones: [], cutList: [] };
 let journal = {};            // 자리 → 최근 일지 문단
 let summary = {};
 let summaries = {};
-let approvals = [];          // 대기 중인 승인 — 관제탑 맨 위
+let approvals = [];          // 대기 중인 승인 — 모든 탭 맨 위
+let pendingMark = -1;        // 마지막으로 본 대기 건수 합 — 바뀌면 목록을 다시 받는다
 let told = {};               // 승인 id → { requested, decided, executed } — 서버가 언제 알렸나
 let grades = {};
 let oldest = null;          // 더 불러올 기준점
@@ -28,7 +29,16 @@ let lastDay = null;
 
 /* ── 작은 도구들 ── */
 
-const who = (id) => cast.agents?.[id] ?? { ...FALLBACK, name: id };
+// 이 방에 없는 자리는 총괄실 것이다 — 총괄실에서 옮겨온 발언(meta.from)의 화자 톰.
+const who = (id) => cast.agents?.[id] ?? summaries.hq?.cast?.[id] ?? { ...FALLBACK, name: id };
+
+/** 이 말이 대표를 불렀나 — 첫머리나 문단 첫머리의 "대표님·대표·댄" 또는 대표 이름. 서버(bus.callsBoss)와 같은 규칙. */
+function callsBoss(text) {
+  const s = String(text ?? '');
+  const bossName = cast.agents?.boss?.name;
+  const names = ['대표님', '대표', '댄', ...(bossName ? [bossName] : [])].map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  return new RegExp(`(^|\\n\\s*\\n)\\s*(${names.join('|')})\\s*(씨|님)?\\s*[,，、:·]`).test(s);
+}
 
 /** 자리의 살아 있음. 세션이 있나(듣는 중), 일하는 중인가, 지금 차례가 잡혀 있나. codex 자리는 사회자의 busy 로. */
 const STATE_LABEL = { off: '자는 중', idle: '듣는 중', busy: '말하는 중', turn: '차례 대기' };
@@ -131,7 +141,33 @@ function renderRail() {
     b.addEventListener('click', () => pickTeam(t.id));
     nav.appendChild(b);
   }
+  renderBossBadge();
 }
+
+/**
+ * 대표 차례 — 어느 탭에서든 보이는 배지 (결정 19-2). 셋을 센다:
+ * 막히거나 하루 넘게 조용한 방(needsBoss) · 누가 대표를 불렀는데 답이 없는 방(bossCall) · 대표가 판정할 승인(C).
+ */
+function bossTurns() {
+  const rooms = teams.filter((t) => summaries[t.id]?.needsBoss || summaries[t.id]?.bossCall);
+  const cards = approvals.filter((r) => r.grade === 'C');
+  return { rooms, cards, n: rooms.length + cards.length };
+}
+function renderBossBadge() {
+  const b = $('bossBadge');
+  const { rooms, cards, n } = bossTurns();
+  b.hidden = n === 0;
+  if (n) {
+    b.textContent = `대표 차례 ${n}`;
+    b.title = [...rooms.map((t) => `${t.name}: ${summaries[t.id].needsBoss ? BOSS_WHY[summaries[t.id].needsBossWhy] ?? '대표 판단' : (summaries[t.id].cast?.[summaries[t.id].bossCall.by]?.name ?? summaries[t.id].bossCall.by) + '이 불렀습니다'}`), ...cards.map((r) => `승인: ${r.what}`)].join('\n');
+  }
+}
+const BOSS_WHY = { blocked: '대표 결정 기다리는 중 (FAIL)', attempts: '고쳐 오기 3번 다 씀', silent: '하루 넘게 말이 없음' };
+$('bossBadge').addEventListener('click', () => {
+  const { rooms, cards } = bossTurns();
+  if (cards.length) return setView('tower');
+  if (rooms.length) { pickTeam(rooms[0].id); setView('room'); }
+});
 
 /* ── 가운데 머리 ── */
 
@@ -148,6 +184,8 @@ function renderHead() {
   const open = office || summary.phase === 'running' || summary.phase === 'blocked';
   const blocked = !office && summary.phase === 'blocked';
   document.title = open && !office ? `R${summary.round} · ${t?.name ?? '작전실'}` : (t?.room ?? '작전실');
+  const turns = bossTurns().n;
+  if (turns) document.title = `(${turns}) ` + document.title;   // 탭 제목에도 — 다른 창에 있어도 보이게
 
   $('rnum').textContent = office ? '1:1' : open ? `R${summary.round}` : '—';
   $('rtitle').textContent = office
@@ -169,18 +207,20 @@ function renderHead() {
   work.textContent = sess.queued ? `${office ? '톰' : '실무'}이 일하는 중 · 대기 ${sess.queued}` : `${office ? '톰' : '실무'}이 일하는 중`;
 
   const rb = $('roundBtn');
-  rb.hidden = office;
+  // 막힌 방(FAIL)은 대표가 말해 풀기 전엔 닫히지 않는다 — 버튼을 보여 주면 누르고 거부당한다 (가드 R13).
+  rb.hidden = office || blocked;
   rb.textContent = open ? '라운드 닫기' : '라운드 열기';
   if (office) $('roundOpen').hidden = true;
 
-  // 작전실은 라운드 밖에서 훅이 기록하지 않는다. 쓸 수 있게 두면 고장으로 보인다.
+  // 라운드 밖에서도 쓸 수 있다. 보내면 첫 줄이 주제로 채워진 열기 폼이 뜨고, 열리면 그 말이 첫 지시로 들어간다 (결정 19).
+  // 전에는 잠겨 있어 "고장" 으로 보였다.
   const input = $('input');
-  input.disabled = !open;
+  input.disabled = false;
   input.placeholder = office
     ? '톰에게 지시하기'
     : blocked
       ? '대표 판단을 적으면 라운드가 재개됩니다'
-      : open ? '실무에게 지시하기' : '라운드를 열면 지시할 수 있습니다';
+      : open ? '실무에게 지시하기' : '지시하면 라운드가 열립니다 — 첫 줄이 주제가 됩니다';
 
   const crew = $('crew');
   crew.replaceChildren();
@@ -344,9 +384,10 @@ function draw(e) {
 
     default: {
       const me = e.actor === 'boss';
-      const cont = lastActor === e.actor;
+      const called = !me && e.actor !== 'system' && callsBoss(e.text);
+      const cont = lastActor === e.actor && !called;
       lastActor = e.actor;
-      const row = el('div', `row${me ? ' me' : ''}${cont ? ' cont' : ''}`);
+      const row = el('div', `row${me ? ' me' : ''}${cont ? ' cont' : ''}${called ? ' calls-boss' : ''}`);
       const av = el('div', 'av', a.initial ?? '?');
       av.style.background = a.color ?? FALLBACK.color;
       row.appendChild(av);
@@ -355,13 +396,66 @@ function draw(e) {
         const name = el('div', 'name');
         name.appendChild(el('b', null, a.name));
         name.append(' ' + hhmm(e.ts));
+        // 총괄실에서 옮겨온 말 — 톰이 이 방 사람을 불렀다 (결정 21).
+        if (e.meta?.from) name.appendChild(el('span', 'fromtag', `${teams.find((t) => t.id === e.meta.from)?.room ?? e.meta.from}에서`));
         stack.appendChild(name);
       }
+      // 대표를 불렀다 — 멘션 표시 (결정 19-2).
+      if (called) stack.appendChild(el('div', 'callmark', '@ 대표님을 불렀습니다'));
       stack.appendChild(bubble(e.text));
       row.appendChild(stack);
       return row;
     }
   }
+}
+
+/* ── 연속 도구 줄 접기 ──
+ * "Read · /Users/…/worktrees/…" 가 18줄 연속으로 대표 화면을 채웠다 (결정 30). 같은 사람의 연속 도구 이벤트는
+ * 한 줄 — "테라 · 파일 7개 읽고 11개 고치는 중 (app.js, style.css …)" — 사람·동사·파일 이름만, 전체 경로 없음.
+ * 펼치면 목록. 다른 이벤트가 오면 "…중" 이 "…함" 으로 바뀐다. */
+let toolGroup = null;   // { actor, node, sum, list, items: [{tool, text}] }
+
+const VERB = { Read: '읽', Edit: '고치', Write: '고치', NotebookEdit: '고치', MultiEdit: '고치', WebFetch: '가져오', WebSearch: '찾' };
+const DONE = { 읽: '읽음', 고치: '고침', 가져오: '가져옴', 찾: '찾음', 쓰: '씀' };
+const baseName = (s) => String(s ?? '').replace(/[?#].*$/, '').split('/').filter(Boolean).pop() ?? '';
+
+function groupLabel(g, live) {
+  const by = {};
+  for (const it of g.items) { const v = VERB[it.tool] ?? '쓰'; by[v] = (by[v] ?? 0) + 1; }
+  const parts = Object.entries(by);
+  const verbs = parts.map(([v, n], i) => `${n}개 ${v}${i < parts.length - 1 ? '고' : live ? '는 중' : DONE[v]}`).join(' ');
+  const names = [...new Set(g.items.map((it) => baseName(it.text)).filter(Boolean))];
+  const shown = names.slice(0, 3).join(', ') + (names.length > 3 ? ' …' : '');
+  return `${who(g.actor).name} · 파일 ${verbs}${shown ? ` (${shown})` : ''}`;
+}
+
+function closeToolGroup() {
+  if (!toolGroup) return;
+  toolGroup.sum.textContent = groupLabel(toolGroup, false);
+  toolGroup = null;
+}
+
+function drawTool(e, frag) {
+  if (!toolGroup || toolGroup.actor !== e.actor) {
+    closeToolGroup();
+    const node = el('details', 'toolgroup');
+    const summary = el('summary');
+    summary.appendChild(svg('M9 6l6 6-6 6'));
+    const sum = el('span');
+    summary.appendChild(sum);
+    node.appendChild(summary);
+    const list = el('ul');
+    node.appendChild(list);
+    if (e.id) node.dataset.id = e.id;
+    frag.appendChild(node);
+    toolGroup = { actor: e.actor, node, sum, list, items: [] };
+  }
+  const tool = e.meta?.tool ?? '도구';
+  toolGroup.items.push({ tool, text: e.text });
+  const li = el('li', null, `${tool} · ${baseName(e.text) || e.text}`);
+  li.title = e.text;
+  toolGroup.list.appendChild(li);
+  toolGroup.sum.textContent = groupLabel(toolGroup, true);
 }
 
 /** 날짜가 바뀌면 날짜 표시를 끼워넣는다 (카톡처럼). */
@@ -370,8 +464,11 @@ function drawWithDay(e, frag) {
   if (d !== lastDay) {
     lastDay = d;
     lastActor = null;
+    closeToolGroup();
     frag.appendChild(el('div', 'daymark', d));
   }
+  if (e.type === 'tool') { lastActor = null; drawTool(e, frag); return; }
+  closeToolGroup();
   const n = draw(e);
   if (e.id) n.dataset.id = e.id;                    // 마을의 말풍선 ↗ 가 여기로 건너온다
   frag.appendChild(n);
@@ -394,7 +491,7 @@ const atBottom = () => feed.scrollHeight - feed.scrollTop - feed.clientHeight < 
 function paint(events, { replace = true } = {}) {
   if (replace) {
     stream.replaceChildren();
-    lastActor = null; lastDay = null;
+    lastActor = null; lastDay = null; toolGroup = null;
   }
   if (!events.length && replace) { stream.appendChild(emptyView()); return; }
   const frag = document.createDocumentFragment();
@@ -448,10 +545,11 @@ async function loadOlder() {
 
   // 위쪽에 끼워넣고 스크롤 위치를 유지한다.
   const frag = document.createDocumentFragment();
-  const saveActor = lastActor, saveDay = lastDay;
-  lastActor = null; lastDay = null;
+  const saveActor = lastActor, saveDay = lastDay, saveGroup = toolGroup;
+  lastActor = null; lastDay = null; toolGroup = null;
   for (const e of r.events) drawWithDay(e, frag);
-  lastActor = saveActor; lastDay = saveDay;
+  closeToolGroup();   // 위쪽에 끼운 묶음은 끝난 것이다
+  lastActor = saveActor; lastDay = saveDay; toolGroup = saveGroup;
   stream.insertBefore(frag, stream.firstChild);
 
   oldest = r.events[0]?.id ?? oldest;
@@ -506,9 +604,12 @@ function connect() {
       summary = summaries[active] ?? summary;
       World.onSummaries(summaries);
       renderRail(); renderHead(); renderSide();
-      if (view === 'tower') {
-        fetch('/api/approvals').then((r) => r.json()).then((a) => { approvals = a.pending ?? []; told = a.told ?? told; renderTower(); }).catch(() => renderTower());
-      }
+      // 승인 대기 블록은 모든 탭 맨 위에 있다. 대기 건수가 움직였을 때만 목록을 다시 받는다 — 250ms 마다 받을 이유가 없다.
+      const pend = Object.values(summaries).reduce((n, s) => n + (s.approvals?.pending ?? 0), 0);
+      if (pend !== pendingMark) {
+        pendingMark = pend;
+        fetch('/api/approvals').then((r) => r.json()).then((a) => { approvals = a.pending ?? []; told = a.told ?? told; renderApprovals(); renderBossBadge(); if (view === 'tower') renderTower(); }).catch(() => {});
+      } else if (view === 'tower') renderTower();
       // 분석은 값이 실제로 움직였을 때만 다시 불러온다. 250ms 마다 받아올 이유가 없다.
       if (view === 'analysis') {
         const s = summaries[active] ?? {};
@@ -549,9 +650,13 @@ function say(text, ms = 6000) {
   msgTimer = setTimeout(() => { box.hidden = true; }, ms);
 }
 
-const showOpen = (on) => {
+// 라운드 밖에서 보낸 지시. 열기 폼의 주제가 이걸로 채워지고, 라운드가 열리면 첫 지시로 보낸다.
+let pendingSay = null;
+
+const showOpen = (on, { topic = '' } = {}) => {
   $('roundOpen').hidden = !on;
-  if (on) { $('roundTopic').value = ''; $('roundMs').value = ''; $('roundTopic').focus(); }
+  if (on) { $('roundTopic').value = topic; $('roundMs').value = ''; $('roundTopic').focus(); }
+  else pendingSay = null;
 };
 
 $('roundBtn').addEventListener('click', async () => {
@@ -564,6 +669,7 @@ $('roundBtn').addEventListener('click', async () => {
   const r = await post('/api/round', { team: active, action: 'end' });
   if (!r.ok) say(r.data.error ?? '라운드를 닫지 못했습니다.');
   else if (r.data.deferred) say('실무가 일하는 중입니다. 이 턴이 끝나면 닫힙니다.', 10000);
+  else if (r.data.accepted) say('닫는 중 — 자리마다 일지 한 문단을 받은 뒤 닫힙니다. 끝나면 방에 안내가 남습니다.', 10000);
 });
 
 $('roundCancel').addEventListener('click', () => showOpen(false));
@@ -579,33 +685,65 @@ $('roundOpen').addEventListener('submit', async (e) => {
     milestone: ms === '' ? null : Number(ms),
   });
   if (!r.ok) return say(r.data.error ?? '라운드를 열지 못했습니다.');
+  const first = pendingSay;
   showOpen(false);
   $('input').focus();
+  // 라운드 밖에서 보낸 지시가 있었다 — 열렸으니 그 말을 첫 지시로 넣는다.
+  if (first) { $('input').value = ''; fitInput(); sendSay(first); }
 });
 
 /* ── 지시 ── */
 
-$('composer').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const input = $('input');
-  const text = input.value.trim();
-  if (!text || !active) return;
-  input.value = '';
-  say(null);
+const input = $('input');
 
+/** 여러 줄 입력창의 높이를 내용에 맞춘다 (한 줄 ~ 화면의 40%). */
+function fitInput() {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, window.innerHeight * 0.4) + 'px';
+}
+input.addEventListener('input', fitInput);
+
+// Enter 는 보내기, Shift+Enter 는 줄바꿈. 한글 조합 중(isComposing)의 Enter 는 조합 확정이라 보내지 않는다.
+input.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || e.isComposing || e.shiftKey) return;
+  e.preventDefault();
+  $('composer').requestSubmit();
+});
+// 폰 자판에는 Shift+Enter 가 없다 — 줄바꿈 버튼.
+$('composerNl').addEventListener('click', () => {
+  const { selectionStart: s, selectionEnd: t, value } = input;
+  input.value = value.slice(0, s) + '\n' + value.slice(t);
+  input.selectionStart = input.selectionEnd = s + 1;
+  fitInput(); input.focus();
+});
+
+async function sendSay(text) {
   // 말풍선은 여기서 그리지 않는다. 지시가 세션에 들어가면 훅이 남긴다.
   let r;
   try {
     r = await post('/api/say', { text, team: active });
   } catch {
-    input.value = text;
+    input.value = text; fitInput();
     return say('서버에 닿지 못했습니다.');
   }
   if (!r.ok) {
-    input.value = text;
+    input.value = text; fitInput();
     say(r.data.error ?? '지시를 전달하지 못했습니다.');
-    if (r.data.needsRound) showOpen(true);
+    if (r.data.needsRound) { pendingSay = text; showOpen(true, { topic: text.split('\n')[0].slice(0, 80) }); }
   }
+}
+
+$('composer').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text || !active) return;
+  input.value = ''; fitInput();
+  say(null);
+  const office = teams.find((x) => x.id === active)?.kind === 'office';
+  const open = office || summary.phase === 'running' || summary.phase === 'blocked';
+  // 라운드 밖이다 — 보내지 않고, 첫 줄을 주제로 채운 열기 폼을 띄운다. 열리면 이 말이 첫 지시가 된다 (결정 19).
+  if (!open) { pendingSay = text; input.value = text; fitInput(); showOpen(true, { topic: text.split('\n')[0].slice(0, 80) }); return; }
+  sendSay(text);
 });
 
 /* ── 상황판 서랍 (좁은 화면) ── */
@@ -696,7 +834,7 @@ function renderApprovals() {
         if (d === 'REVISE' && !reason) { reasonBox.hidden = false; reasonBox.focus(); return; }
         const res = await post('/api/approvals', { id: r.id, decision: d, reason });
         if (!res.ok) { err.textContent = res.data.error ?? '판정하지 못했습니다.'; err.hidden = false; }
-        else { approvals = approvals.filter((x) => x.id !== r.id); renderApprovals(); }
+        else { approvals = approvals.filter((x) => x.id !== r.id); renderApprovals(); renderBossBadge(); }
       };
       for (const d of ['PASS', 'REVISE']) {
         const b = el('button', null, d === 'PASS' ? '승인' : '반려'); b.type = 'button'; b.dataset.d = d;
@@ -850,6 +988,7 @@ function renderTower() {
         const r = await post('/api/round', { team: t.id, action: 'end' });
         if (!r.ok) fail(r.data.error ?? '닫지 못했습니다.');
         else if (r.data.deferred) fail('실무가 일하는 중입니다. 이 턴이 끝나면 닫힙니다.');
+        else if (r.data.accepted) fail('닫는 중 — 일지를 받은 뒤 닫힙니다. 끝나면 방에 안내가 남습니다.');
         return;
       }
       const topic = box.value.trim();
@@ -866,7 +1005,7 @@ function renderTower() {
 
     const btn = el('button', 'tcard__r', running ? '라운드 닫기' : '라운드 열기');
     btn.type = 'button';
-    btn.hidden = office;
+    btn.hidden = office || s.phase === 'blocked';   // 막힌 방은 대표가 말해 풀기 전엔 닫히지 않는다
     btn.addEventListener('click', doRound);
 
     row.appendChild(box);
@@ -1039,8 +1178,11 @@ approvals = boot.approvals ?? [];
 told = boot.told ?? {};
 grades = boot.grades ?? {};
 for (const t of teams) unread[t.id] = 0;
+pendingMark = Object.values(summaries).reduce((n, s) => n + (s.approvals?.pending ?? 0), 0);
 connect();
 
 const [hashTeam, hashView] = location.hash.slice(1).split('/');
 await selectTeam(teams.some((t) => t.id === hashTeam) ? hashTeam : boot.defaultTeam);
-setView(hashView ?? 'room');
+renderApprovals();
+// 부팅 — 주소에 화면이 없으면: 대표 차례가 있으면 관제탑, 아니면 방 (G-UX).
+setView(hashView ?? (bossTurns().n ? 'tower' : 'room'));
