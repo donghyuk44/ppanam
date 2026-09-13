@@ -261,9 +261,10 @@ export function splitRelay(text) {
  * 대화록과 같은 원칙 — 지우지 않는다.
  */
 export const APPROVAL_GRADES = {
+  // 문구는 대표 결정 46 (09-13) — C 는 방향만, 방향 안의 일은 B + 그 팀 감사 토론. docs/event-schema.md 6절 표와 같은 글.
   A: { label: '자동', needs: [],                   desc: '브랜치 안 커밋 · 산출물 쓰기 · 라운드 열고 닫기 · 감사역 부르기' },
-  B: { label: '총괄', needs: ['chief', 'outside'], desc: '원격 푸시 · 다음 마일스톤 착수 · 다른 팀에 일 넘기기 · 세션 재시작' },
-  C: { label: '대표', needs: ['boss'],             desc: '메인 병합 · 컷리스트·로드맵 변경 · 비용 상한 · 외부 발송 · 인격 파일 수정' },
+  B: { label: '총괄', needs: ['chief', 'outside'], desc: '방향 안의 일 — 원격 푸시 · 다음 마일스톤 착수 · 팀 사이 요청 · 세션 재시작 · 마일스톤 순서 조정 · 인격 파일 재생성 · 화면 문구 · 브랜딩 글' },
+  C: { label: '대표', needs: ['boss'],             desc: '방향만 — 로드맵 목적지 변경 · 컷 리스트 · 비용 상한 · 외부 발송 · 본책 병합' },
 };
 export const APPROVALS_PATH = path.join(ROOT, 'state', 'approvals.jsonl');
 
