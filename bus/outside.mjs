@@ -305,7 +305,9 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
     if (res.sessionId) remember(team, res.sessionId, seenId);
     const ok = appendJournal(team, 'outside', body, { round });
     console.log(`[${ENGINE}] ${team} · 일지 ${ok ? '한 문단' : '(패스)'}`);
-    return 0;
+    // (패스)·빈 답은 "일지 없음" 이다 — 0 으로 나가면 journalAll(server/session.mjs) 이 성공으로 세어
+    // note·재시도가 안 돈다(레오 REVISE, R19). 1 은 codex 호출 실패, 2 는 사용법 오류라 3 을 쓴다.
+    return ok ? 0 : 3;
   }
 
   // 승인 대조였으면 그 판정을 외부감사 이름으로 큐에 남긴다 (시키는 쪽은 위에서 이미 걸렀다 — 총괄실 세션뿐).
