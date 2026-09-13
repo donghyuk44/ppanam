@@ -178,7 +178,8 @@ function runProxy(store) {
   let changed = false;
   store.proxied ??= {};
   for (const it of proxyCandidates()) {
-    if (store.proxied[it.key]) continue;
+    const prev = store.proxied[it.key];
+    if (prev?.id) continue;   // 올라간 것만 건너뛴다 — 실패한 것은 다음 살피기(30초)에 다시 (레오 REVISE R23: 실패도 기록하면 영원히 건너뛰어 조용히 죽는다)
     try {
       const r = requestApproval('hq', {
         by: 'system', grade: 'B',
@@ -189,8 +190,11 @@ function runProxy(store) {
       store.proxied[it.key] = { id: r.id, at: new Date().toISOString() };
       changed = true;
     } catch (e) {
-      console.error('[notifier] 대리 결정 요청 실패 — ' + String(e.message).slice(0, 160));
-      store.proxied[it.key] = { error: String(e.message).slice(0, 120), at: new Date().toISOString() };
+      // 실패는 방에 남기고(같은 오류가 이어지면 한 번만) 다음 살피기에 다시 시도한다 — 조용히 사라지지 않게.
+      const msg = String(e.message).slice(0, 120);
+      console.error('[notifier] 대리 결정 요청 실패 — ' + msg);
+      if (prev?.error !== msg) emit('hq', { actor: 'system', type: 'note', text: `대리 결정 요청(${it.kind} · ${it.team})을 올리지 못했습니다 — ${msg}. 30초 뒤 다시 시도합니다.` });
+      store.proxied[it.key] = { error: msg, at: new Date().toISOString() };
       changed = true;
     }
   }
