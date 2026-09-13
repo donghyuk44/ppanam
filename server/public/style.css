@@ -670,19 +670,20 @@ body {
 .dash__tile span { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: .13em; color: var(--ink-4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dash__tile[data-alert="1"] { border-color: var(--bad-line); background: var(--bad-bg); }
 .dash__tile[data-alert="1"] b { color: var(--bad); }
-.dash__card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; }
+/* min-width: 0 — 세로 flex 안의 카드·줄은 안 그러면 제일 긴 낱말(`node tools/pixel/…` 같은 경로) 폭으로 벌어져 412 에서 오른쪽이 잘렸다 (R21 첫 스크린샷). */
+.dash__card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; min-width: 0; }
 .dash__k { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: .13em; color: var(--ink-4); padding-bottom: 6px; }
 .dash__row {
-  display: flex; flex-direction: column; gap: 2px; align-items: stretch; text-align: left; width: 100%;
+  display: flex; flex-direction: column; gap: 2px; align-items: stretch; text-align: left; width: 100%; min-width: 0;
   font: inherit; font-size: 12.5px; color: var(--ink-2); background: none; border: 0; border-top: 1px solid var(--line-2);
   padding: 8px 0; min-height: 36px; cursor: default;
 }
 button.dash__row { cursor: pointer; }
 button.dash__row:hover b { text-decoration: underline; }
-.dash__row b { font-weight: 500; color: var(--ink); }
+.dash__row b { font-weight: 500; color: var(--ink); overflow-wrap: anywhere; }
 .dash__head { display: flex; align-items: center; gap: 8px; }
 .dash__head .pill { margin-left: auto; }
-.dash__sub { font-size: 12px; color: var(--ink-3); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.dash__sub { font-size: 12px; color: var(--ink-3); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .dash__empty { font-size: 12px; color: var(--ink-4); font-style: italic; padding: 6px 0; }
 
 /* 개인 — 대표 카드 맨 위(노란 테두리), 팀별 묶음(접기), 사람마다 카드 다섯 줄 (헨리 설계 3절). */
@@ -709,7 +710,7 @@ button.dash__row:hover b { text-decoration: underline; }
 .pcard__who { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .pcard__who b { font-size: 13.5px; font-weight: 500; color: var(--ink); }
 .pcard__who span { font-size: 11px; color: var(--ink-4); overflow: hidden; text-overflow: ellipsis; }
-.pcard__doing { font-size: 12.5px; color: var(--ink-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.pcard__doing { font-size: 12.5px; color: var(--ink-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .pcard__nums { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-4); }
 .pcard__call, .pcard__journal {
   font: inherit; text-align: left; background: none; border: 0; padding: 0; cursor: pointer;
@@ -718,7 +719,7 @@ button.dash__row:hover b { text-decoration: underline; }
 .pcard__call { font-size: 12px; color: var(--bad); }
 .pcard__journal { font-family: 'Gowun Batang', serif; font-size: 12.5px; color: var(--ink-3); }
 .pcard__journal:hover { color: var(--ink); }
-.pcard__jfull { font-family: 'Gowun Batang', serif; font-size: 12.5px; color: var(--ink-2); line-height: 1.6; white-space: pre-wrap; border-top: 1px dashed var(--line); padding-top: 6px; }
+.pcard__jfull { font-family: 'Gowun Batang', serif; font-size: 12.5px; color: var(--ink-2); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; border-top: 1px dashed var(--line); padding-top: 6px; }
 .pcard__jfull[hidden] { display: none; }
 
 /* ── 분석 ── */
