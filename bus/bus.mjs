@@ -1046,3 +1046,20 @@ export function peopleOf(log, cast, { now = Date.now() } = {}) {
   }
   return { ...people, boss };
 }
+
+/**
+ * 오늘 대표에게 한 말 (결정 50·52) — 관제탑 "전체" 의 "오늘 보고" 줄. 대표를 부른(`callsBoss`) 오늘의 발언을 최근 것부터 30건까지.
+ * `ask` 는 결정이 필요한 말인가 — 물음표 · "정해 주세요·골라·답해" (결정 52 의 판별). 아니면 보고다. 종 배지는 아직 이 구분을 안 쓴다(M4).
+ */
+export function bossNotesOf(log, cast, { now = Date.now(), limit = 30 } = {}) {
+  const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+  const out = [];
+  for (let i = log.length - 1; i >= 0 && out.length < limit; i--) {
+    const e = log[i];
+    if (new Date(e.ts ?? 0).getTime() < dayStart.getTime()) break;
+    if (e.type !== 'message' || e.actor === 'boss' || e.actor === 'system' || !callsBoss(e.text, cast)) continue;
+    const text = String(e.text ?? '').replace(/\s+/g, ' ').trim();
+    out.push({ id: e.id, ts: e.ts, by: e.actor, text: text.slice(0, 160), ask: /[?？]|정해\s*주|골라|답해/.test(text) });
+  }
+  return out;
+}

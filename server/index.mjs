@@ -100,6 +100,8 @@ const summaryOf = (team) => {
         .filter((r) => (r.decidedAt ?? '').slice(0, 10) === new Date().toISOString().slice(0, 10)).length,
     },
     people: peopleOf(team, sessions, conductor),
+    // 오늘 대표에게 한 말 — "전체" 탭의 오늘 보고 줄 (결정 50·52). 판별은 bus.bossNotesOf.
+    bossNotes: bus.bossNotesOf(readLog(team), readCast(team).agents ?? {}),
   };
 };
 

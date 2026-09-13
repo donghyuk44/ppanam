@@ -708,9 +708,15 @@ function connect() {
       }
       return;
     }
-    if (msg.kind === 'world') { World.onWorld(msg.world); return; }   // 세상의 시계 — 자리·루틴 (W2)
+    // 세상의 시계 — 자리·루틴 (W2). 관제탑 개인 카드의 "잠" 도 이 시계를 본다 — 분이 바뀔 때만 오니 그때 다시 그린다.
+    if (msg.kind === 'world') {
+      World.onWorld(msg.world);
+      const mode = msg.world?.mode ?? null;
+      if (mode !== worldMode) { worldMode = mode; if (view === 'tower' && towerTab === 'people') renderTower(); }
+      return;
+    }
     if (msg.kind === 'hello') {
-      if (msg.world) World.onWorld(msg.world);
+      if (msg.world) { World.onWorld(msg.world); worldMode = msg.world.mode ?? null; }
       // 붙을 때 받은 요약도 쓴다 — 전에는 world 만 쓰고 버려서, 다음 방송(어느 팀이든 요약이 바뀔 때)까지
       // 부팅 때 것이 남았다 (독립검수 #1).
       if (msg.summaries && active) {
@@ -1031,9 +1037,224 @@ function renderApprovals() {
   }
 }
 
+/* 서브 탭 넷 (결정 40·50) — 전체(첫 화면) · 팀(카드 다섯) · 개인(열넷 + 대표) · 요청(M3). 마지막에 본 탭을 기억한다. */
+const TOWER_TABS = new Set(['all', 'teams', 'people', 'asks']);
+let towerTab = (() => { try { return localStorage.getItem('ppanam.towerTab'); } catch { return null; } })();
+if (!TOWER_TABS.has(towerTab)) towerTab = 'all';
+let worldMode = null;   // 마을 시계의 mode — 밤·주말이면 개인 카드가 "잠"
+
+function setTowerTab(tab) {
+  if (!TOWER_TABS.has(tab)) tab = 'all';
+  towerTab = tab;
+  try { localStorage.setItem('ppanam.towerTab', tab); } catch { /* 사생활 모드 — 기억 못 해도 된다 */ }
+  renderTower();
+}
+for (const b of $('towerTabs').querySelectorAll('button')) b.addEventListener('click', () => setTowerTab(b.dataset.tab));
+
+/** 상태 알약 — 다섯 상태 = 색 셋 (헨리 설계 6절). k: boss(빨간 바탕) · bad(빨간 테두리) · live · idle */
+function pill(text, k) { const p = el('span', 'pill', text); p.dataset.k = k; return p; }
+
 function renderTower() {
   renderApprovals();
   const grid = $('towerGrid');
+  // 탭 줄의 작은 숫자 — 팀은 대표 차례인 팀 수, 개인은 대표를 부른 사람 수. 0 이면 숫자 없음 (헨리 설계 1절).
+  const bossRooms = teams.filter((t) => summaries[t.id]?.needsBoss || summaries[t.id]?.bossCall).length;
+  const callers = teams.reduce((n, t) => n + Object.entries(summaries[t.id]?.people ?? {}).filter(([id, p]) => id !== 'boss' && p.bossCall).length, 0);
+  for (const b of $('towerTabs').querySelectorAll('button')) {
+    b.setAttribute('aria-current', String(b.dataset.tab === towerTab));
+    const n = b.querySelector('.tabs__n');
+    if (!n) continue;
+    const v = b.dataset.tab === 'teams' ? bossRooms : callers;
+    n.hidden = !v; n.textContent = v ? String(v) : '';
+  }
+  grid.dataset.tab = towerTab;
+  if (towerTab === 'teams') return renderTowerTeams(grid);
+  grid.replaceChildren();
+  if (towerTab === 'all') return renderTowerAll(grid);
+  if (towerTab === 'people') return renderTowerPeople(grid);
+  return renderTowerAsks(grid);
+}
+
+/* ── 전체 — 대표가 30초 안에 읽는 첫 화면 (결정 50): 대표 차례 · 승인 대기 · 요청 수 · 팀 다섯 한 줄 · 오늘 보고 ── */
+function renderTowerAll(grid) {
+  const { rooms, cards, n } = bossTurns();
+  const goRoom = (t) => async () => { await selectTeam(t.id); setView('room'); };
+
+  const stats = el('div', 'dash__stats');
+  const tile = (k, v, alert) => {
+    const d = el('div', 'dash__tile'); d.dataset.alert = alert ? '1' : '0';
+    d.appendChild(el('b', null, v)); d.appendChild(el('span', null, k)); return d;
+  };
+  stats.appendChild(tile('대표 차례', String(n), n > 0));
+  stats.appendChild(tile('승인 대기', String(approvals.length), false));
+  // 팀 사이 요청 — 승인 체인(M3)이 서기 전엔 셀 것이 없다. 자리만 잡아 둔다.
+  stats.appendChild(tile('요청 진행 / 완료', '— / —', false));
+  grid.appendChild(stats);
+
+  const turn = el('section', 'dash__card');
+  turn.appendChild(el('div', 'dash__k', '대표 차례'));
+  if (!n) turn.appendChild(el('div', 'dash__empty', '대표 차례가 없습니다. 팀이 달리는 중입니다.'));
+  for (const t of rooms) {
+    const row = el('button', 'dash__row'); row.type = 'button';
+    row.appendChild(el('b', null, t.name)); row.appendChild(el('span', 'dash__sub', bossWhyOf(t)));
+    row.addEventListener('click', goRoom(t));
+    turn.appendChild(row);
+  }
+  for (const r of cards) {
+    const row = el('div', 'dash__row');
+    row.appendChild(el('b', null, `승인 C · ${teams.find((x) => x.id === r.team)?.name ?? r.team}`));
+    row.appendChild(el('span', 'dash__sub', `${r.what} — 위 승인 대기 블록에서 판정`));
+    turn.appendChild(row);
+  }
+  grid.appendChild(turn);
+
+  const tl = el('section', 'dash__card');
+  tl.appendChild(el('div', 'dash__k', '팀'));
+  for (const t of teams) {
+    const s = summaries[t.id] ?? {};
+    const office = t.kind === 'office';
+    const running = office || s.phase === 'running' || s.phase === 'blocked';
+    const row = el('button', 'dash__row'); row.type = 'button';
+    const head = el('span', 'dash__head');
+    head.appendChild(el('b', null, t.name));
+    head.appendChild(pill(
+      s.needsBoss ? '대표 차례' : s.bossCall ? '대표 부름' : office ? '1:1' : s.phase === 'blocked' ? '막힘' : running ? '진행 중' : '대기',
+      s.needsBoss || s.bossCall ? 'boss' : s.phase === 'blocked' ? 'bad' : running ? 'live' : 'idle'));
+    row.appendChild(head);
+    const bits = [];
+    if (!office) bits.push(s.round ? `R${s.round} · 마일스톤 ${s.milestone}${s.milestoneTitle ? ' ' + s.milestoneTitle : ''}` : '진행 중인 라운드 없음');
+    const busy = Object.entries(s.people ?? {}).filter(([id, p]) => id !== 'boss' && p.busy).map(([id]) => s.cast?.[id]?.name ?? id);
+    if (busy.length) bits.push(`작업 중 ${busy.join('·')}`);
+    if (s.approvals?.pending) bits.push(`승인 대기 ${s.approvals.pending}`);
+    if (bits.length) row.appendChild(el('span', 'dash__sub', bits.join(' · ')));
+    row.addEventListener('click', goRoom(t));
+    tl.appendChild(row);
+  }
+  grid.appendChild(tl);
+
+  // 오늘 보고 — 대표를 부른 말 중 결정이 아닌 것 (결정 52). 결정이 필요한 말은 종·대표 차례가 맡는다.
+  const notes = teams.flatMap((t) => (summaries[t.id]?.bossNotes ?? []).map((x) => ({ ...x, team: t.id, teamName: t.name })))
+    .filter((x) => !x.ask).sort((a, b) => b.ts.localeCompare(a.ts));
+  const rp = el('section', 'dash__card');
+  rp.appendChild(el('div', 'dash__k', `오늘 보고 ${notes.length}`));
+  if (!notes.length) rp.appendChild(el('div', 'dash__empty', '오늘 대표에게 올라온 보고가 없습니다.'));
+  for (const x of notes.slice(0, 12)) {
+    const row = el('button', 'dash__row'); row.type = 'button';
+    row.appendChild(el('b', null, `${x.teamName} · ${summaries[x.team]?.cast?.[x.by]?.name ?? x.by} · ${hhmm(x.ts)}`));
+    row.appendChild(el('span', 'dash__sub', x.text));
+    row.addEventListener('click', () => jumpTo(x.team, x.id));
+    rp.appendChild(row);
+  }
+  grid.appendChild(rp);
+}
+
+/* ── 개인 — 열넷 + 대표. 헨리 설계 3절 (1판, 가설). 데이터는 요약의 people ── */
+const openJournal = new Set();   // "팀:자리" — 일지 문단을 펼쳐 둔 카드
+function renderTowerPeople(grid) {
+  const asleep = worldMode === 'night' || worldMode === 'rest';
+  const groupKey = (t) => `ppanam.towerGroup.${t}`;
+
+  // 대표 카드 — 맨 위, 묶음 밖. 다섯 방의 값을 합친다: 지시·결정은 합, 마지막 지시는 가장 늦은 것.
+  const bosses = teams.map((t) => summaries[t.id]?.people?.boss).filter(Boolean);
+  const bossCast = summaries[teams[0]?.id]?.cast?.boss ?? { name: '함동혁(댄)', initial: '댄', color: '#8a7320', role: '대표 · 사람' };
+  const lastOrder = bosses.filter((b) => b.lastSaidAt).sort((a, b) => b.lastSaidAt.localeCompare(a.lastSaidAt))[0] ?? null;
+  const here = lastOrder && Date.now() - new Date(lastOrder.lastSaidAt).getTime() < 10 * 60_000;
+  const bc = el('div', 'pcard'); bc.dataset.boss = '1';
+  bc.appendChild(pcardTop(bossCast, pill(here ? '자리에' : '자리 비움', here ? 'live' : 'idle')));
+  bc.appendChild(el('div', 'pcard__doing', lastOrder ? firstLine(lastOrder.lastText) : '—'));
+  bc.appendChild(el('div', 'pcard__nums', `오늘 지시 ${bosses.reduce((n, b) => n + (b.todaySay ?? 0), 0)} · 결정 ${bosses.reduce((n, b) => n + (b.todayDecisions ?? 0), 0)}${lastOrder ? ` · 마지막 ${ago(lastOrder.lastSaidAt)}` : ''}`));
+  grid.appendChild(bc);
+
+  for (const t of teams) {
+    const s = summaries[t.id] ?? {};
+    const cast = s.cast ?? {};
+    const people = Object.entries(s.people ?? {}).filter(([id]) => id !== 'boss' && cast[id] && !cast[id].from);
+    if (!people.length) continue;
+    const box = el('details', 'pgroup');
+    let open = true; try { open = localStorage.getItem(groupKey(t.id)) !== '0'; } catch { /* 기본은 펼침 */ }
+    box.open = open;
+    box.addEventListener('toggle', () => { try { localStorage.setItem(groupKey(t.id), box.open ? '1' : '0'); } catch { /* 무시 */ } });
+    const head = el('summary', 'pgroup__head');
+    head.appendChild(el('span', null, `${t.name} ${people.length}`));
+    if (people.some(([, p]) => p.bossCall)) head.appendChild(el('i', 'pgroup__dot'));
+    box.appendChild(head);
+    const list = el('div', 'pgrid');
+    for (const [id, p] of people) list.appendChild(personCard(t, id, cast[id], p, s, asleep));
+    box.appendChild(list);
+    grid.appendChild(box);
+  }
+}
+
+/** 카드 1줄 — 칩 26px + 이름 · 자리 + 오른쪽 알약. */
+function pcardTop(a, pillEl) {
+  const top = el('div', 'pcard__top');
+  const chip = el('div', 'chip pcard__chip', a.initial ?? '?'); chip.style.background = a.color ?? FALLBACK.color;
+  top.appendChild(chip);
+  const who = el('div', 'pcard__who');
+  who.appendChild(el('b', null, a.name ?? '?'));
+  if (a.role) who.appendChild(el('span', null, a.role.split(' · ')[0]));
+  top.appendChild(who);
+  top.appendChild(pillEl);
+  return top;
+}
+const firstLine = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, 200) || '—';
+
+function personCard(t, id, a, p, s, asleep) {
+  const card = el('div', 'pcard'); card.dataset.actor = `${t.id}:${id}`;
+  // 알약 — 일하는 중 → 대표 부름 → 막힘 → 잠 → 대기 (헨리 설계 3절, 순서는 계약 3절 "사람별 집계").
+  const st = p.busy ? ['일하는 중', 'live'] : p.bossCall ? ['대표 부름', 'boss'] : s.phase === 'blocked' ? ['막힘', 'bad'] : asleep ? ['잠', 'idle'] : ['대기', 'idle'];
+  if (p.bossCall) card.dataset.alert = '1';
+  card.appendChild(pcardTop(a, pill(st[0], st[1])));
+  // 2줄 지금 하는 일 — 마지막 발언 뒤 도구 줄이면 "app.js 고치는 중", 아니면 마지막 발언 첫 문장. 잠들었으면 —.
+  const doing = asleep && !p.busy ? '—' : p.doing ? (p.doing.tool ? toolPhrase(p.doing, p.busy) : firstLine(p.doing.text)) : '—';
+  card.appendChild(el('div', 'pcard__doing', doing));
+  // 3줄 숫자 줄 — 신호는 claude 세션의 스트림, codex 는 마지막 발언 시각. 판정 수는 감사 자리만(null 이면 항목 없음).
+  const nums = [p.lastSignal ? `신호 ${ago(p.lastSignal)}` : '신호 없음', `오늘 발언 ${p.todaySay ?? 0}`];
+  if (p.todayVerdict != null) nums.push(`판정 ${p.todayVerdict}`);
+  card.appendChild(el('div', 'pcard__nums', nums.join(' · ')));
+  // 4줄 대표 부름 — 불렀는데 대표가 아직 답 안 했을 때만.
+  if (p.bossCall) {
+    const c = el('button', 'pcard__call'); c.type = 'button';
+    c.textContent = `대표 불렀음 · ${ago(p.bossCall.ts)} · "${p.bossCall.text.slice(0, 40)}${p.bossCall.text.length > 40 ? '…' : ''}"`;
+    c.addEventListener('click', () => jumpTo(t.id, p.bossCall.id));
+    card.appendChild(c);
+  }
+  // 5줄 일지 첫 문장 — 누르면 문단 전체(/api/actor 의 journal.latest). 일지가 없으면 줄 없음.
+  if (p.journalFirst) {
+    const key = `${t.id}:${id}`;
+    const j = el('button', 'pcard__journal'); j.type = 'button';
+    j.textContent = `「${p.journalFirst}」`;
+    j.title = '누르면 일지 문단 전체';
+    const full = el('div', 'pcard__jfull'); full.hidden = true;
+    const show = async () => { full.hidden = false; full.textContent = journalFull[key + '|' + p.journalFirst] ?? '읽는 중…'; full.textContent = await loadJournal(key, p.journalFirst, t.id, id); };
+    if (openJournal.has(key)) show();
+    j.addEventListener('click', () => { if (openJournal.has(key)) { openJournal.delete(key); full.hidden = true; } else { openJournal.add(key); show(); } });
+    card.appendChild(j); card.appendChild(full);
+  }
+  return card;
+}
+/** 일지 문단 전체 — 한 번 읽으면 둔다. 첫 문장이 바뀌면(새 일지) 다시 읽는다. 카드는 요약이 바뀔 때마다 다시 그려진다. */
+const journalFull = {};
+async function loadJournal(key, first, team, actor) {
+  const k = key + '|' + first;
+  if (journalFull[k] !== undefined) return journalFull[k];
+  try {
+    const r = await fetch(`/api/actor?team=${encodeURIComponent(team)}&actor=${encodeURIComponent(actor)}`).then((x) => x.json());
+    journalFull[k] = r.journal?.latest ?? '(일지 없음)';
+  } catch { return '(읽지 못했습니다)'; }
+  return journalFull[k];
+}
+
+/* ── 요청 — 팀 사이 요청 블록 (결정 45 ①·50). 데이터는 M3 승인 체인에서 온다 ── */
+function renderTowerAsks(grid) {
+  const box = el('section', 'dash__card');
+  box.appendChild(el('div', 'dash__k', '요청'));
+  box.appendChild(el('div', 'dash__empty', '팀 사이 요청은 아직 없습니다. 승인 체인(M3)이 서면 진행 중·완료된 요청과 그 1:1 대화가 여기 나옵니다.'));
+  grid.appendChild(box);
+}
+
+/* ── 팀 — 팀 카드 다섯. 지금 그대로 (결정 40: 2판 설계가 오면 줄 순서를 고친다) ── */
+function renderTowerTeams(grid) {
   const focus = document.activeElement;
   const keep = focus?.classList?.contains('tcard__in')
     ? { team: focus.dataset.team, pos: focus.selectionStart } : null;

@@ -101,12 +101,18 @@
     </form>
   </section>
 
-  <!-- 관제탑: 네 팀을 한 화면에 -->
+  <!-- 관제탑: 네 팀을 한 화면에. 서브 탭 넷 — 전체(첫 화면) · 팀(카드 다섯) · 개인(열넷 + 대표) · 요청(팀 사이 요청, M3) — 결정 40·50 -->
   <section class="tower" id="tower">
     <header class="tower__head">
       <h1>관제탑</h1>
       <p>모든 작전실을 한 화면에서 봅니다. 카드에서 바로 지시할 수 있습니다.</p>
     </header>
+    <nav class="tabs" id="towerTabs" aria-label="관제탑 탭">
+      <button type="button" data-tab="all">전체</button>
+      <button type="button" data-tab="teams">팀<i class="tabs__n" hidden></i></button>
+      <button type="button" data-tab="people">개인<i class="tabs__n" hidden></i></button>
+      <button type="button" data-tab="asks">요청</button>
+    </nav>
     <div class="tower__grid" id="towerGrid"></div>
   </section>
 
