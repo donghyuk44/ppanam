@@ -2,7 +2,7 @@
   "at": "2026-09-13T16:50:00+09:00",
   "by": "테라. R17 개발 킥오프 — 로드맵 재편 제안서 냄, 레오 판정 대기",
   "doing": [
-    "R17 — out/roadmap.proposed.json (M1 관제탑 팀/개인 탭(결정 40) → M2 승인 실물 → M3 인격 이음 → M4 G-UX 셋째 → M5 Three.js 첫 화면 → M6 기억 마감 → M7 실패 수습, 컷 12). 레오가 제안서 논리를 보고 PASS 면 approve.mjs --request C --roadmap 으로 대표에게. 대표 말 5줄 요약은 C 올릴 때 방에",
+    "R17 — out/roadmap.proposed.json (M1 인격 이음 → M2 관제탑 팀/개인 탭(결정 40) → M3 승인 실물 → M4 G-UX 셋째 → M5 Three.js 첫 화면 → M6 기억 마감 → M7 실패 수습, 컷 12). 순서는 결정 15 원문(인격 먼저) — 시스템 지적으로 승인 실물과 인격을 바꿈. 레오가 제안서 논리를 보고 PASS 면 approve.mjs --request C --roadmap. 레오 워크트리엔 out/ 이 없어(미추적) 절대 경로를 줌",
     "결정 40 데이터 — /api/boot 만으로는 부족: summaries.sessions 는 claude 자리만(codex 다섯은 없음), 오늘 발언/판정 수·대표 호출은 자리별이 아니라 팀별, 일지는 /api/team 에만. 새 집계 people 을 summaries 에 싣는다(있는 log·journal·session 에서 셈, 새 저장소 없음)",
     "R16 끝(367e585, 레오 PASS) — /out/<팀>/ 내보내기·카드 링크·md 펼치기·C 카드 산출물 목록"
   ],
