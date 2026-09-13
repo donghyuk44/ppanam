@@ -1153,7 +1153,7 @@ function renderTower() {
 
 /* ── 전체 — 대표가 30초 안에 읽는 첫 화면 (결정 50): 대표 차례 · 승인 대기 · 요청 수 · 팀 다섯 한 줄 · 오늘 보고 ── */
 function renderTowerAll(grid) {
-  const { rooms, cards, n } = bossTurns();
+  const { n } = bossTurns();
   const goRoom = (t) => async () => { await selectTeam(t.id); setView('room'); };
 
   const stats = el('div', 'dash__stats');
@@ -1169,22 +1169,28 @@ function renderTowerAll(grid) {
   stats.appendChild(tile('요청 진행 / 완료', requestsLoaded ? `${reqOpen} / ${reqClosed}` : '— / —', false));
   grid.appendChild(stats);
 
-  const turn = el('section', 'dash__card');
-  turn.appendChild(el('div', 'dash__k', '대표 차례'));
-  if (!n) turn.appendChild(el('div', 'dash__empty', '대표 차례가 없습니다. 팀이 달리는 중입니다.'));
-  for (const t of rooms) {
+  // "내가 할 일" (결정 13·19-3) — 대표가 정하거나 눌러야 하는 것만, 한 블록. 알림 패널의 급한 것(대표 차례 → 승인 → 막힘, notify.js 와 같은 목록)
+  // + 각 방 상황판(progress.json)의 '대표 차례' 줄. 보고는 여기 안 온다 — 아래 '오늘 보고'.
+  const todo = el('section', 'dash__card');
+  const urgent = notifications().items.filter((it) => it.kind === 'boss' || it.kind === 'approval' || it.kind === 'blocked');
+  const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
+  todo.appendChild(el('div', 'dash__k', `내가 할 일 ${urgent.length + fromBoard.length}`));
+  if (!urgent.length && !fromBoard.length) todo.appendChild(el('div', 'dash__empty', '지금 정하거나 누를 것이 없습니다. 팀이 달리는 중입니다.'));
+  for (const it of urgent) {
     const row = el('button', 'dash__row'); row.type = 'button';
-    row.appendChild(el('b', null, t.name)); row.appendChild(el('span', 'dash__sub', bossWhyOf(t)));
-    row.addEventListener('click', goRoom(t));
-    turn.appendChild(row);
+    row.appendChild(el('b', null, `${KIND_LABEL[it.kind]} · ${it.teamName}${it.name && it.kind !== 'blocked' ? ' · ' + it.name : ''}`));
+    row.appendChild(el('span', 'dash__sub', it.kind === 'approval' ? `${it.text} — 위 승인 대기 블록에서 판정` : it.text));
+    row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (tg.view === 'tower') setTowerTab('all'); else jumpTo(tg.team, tg.event ?? null); });
+    todo.appendChild(row);
   }
-  for (const r of cards) {
-    const row = el('div', 'dash__row');
-    row.appendChild(el('b', null, `승인 C · ${teams.find((x) => x.id === r.team)?.name ?? r.team}`));
-    row.appendChild(el('span', 'dash__sub', `${r.what} — 위 승인 대기 블록에서 판정`));
-    turn.appendChild(row);
+  for (const b of fromBoard) {
+    const row = el('button', 'dash__row'); row.type = 'button';
+    row.appendChild(el('b', null, `상황판 · ${b.teamName}`));
+    row.appendChild(el('span', 'dash__sub', b.text));
+    row.addEventListener('click', goRoom(teams.find((t) => t.id === b.team)));
+    todo.appendChild(row);
   }
-  grid.appendChild(turn);
+  grid.appendChild(todo);
 
   const tl = el('section', 'dash__card');
   tl.appendChild(el('div', 'dash__k', '팀'));
