@@ -335,7 +335,7 @@ const server = http.createServer((req, res) => {
     const st = a.model === 'gpt' ? { engine: 'codex' } : session.status(team, actor);
     return json(res, 200, {
       team, actor, name: a.name ?? actor, role: a.role ?? null, color: a.color ?? null, model: a.model ?? null,
-      persona, journal: journal ? { latest: journal.text.slice(0, 900), total: journal.total } : null,
+      persona, journal: journal ? { first: session.journalFirstSentence(team, actor), latest: journal.text.slice(0, 900), total: journal.total } : null,
       recent, status: st, world: world.snapshot().actors?.[`${team}:${actor}`] ?? null,
     });
   }

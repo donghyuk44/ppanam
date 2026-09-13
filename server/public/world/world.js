@@ -788,12 +788,18 @@ async function openCard(a) {
   } else if (!r.persona?.identity) s1.appendChild(node('div', 'wc__empty', '인격 파일이 없다 — 대표가 정한다.'));
   box.appendChild(s1);
 
-  // 어제 — 일지 맨 위 문단
-  const s2 = node('div', 'wc__sec'); s2.appendChild(node('div', 'wc__h', r.journal ? `일지 · ${r.journal.total}문단 중 최근` : '일지'));
+  // 어제 — 일지 맨 위 문단. 첫 문장("나는 …")이 한 줄로 먼저(결정 13), 나머지는 그 아래.
+  const s2 = node('div', 'wc__sec'); s2.appendChild(node('div', 'wc__h', r.journal ? `어제 · 일지 ${r.journal.total}문단 중 최근` : '어제'));
   if (r.journal?.latest) {
     const [h, ...rest] = r.journal.latest.split('\n');
     s2.appendChild(node('div', 'wc__state', h.replace(/^## /, '')));
-    s2.appendChild(node('p', 'wc__p', rest.join('\n').trim()));
+    const body = rest.join('\n').trim();
+    const flat = body.replace(/\s+/g, ' ');
+    if (r.journal.first && flat.startsWith(r.journal.first)) {
+      s2.appendChild(node('div', 'wc__first', r.journal.first));
+      const tail = flat.slice(r.journal.first.length).trim();
+      if (tail) s2.appendChild(node('p', 'wc__p', tail));
+    } else s2.appendChild(node('p', 'wc__p', body));
   } else s2.appendChild(node('div', 'wc__empty', '아직 라운드를 마친 적이 없다.'));
   box.appendChild(s2);
 

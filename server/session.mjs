@@ -17,7 +17,7 @@ import path from 'node:path';
 import { spawn as spawnProc } from 'node:child_process';
 import {
   ROOT, emit, listTeams, isOffice, paths, endRound, readCast, readState, readRoadmap, listRounds,
-  readLog, quiet, appendJournal, TURN_JOURNAL, writeTurn,
+  readLog, quiet, appendJournal, journalPrompt, writeTurn,
 } from '../bus/bus.mjs';
 import { toolPhrase } from './public/toollabel.js';
 
@@ -136,6 +136,20 @@ export function journalOf(team, actor, n = JOURNAL_PARAS) {
   const paras = s.split(/\n(?=## )/).map((p) => p.trim()).filter((p) => p.startsWith('## '));
   if (!paras.length) return null;
   return { text: paras.slice(0, n).join('\n\n'), total: paras.length };
+}
+
+/**
+ * 일지 맨 위 문단의 첫 문장 — 마을 카드의 "어제 한 줄"(결정 13). 일지 지시문이 첫 문장을 "나는 …" 으로 시키므로 그 자리의
+ * 오늘 마음가짐이 한 줄로 온다. 머리(## …)를 떼고, 공백이 따라오는 마침표·물음표·느낌표에서 자른다 — `bus/outside.mjs` 의
+ * 점이나 `2.6초` 는 안 자른다. 없으면 null. 관제탑 개인 카드(M2)도 이걸 쓴다.
+ */
+export function journalFirstSentence(team, actor) {
+  const j = journalOf(team, actor, 1);
+  if (!j) return null;
+  const body = j.text.split('\n').slice(1).join(' ').replace(/\s+/g, ' ').trim();
+  if (!body) return null;
+  const m = /^[\s\S]*?[.!?。](?=\s|$)/.exec(body);
+  return (m ? m[0] : body).trim().slice(0, 200);
 }
 
 /**
@@ -549,19 +563,33 @@ async function journalAll(team, round) {
   const cast = readCast(team).agents ?? {};
   const ask = (actor) => {
     // 일지는 정체성의 연결고리다 — 라운드가 바뀌고 컨텍스트가 비워져도 다음 세션이 이 문단을 읽고 '어제의 나' 를 잇는다 (대표 지시 2026-09-13).
-    const p = `${TURN_JOURNAL} 라운드 ${round} 이 끝난다. 네 말투로 한 문단(3~6줄)을 써라. 첫 문장은 네가 누구인지 한 줄("나는 …" — 이름·기질·지금 마음가짐), 그다음 이번 라운드에서 배운 것·판단한 이유·버린 시도·막힌 곳·사람들과 있었던 일. 파일 이름·완료율·다음 할 일 목록은 쓰지 마라 — 그건 git 이 안다. 남길 일이 없어도 첫 문장은 쓴다.`;
+    // 지시문은 bus.mjs 의 journalPrompt 하나 — codex 자리(outside.mjs)도 같은 문장을 받는다.
+    const p = journalPrompt(round);
     if (cast[actor]?.model === 'gpt') return journalOutside(team);
     return Promise.race([sendAndWait(team, quiet(p), actor, { kind: 'journal', internal: true }), new Promise((r) => setTimeout(() => r(null), JOURNAL_TIMEOUT))]);
   };
   const actors = [...spoke].filter((a) => cast[a]?.model === 'claude' || cast[a]?.model === 'gpt');
-  const results = await Promise.all(actors.map(async (a) => {
+  const once = async (a) => {
     try {
       const text = await ask(a);
       if (cast[a]?.model === 'gpt') return text ? 1 : 0;   // outside.mjs 가 제 일지에 썼다
       return appendJournal(team, a, text, { round }) ? 1 : 0;
     } catch { return 0; }
-  }));
-  return results.reduce((x, y) => x + y, 0);
+  };
+  const nameOf = (a) => cast[a]?.name ?? a;
+  const first = await Promise.all(actors.map(once));
+  // 못 받은 자리는 한 번 더 — 시간 초과·(패스)·빈 답은 전부 "일지 없음" 이고, 일지가 없으면 다음 세션이 어제를 잇지 못한다.
+  // 조용히 0 으로 세지 않고 방에 남긴다 (M1 인격 이음, 2026-09-13).
+  const missed = actors.filter((a, i) => !first[i]);
+  let retried = 0;
+  if (missed.length) {
+    note(team, `일지를 못 받은 자리: ${missed.map(nameOf).join(', ')} — 한 번 더 묻습니다.`);
+    const second = await Promise.all(missed.map(once));
+    retried = second.reduce((x, y) => x + y, 0);
+    const still = missed.filter((a, i) => !second[i]);
+    if (still.length) note(team, `두 번 물어도 일지를 못 받았습니다: ${still.map(nameOf).join(', ')} — 라운드 ${round} 일지 없이 닫습니다.`);
+  }
+  return first.reduce((x, y) => x + y, 0) + retried;
 }
 
 /** 외부감사의 일지는 outside.mjs 가 쓴다. 끝나기만 기다린다. */

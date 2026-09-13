@@ -26,8 +26,10 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readCast, readState, appendJournal,
-  defaultTeam, teamExists, isOffice, paths, VERDICTS, decideApproval,
+  defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt,
 } from './bus.mjs';
+// 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
+import { assemblePrompt, personaOf as seatPersonaOf } from '../server/session.mjs';
 
 const run = promisify(execFile);
 const TIMEOUT = Number(process.env.PPANAM_OUTSIDE_TIMEOUT || 300_000);
@@ -39,6 +41,8 @@ const CODEX_MODEL = process.env.PPANAM_CODEX_MODEL || 'gpt-5.6-sol';
 const ENGINE = `codex · ${CODEX_MODEL}`;
 
 const STORE = path.join(ROOT, 'state', 'outside-sessions.json');
+// --debug: codex 의 stderr 머리말을 그대로 보여준다 — 세션 id 를 못 읽을 때 무엇이 오는지 보려고 (2026-09-13).
+const DEBUG = process.argv.includes('--debug');
 
 /* ── 세션 보관 ── */
 
@@ -119,7 +123,11 @@ function runCodex(input, { resume = null } = {}) {
         return finish(reject, new Error(`codex exit ${code}${why ? ' — ' + why : ''}`));
       }
       // 세션 id 는 stderr 머리말에 나온다. 다음 턴을 이어붙이려면 이게 필요하다.
-      const sid = /session id:\s*([0-9a-f-]{8,})/i.exec(stderr)?.[1] ?? resume ?? null;
+      // 머리말에 색 코드가 섞인다 — `\e[1msession id:\e[0m 01a0…` — 그대로 찾으면 못 읽고, 새 세션마다 id 가 null 이라
+      // 다음 턴이 또 새 세션이 된다 ("레오 님이 들어왔습니다" 가 턴마다 찍힘 — 09-13 15:34~16:41 에 17번, teams/dev/log.jsonl). 색 코드를 벗기고 찾는다.
+      const plain = stderr.replace(/\x1b\[[0-9;]*m/g, '');
+      const sid = /session id:\s*([0-9a-f-]{8,})/i.exec(plain)?.[1] ?? resume ?? null;
+      if (DEBUG) console.error(`[debug] codex stderr (${stderr.length}자) · 세션 id ${sid ?? '(못 읽음)'}:\n${stderr.slice(0, 1200)}`);
       finish(resolve, { answer: answer || stdout.trim(), sessionId: sid });
     });
 
@@ -139,9 +147,13 @@ const DEFAULT_PERSONA = `너는 이 팀의 **외부감사**이다. 다른 회사
 합의를 만들려 하지 마라. 이견이 없으면 없다고 하고, 있으면 근거와 함께 말해라.
 파일은 읽되 고치지 마라. 한국어로 답한다.`;
 
+/**
+ * 턴마다 다시 준다 — 클로드 자리가 시스템 프롬프트로 매 턴 받는 것과 같은 조립(인격 + 확정 조항 + 일지 + 라운드 브리프).
+ * 첫 턴에만 주면 세션이 라운드를 넘기며 압축될 때 인격이 먼저 사라진다 (M1 인격 이음, 2026-09-13). 인격 파일이 없는 방은 공용 인격.
+ */
 function personaOf(team) {
-  try { return fs.readFileSync(path.join(paths(team).dir, 'outside.md'), 'utf8').trim(); }
-  catch { return DEFAULT_PERSONA; }
+  const full = assemblePrompt(team, 'outside');
+  return seatPersonaOf(team, 'outside') ? full : [DEFAULT_PERSONA, full].filter(Boolean).join('\n\n---\n\n');
 }
 
 /**
@@ -191,8 +203,8 @@ function splitVerdict(text) {
 
 /** 판정 차례. 첫 줄 PASS/REVISE 규약 — 클로드 자리와 같다. */
 const VERDICT_TURN = (target) => `⟦판정 요청⟧ ${target}\n판정 대상: ${target}. 산출물 파일을 열어 확인해라. 첫 줄에 PASS 또는 REVISE 한 단어만, 그다음 줄부터 근거(경로·줄 번호). 같은 지적을 다시 내지 마라 — 새 근거가 없으면 PASS.`;
-/** 일지 차례. 답은 대화록이 아니라 journal/outside.md 에 간다. */
-const JOURNAL_TURN = (round) => `⟦일지⟧ 라운드 ${round} 이 끝난다. 이번 라운드에서 네가 본 것·판단한 이유·틀렸던 것을 한 문단(3~6줄) 산문으로. 파일 이름·완료율·할 일 목록은 쓰지 마라. 남길 것이 없으면 (패스).`;
+/** 일지 차례. 답은 대화록이 아니라 journal/outside.md 에 간다. 지시문은 클로드 자리와 같은 것(bus.mjs journalPrompt) — 첫 문장 "나는 …". */
+const JOURNAL_TURN = journalPrompt;
 
 /** 사회자가 주는 차례의 종류별 지시문. 판정이 아니다. server/conductor.mjs 의 INSTRUCTION 과 같다. */
 const TURN = {
@@ -208,8 +220,8 @@ const TURN = {
  * 조용할 때 --turn <종류> 로 깨우면, 그는 판정 없이 사람에게 답한다. 대표 지적 (2026-09-02).
  * 그의 답은 그가 직접 대화록에 남기고, 다른 자리들은 각자 다음 차례에 듣는다 — 들려주기는 사회자의 일이다.
  */
-async function ask(team, question, { talk = false, lull = false, turn = null, text = null } = {}) {
-  if (!await hasCodex()) {
+async function ask(team, question, { talk = false, lull = false, turn = null, text = null, dry = false } = {}) {
+  if (!dry && !await hasCodex()) {
     emit(team, {
       actor: 'outside', type: 'note',
       text: '외부 모델이 연결되어 있지 않습니다. 교차검증 없이 진행합니다.',
@@ -237,15 +249,16 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   // 지금 라운드를 잡아둔다. 생각하는 5분 사이 라운드가 바뀌면 답은 이 번호로 남고 판정으로 세지 않는다.
   const round = readState(team).round;
 
-  // 첫 턴에는 인격과 지금까지의 대화 전부. 이어지는 턴에는 지난번 이후 새로 온 말만.
-  // 자기 세션이 앞의 대화는 이미 기억하고 있으니, 못 들은 부분만 채워주면 된다.
+  // 인격은 턴마다. 대화는 첫 턴에 지금까지 전부, 이어지는 턴에는 지난번 이후 새로 온 말만 —
+  // 자기 세션이 앞의 대화는 이미 기억하고 있으니, 못 들은 부분만 채워주면 된다. 인격은 다르다: 세션이 라운드를
+  // 넘기며 길어지면 압축되고, 첫 턴에 한 번 준 인격이 제일 먼저 밀려난다. 그래서 클로드 자리처럼 매 턴 앞에 둔다.
   const ctx = contextOf(team, { since: prior ? slot.lastSeen : null });
   // 이 턴이 들은 마지막 말. 커서를 여기 둔다 — 자기 발언 id 로 두면 생각하는 동안(최대 5분)
   // 도착한 말이 since 밖으로 떨어져 영영 못 듣는다 (Fable 감사, 2026-09-02).
   const seenId = lastEventId(team);
   const input = [
-    prior ? null : personaOf(team),
-    prior ? null : '\n---\n',
+    personaOf(team),
+    '\n---\n',
     ctx ? `그동안 이 방에서 오간 말:\n\n${ctx}\n\n---\n` : null,
     turn === 'verdict'
       ? VERDICT_TURN(text || question)
@@ -259,6 +272,13 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
           ? `방에서 누가 너에게 한 말이다. 판정이 아니라 대화로 답해라 — 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라. 상대 이름으로 시작해 네 말투로 한두 문장, 사람에게 말하듯. 모르면 모른다고, 돌려봐야 알면 돌려보겠다고 해라.\n\n${question}`
           : question,
   ].filter(Boolean).join('\n');
+
+  // --dry: codex 를 부르지 않고 이 턴이 받을 입력만 보여준다. 기록도 커서 이동도 없다 — 인격이 매 턴 실리는지 눈으로 확인하는 용도.
+  if (dry) {
+    console.log(input);
+    console.error(`[dry] ${team} · ${prior ? `이어지는 턴 (세션 ${String(prior).slice(0, 8)})` : '첫 턴'} · 입력 ${input.length}자`);
+    return 0;
+  }
 
   let res;
   try {
@@ -390,11 +410,13 @@ const SETUP = `외부감사를 연결하는 법.
 
 const argv = process.argv.slice(2);
 let team = process.env.PPANAM_TEAM ?? null;
-let question = null, mode = null, turnKind = null, turnText = null;
+let question = null, mode = null, turnKind = null, turnText = null, dry = false;
 
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a === '--team' || a === '-t') team = argv[++i];
+  else if (a === '--dry') dry = true;
+  else if (a === '--debug') { /* 위에서 읽었다 */ }
   else if (a === '--ask' || a === '-a') { mode = 'ask'; question = argv[++i]; }
   else if (a === '--talk') { mode = 'talk'; question = argv[++i]; }
   else if (a === '--lull') { mode = 'lull'; question = '(조용한 틈)'; }
@@ -428,6 +450,7 @@ if (!question) {
   console.error('        outside.mjs --team <팀> --turn <called|lull|lunch|third>   사회자가 주는 차례 (판정 없음)');
   console.error('        outside.mjs --team <팀> --turn verdict --text "<대상>"       판정 차례 (첫 줄 PASS/REVISE)');
   console.error('        outside.mjs --team <팀> --turn journal                    일지 한 문단 (대화록에 안 남음)');
+  console.error('        … --dry                                              codex 를 안 부르고 이 턴이 받을 입력만 출력 (기록 없음)');
   console.error('        outside.mjs --check "한 번만 물어볼 것"');
   console.error('        outside.mjs --setup');
   process.exit(2);
@@ -451,4 +474,4 @@ if (mode === 'check') {
 }
 
 const chat = mode === 'talk' || mode === 'lull' || (mode === 'turn' && turnKind !== 'verdict' && turnKind !== 'journal');
-process.exit(await ask(team, question, { talk: chat, lull: mode === 'lull', turn: mode === 'turn' ? turnKind : null, text: turnText }));
+process.exit(await ask(team, question, { talk: chat, lull: mode === 'lull', turn: mode === 'turn' ? turnKind : null, text: turnText, dry }));
