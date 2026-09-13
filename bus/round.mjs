@@ -351,9 +351,38 @@ switch (cmd) {
         endRound(T, { summary: '이어 열기 시험 닫음' });
       }
       // 닫히는 중 쌓인 차례는 다음 라운드로 (결정 25) — 호명·제3자만 넘기고 판정·침묵·점심은 버린다. 순수 함수 pickCarry.
-      const { pickCarry } = await import('../server/conductor.mjs');
+      const { pickCarry, staleCalls } = await import('../server/conductor.mjs');
       const carried = pickCarry(new Map([['review', { kind: 'called' }], ['outside', { kind: 'verdict' }], ['ops', { kind: 'lull' }], ['guide', { kind: 'third' }], ['chief', { kind: 'lunch' }]]));
       out.push(['닫히는 중 차례 넘기기', carried.map((x) => x.join(':')).join(',') === 'review:called,guide:third' ? '✓ 호명·제3자 넘김 · 판정·침묵·점심 버림' : '✗ ' + JSON.stringify(carried)]);
+      // 닫힌 라운드의 호명이 round_end·round_start 와 한 폴링에 오면 새 라운드의 보통 호명이 아니라 넘어온 차례다 (레오 REVISE R23) —
+      // 들려주기를 그 말의 라운드부터 잇는다. 새 라운드의 말·대표·자기 자신·참여자 아닌 자리는 안 잡는다.
+      const sc = staleCalls([
+        { round: 4, type: 'message', actor: 'guide', text: '안젤, 근거 봐줘.' },
+        { round: 4, type: 'message', actor: 'guide', text: '대표님, 정했습니다.\n\n다니엘, 숫자 대조.' },
+        { round: 5, type: 'message', actor: 'guide', text: '안젤, 새 라운드 말.' },
+        { round: 3, type: 'message', actor: 'review', text: '다니엘, 더 이른 라운드.' },
+      ], 5, cast, (a) => a !== 'ops');
+      out.push(['닫힌 라운드 호명은 넘어온 차례', sc.map((x) => x.join(':')).join(',') === 'review:4,outside:3' ? '✓ 안젤 R4 · 다니엘 R3(가장 이른 것) · 새 라운드·대표 제외' : '✗ ' + JSON.stringify(sc)]);
+      // 알림 목록 (결정 68) — 요약·승인에서 종류 순(대표 차례→승인→막힘→보고), 같은 종류는 최근 것부터, 보고는 ask 아닌 것만, C 승인만,
+      // out/ 그림이 있으면 썸네일, 읽음 집합에 있으면 unread:false, 급한 것이 안 읽혔을 때만 urgent.
+      {
+        const { notificationsOf } = await import('../server/public/notify.js');
+        const nTeams = [{ id: 'dev', name: '개발', room: '개발실' }, { id: 'design', name: '디자인', room: '디자인실' }];
+        const nSum = {
+          dev: { cast: { guide: { name: '테라' } }, bossCall: { id: 'e1', ts: '2026-09-13T10:00:00Z', by: 'guide' }, people: { guide: { bossCall: { id: 'e1', ts: '2026-09-13T10:00:00Z', text: '대표님, A 와 B 중 골라 주세요.' } } },
+            bossNotes: [{ id: 'e1', ts: '2026-09-13T10:00:00Z', by: 'guide', text: '대표님, A 와 B 중 골라 주세요.', ask: true }, { id: 'e0', ts: '2026-09-13T09:00:00Z', by: 'guide', text: '대표님, 그림 올렸습니다 out/shots/a.png.', ask: false }] },
+          design: { cast: { guide: { name: '헨리' } }, needsBoss: true, needsBossWhy: 'blocked', lastSpokeAt: '2026-09-13T08:00:00Z',
+            bossNotes: [{ id: 'e5', ts: '2026-09-13T09:30:00Z', by: 'guide', text: '대표님, 시안 냈습니다.', ask: false }] },
+        };
+        const nApr = [{ id: 'apr_1', grade: 'C', team: 'design', by: 'guide', what: '로드맵 교체', ts: '2026-09-13T07:00:00Z' }, { id: 'apr_2', grade: 'B', team: 'dev', by: 'guide', what: '푸시', ts: '2026-09-13T07:30:00Z' }];
+        const n1 = notificationsOf({ teams: nTeams, summaries: nSum, approvals: nApr });
+        const order = n1.items.map((it) => it.id).join(',');
+        const n2 = notificationsOf({ teams: nTeams, summaries: nSum, approvals: nApr }, { read: new Set(['boss:e1', 'approval:apr_1', 'blocked:design']) });
+        const nWant = order === 'boss:e1,approval:apr_1,blocked:design,report:e5,report:e0' && n1.unread === 5 && n1.urgent
+          && n1.items[4].thumb === '/out/dev/shots/a.png' && n1.items[3].thumb === null && n1.items[0].name === '테라' && n1.items[2].text.includes('FAIL')
+          && n2.unread === 2 && !n2.urgent;
+        out.push(['알림 목록(결정 68)', nWant ? '✓ 종류 순 5건 · B 승인·ask 제외 · 썸네일 · 읽음 뒤 unread 2 · urgent 꺼짐' : '✗ ' + JSON.stringify({ order, unread: n1.unread, urgent: n1.urgent, thumb: n1.items.map((i) => i.thumb), n2: [n2.unread, n2.urgent] })]);
+      }
       // 생존 알림 문장 (결정 31 ②) — 신호가 최근이면 "아직 작업 중 (N분째, 마지막: …)", 신호도 끊겼으면 그렇게.
       const { aliveNoteText } = await import('../server/session.mjs');
       const now = Date.now();
