@@ -461,7 +461,7 @@ export function voidApproval(id, reason = '') {
   return listApprovals().find((x) => x.id === id);
 }
 
-export function decideApproval(id, { by, decision, reason = '', team = null }) {
+export function decideApproval(id, { by, decision, reason = '', team = null, proxy = null }) {
   const r = listApprovals().find((x) => x.id === id);
   if (!r) throw new Error(`그런 요청이 없습니다: ${id}`);
   if (r.status !== 'pending') throw new Error(`이미 끝난 요청입니다 (${r.status}).`);
@@ -476,16 +476,67 @@ export function decideApproval(id, { by, decision, reason = '', team = null }) {
     throw new Error(`등급 ${r.grade} 의 ${by} 판정은 총괄실에서만 합니다 (지금 방: ${team ?? '없음'}).`);
   }
   if (r.decisions.some((x) => x.by === by)) throw new Error(`${by} 는 이미 판정했습니다.`);
-  appendApproval({ kind: 'decision', id, by, decision: d, reason: String(reason ?? '').trim(), ts: new Date().toISOString() });
+  // 대리 결정 (결정 85) — by 는 boss 지만 정한 건 톰·제리다. 줄에 남겨 아침에 대표가 뒤집을 수 있게.
+  appendApproval({ kind: 'decision', id, by, decision: d, reason: String(reason ?? '').trim(), ts: new Date().toISOString(), ...(proxy ? { proxy } : {}) });
   const after = listApprovals().find((x) => x.id === id);
   if (after.status !== 'pending') {
     emit(r.team, {
       actor: 'system', type: 'note',
-      text: `승인 ${after.status === 'passed' ? '통과' : '반려'} [${r.grade}] ${r.what}${reason ? ' — ' + reason : ''}`,
-      meta: { approval: id, grade: r.grade, status: after.status },
+      text: `${proxy ? '대리 결정 — ' : ''}승인 ${after.status === 'passed' ? '통과' : '반려'} [${r.grade}] ${r.what}${reason ? ' — ' + reason : ''}`,
+      meta: { approval: id, grade: r.grade, status: after.status, ...(proxy ? { proxy } : {}) },
     });
   }
   return after;
+}
+
+/* ── 대리 결정 (대표 결정 85) — 대표가 10분 넘게 답이 없으면 톰·제리 둘의 합의로 ── */
+export const PROXY_WAIT_MS = Number(process.env.PPANAM_PROXY_WAIT_MS || 10 * 60_000);
+/** ④ 돈 나가는 것·바깥으로 나가는 것은 대리 대상이 아니다 — 낱말과 행동 종류로 거른다(보수적으로). 순수. */
+export function proxyEligible(r) {
+  if (!r || r.grade !== 'C' || r.status !== 'pending') return false;
+  if (['cost', 'send', 'merge'].includes(r.action?.type)) return false;
+  return !/비용|상한|결제|돈|외부|발송|메일|공개|병합/.test(`${r.what ?? ''} ${r.detail ?? ''}`);
+}
+/** 대표가 마지막으로 말한 지 얼마나 됐나(ms) — 어느 방이든. 대표가 방금 말했으면 대리는 안 한다. 말한 적 없으면 Infinity. */
+export function bossQuietFor(now = Date.now()) {
+  let last = 0;
+  for (const t of listTeams()) {
+    const log = readLog(t.id);
+    for (let i = log.length - 1; i >= 0; i--) {
+      const e = log[i];
+      if (e.type === 'message' && e.actor === 'boss' && !e.meta?.via) { last = Math.max(last, new Date(e.ts).getTime()); break; }
+    }
+  }
+  return last ? now - last : Infinity;
+}
+/**
+ * 지금 대리로 정할 수 있는 대표 차례 — [{ key, kind, team, ref, what, since }]. 10분 넘게 기다린 것만, 대표가 10분 넘게 조용할 때만.
+ * kind: approval(C 대기) · unblock(FAIL 로 막힘) · answer(결정을 청한 말에 답 없음). 순수한 부분은 overdue() — check 가 돌려본다.
+ */
+export function overdue(items, { now = Date.now(), wait = PROXY_WAIT_MS } = {}) {
+  return items.filter((it) => it.since && now - new Date(it.since).getTime() >= wait);
+}
+export function proxyCandidates({ now = Date.now(), wait = PROXY_WAIT_MS } = {}) {
+  if (bossQuietFor(now) < wait) return [];
+  const items = [];
+  for (const r of listApprovals({ status: 'pending' })) {
+    if (proxyEligible(r)) items.push({ key: `approval:${r.id}`, kind: 'approval', team: r.team, ref: r.id, what: r.what, since: r.ts });
+  }
+  for (const t of listTeams()) {
+    if (isOffice(t.id)) continue;
+    const st = readState(t.id);
+    const log = readLog(t.id);
+    if (st.phase === 'blocked') {
+      const fail = [...log].reverse().find((e) => e.round === st.round && e.type === 'verdict' && e.meta?.verdict === 'FAIL');
+      items.push({ key: `unblock:${t.id}:${st.round}`, kind: 'unblock', team: t.id, ref: String(st.round), what: `${t.name} 방이 FAIL 로 막힘${fail ? ' — ' + String(fail.text).split('\n')[0].slice(0, 80) : ''}`, since: fail?.ts ?? st.startedAt });
+    }
+    const s = teamSummary(t.id);
+    if (s.bossCall) {
+      const call = log.find((e) => e.id === s.bossCall.id);
+      items.push({ key: `answer:${s.bossCall.id}`, kind: 'answer', team: t.id, ref: s.bossCall.id, what: `${readCast(t.id).agents?.[s.bossCall.by]?.name ?? s.bossCall.by}: ${String(call?.text ?? '').replace(/\s+/g, ' ').slice(0, 120)}`, since: s.bossCall.ts });
+    }
+  }
+  return overdue(items, { now, wait });
 }
 
 /* ── 파일 ── */
@@ -1124,14 +1175,15 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
  * 대표가 말했다 — 막힌 방을 푼다. 반박 횟수는 0 으로, 라운드는 그대로 이어진다.
  * 대표의 다음 말이 곧 판단이다. 화면의 입력창이 대표의 것이므로 서버가 /api/say 에서 부른다.
  */
-export function resumeRound(team, { text = null } = {}) {
+export function resumeRound(team, { text = null, proxy = null } = {}) {
   const state = readState(team);
   if (state.phase !== 'blocked') return null;
   writeState(team, { phase: 'running', attempt: 0, attempts: { ...(state.attempts ?? {}), [state.milestone]: 0 } });
   emit(team, {
     type: 'note', actor: 'system',
-    text: `대표 판단으로 재개합니다. 반박 횟수를 0 으로 되돌립니다.${text ? ' — ' + String(text).replace(/\s+/g, ' ').slice(0, 80) : ''}`,
-    meta: { resumed: true },
+    // 대리 결정(결정 85)이면 그렇다고 남긴다 — 방에는 늘 "대리 결정" 이라는 말이 보여야 한다.
+    text: `${proxy ? '대리 결정(톰·제리)으로' : '대표 판단으로'} 재개합니다. 반박 횟수를 0 으로 되돌립니다.${text ? ' — ' + String(text).replace(/\s+/g, ' ').slice(0, 80) : ''}`,
+    meta: { resumed: true, ...(proxy ? { proxy } : {}) },
   });
   return readState(team);
 }
@@ -1162,6 +1214,7 @@ export function teamSummary(team) {
     if (e.type === 'verdict' && lastVerdict == null) lastVerdict = e.meta?.verdict ?? null;
     if ((e.type === 'message' || e.type === 'verdict') && !lastSpokeAt) lastSpokeAt = e.ts;
     if (e.type === 'message' && e.actor === 'boss') bossAnswered = true;
+    if (e.type === 'note' && e.meta?.proxyAnswer) bossAnswered = true;   // 톰·제리의 대리 답(결정 85)도 답이다
     if (!bossCall && !bossAnswered && e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && asksBoss(e.text, cast)) {
       bossCall = { id: e.id, ts: e.ts, by: e.actor };
     }
@@ -1237,6 +1290,7 @@ export function peopleOf(log, cast, { now = Date.now() } = {}) {
     if (!isToday(ts) && !inRound && unsaid.size === 0) break;
     if (e.type === 'round_start') { inRound = false; continue; }
     const spoke = (e.type === 'message' || e.type === 'verdict') && !isPass(e);
+    if (inRound && e.type === 'note' && e.meta?.proxyAnswer) bossAnswered = true;   // 톰·제리의 대리 답(결정 85) — teamSummary 와 같은 규칙
 
     if (e.actor === 'boss') {
       if (e.type !== 'message') continue;

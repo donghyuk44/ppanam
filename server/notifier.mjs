@@ -17,6 +17,8 @@
 //   (c) 실행자 결과(pushed · push-failed · stale · invalid) → 요청한 방 귀에.
 //   (d) 요청 블록(6-1절, 결정 49·51) — 통과한 B 에 action.type 'request' 면 블록을 열고, 블록의 새 줄(goal·say·done·ack·confirm·stop)을
 //       쓴 사람 빼고 나머지 두 자리 귀에 넣고, milestone 모드 블록은 그 마일스톤이 pass 가 되면 닫는다.
+//   (e) 대리 결정(6절 "대리 결정", 결정 85) — 대표 차례가 10분 넘게 답이 없고 대표가 10분 넘게 조용하면 총괄실에 B "대리 결정 — …" 을 올린다.
+//       톰·제리 둘 다 PASS 면 (b-1) 이 applyProxy — C 통과 · FAIL 풀기 · 물음에 답. 돈·바깥으로 나가는 건 안 올린다.
 //
 // 팀 방은 라운드가 열려 있을 때만 들려준다. 닫혀 있으면 세션이 없거나 훅이 기록하지 않는다 — 다음 틱에 다시 본다.
 // 총괄실은 늘 열려 있다.
@@ -26,6 +28,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   listApprovals, readCast, readState, readRoadmap, isOffice, quiet, emit, paths, setMilestoneStatus,
+  proxyCandidates, requestApproval, decideApproval, resumeRound,
 } from '../bus/bus.mjs';
 import { listRequests, openRequest, closeByMilestone } from '../bus/requests.mjs';
 import * as session from './session.mjs';
@@ -66,6 +69,7 @@ function requestText(r) {
     (a?.type === 'push' ? `\n대상: ${a.remote ?? 'origin'}/${a.branch} @ ${String(a.sha).slice(0, 8)} — 통과하면 서버가 정확히 이 커밋을 민다` : '') +
     (a?.type === 'milestone' ? `\n대상: 마일스톤 ${a.n} 착수 — 통과하면 서버가 로드맵의 now 를 옮긴다` : '') +
     (a?.type === 'request' ? `\n대상: ${a.to.team}/${a.to.actor} 에게 요청 블록${a.mode === 'milestone' ? ` (마일스톤 ${a.until?.milestone ?? '?'} 끝까지 — 공동 프로젝트)` : ''}${a.why ? ` · 왜: ${a.why}` : ''}${a.due ? ` · 기한: ${a.due}` : ''} — 통과하면 서버가 블록을 열고 너는 감시자로 들어간다(결정 51: 목표 한 줄 node bus/request.mjs --goal <id> "…")` : '') +
+    (a?.type === 'proxy' ? `\n대리 결정 (결정 85 — 대표가 10분 넘게 답이 없다): ${a.kind === 'approval' ? `C 승인 ${a.ref} 를 대표 대신 통과시킬까` : a.kind === 'unblock' ? `${a.team} 방의 FAIL 을 대표 대신 풀까` : `${a.team} 방의 물음에 대표 대신 답할까 — 답은 너의 PASS 이유에 적어라, 그 글이 그 방에 '대리 결정' 으로 남는다`}. 둘 다 PASS 여야 실행되고 하나라도 REVISE 면 대표를 기다린다. 돈·바깥으로 나가는 건 여기 안 온다.` : '') +
     `\n\n판정하세요. 마일스톤 조건을 채웠는지, 컷리스트를 안 넘었는지 보고 결정하고, 제리에게 원문 대조를 시키세요.` +
     `\n  node bus/approve.mjs --decide ${r.id} --as chief PASS|REVISE "이유"` +
     `\n  node bus/outside.mjs --team hq --ask "승인 요청 ${r.id} 대조: ${r.what}"`;
@@ -121,7 +125,76 @@ function applyAction(r) {
       return text;
     }
   }
+  if (r.grade === 'B' && a.type === 'proxy') return applyProxy(r);
   return null;
+}
+
+/**
+ * 대리 결정 실행 (결정 85) — 톰·제리 둘 다 PASS 한 대리 요청. 방에는 "대리 결정" 으로 남고, hq/out/proxy-decisions.md 맨 위에 한 줄.
+ * 실패해도 조용히 넘기지 않는다 — 그 방에 note.
+ */
+function applyProxy(r) {
+  const a = r.action;
+  const who = ['chief', 'outside'];
+  const reasons = r.decisions.map((d) => `${nameOf('hq', d.by)}: ${d.reason || '(이유 없음)'}`).join(' · ');
+  let text;
+  try {
+    if (a.kind === 'approval') {
+      const after = decideApproval(a.ref, { by: 'boss', decision: 'PASS', reason: `대리 결정(톰·제리) — ${reasons}`, proxy: who });
+      text = `대리 결정 — C 승인 ${a.ref} 를 대표 대신 통과시켰습니다 (${after.status}). ${reasons}`;
+    } else if (a.kind === 'unblock') {
+      const st = resumeRound(a.team, { text: reasons, proxy: who });
+      text = st ? `대리 결정 — ${a.team} 방의 FAIL 을 대표 대신 풀었습니다. ${reasons}` : `${a.team} 방은 이미 막혀 있지 않습니다 — 할 게 없었습니다.`;
+    } else if (a.kind === 'answer') {
+      const tom = r.decisions.find((d) => d.by === 'chief')?.reason || reasons;
+      emit(a.team, { actor: 'system', type: 'note', text: `대리 결정 — 톰·제리: ${tom}`, meta: { proxy: who, proxyAnswer: a.ref, approval: r.id } });
+      text = `대리 결정 — ${a.team} 방의 물음에 대표 대신 답했습니다: ${tom}`;
+    } else text = `모르는 대리 종류: ${a.kind}`;
+  } catch (e) {
+    text = `대리 결정을 실행하지 못했습니다 — ${String(e.message).slice(0, 160)}`;
+    emit(a.team ?? 'hq', { actor: 'system', type: 'note', text, meta: { approval: r.id } });
+    return text;
+  }
+  // ③ 일일보고서 맨 위 "대표님 대신 정한 것" — 대표가 아침에 보고 뒤집을 수 있게. 최신이 위.
+  try {
+    const file = path.join(paths('hq').out, 'proxy-decisions.md');
+    const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').replace(/^# [^\n]*\n(?:[^\n]*\n)?\n?/, '') : '';
+    const line = `- ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · ${a.kind} · ${a.team ?? '-'} · ${r.what} — ${reasons} (${r.id})\n`;
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, `# 대표님 대신 정한 것 (결정 85 — 톰·제리 대리 결정, 최신이 위)\n대표가 뒤집으려면 그 방에 한마디 — 그 말이 곧 판단이다.\n\n${line}${old}`);
+  } catch (e) { console.error('[notifier] proxy-decisions.md 쓰기 실패 — ' + String(e.message).slice(0, 120)); }
+  return text;
+}
+
+/**
+ * (e) 대리 결정 요청 (결정 85) — 대표 차례가 10분 넘게 답이 없고 대표가 10분 넘게 조용하면, 총괄실에 B 요청 "대리 결정 — …" 을 올린다.
+ * 같은 일에 한 번(store.proxied[key]). 올린 뒤는 평소 B 길 — (a) 가 톰에게 들려주고, 통과하면 (b-1) 이 applyProxy 를 부른다.
+ */
+let proxyCheckedAt = 0;
+function runProxy(store) {
+  // 다섯 방 대화록을 훑는 일이라 틱(250ms)마다가 아니라 30초에 한 번. 10분 재는 데 30초 늦는 건 상관없다.
+  if (Date.now() - proxyCheckedAt < 30_000) return false;
+  proxyCheckedAt = Date.now();
+  let changed = false;
+  store.proxied ??= {};
+  for (const it of proxyCandidates()) {
+    if (store.proxied[it.key]) continue;
+    try {
+      const r = requestApproval('hq', {
+        by: 'system', grade: 'B',
+        what: `대리 결정 — ${it.what.slice(0, 120)}`,
+        detail: `대표 차례가 ${Math.round((Date.now() - new Date(it.since).getTime()) / 60000)}분째 답이 없습니다(결정 85). 종류: ${it.kind} · 방: ${it.team} · 대상: ${it.ref}. 둘 다 PASS 면 서버가 실행하고 방에 '대리 결정' 으로 남깁니다.`,
+        action: { type: 'proxy', kind: it.kind, team: it.team, ref: it.ref },
+      });
+      store.proxied[it.key] = { id: r.id, at: new Date().toISOString() };
+      changed = true;
+    } catch (e) {
+      console.error('[notifier] 대리 결정 요청 실패 — ' + String(e.message).slice(0, 160));
+      store.proxied[it.key] = { error: String(e.message).slice(0, 120), at: new Date().toISOString() };
+      changed = true;
+    }
+  }
+  return changed;
 }
 
 /** 블록의 줄 하나를 상대 귀에 넣을 글 — 누가 무슨 줄을 썼나. */
@@ -231,5 +304,8 @@ export function runNotifier({ send = (team, text) => session.send(team, quiet(te
   // (d) 요청 블록
   try { if (runRequests(store, send)) changed = true; }
   catch (e) { console.error('[notifier] 요청 블록 알림 실패 — ' + String(e.message).slice(0, 200)); }   // 틱마다 도니 방에는 안 남긴다
+  // (e) 대리 결정 요청 (결정 85) — 올리기만. 알림·실행은 위 (a)·(b-1) 이 다음 틱부터 평소처럼.
+  try { if (runProxy(store)) changed = true; }
+  catch (e) { console.error('[notifier] 대리 결정 살피기 실패 — ' + String(e.message).slice(0, 200)); }
   if (changed) writeStore(store);
 }

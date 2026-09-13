@@ -20,7 +20,7 @@ import {
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
   addressees, callsBoss, asksBoss, bossNotesOf, readLog, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
-  mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh,
+  mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, overdue,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -436,6 +436,35 @@ switch (cmd) {
           && readLog(T).length === before + 1 && r2?.refused;
         out.push(['codex 자리 귀 → 방에 note', sWant ? '✓ note 한 줄(들려주기 표 뗌) · id 돌려줌 · boss 는 refused' : '✗ ' + JSON.stringify({ r1, last: last?.text, r2 })]);
         endRound(T, { summary: '귀 시험 닫음' });
+      }
+      // 대리 결정 (결정 85) — ④ 돈·바깥은 안 올림(proxyEligible) · 10분 넘은 것만(overdue) · FAIL 을 대리로 풀면 note 에 '대리 결정' · 대리 답 note 는 부름을 답한 것으로.
+      {
+        const C = (what, extra = {}) => ({ grade: 'C', status: 'pending', what, detail: '', ...extra });
+        const el = [
+          proxyEligible(C('로드맵 교체')),                                  // 올림
+          proxyEligible(C('비용 상한 올리기')),                             // 돈 — 안 올림
+          proxyEligible(C('외부 발송 문구 확정')),                          // 바깥 — 안 올림
+          proxyEligible(C('본책 병합')),                                    // 병합 — 안 올림
+          proxyEligible(C('로드맵', { action: { type: 'send' } })),        // 행동 종류 — 안 올림
+          proxyEligible(C('로드맵', { grade: 'B' })),                       // B 는 대리 대상이 아니다(이미 톰·제리)
+          proxyEligible(C('로드맵', { status: 'passed' })),                 // 끝난 것
+        ];
+        const t0 = Date.parse('2026-09-13T10:00:00Z');
+        const od = overdue([{ key: 'a', since: new Date(t0 - 11 * 60_000).toISOString() }, { key: 'b', since: new Date(t0 - 9 * 60_000).toISOString() }, { key: 'c', since: null }], { now: t0 }).map((x) => x.key);
+        startRound(T, { milestone: 2 });
+        recordVerdict(T, { actor: 'outside', verdict: 'FAIL', text: '명백' });
+        const un = resumeRound(T, { text: '톰: 근거 봤다 · 제리: 원문과 같다', proxy: ['chief', 'outside'] });
+        const unNote = readLog(T).at(-1);
+        endRound(T, {});
+        const pcast2 = { guide: { name: '테라' }, boss: { name: '댄' } };
+        const q0 = new Date(); q0.setHours(11, 0, 0, 0);
+        const qat = (m) => new Date(q0.getTime() + m * 60_000).toISOString();
+        const qlog = [{ id: 'q1', ts: qat(0), actor: 'system', type: 'round_start', text: '시작' }, { id: 'q2', ts: qat(1), actor: 'guide', type: 'message', text: '대표님, A 와 B 중 골라 주세요.' }];
+        const before = peopleOf(qlog, pcast2, { now: q0.getTime() + 20 * 60_000 }).guide.bossCall;
+        const after = peopleOf([...qlog, { id: 'q3', ts: qat(12), actor: 'system', type: 'note', text: '대리 결정 — 톰·제리: A', meta: { proxyAnswer: 'q2' } }], pcast2, { now: q0.getTime() + 20 * 60_000 }).guide.bossCall;
+        const xWant = el.join(',') === 'true,false,false,false,false,false,false' && od.join(',') === 'a' && un?.phase === 'running' && unNote?.text?.startsWith('대리 결정(톰·제리)으로 재개')
+          && unNote?.meta?.proxy?.length === 2 && before?.id === 'q2' && after === null;
+        out.push(['대리 결정(결정 85)', xWant ? '✓ 돈·바깥·병합·B·끝난 것 안 올림 · 10분 넘은 것만 · FAIL 대리 풀기 note · 대리 답이면 부름 사라짐' : '✗ ' + JSON.stringify({ el, od, un: un?.phase, note: unNote?.text, before, after })]);
       }
       // 상황판 (결정 23) — 옛 모양(issues·left)을 계약 모양으로, 준 항목만 통째로 바뀜, --clear 로 비움, 프롬프트 네 줄, 이 라운드 동안 갱신됐나.
       {
