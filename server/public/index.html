@@ -140,8 +140,9 @@
         <select id="wvRound" aria-label="재생할 라운드"></select>
         <button type="button" id="wvPlay">재생</button>
         <button type="button" id="wvStop" hidden>멈춤</button>
-        <select id="wvSpeed" aria-label="재생 속도"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option></select>
-        <select id="wvZoom" aria-label="배율"><option value="1">작게</option><option value="2" selected>보통</option><option value="3">크게</option></select>
+        <!-- 재생 속도와 화면 배율은 다른 것인데 둘 다 숫자라 헷갈렸다 (결정 13) — 글자로 가른다. -->
+        <select id="wvSpeed" aria-label="재생 속도" title="재생 속도 — 사건을 얼마나 빨리 돌리나"><option value="1">속도 1배</option><option value="2" selected>속도 2배</option><option value="4">속도 4배</option></select>
+        <select id="wvZoom" aria-label="화면 배율" title="화면 배율 — 얼마나 크게 보나"><option value="1">화면 작게</option><option value="2" selected>화면 보통</option><option value="3">화면 크게</option></select>
         <label><input type="checkbox" id="wvCam" checked> 말하는 쪽으로 따라가기</label>
         <span class="world__clock" id="wvClock" title="세상의 시계 — state/world.json"></span>
         <select id="wvHour" aria-label="시험용 시각" title="시험용으로 시각을 고정한다. 실제 시각으로 돌리려면 첫 항목"><option value="">실제 시각</option><option value="9">09시 출근</option><option value="12">12시 점심</option><option value="15">15시 근무</option><option value="19">19시 퇴근</option><option value="23">23시 밤</option></select>

@@ -226,11 +226,11 @@ function tick(dt) {
     }
     if (!a.path.length) continue;
     const [tx, ty] = a.path[0]; const gx = tx * TP, gy = ty * TP;
-    const dx = gx - a.px, dy = gy - a.py, dist = Math.hypot(dx, dy), step = WALK * TP * dt;
+    const dx = gx - a.px, dy = gy - a.py, dist = Math.hypot(dx, dy), step = WALK * (a.hurry ? 2 : 1) * TP * dt;   // 급하면 두 배 (결정 13)
     a.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? DIR.right : DIR.left) : (dy > 0 ? DIR.down : DIR.up);
     if (dist <= step) {
       a.px = gx; a.py = gy; a.x = tx; a.y = ty; a.path.shift();
-      if (!a.path.length) { a.frame = 0; const f = a.onArrive; a.onArrive = null; f?.(); }
+      if (!a.path.length) { a.frame = 0; a.hurry = false; const f = a.onArrive; a.onArrive = null; f?.(); }
       if (a === S.boss) usePortal(a);
     } else { a.px += dx / dist * step; a.py += dy / dist * step; }
     a.animT += dt; if (a.animT > 0.12) { a.animT = 0; a.frame = (a.frame + 1) % (a.sheet?.frames ?? 4); }
@@ -295,11 +295,12 @@ function face(a, b) {
   a.dir = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? DIR.right : DIR.left) : (dy > 0 ? DIR.down : DIR.up);
 }
 /** 잠깐 다른 자리로 갔다가(ms) 시계가 정한 자리로 돌아온다. 도착하면 arrive() */
-function detour(a, place, ms, arrive) {
+function detour(a, place, ms, arrive, { hurry = false } = {}) {
   if (!place) return;
   // 머무는 시간(ms)은 도착한 뒤부터 센다 — 성 반대편 게시판까지 걸어가는 데 걸리는 시간이 머무는 시간을 잡아먹지 않게.
   // 길이 없거나 너무 멀면 90초 뒤 포기한다.
   a.detour = { until: performance.now() + 90000 };
+  a.hurry = hurry;   // 급한 사건(FAIL 도장·대표 부름·대표실 문 앞)은 두 배로 달린다 (결정 13). 도착하면 풀린다(tick).
   walkTo(a, place, () => { if (a.detour) { a.detour.until = performance.now() + ms; arrive?.(); } });
 }
 function endDetour(a) {
@@ -517,7 +518,7 @@ function handle(team, e) {
       if (tt && tt.key === a.key && performance.now() - tt.at < 4 * 60 * 1000 && a.scene === S.boss.scene) {
         S.talkTarget = null;
         const spot = nearFree({ scene: S.boss.scene, x: S.boss.x, y: S.boss.y }, 0, 1);
-        detour(a, spot, 20000, () => { face(a, S.boss); speak(a, e.text, { id: e.id }); });
+        detour(a, spot, 20000, () => { face(a, S.boss); speak(a, e.text, { id: e.id }); }, { hurry: true });   // 대표가 불렀다 — 달린다
         return;
       }
       // 호명이면 상대를 바라본다
@@ -537,7 +538,7 @@ function handle(team, e) {
       if (v === 'FAIL') { S.failAt[team] = performance.now() + 60000; lamp(team, true); setTimeout(() => { if (!S.blocked.has(team)) lamp(team, false); }, 60000); }
       if (target && target !== a && target.scene === a.scene && !target.hidden) {
         const spot = nearFree({ scene: target.scene, x: target.x, y: target.y }, 0, 1);
-        detour(a, spot, 12000, () => { face(a, target); face(target, a); say(); });
+        detour(a, spot, 12000, () => { face(a, target); face(target, a); say(); }, { hurry: v === 'FAIL' });   // FAIL 도장은 달려가서
       } else say();
       return;
     }
@@ -733,7 +734,7 @@ function setBlocked(team, on) {
   lamp(team, on || (S.failAt[team] ?? 0) > performance.now());
   const g = actorFor(team, 'guide'), door = placeOf('hq.bossdoor');
   if (!g || !door) return;
-  if (on) { if ((!was || !g.detour) && g.scene === door.scene && !g.hidden) detour(g, nearFree(door, 0, 1), 10 * 60 * 1000, () => { g.dir = DIR.right; }); }
+  if (on) { if ((!was || !g.detour) && g.scene === door.scene && !g.hidden) detour(g, nearFree(door, 0, 1), 10 * 60 * 1000, () => { g.dir = DIR.right; }, { hurry: true }); }   // 막혔다 — 대표실 문 앞으로 달린다
   else if (was) endDetour(g);
 }
 
