@@ -25,7 +25,7 @@
         { "id": "home.design.guide",      "team": "design",    "part": "villa-m", "at": [24.5, 21.5], "sign": "디자인" },
         { "id": "home.design.ops",        "team": "design",    "part": "villa-s", "at": [27.5, 21.5], "sign": "클레멘타인" },
         { "id": "home.design.outside",    "team": "design",    "part": "villa-l", "at": [30.5, 21.5], "sign": "마크" },
-        { "id": "home.finance.guide",     "team": "finance",   "part": "villa-l", "at": [35.5, 21.5], "sign": "경영재무" },
+        { "id": "home.finance.guide",     "team": "finance",   "part": "villa-l", "at": [35.5, 21.5], "sign": "경영" },
         { "id": "home.finance.review",    "team": "finance",   "part": "villa-s", "at": [38.5, 21.5], "sign": "노라" },
         { "id": "home.finance.outside",   "team": "finance",   "part": "villa-m", "at": [41.5, 21.5], "sign": "빅터" },
         { "id": "home.hq.chief",          "team": "hq",        "part": "villa-l", "at": [46.5, 21.5], "sign": "총괄" },
