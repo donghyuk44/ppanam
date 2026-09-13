@@ -61,7 +61,9 @@ async function viaServer(body, api = '/api/round') {
     });
   } catch (e) {
     const code = e?.cause?.code ?? e?.code ?? e?.name;
-    if (code === 'ECONNREFUSED' || code === 'ECONNRESET') return null;
+    // ECONNREFUSED 만 "서버 없음" 이다. ECONNRESET 은 붙었다가 끊긴 것 — 서버가 요청을 받고 닫는 중일 수 있어
+    // 직접 닫으면 두 번 닫힌다 (레오 감사, 2026-09-13).
+    if (code === 'ECONNREFUSED') return null;
     console.error(`오류: 서버가 ${code === 'TimeoutError' ? '15초 안에 답하지 않았습니다' : '응답하지 않습니다 (' + code + ')'}. 직접 닫지 않습니다 — 서버가 살아 있으면 지금 닫는 중일 수 있습니다. 방의 note 를 보세요.`);
     process.exit(1);
   }
