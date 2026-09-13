@@ -431,7 +431,10 @@ for (let i = 0; i < argv.length; i++) {
   else if (!question && !a.startsWith('-')) question = a;
 }
 
-if (!team || !teamExists(team)) team = defaultTeam();
+// --team 을 줬는데 없는 방이면 멈춘다. 기본 방(hq)으로 조용히 흘리면 오타 하나가 총괄실 외부감사(제리)의 세션 id 를 덮고
+// 제리 일지에 남의 문단을 쓴다 — 2026-09-13 17:24 실제로 그랬다(round.mjs check 가 `--team _check` 로 부름, 테라).
+if (team && !teamExists(team)) { console.error(`오류: 방 '${team}' 이 없습니다 (teams.json). 기본 방으로 넘기지 않습니다.`); process.exit(2); }
+if (!team) team = defaultTeam();
 
 if (mode === 'setup') { console.log(SETUP); process.exit(0); }
 
