@@ -1,17 +1,19 @@
 {
   "agents": {
     "guide": {
-      "name": "실무",
-      "initial": "길",
+      "name": "유진",
+      "initial": "유",
       "color": "#2f4f7a",
-      "role": "실행 · 로드맵 · 스코프 방어",
+      "title": "실행",
+      "does": "로드맵 · 스코프 방어",
       "model": "claude"
     },
     "review": {
-      "name": "내부감사",
-      "initial": "되",
+      "name": "노라",
+      "initial": "노",
       "color": "#a8541f",
-      "role": "감사 · 이해 갭 진단 · 전달 품질",
+      "title": "감사",
+      "does": "이해 갭 진단 · 전달 품질",
       "model": "claude",
       "llm": "sonnet",
       "disallow": [
@@ -21,24 +23,27 @@
       ]
     },
     "outside": {
-      "name": "외부감사",
-      "initial": "바",
+      "name": "빅터",
+      "initial": "빅",
       "color": "#5b3a63",
-      "role": "교차검증 · 기술감사 · 외부 시각",
+      "title": "교차검증",
+      "does": "기술감사 · 외부 시각",
       "model": "gpt"
     },
     "boss": {
       "name": "함동혁(댄)",
       "initial": "댄",
       "color": "#8a7320",
-      "role": "대표 · 사람",
+      "title": "대표",
+      "does": "사람",
       "model": null
     },
     "system": {
       "name": "시스템",
       "initial": "·",
       "color": "#8a8175",
-      "role": "훅 · CLI",
+      "title": "훅",
+      "does": "CLI",
       "model": null
     }
   }

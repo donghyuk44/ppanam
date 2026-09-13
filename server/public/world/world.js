@@ -629,7 +629,7 @@ async function openCard(a) {
   const head = node('div', 'wc__head');
   const av = node('span', 'wc__av'); av.style.background = r.color ?? a.color ?? '#888'; head.appendChild(av);
   const nm = node('div'); nm.appendChild(node('div', 'wc__name', r.name));
-  nm.appendChild(node('div', 'wc__sub', [r.persona?.title?.split(' — ')[1] ?? r.role ?? a.id, team?.room ?? team?.name ?? a.team, r.model === 'gpt' ? '다른 회사 모델' : null].filter(Boolean).join(' · ')));
+  nm.appendChild(node('div', 'wc__sub', [r.persona?.title?.split(' — ')[1] ?? r.title ?? a.id, team?.room ?? team?.name ?? a.team, r.model === 'gpt' ? '다른 회사 모델' : null].filter(Boolean).join(' · ')));
   head.appendChild(nm);
   const x = node('button', 'wc__x', '×'); x.type = 'button'; x.title = '닫기'; x.addEventListener('click', closeCard); head.appendChild(x);
   box.appendChild(head);

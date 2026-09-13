@@ -360,7 +360,7 @@ function renderHead() {
     c.style.background = a.color ?? FALLBACK.color;
     const st = stateOf(id);
     c.dataset.state = st;
-    c.title = `${a.name} — ${a.role ?? ''} · ${STATE_LABEL[st]}`;
+    c.title = `${a.name} — ${a.title ?? ''} · ${STATE_LABEL[st]}`;   // 직책(title)만 — 하는 일(does)은 화면에 안 띄운다 (req_94013782)
     crew.appendChild(c);
   }
 }
@@ -500,7 +500,7 @@ function renderSide() {
     row.appendChild(av);
     const t = el('div', 'who__t');
     t.appendChild(el('div', 'who__n', a.name));
-    t.appendChild(el('div', 'who__r', id === 'boss' ? (a.role ?? '') : `${a.role ?? ''} · ${STATE_LABEL[stateOf(id)]}`));
+    t.appendChild(el('div', 'who__r', id === 'boss' ? (a.title ?? '') : `${a.title ?? ''} · ${STATE_LABEL[stateOf(id)]}`));
     row.appendChild(t);
     if (a.model) row.appendChild(el('div', 'who__m', a.model.toUpperCase()));
     c.appendChild(row);
@@ -1295,7 +1295,7 @@ function renderTowerPeople(grid) {
 
   // 대표 카드 — 맨 위, 묶음 밖. 하영 표(opsroom-content.md 2절, 결정 47 ①): 대표가 자기 상태 알약·자기 통계(오늘 지시·결정·마지막 지시)를
   // 볼 이유가 없다 — 뺐다. 남는 건 ①③ 의 답, 승인 대기 · 차례인 방. (people.boss 의 지시·결정 수는 계약에 남고 화면만 안 쓴다.)
-  const bossCast = summaries[teams[0]?.id]?.cast?.boss ?? { name: '함동혁(댄)', initial: '댄', color: '#8a7320', role: '대표 · 사람' };
+  const bossCast = summaries[teams[0]?.id]?.cast?.boss ?? { name: '함동혁(댄)', initial: '댄', color: '#8a7320', title: '대표', does: '사람' };
   const bc = el('div', 'pcard'); bc.dataset.boss = '1';
   bc.appendChild(pcardTop(bossCast, el('span')));
   const { rooms } = bossTurns();
@@ -1329,7 +1329,7 @@ function pcardTop(a, pillEl) {
   top.appendChild(chip);
   const who = el('div', 'pcard__who');
   who.appendChild(el('b', null, a.name ?? '?'));
-  if (a.role) who.appendChild(el('span', null, a.role.split(' · ')[0]));
+  if (a.title) who.appendChild(el('span', null, a.title));   // 전엔 role 의 앞 조각을 잘라 썼다 — 이제 title 이 그 조각이다
   top.appendChild(who);
   top.appendChild(pillEl);
   return top;

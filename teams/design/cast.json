@@ -4,14 +4,16 @@
       "name": "헨리",
       "initial": "헨",
       "color": "#4b5f9e",
-      "role": "메인 디자인 · 양식을 정하고 그림을 뽑는다",
+      "title": "메인 디자인",
+      "does": "양식을 정하고 그림을 뽑는다",
       "model": "claude"
     },
     "ops": {
       "name": "클레멘타인",
       "initial": "클",
       "color": "#c96f3b",
-      "role": "보조 디자인 · 팔레트·시트·검수 스크립트",
+      "title": "보조 디자인",
+      "does": "팔레트·시트·검수 스크립트",
       "model": "claude",
       "llm": "sonnet"
     },
@@ -19,21 +21,24 @@
       "name": "마크",
       "initial": "마",
       "color": "#6b4a2f",
-      "role": "외부감사 · 열어서 재고 세어 본다",
+      "title": "외부감사",
+      "does": "열어서 재고 세어 본다",
       "model": "gpt"
     },
     "boss": {
       "name": "함동혁(댄)",
       "initial": "댄",
       "color": "#8a7320",
-      "role": "대표 · 사람",
+      "title": "대표",
+      "does": "사람",
       "model": null
     },
     "system": {
       "name": "시스템",
       "initial": "·",
       "color": "#8a8175",
-      "role": "훅 · CLI",
+      "title": "훅",
+      "does": "CLI",
       "model": null
     }
   }

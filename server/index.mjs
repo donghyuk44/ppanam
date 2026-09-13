@@ -408,7 +408,7 @@ const server = http.createServer((req, res) => {
       .map((e) => ({ id: e.id, ts: e.ts, type: e.type, round: e.round ?? null, verdict: e.meta?.verdict ?? null, text: String(e.text ?? '').slice(0, 300) }));
     const st = a.model === 'gpt' ? { engine: 'codex' } : session.status(team, actor);
     return json(res, 200, {
-      team, actor, name: a.name ?? actor, role: a.role ?? null, color: a.color ?? null, model: a.model ?? null,
+      team, actor, name: a.name ?? actor, title: a.title ?? null, does: a.does ?? null, color: a.color ?? null, model: a.model ?? null,   // title(직책)·does(하는 일) — req_94013782
       persona, journal: journal ? { first: session.journalFirstSentence(team, actor), latest: journal.text.slice(0, 900), total: journal.total } : null,
       recent, status: st, world: world.snapshot().actors?.[`${team}:${actor}`] ?? null,
     });
