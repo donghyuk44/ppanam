@@ -94,6 +94,11 @@ function writeInfra(state) {
  * 서버가 켜질 때 이전 값이 파일에 있어도 그걸 산 값으로 안 쓴다 — 첫 재기 전까지 latest 는 null(안 잰 것은 막힘이 아니다).
  */
 export function startInfra({ port, sessionHealth, onChange = null }) {
+  // 지난 프로세스가 쓰다 죽은 임시 파일(다른 pid 이름)은 아무도 안 치운다 — 켤 때 한 번 쓸어 낸다.
+  try {
+    const dir = path.dirname(INFRA_FILE), base = path.basename(INFRA_FILE);
+    for (const f of fs.readdirSync(dir)) if (f.startsWith(base + '.') && f.endsWith('.tmp')) fs.rmSync(path.join(dir, f), { force: true });
+  } catch { /* state/ 가 아직 없으면 그만 */ }
   let latest = null, ticking = false;
   const tick = async () => {
     if (ticking) return;   // 앞 재기가 늦으면 겹치지 않게
