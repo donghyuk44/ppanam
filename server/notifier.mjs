@@ -15,6 +15,8 @@
 //       통과한 B 에 action.type 'milestone' 이 박혀 있으면 그 마일스톤을 now 로 — "다음 마일스톤 착수" 의 실행.
 //       통과한 C 에 action.type 'roadmap' 이 박혀 있으면 제안 파일을 roadmap.json 으로 — /kickoff 의 실행.
 //   (c) 실행자 결과(pushed · push-failed · stale · invalid) → 요청한 방 귀에.
+//   (d) 요청 블록(6-1절, 결정 49·51) — 통과한 B 에 action.type 'request' 면 블록을 열고, 블록의 새 줄(goal·say·done·ack·confirm·stop)을
+//       쓴 사람 빼고 나머지 두 자리 귀에 넣고, milestone 모드 블록은 그 마일스톤이 pass 가 되면 닫는다.
 //
 // 팀 방은 라운드가 열려 있을 때만 들려준다. 닫혀 있으면 세션이 없거나 훅이 기록하지 않는다 — 다음 틱에 다시 본다.
 // 총괄실은 늘 열려 있다.
@@ -25,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import {
   listApprovals, readCast, readState, readRoadmap, isOffice, quiet, emit, paths, setMilestoneStatus,
 } from '../bus/bus.mjs';
+import { listRequests, openRequest, closeByMilestone } from '../bus/requests.mjs';
 import * as session from './session.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -62,6 +65,7 @@ function requestText(r) {
     (r.detail ? `\n상세: ${r.detail}` : '') +
     (a?.type === 'push' ? `\n대상: ${a.remote ?? 'origin'}/${a.branch} @ ${String(a.sha).slice(0, 8)} — 통과하면 서버가 정확히 이 커밋을 민다` : '') +
     (a?.type === 'milestone' ? `\n대상: 마일스톤 ${a.n} 착수 — 통과하면 서버가 로드맵의 now 를 옮긴다` : '') +
+    (a?.type === 'request' ? `\n대상: ${a.to.team}/${a.to.actor} 에게 요청 블록${a.mode === 'milestone' ? ` (마일스톤 ${a.until?.milestone ?? '?'} 끝까지 — 공동 프로젝트)` : ''}${a.why ? ` · 왜: ${a.why}` : ''}${a.due ? ` · 기한: ${a.due}` : ''} — 통과하면 서버가 블록을 열고 너는 감시자로 들어간다(결정 51: 목표 한 줄 node bus/request.mjs --goal <id> "…")` : '') +
     `\n\n판정하세요. 마일스톤 조건을 채웠는지, 컷리스트를 안 넘었는지 보고 결정하고, 제리에게 원문 대조를 시키세요.` +
     `\n  node bus/approve.mjs --decide ${r.id} --as chief PASS|REVISE "이유"` +
     `\n  node bus/outside.mjs --team hq --ask "승인 요청 ${r.id} 대조: ${r.what}"`;
@@ -106,7 +110,72 @@ function applyAction(r) {
     emit(r.team, { actor: 'system', type: 'note', text, meta: { approval: r.id } });
     return text;
   }
+  if (r.grade === 'B' && a.type === 'request' && a.to?.team) {
+    // 팀 사이 요청 블록 (결정 49) — 파일을 열고 두 방에 시작 note. 같은 승인으로 두 번 열지 않는다(openRequest 가 본다).
+    try {
+      const q = openRequest(r);
+      return `요청 블록 ${q.id} 이 열렸습니다 — ${q.to.team}/${q.to.actor} 와 1:1, 톰이 감시자. node bus/request.mjs --say ${q.id} "…"`;
+    } catch (e) {
+      const text = `요청 블록을 열지 못했습니다 — ${String(e.message).slice(0, 120)}`;
+      emit(r.team, { actor: 'system', type: 'note', text, meta: { approval: r.id } });
+      return text;
+    }
+  }
   return null;
+}
+
+/** 블록의 줄 하나를 상대 귀에 넣을 글 — 누가 무슨 줄을 썼나. */
+function lineText(q, l) {
+  const who = l.by ? nameOf(l.by.team, l.by.actor) : '서버';
+  const head = `요청 블록 ${q.id} (${q.what})`;
+  const verb = { goal: '목표', say: '', done: '됐다', ack: '받았다', confirm: '확인', stop: '끊음', close: '닫힘' }[l.kind] ?? l.kind;
+  const tail = l.kind === 'say' ? `${who}: ${l.text}` : `${who} ${verb}${l.text ? ` — ${l.text}` : ''}`;
+  const hint = l.kind === 'done' ? ' · 받았으면 node bus/request.mjs --ack ' + q.id
+    : l.kind === 'ack' ? ' · 톰이 --confirm 으로 닫는다'
+    : l.kind === 'say' ? ` · 답은 node bus/request.mjs --say ${q.id} "…"` : '';
+  return `${head} — ${tail}${hint}`;
+}
+
+/** 블록의 세 자리 중 이 줄을 쓴 사람을 뺀 나머지 — 귀에 넣을 곳. 방마다 한 번(같은 방 두 자리는 없다). */
+function listeners(q, l) {
+  const seats = [q.from, q.to, { team: 'hq', actor: 'chief' }];
+  const out = [];
+  for (const s of seats) {
+    if (l.by && s.team === l.by.team && s.actor === l.by.actor) continue;
+    if (!out.some((x) => x.team === s.team)) out.push(s);
+  }
+  return out;
+}
+
+/**
+ * (d) 요청 블록 — 새 줄을 귀에, milestone 모드는 마일스톤이 pass 면 닫기. 알린 줄 수는 store.requests[id].sent[team].
+ * 방이 못 들으면(라운드 닫힘) 그 방 몫만 다음 틱으로 미룬다 — 열리면 밀린 줄을 한 번에 듣는다.
+ */
+function runRequests(store, send) {
+  let changed = false;
+  store.requests ??= {};
+  for (const q0 of listRequests()) {
+    let q = q0;
+    if (q.mode === 'milestone' && q.status !== 'closed' && q.until?.team) {
+      const ms = (readRoadmap(q.until.team).milestones ?? []).find((m) => m.n === q.until.milestone);
+      if (ms?.status === 'pass') { q = closeByMilestone(q, readState(q.until.team).round || null); changed = true; }
+    }
+    const t = store.requests[q.id] ??= { sent: {} };
+    for (const s of [q.from, q.to, { team: 'hq', actor: 'chief' }]) {
+      const n = t.sent[s.team] ?? 0;
+      if (n >= q.thread.length) continue;
+      if (!canHear(s.team)) continue;
+      let k = n;
+      for (; k < q.thread.length; k++) {
+        const l = q.thread[k];
+        if (!listeners(q, l).some((x) => x.team === s.team)) continue;
+        try { send(s.team, lineText(q, l)); }
+        catch (e) { emit(s.team, { actor: 'system', type: 'note', text: `요청 블록 ${q.id} 의 줄을 세션에 넣지 못했습니다 — ${String(e.message).slice(0, 120)}` }); break; }
+      }
+      if (k !== n) { t.sent[s.team] = k; changed = true; }
+    }
+  }
+  return changed;
 }
 
 /**
@@ -159,5 +228,8 @@ export function runNotifier({ send = (team, text) => session.send(team, quiet(te
       catch (e) { emit(r.team, { actor: 'system', type: 'note', text: `승인 ${r.id} 실행 결과를 세션에 넣지 못했습니다 — ${String(e.message).slice(0, 120)}` }); }
     }
   }
+  // (d) 요청 블록
+  try { if (runRequests(store, send)) changed = true; }
+  catch (e) { console.error('[notifier] 요청 블록 알림 실패 — ' + String(e.message).slice(0, 200)); }   // 틱마다 도니 방에는 안 남긴다
   if (changed) writeStore(store);
 }

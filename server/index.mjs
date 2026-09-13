@@ -19,6 +19,7 @@ import {
   listApprovals, decideApproval, APPROVAL_GRADES, approvalPreview, approvalArtifacts, outFile,
 } from '../bus/bus.mjs';
 import * as bus from '../bus/bus.mjs';
+import { listRequests, requestCounts } from '../bus/requests.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
@@ -100,6 +101,7 @@ const summaryOf = (team) => {
         .filter((r) => (r.decidedAt ?? '').slice(0, 10) === new Date().toISOString().slice(0, 10)).length,
     },
     people: peopleOf(team, sessions, conductor, s.phase),
+    requests: requestCounts(team),      // 요청 블록(6-1절) — 이 팀이 요청했거나 받은 것 중 열린·닫힌 수
     // 오늘 대표에게 한 말 — "전체" 탭의 오늘 보고 줄 (결정 50·52). 판별은 bus.bossNotesOf.
     bossNotes: bus.bossNotesOf(readLog(team), readCast(team).agents ?? {}),
   };
@@ -215,6 +217,12 @@ const server = http.createServer((req, res) => {
       } catch (e) { return json(res, 400, { error: e.message }); }
     });
     return;
+  }
+
+  // 요청 블록 (6-1절) — 접은 목록, 최근 순. 대표는 여기서 안 누른다 — 자리가 없다(결정 46). 스레드 줄은 CLI(bus/request.mjs)로만.
+  if (url.pathname === '/api/requests' && req.method === 'GET') {
+    if (team && !teamExists(team)) return json(res, 404, { error: 'no such team' });
+    return json(res, 200, { requests: listRequests({ team: team || null }) });
   }
 
   if (url.pathname === '/api/team') {

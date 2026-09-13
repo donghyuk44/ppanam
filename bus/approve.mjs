@@ -25,6 +25,7 @@ import {
   ROOT, requestApproval, decideApproval, voidApproval, listApprovals, APPROVAL_GRADES,
   defaultTeam, teamExists, listTeams, readCast, readRoadmap, paths, isOffice, pushAction,
 } from './bus.mjs';
+import { untilOf } from './requests.mjs';
 
 /**
  * 원격 푸시 요청은 지금 이 순간의 상태에 묶인다 — 어느 브랜치의 어느 커밋인가.
@@ -67,7 +68,7 @@ const me = whoAmI();
 /* ── 인자 ── */
 
 const argv = process.argv.slice(2);
-const o = { team: null, mode: null, grade: null, id: null, as: null, decision: null, detail: '', all: false, push: false, next: false, roadmap: null, out: [] };
+const o = { team: null, mode: null, grade: null, id: null, as: null, decision: null, detail: '', all: false, push: false, next: false, roadmap: null, out: [], to: null, why: '', due: null, untilMilestone: false };
 const words = [];
 
 for (let i = 0; i < argv.length; i++) {
@@ -80,6 +81,10 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--push') o.push = true;
   else if (a === '--next') o.next = true;
   else if (a === '--roadmap') o.roadmap = argv[++i];
+  else if (a === '--to') o.to = argv[++i];
+  else if (a === '--why') o.why = argv[++i];
+  else if (a === '--due') o.due = argv[++i];
+  else if (a === '--until-milestone') o.untilMilestone = true;
   else if (a === '--out') o.out.push(...String(argv[++i] ?? '').split(',').map((f) => f.trim()).filter(Boolean));
   else if (a === '--list' || a === '-l') o.mode = 'list';
   else if (a === '--all') o.all = true;
@@ -92,10 +97,13 @@ for (let i = 0; i < argv.length; i++) {
 function usage() {
   console.log(`승인 — 등급으로 나뉜 게이트.
 
-  --request <A|B|C> "<무엇>" [--detail "..."] [--push | --next | --roadmap <파일>] [--out a.png,b.md]   요청 (--team 으로 방 지정)
+  --request <A|B|C> "<무엇>" [--detail "..."] [--push | --next | --roadmap <파일> | --to <팀>] [--out a.png,b.md]   요청 (--team 으로 방 지정)
       --push     지금의 브랜치·SHA 를 요청에 묶는다. 통과하면 서버가 그 커밋을 origin 에 민다. (B)
       --next     로드맵의 다음 마일스톤을 묶는다. 통과하면 서버가 그것을 now 로 옮긴다. (B)
       --roadmap  teams/<팀>/out/ 의 제안 파일을 묶는다. 통과하면 서버가 roadmap.json 으로 옮긴다. (C)
+      --to <팀>[:<자리>] [--why "왜"] [--due "기한"] [--until-milestone]
+                 다른 팀에 요청 블록을 연다 (B, 결정 49). 통과하면 서버가 state/requests/<id>.jsonl 을 열고 두 방에 알린다.
+                 --until-milestone 이면 지금 마일스톤이 닫힐 때까지 여는 공동 프로젝트(결정 47). 그 뒤는 node bus/request.mjs
       --out      카드에 붙일 산출물 — teams/<팀>/out/ 안의 경로, 쉼표로 여럿. 그림은 카드 안에 뜨고 md 는 펼쳐 읽는다.
                  --detail 에 적힌 out/… 경로도 같이 붙는다.
   --decide <id> --as <chief|outside|boss> <PASS|REVISE> "<이유>"
@@ -154,8 +162,18 @@ if (o.mode === 'request') {
   const what = words.join(' ').trim();
   // 실행할 행동을 요청에 박는다. 실행자·알림자는 이것만 믿는다 — 자유 텍스트를 훑지 않는다.
   let action = null;
-  if ([o.push, o.next, !!o.roadmap].filter(Boolean).length > 1) { console.error('오류: --push · --next · --roadmap 은 하나만.'); process.exit(1); }
+  if ([o.push, o.next, !!o.roadmap, !!o.to].filter(Boolean).length > 1) { console.error('오류: --push · --next · --roadmap · --to 는 하나만.'); process.exit(1); }
   if (o.push) action = gitTarget();
+  if (o.to) {
+    // 팀 사이 요청 블록 (결정 49) — 받는 팀[:자리]. 자기 팀에게는 못 연다. 통과하면 알림자가 블록을 연다.
+    if (String(o.grade).toUpperCase() !== 'B') { console.error('오류: --to 는 B 등급(팀 사이 요청)입니다.'); process.exit(1); }
+    const [toTeam, toActor = 'guide'] = String(o.to).split(':');
+    if (!teamExists(toTeam)) { console.error(`없는 팀: ${toTeam} (${listTeams().map((t) => t.id).join(', ')})`); process.exit(1); }
+    if (toTeam === team) { console.error('오류: 같은 방에는 요청 블록을 열지 않습니다 — 방에서 말하면 됩니다.'); process.exit(1); }
+    if (!readCast(toTeam).agents?.[toActor]) { console.error(`오류: ${toTeam} 방에 '${toActor}' 자리가 없습니다.`); process.exit(1); }
+    action = { type: 'request', to: { team: toTeam, actor: toActor }, why: String(o.why ?? '').trim(), due: o.due ?? null, mode: o.untilMilestone ? 'milestone' : 'once' };
+    if (o.untilMilestone) { try { action.until = untilOf(team); } catch (e) { console.error('오류: ' + e.message); process.exit(1); } }
+  }
   if (o.next) {
     if (String(o.grade).toUpperCase() !== 'B') { console.error('오류: --next 는 B 등급입니다.'); process.exit(1); }
     const ms = readRoadmap(team).milestones ?? [];
@@ -179,6 +197,7 @@ if (o.mode === 'request') {
   if (action?.type === 'push') console.log(`푸시 대상: ${action.remote}/${action.branch} @ ${action.sha.slice(0, 8)} — 이 커밋을 통과시키는 것입니다.`);
   if (action?.type === 'milestone') console.log(`착수 대상: 마일스톤 ${action.n}${action.title ? ' ' + action.title : ''} — 통과하면 서버가 now 로 옮깁니다.`);
   if (action?.type === 'roadmap') console.log(`교체 대상: out/${action.file} — 통과하면 서버가 roadmap.json 으로 옮깁니다.`);
+  if (action?.type === 'request') console.log(`요청 대상: ${action.to.team}/${action.to.actor}${action.mode === 'milestone' ? ` · 마일스톤 ${action.until.milestone} 끝까지(공동 프로젝트)` : ''} — 통과하면 서버가 블록을 열고 두 방에 알립니다. 그 뒤는 node bus/request.mjs --say <id> "…".`);
   if (r.files?.length) console.log(`산출물: ${r.files.map((f) => 'out/' + f).join(', ')} — 카드에 링크·미리보기로 붙습니다.`);
 
   if (r.status === 'passed') { console.log('등급 A — 바로 진행하세요.'); process.exit(0); }
