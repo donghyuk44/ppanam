@@ -264,6 +264,23 @@ M3 데이터 전까지 빈 상태 문구). 마지막에 본 탭은 브라우저�
 **미래 시각**도 허용 시차(`INFRA_SKEW_MS` 1분)를 넘으면 `unknown` — 시계가 크게 틀린 기계의 값이 영원히 살아 있으면 안 된다(레오, R25).
 `id` 는 `<kind>:<이벤트 id · 승인 id · 요청 id · 팀 · infra 키>` — 같은 일은 한 항목이라 알림의 읽음 목록과 같은 열쇠를 쓴다.
 
+**한 것 — 한 목록** (결정 92 "누가 뭘 했나", M6 준비 — 위와 짝). 지금 화면은 "오늘 몇 번 말했나"(`people[].todaySay`)와 "마지막 한 문장"(`doing`)뿐이라
+**누가 무엇을 끝냈는지**가 없다. 파일에는 다 있다 — 판정 카드·승인 판정·요청 블록·마일스톤·라운드. 순수 함수 `bus/bus.mjs doneOf(log, cast, { team, since, until, approvals })`
+가 팀 하나의 대화록과 승인 레코드에서 평평한 목록을 만들고(파일 안 읽음, `round.mjs check` 가 돌린다), 서버가 팀마다 불러 합친다. 항목 `{ id, kind, team, by, ts, text, ref }`, **`ts` 내림차순**(최근 것이 위):
+
+| `kind` | 어디서 | `by` | `ref` |
+| --- | --- | --- | --- |
+| `report` 대표에게 보고 | `message` 중 대표를 불렀지만 결정은 안 청한 것(`callsBoss && !asksBoss`) | 그 자리 | — |
+| `verdict` 판정 카드 | `verdict` 이벤트 — `meta.stale`(늦게 온 판정)은 뺀다 | review·outside | `meta.sha` |
+| `decision` 승인 판정 | 승인 레코드의 `decisions[]` 한 줄씩 | chief·outside·boss | 승인 id |
+| `proxy` 대리 결정 | `note` 에 `meta.proxy` | `chief`(톰·제리) | 승인 id 또는 답한 이벤트 |
+| `request` 요청 블록 닫힘 | `note` 에 `meta.request` + `status:'closed'` | — (팀) | 요청 id |
+| `milestone` 통과 | `milestone` 이벤트 | — (팀) | 번호 |
+| `round` 닫힘 | `round_end` 이벤트 | — (팀) | 판정 |
+
+창은 `since ≤ ts < until`, 기본은 서버 현지 오늘 0시 ~ 지금. 아침 보고서(결정 80)는 "어젯밤" 창으로, 개인 카드는 `by` 로, 라운드 카드는 `ts` 로 자른다.
+산출물 파일(`out/`)과 커밋은 여기 없다 — 누가 썼는지 파일이 말하지 않는다. 사람이 적은 `progress.done[]` 도 여기 안 온다(집계가 아니라 글이다).
+
 **상황판 — 지금 어디까지 왔나** (결정 23 — "상황판은 업데이트도 안 되고 이상한 걸로 채워져 있고"). 팀마다 `teams/<팀>/progress.json`
 하나. 로드맵이 목적지라면 이건 현재 위치다. **실무가 턴 끝·라운드 닫기마다 갱신한다** — `node bus/progress.mjs --team <팀> --doing "…"
 --blocked "…" --boss "…" --next "…"`(플래그는 여러 번, 준 항목만 통째로 바뀌고 안 준 항목은 그대로, `--clear <항목>` 으로 비움).

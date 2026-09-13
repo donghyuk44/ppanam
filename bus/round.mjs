@@ -18,7 +18,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import {
   startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound,
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
-  addressees, callsBoss, asksBoss, bossNotesOf, readLog, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
+  addressees, callsBoss, asksBoss, bossNotesOf, doneOf, readLog, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
   mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, overdue,
 } from './bus.mjs';
@@ -301,6 +301,28 @@ switch (cmd) {
       // 총괄이 옮겨온 대표 말(meta.via) 은 대표 카드에 안 잡힌다 — 결정 원문이 "하는 일" 로 떴다 (시스템 R21).
       const pe3 = peopleOf([...plog, { id: 'e8', ts: at(7), actor: 'boss', type: 'message', text: '47. 공동 프로젝트 (대표 원문)', meta: { via: 'chief' } }], pcast, { now: d0.getTime() + 10 * 60_000 });
       out.push(['옮겨온 대표 말은 대표 카드 밖', pe3.boss.lastText === null && pe3.boss.todaySay === 0 && pe3.guide.bossCall === null ? '✓ 카드 비고 · 호출은 답한 것으로' : '✗ ' + JSON.stringify(pe3.boss)]);
+      // 한 것 한 목록 (결정 92 "누가 뭘 했나", M6 준비 — 계약 3절 "한 것 — 한 목록"). 일곱 종류가 한 목록에 ts 내림차순, 창 밖·늦은 판정·결정 청한 말·대표 말은 뺀다.
+      const dlog = [
+        ...plog,
+        { id: 'd1', ts: at(6), actor: 'guide', type: 'message', text: '대표님, 그림 올렸습니다 out/shots/a.png.' },
+        { id: 'd2', ts: at(7), actor: 'outside', type: 'verdict', text: '늦게 온 판정', meta: { verdict: 'REVISE', stale: true } },
+        { id: 'd3', ts: at(8), actor: 'system', type: 'note', text: '요청 블록 req_x 닫힘 — 톰 확인', meta: { request: 'req_x', status: 'closed' } },
+        { id: 'd4', ts: at(9), actor: 'system', type: 'note', text: '대리 결정 — 톰·제리: 가자', meta: { proxy: ['chief', 'outside'], approval: 'apr_p' } },
+        { id: 'd5', ts: at(10), actor: 'system', type: 'milestone', text: '마일스톤 1 통과', meta: { index: 1 } },
+        { id: 'd6', ts: at(11), actor: 'system', type: 'round_end', text: '주제', meta: { verdict: 'PASS' } },
+        { id: 'd7', ts: at(12), actor: 'boss', type: 'message', text: '대표님이 대표에게, 됐습니다.' },
+        { id: 'd8', ts: at(13), actor: 'system', type: 'note', text: '요청 블록 req_y 열림', meta: { request: 'req_y', status: 'open' } },
+      ];
+      const dApr = [{ id: 'apr_p', grade: 'B', team: 'dev', what: '푸시', decisions: [{ by: 'chief', decision: 'PASS', ts: at(9.2) }, { by: 'outside', decision: 'PASS', ts: at(9.5) }, { by: 'boss', decision: 'PASS', ts: new Date(d0.getTime() - 24 * 3600_000).toISOString() }] }];
+      const dn = doneOf(dlog, pcast, { team: 'dev', approvals: dApr, now: d0.getTime() + 20 * 60_000 });
+      const dKinds = dn.map((x) => `${x.kind}:${x.by ?? '-'}`).join(',');
+      const doneWant = dKinds === 'round:-,milestone:-,decision:outside,decision:chief,proxy:chief,request:-,report:guide,verdict:outside'
+        && dn[0].text.startsWith('라운드') && dn[2].ref === 'apr_p' && dn[7].text.startsWith('PASS — 됐다') && dn.every((x) => x.team === 'dev');
+      out.push(['한 것 한 목록(결정 92)', doneWant ?'✓ 8건 · ts 내림차순 · 늦은 판정·결정 청한 말·대표 말·열린 요청·어제 판정 제외 · 일곱 종류' : '✗ ' + dKinds]);
+      // 창 — since·until 로 자르면 "어젯밤" 보고서(결정 80)가 된다. 어제 말(e0)과 어제 판정(boss) 만.
+      const dy = doneOf([...dlog, { id: 'd9', ts: new Date(d0.getTime() - 20 * 3600_000).toISOString(), actor: 'ops', type: 'message', text: '대표님, 어젯밤에 서버 살렸습니다.' }], pcast,
+        { team: 'dev', approvals: dApr, since: d0.getTime() - 30 * 3600_000, until: d0.getTime() - 3600_000 });
+      out.push(['한 것 — 창 자르기', dy.length === 2 && dy[0].kind === 'report' && dy[0].by === 'ops' && dy[1].kind === 'decision' && dy[1].by === 'boss' ? '✓ 어젯밤 창에 보고 1·대표 판정 1' : '✗ ' + JSON.stringify(dy.map((x) => [x.kind, x.by]))]);
       // 일 상태 (결정 58 ①) — 마을 시계가 아니라 busy·bossCall·phase·alive·신호 5분으로. 일요일 저녁에 열넷이 "잠" 이던 버그.
       const wnow = d0.getTime() + 10 * 60_000;
       const ws = (p, phase) => workStateOf({ busy: false, alive: null, lastSignal: null, bossCall: null, ...p }, phase, wnow);

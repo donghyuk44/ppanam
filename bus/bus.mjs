@@ -1369,3 +1369,53 @@ export function bossNotesOf(log, cast, { now = Date.now(), limit = 30 } = {}) {
   }
   return out;
 }
+
+/**
+ * 한 것 — 한 목록 (결정 92 "누가 뭘 했나", M6 준비). 계약은 docs/event-schema.md 3절 "한 것 — 한 목록".
+ * 지금 화면은 "오늘 몇 번 말했나"(수)와 "마지막 한 문장" 뿐이라 **누가 무엇을 끝냈는지**가 없다. 파일에는 다 있다 — 판정 카드·승인 판정·요청 블록·마일스톤·라운드 —
+ * 그걸 사람에게 묶는 함수가 이것이다. `blockedOf` 와 짝: 평평한 목록 하나, 화면·보고서가 사람·라운드·날짜로 자른다.
+ * 파일을 안 읽는 순수 함수 — `round.mjs check` 가 돌린다. 서버가 팀마다 부르고 합친다.
+ *
+ * @param log        대화록(시간순)
+ * @param cast       cast.json 의 agents
+ * @param since·until 창(ms 또는 ISO) — since ≤ ts < until. 기본은 오늘 0시 ~ 지금
+ * @param approvals  이 팀의 승인 레코드 [{ id, grade, what, team, decisions:[{ by, decision, ts }] }] — 판정 한 줄이 "한 것" 하나
+ * @param team       팀 id — 항목에 그대로
+ * @returns 항목 [{ id, kind, team, by, ts, text, ref }] — ts 내림차순(최근 것이 위)
+ *   kind: report(대표에게 보고 — 결정 안 청한 말) · verdict(판정 카드, ref=sha) · decision(승인 판정, ref=승인 id) · proxy(대리 결정) ·
+ *         request(요청 블록 닫힘, ref=요청 id) · milestone(통과) · round(닫힘, ref=판정)
+ */
+export function doneOf(log, cast, { team = null, since = null, until = null, approvals = [], now = Date.now() } = {}) {
+  const agents = cast ?? {};
+  const s = since != null ? new Date(since).getTime() : (() => { const d = new Date(now); d.setHours(0, 0, 0, 0); return d.getTime(); })();
+  const u = until != null ? new Date(until).getTime() : now;
+  const inWin = (ts) => { const t = new Date(ts ?? 0).getTime(); return t >= s && t < u; };
+  const one = (t, n) => String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const out = [];
+  for (const e of log) {
+    if (!inWin(e.ts)) continue;
+    const m = e.meta ?? {};
+    if (e.type === 'verdict') {
+      if (m.stale) continue;   // 늦게 온 판정은 라운드가 안 받았다 — 한 것이 아니다
+      out.push({ id: `verdict:${e.id}`, kind: 'verdict', team, by: e.actor, ts: e.ts, text: `${m.verdict ?? '판정'} — ${one(e.text, 120)}`, ref: m.sha ?? null });
+    } else if (e.type === 'milestone') {
+      out.push({ id: `milestone:${e.id}`, kind: 'milestone', team, by: null, ts: e.ts, text: one(e.text, 120), ref: m.index ?? null });
+    } else if (e.type === 'round_end') {
+      out.push({ id: `round:${e.id}`, kind: 'round', team, by: null, ts: e.ts, text: `라운드 ${e.round ?? '?'} 닫힘 — ${one(e.text, 100)}`, ref: m.verdict ?? null });
+    } else if (e.type === 'note' && m.request && m.status === 'closed') {
+      out.push({ id: `request:${m.request}`, kind: 'request', team, by: null, ts: e.ts, text: one(e.text, 160), ref: m.request });
+    } else if (e.type === 'note' && m.proxy) {
+      out.push({ id: `proxy:${e.id}`, kind: 'proxy', team, by: 'chief', ts: e.ts, text: one(e.text, 160), ref: m.approval ?? m.proxyAnswer ?? null });
+    } else if (e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && agents[e.actor] && callsBoss(e.text, agents) && !asksBoss(e.text, agents)) {
+      out.push({ id: `report:${e.id}`, kind: 'report', team, by: e.actor, ts: e.ts, text: one(e.text, 160), ref: null });
+    }
+  }
+  for (const r of approvals) {
+    for (const d of r.decisions ?? []) {
+      if (!inWin(d.ts)) continue;
+      out.push({ id: `decision:${r.id}:${d.by}`, kind: 'decision', team: r.team ?? team, by: d.by, ts: d.ts, text: `승인 [${r.grade}] ${one(r.what, 100)} → ${d.decision}`, ref: r.id });
+    }
+  }
+  out.sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+  return out;
+}
