@@ -57,7 +57,19 @@ export function notificationsOf({ teams = [], summaries = {}, approvals = [] } =
 
   const rank = (k) => { const i = KIND_ORDER.indexOf(k); return i < 0 ? KIND_ORDER.length : i; };
   items.sort((a, b) => rank(a.kind) - rank(b.kind) || String(b.ts ?? '').localeCompare(String(a.ts ?? '')));
-  for (const it of items) { it.unread = !read.has(it.id); it.teamName = byTeam.get(it.team)?.name ?? it.team; }
+  for (const it of items) { it.unread = !read.has(it.id); it.teamName = byTeam.get(it.team)?.name ?? it.team; it.teams = [it.team]; }
+  // 총괄실에서 다른 방 사람을 부른 말은 그 방에도 같은 글로 남는다(conductor.crossPost) — 대표 눈엔 같은 알림 둘. 같은 사람의 같은 글은 한 줄로,
+  // 방 이름은 "개발·총괄" 처럼 나란히(하네스 실측 R23 ①). 먼저 온 것(정렬상 앞)이 남고 읽음은 남은 id 기준.
+  const seen = new Map();
+  const merged = [];
+  for (const it of items) {
+    const key = it.kind === 'boss' || it.kind === 'report' ? `${it.kind}|${it.by}|${it.text}` : null;
+    const first = key && seen.get(key);
+    if (first) { if (!first.teams.includes(it.team)) { first.teams.push(it.team); first.teamName = first.teams.map((t) => byTeam.get(t)?.name ?? t).join('·'); } continue; }
+    if (key) seen.set(key, it);
+    merged.push(it);
+  }
+  items.length = 0; items.push(...merged);
   const unread = items.filter((it) => it.unread).length;
   const urgent = items.some((it) => it.unread && URGENT.has(it.kind));
   return { items, unread, urgent };

@@ -416,6 +416,13 @@ switch (cmd) {
           && n1.items[4].thumb === '/out/dev/shots/a.png' && n1.items[3].thumb === null && n1.items[0].name === '테라' && n1.items[2].text.includes('FAIL')
           && n2.unread === 2 && !n2.urgent;
         out.push(['알림 목록(결정 68)', nWant ? '✓ 종류 순 5건 · B 승인·ask 제외 · 썸네일 · 읽음 뒤 unread 2 · urgent 꺼짐' : '✗ ' + JSON.stringify({ order, unread: n1.unread, urgent: n1.urgent, thumb: n1.items.map((i) => i.thumb), n2: [n2.unread, n2.urgent] })]);
+        // 총괄실에서 부른 말이 그 방에도 남아(crossPost) 같은 알림이 둘로 뜨던 것(하네스 실측 R23 ①) — 같은 사람의 같은 글은 한 줄, 방은 "개발·총괄".
+        const xTeams = [...nTeams, { id: 'hq', name: '총괄', room: '총괄실' }];
+        const xSum = { ...nSum, hq: { cast: { chief: { name: '톰' } }, bossNotes: [{ id: 'h1', ts: '2026-09-13T09:40:00Z', by: 'chief', text: '대표님, 블록 한 바퀴 돌았습니다.', ask: false }] },
+          dev: { ...nSum.dev, cast: { ...nSum.dev.cast, chief: { name: '톰' } }, bossNotes: [...nSum.dev.bossNotes, { id: 'h1x', ts: '2026-09-13T09:40:01Z', by: 'chief', text: '대표님, 블록 한 바퀴 돌았습니다.', ask: false }] } };
+        const n3 = notificationsOf({ teams: xTeams, summaries: xSum, approvals: [] });
+        const dup = n3.items.filter((it) => it.by === 'chief');
+        out.push(['같은 말 두 방 → 알림 하나', dup.length === 1 && dup[0].teamName === '개발·총괄' && n3.items.length === 5 ? '✓ 톰 한 줄 · 개발·총괄' : '✗ ' + JSON.stringify(dup.map((d) => [d.id, d.teamName]))]);
       }
       // 생존 알림 문장 (결정 31 ②) — 신호가 최근이면 "아직 작업 중 (N분째, 마지막: …)", 신호도 끊겼으면 그렇게.
       const { aliveNoteText } = await import('../server/session.mjs');
