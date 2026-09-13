@@ -247,6 +247,9 @@ function onFlowEvent(team, e) {
   const f = r.flow;
   if (!f || e.actor !== f.waiting) return;
   if (e.type === 'verdict') {
+    // 옛 라운드의 늦은 답이다(recordVerdict 가 stale 로 찍음). 이 흐름은 지금 라운드의 것이라 그 카드로 진행하면
+    // 지난 라운드의 PASS 가 이번 판정 완료 note 를 만든다 (레오 감사, 2026-09-13). 세지 않고 계속 기다린다.
+    if (e.meta?.stale) { note(team, `${nameOf(team, e.actor)}의 옛 라운드 판정(stale)은 이번 판정 흐름에 세지 않습니다 — 계속 기다립니다.`); return; }
     const v = e.meta?.verdict;
     f.waiting = null;
     if (v === 'PASS' && f.i + 1 < f.steps.length) { f.i += 1; askStep(team); return; }

@@ -233,7 +233,8 @@ teams/<방>/
 `PASS` / `REVISE` / `FAIL` 이다. 훅이 `UserPromptSubmit` 에서 턴 종류를 `state/turn/<방>.<자리>` 에 적고 `Stop` 에서 읽어
 판정 카드(`recordVerdict`)로 남긴다 — 클로드 자리도 codex 도 같다. `say.mjs --verdict` 는 호환용이다. 첫 줄에 판정이 없으면
 말로 남고(`meta.noVerdict`) 사회자가 한 번 더 묻는다. 순서는 내부감사 → (PASS 면) 외부감사. 둘 다 PASS 면 `note`
-(`meta.verdictFlow: 'pass'`) — 라운드를 닫는 것은 실무나 대표다.
+(`meta.verdictFlow: 'pass'`) — 라운드를 닫는 것은 실무나 대표다. `meta.stale` 카드(옛 라운드의 늦은 답)는 흐름에
+세지 않고 계속 기다린다 — 지난 라운드의 PASS 가 이번 완료 note 를 만들면 안 된다 (레오 감사, 2026-09-13).
 
 **일지 — 라운드가 끝날 때 한 문단.** 서버가 라운드를 닫기 전에 이번 라운드에 말한 자리마다 `⟦일지⟧` 턴을 보내 한 문단을 받아
 `teams/<방>/journal/<자리>.md` 맨 위에 붙인다(최신이 위). 대화록에는 남지 않는다. 외부감사는 `outside.mjs --turn journal` 이
