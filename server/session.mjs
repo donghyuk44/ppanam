@@ -17,7 +17,7 @@ import path from 'node:path';
 import { spawn as spawnProc } from 'node:child_process';
 import {
   ROOT, emit, listTeams, isOffice, paths, endRound, readCast, readState, readRoadmap, listRounds,
-  readLog, quiet, appendJournal, journalPrompt, writeTurn,
+  readLog, quiet, appendJournal, journalPrompt, collectJournals, writeTurn,
 } from '../bus/bus.mjs';
 import { toolPhrase } from './public/toollabel.js';
 
@@ -572,27 +572,17 @@ async function journalAll(team, round) {
   const once = async (a) => {
     try {
       const text = await ask(a);
-      if (cast[a]?.model === 'gpt') return text ? 1 : 0;   // outside.mjs 가 제 일지에 썼다
-      return appendJournal(team, a, text, { round }) ? 1 : 0;
-    } catch { return 0; }
+      if (cast[a]?.model === 'gpt') return !!text;   // outside.mjs 가 제 일지에 썼다 — exit 0 일 때만 'ok', (패스)·빈 답은 exit 3 → null
+      return appendJournal(team, a, text, { round });
+    } catch { return false; }
   };
-  const nameOf = (a) => cast[a]?.name ?? a;
-  const first = await Promise.all(actors.map(once));
   // 못 받은 자리는 한 번 더 — 시간 초과·(패스)·빈 답은 전부 "일지 없음" 이고, 일지가 없으면 다음 세션이 어제를 잇지 못한다.
-  // 조용히 0 으로 세지 않고 방에 남긴다 (M1 인격 이음, 2026-09-13).
-  const missed = actors.filter((a, i) => !first[i]);
-  let retried = 0;
-  if (missed.length) {
-    note(team, `일지를 못 받은 자리: ${missed.map(nameOf).join(', ')} — 한 번 더 묻습니다.`);
-    const second = await Promise.all(missed.map(once));
-    retried = second.reduce((x, y) => x + y, 0);
-    const still = missed.filter((a, i) => !second[i]);
-    if (still.length) note(team, `두 번 물어도 일지를 못 받았습니다: ${still.map(nameOf).join(', ')} — 라운드 ${round} 일지 없이 닫습니다.`);
-  }
-  return first.reduce((x, y) => x + y, 0) + retried;
+  // 걷는 순서·note 문구는 bus.mjs collectJournals 하나 — round.mjs check 가 같은 함수를 가짜 once 로 돌린다.
+  const { got } = await collectJournals(actors, once, { note: (t) => note(team, t), nameOf: (a) => cast[a]?.name ?? a, round });
+  return got;
 }
 
-/** 외부감사의 일지는 outside.mjs 가 쓴다. 끝나기만 기다린다. */
+/** 외부감사의 일지는 outside.mjs 가 쓴다. 끝나기만 기다린다. exit 0 만 'ok' — (패스)·빈 답은 outside.mjs 가 exit 3 을 낸다. */
 function journalOutside(team) {
   return new Promise((resolve) => {
     let child;

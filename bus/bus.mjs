@@ -94,6 +94,25 @@ export const TURN_JOURNAL = '⟦일지⟧';
  * 둘이 다른 문장을 받으면 codex 자리의 일지에만 그 줄이 없다 (M1 인격 이음, 2026-09-13).
  */
 export const journalPrompt = (round) => `${TURN_JOURNAL} 라운드 ${round} 이 끝난다. 네 말투로 한 문단(3~6줄)을 써라. 첫 문장은 네가 누구인지 한 줄("나는 …" — 이름·기질·지금 마음가짐), 그다음 이번 라운드에서 배운 것·판단한 이유·버린 시도·막힌 곳·사람들과 있었던 일. 파일 이름·완료율·다음 할 일 목록은 쓰지 마라 — 그건 git 이 안다. 남길 일이 없어도 첫 문장은 쓴다.`;
+/**
+ * 일지 걷기 — 한 번 묻고, 못 받은 자리에게만 한 번 더 (M1 인격 이음, 2026-09-13).
+ * once(actor) 는 받았으면 true. 시간 초과·빈 답·(패스) 는 전부 false — 조용히 0 으로 세지 않고 note 로 남긴다.
+ * 세션·codex 를 모르는 순수 함수라 round.mjs check 가 가짜 once 로 돌려 본다 (레오 REVISE R19: 재시도 경로가 실측된 적이 없었다).
+ */
+export async function collectJournals(actors, once, { note = () => {}, nameOf = (a) => a, round = null } = {}) {
+  const first = await Promise.all(actors.map(once));
+  const missed = actors.filter((a, i) => !first[i]);
+  let retried = 0;
+  let still = [];
+  if (missed.length) {
+    note(`일지를 못 받은 자리: ${missed.map(nameOf).join(', ')} — 한 번 더 묻습니다.`);
+    const second = await Promise.all(missed.map(once));
+    retried = second.filter(Boolean).length;
+    still = missed.filter((a, i) => !second[i]);
+    if (still.length) note(`두 번 물어도 일지를 못 받았습니다: ${still.map(nameOf).join(', ')} — 라운드 ${round} 일지 없이 닫습니다.`);
+  }
+  return { got: first.filter(Boolean).length + retried, missed, still };
+}
 export function turnKindOf(text) {
   const s = String(text ?? '');
   if (s.includes(TURN_JOURNAL)) return 'journal';
