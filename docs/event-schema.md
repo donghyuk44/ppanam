@@ -140,7 +140,10 @@ teams/<방>/
 | `FAIL` | 한계 도달 | 사람 호출 |
 
 - `meta.target`: 누구에게 내린 판정인지 (`guide` 등)
-- `meta.attempt`: 이 라운드의 몇 번째 반박인지 (1~3). **3에서 자동 `FAIL`**
+- `meta.attempt`: 이 **마일스톤**의 몇 번째 반박인지 (1~3). **3에서 자동 `FAIL`.** 라운드를 닫고 다시 열어도
+  이어진다(`round.json` 의 `attempts[마일스톤]`, 다음 `startRound` 가 물려받는다). 0 으로 돌리는 것은 감사 `PASS`
+  카드와 대표의 재개(`resumeRound`)뿐이다.
+- `meta.stale: true`: 판정으로 세지 않는 카드 — 닫힌 라운드(idle)에 왔거나, 시작할 때의 라운드 번호가 지금과 다를 때.
 
 ### `round_start` — 라운드 시작 배너
 가운데. 이 줄이 라운드의 경계다 — 대화록은 비워지지 않으므로 이 배너가 구분선이다.
@@ -287,7 +290,13 @@ note 를 내며 "다시 요청하세요" 라고 한다 — 톰·제리는 그 SH
 같을 때만 `git push origin <sha>:refs/heads/<branch>` 로 **승인된 SHA 를 못 박아** 민다 — 대조와 푸시
 사이에 브랜치가 움직여도 origin 에는 톰·제리가 본 커밋만 간다 (레오 2차 감사가 재현한 틈).
 총괄실에 들려주는 요청문에도 `대상: origin/<branch> @ <sha8>` 이 실린다. 결과는 요청한 방과 총괄실 둘 다에
-`note` 로 남는다 (`meta.executed`: `pushed` · `push-failed` · `stale`).
+`note` 로 남는다 (`meta.executed`: `pushed` · `push-failed` · `stale` · `invalid`).
+**원격 기본 브랜치는 B 로 못 민다** — 메인 병합은 C 다. 어느 브랜치인지는 `bus.mjs` 의 `protectedBranch()` 하나가
+`git symbolic-ref refs/remotes/origin/HEAD` 에서 읽고, 요청(`pushAction`)과 실행자(`invalidAction`) 둘 다 그것을 본다.
+`main`·`master` 를 박아 두던 때는 기본 브랜치 이름이 다른 이 저장소에서 아무것도 못 막았다 (대표 결정 9, 2026-09-13).
+origin/HEAD 가 없으면 요청도 실행도 거부한다 — `git remote set-head origin -a`.
+승인 대조(`outside.mjs --ask "… apr_x …"`)는 총괄실 세션(`PPANAM_TEAM=hq`)만 시킬 수 있다. 다른 방도, 환경 없는 셸도
+codex 를 부르기 전에 `note` 로 거부된다.
 `--push` 없는 B 는 실행자가 할 일이 없다. 대신 요청에 다른 행동이 박혀 있을 수 있다 —
 `--next` 는 `{ type: 'milestone', n }` (B, 통과하면 그 마일스톤이 `now`), `--roadmap` 은 `{ type: 'roadmap', file }`
 (C, 통과하면 `out/` 의 제안 파일이 `roadmap.json` 으로). 이 둘은 셸이 아니라 상태를 바꾸는 일이라 `server/notifier.mjs` 가 한다.
@@ -334,12 +343,24 @@ note 를 내며 "다시 요청하세요" 라고 한다 — 톰·제리는 그 SH
 | --- | --- | --- |
 | `idle` | 라운드 없음. 훅이 기록하지 않는다 | `endRound` |
 | `running` | 진행 중 | `startRound` · `resumeRound` |
-| `blocked` | **FAIL — 대표 판단 대기.** 판정을 낼 수 없다(`recordVerdict` 거부, 외부감사 답은 말로만 남는다). 레일·관제탑에 "대표 호출" | `recordVerdict`(반박 3회 또는 FAIL) |
+| `blocked` | **FAIL — 대표 판단 대기.** 판정을 낼 수 없고(`recordVerdict` 거부, 외부감사 답은 말로만 남는다) **닫을 수도 없다**(`endRound` 거부). 레일·관제탑에 "대표 호출" | `recordVerdict`(반박 3회 또는 FAIL) |
 
 막힌 방은 **대표가 그 방에 말하면 풀린다** — 입력창은 대표의 것이고 그 말이 곧 판단이다. 서버가 `/api/say` 에서
 `resumeRound` 를 불러 `running`·반박 0 으로 되돌리고 `note`(`meta.resumed`)를 남긴다. 들려주기(quiet)는 풀지 않는다.
-닫고 싶으면 "라운드 닫기". 총괄실은 라운드가 없어 막히지 않는다 — 거기서 FAIL 은 한 마디일 뿐이다.
+풀린 뒤에야 "라운드 닫기". 총괄실은 라운드가 없어 막히지 않는다 — 거기서 FAIL 은 한 마디일 뿐이다.
 `needsBoss` 는 마지막 판정이 아니라 이 상태다. (전에는 FAIL 뒤 PASS 가 오면 경고가 꺼졌다 — 개발팀 09-02.)
+
+### 라운드를 PASS 로 닫는 조건
+
+만든 사람이 스스로 통과시키지 못하게 `endRound` 가 본다 (`endRefusal`). 세 가지가 다 맞아야 `-v PASS` 가 된다.
+
+1. 이 라운드에 `stale` 아닌 판정 카드가 있다.
+2. 그중 마지막 카드가 `PASS` 다. 마지막이 `REVISE`·`FAIL` 이면 거부.
+3. 그 카드 뒤에 사회자의 판정 완료 `note`(`meta.verdictFlow: 'pass'`)가 있다 — 판정은 `/verdict` 흐름으로 받는다.
+
+거부되면 방에 `note`(`meta.endRefused`)가 남고 서버는 `409 { refused: true }` 를 돌려준다. 서버는 닫기를 미루기(202) 전에
+먼저 본다. 통과한 `PASS` 는 로드맵의 그 마일스톤을 `pass` 로 옮긴다 — R3·R6·R8 의 "마일스톤 1 통과"(2026-09-12)는
+이 조건이 없던 때 카드 없이, 또는 REVISE 카드 뒤에 찍힌 것이다. `rounds.jsonl` 은 고치지 않는다.
 
 ### 라운드를 닫는 정본은 서버다
 

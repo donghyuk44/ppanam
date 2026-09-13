@@ -23,35 +23,25 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
   ROOT, requestApproval, decideApproval, voidApproval, listApprovals, APPROVAL_GRADES,
-  defaultTeam, teamExists, listTeams, readCast, readRoadmap, paths, isOffice,
+  defaultTeam, teamExists, listTeams, readCast, readRoadmap, paths, isOffice, pushAction,
 } from './bus.mjs';
-
-/** 실행자가 밀지 않는 브랜치. 메인 병합은 C 등급이라 B 로 우회할 수 없어야 한다. */
-export const PROTECTED_BRANCHES = new Set(['main', 'master']);
 
 /**
  * 원격 푸시 요청은 지금 이 순간의 상태에 묶인다 — 어느 브랜치의 어느 커밋인가.
  * 톰·제리는 이 SHA 를 통과시키는 것이고, 실행자는 실행 시점에 HEAD 가 아직 그
  * SHA 인지 대조한 뒤에만 민다. 그 사이 커밋이 바뀌면 승인은 낡은 것이 된다.
+ * 원격 기본 브랜치는 묶지 못한다 — 어느 브랜치인지는 bus.mjs 의 protectedBranch 가 git 에서 읽는다.
  */
 function gitTarget() {
   // 서버(실행자)가 보는 저장소와 같은 곳을 읽는다. cwd 를 안 정하면 워크트리에서 부른 요청이
   // 서버 HEAD 와 영영 어긋나 stale 만 난다 (Fable 재점검, 2026-09-12).
   const g = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
-  let branch, sha;
   try {
-    branch = g(['rev-parse', '--abbrev-ref', 'HEAD']);
-    sha = g(['rev-parse', 'HEAD']);
+    return pushAction(g(['rev-parse', '--abbrev-ref', 'HEAD']), g(['rev-parse', 'HEAD']));
   } catch (e) {
-    console.error('오류: git 상태를 읽지 못했습니다 — ' + e.message);
+    console.error('오류: ' + e.message);
     process.exit(1);
   }
-  if (branch === 'HEAD') { console.error('오류: 분리된 HEAD 는 푸시 대상이 될 수 없습니다. 브랜치를 체크아웃하세요.'); process.exit(1); }
-  if (PROTECTED_BRANCHES.has(branch)) {
-    console.error(`오류: '${branch}' 는 B 로 밀 수 없습니다. 메인 병합은 C 등급 — 대표가 직접 합니다.`);
-    process.exit(1);
-  }
-  return { type: 'push', remote: 'origin', branch, sha };
 }
 
 /**

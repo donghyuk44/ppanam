@@ -12,6 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -23,8 +24,35 @@ export const EVENT_TYPES = new Set([
 ]);
 export const VERDICTS = new Set(['PASS', 'REVISE', 'FAIL']);
 
-/** 라운드당 허용되는 반박 횟수. 넘으면 자동 FAIL — 사람을 부른다. */
+/**
+ * 마일스톤당 허용되는 반박 횟수. 넘으면 자동 FAIL — 사람을 부른다.
+ * 라운드가 아니라 마일스톤의 것이다. 라운드를 닫고 다시 열면 0 으로 돌아가던 시절에 R10·R11 이 각각 3회를 채우고도
+ * 같은 마일스톤이 이어졌다 (2026-09-12). 0 으로 돌리는 것은 감사 PASS 와 대표의 재개뿐이다 (대표 결정, 2026-09-13).
+ */
 export const MAX_ATTEMPTS = 3;
+
+/* ── 보호 브랜치 ──
+ *
+ * 실행자가 밀지 않고, 푸시 요청에 묶이지 않는 브랜치 — 원격의 기본 브랜치다. 메인 병합은 C 등급이라 B 로 우회할
+ * 수 없어야 한다. 'main'·'master' 를 박아 두면 기본 브랜치 이름이 다른 저장소(이 저장소가 그렇다)에서 아무것도
+ * 못 막는다 (대표 결정 9, 2026-09-13). 원격 HEAD 를 모르면 null — 부르는 쪽은 막는 쪽으로 처리한다.
+ * (`git remote set-head origin -a` 로 잡힌다.)
+ */
+export function protectedBranch() {
+  try {
+    const ref = execFileSync('git', ['symbolic-ref', '--quiet', 'refs/remotes/origin/HEAD'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    return /^refs\/remotes\/origin\/(.+)$/.exec(ref)?.[1] ?? null;
+  } catch { return null; }
+}
+
+/** 이 브랜치·SHA 를 푸시 요청에 묶어도 되는가. 안 되면 던진다. approve.mjs 가 HEAD 를 읽어 부른다. */
+export function pushAction(branch, sha, remote = 'origin') {
+  if (!branch || branch === 'HEAD') throw new Error('분리된 HEAD 는 푸시 대상이 될 수 없습니다. 브랜치를 체크아웃하세요.');
+  const guarded = protectedBranch();
+  if (!guarded) throw new Error('원격 기본 브랜치를 모릅니다 (refs/remotes/origin/HEAD 없음). git remote set-head origin -a 뒤에 다시 요청하세요.');
+  if (branch === guarded) throw new Error(`'${branch}' 는 원격 기본 브랜치라 B 로 밀 수 없습니다. 메인 병합은 C 등급 — 대표가 직접 합니다.`);
+  return { type: 'push', remote, branch, sha };
+}
 
 /* ── 총괄 배달 ──
  *
@@ -374,9 +402,10 @@ export function paths(team) {
 
 /* ── 상태 ── */
 
+// attempt 는 지금 라운드의 마일스톤 값(화면·CLI 가 읽는 것), attempts 는 마일스톤 키별 값 — 라운드를 닫아도 남고 다음 startRound 가 물려받는다.
 const BLANK_STATE = {
   round: 0, milestone: 0, phase: 'idle', topic: null,
-  attempt: 0, startedAt: null, endedAt: null,
+  attempt: 0, attempts: {}, startedAt: null, endedAt: null,
 };
 
 export function readState(team) {
@@ -390,33 +419,41 @@ export function readState(team) {
 /**
  * 대화록만으로 라운드 상태를 되살린다. round.json 은 이 값의 캐시일 뿐이다.
  *
- * 마지막 경계가 round_start 면 열린 라운드다 — 번호·마일스톤·주제는 그 이벤트에, 반박 횟수는
- * 그 뒤 판정 카드의 meta.attempt 최대값에 있다. 마지막 경계가 round_end 면 닫힌 라운드다.
+ * 마지막 경계가 round_start 면 열린 라운드다 — 번호·마일스톤·주제는 그 이벤트에 있다. 마지막 경계가 round_end 면
+ * 닫힌 라운드다. 반박 횟수는 마일스톤의 것이라 대화록 전체를 훑는다 — 판정 카드의 meta.attempt 가 그 시점의 값이고,
+ * PASS 카드와 대표의 재개 note 가 0 으로 돌린다.
  * (레오 감사, 2026-09-12: gitignore 만으로는 받는 쪽의 열린 라운드를 지키지 못한다.)
  */
 export function deriveState(team) {
   const log = readLog(team);
+  const attempts = {};
+  for (const x of log) {
+    const m = x.milestone ?? 0;
+    if (x.type === 'verdict' && !x.meta?.stale) {
+      if (x.meta?.verdict === 'PASS') attempts[m] = 0;
+      else if (typeof x.meta?.attempt === 'number') attempts[m] = Math.min(Math.max(attempts[m] ?? 0, x.meta.attempt), MAX_ATTEMPTS);
+    }
+    if (x.type === 'note' && x.meta?.resumed) attempts[m] = 0;
+  }
   let i = log.length - 1;
   for (; i >= 0; i--) if (log[i].type === 'round_start' || log[i].type === 'round_end') break;
-  if (i < 0) return { ...BLANK_STATE };
+  if (i < 0) return { ...BLANK_STATE, attempts };
   const e = log[i];
   if (e.type === 'round_end') {
-    return { ...BLANK_STATE, round: e.round ?? 0, milestone: e.milestone ?? 0, phase: 'idle', endedAt: e.ts };
+    return { ...BLANK_STATE, round: e.round ?? 0, milestone: e.milestone ?? 0, phase: 'idle', endedAt: e.ts, attempts };
   }
-  let attempt = 0, phase = 'running';
+  let phase = 'running';
   for (let j = i + 1; j < log.length; j++) {
     const x = log[j];
-    if (x.type === 'verdict' && !x.meta?.stale) {
-      if (typeof x.meta?.attempt === 'number') attempt = Math.max(attempt, x.meta.attempt);
-      if (x.meta?.verdict === 'FAIL') phase = 'blocked';
-    }
+    if (x.type === 'verdict' && !x.meta?.stale && x.meta?.verdict === 'FAIL') phase = 'blocked';
     // 대표가 말해서 풀렸다 (resumeRound 가 남기는 note)
-    if (x.type === 'note' && x.meta?.resumed) { phase = 'running'; attempt = 0; }
+    if (x.type === 'note' && x.meta?.resumed) phase = 'running';
   }
+  const milestone = e.milestone ?? 0;
   return {
     ...BLANK_STATE,
-    round: e.round ?? 0, milestone: e.milestone ?? 0, phase,
-    topic: e.meta?.topic ?? null, attempt: Math.min(attempt, MAX_ATTEMPTS), startedAt: e.ts, endedAt: null,
+    round: e.round ?? 0, milestone, phase,
+    topic: e.meta?.topic ?? null, attempt: attempts[milestone] ?? 0, attempts, startedAt: e.ts, endedAt: null,
   };
 }
 
@@ -554,12 +591,15 @@ export function startRound(team, { topic = null, milestone = null } = {}) {
         : '로드맵의 마일스톤이 전부 pass 입니다. 로드맵을 다시 짜세요 (/kickoff).');
     }
   }
+  // 반박 횟수는 마일스톤의 것이다. 같은 마일스톤을 다시 열면 물려받는다 — 닫았다 여는 것으로 0 이 되지 않는다.
+  const attempts = prev.attempts ?? {};
   const next = writeState(team, {
     round: nextRoundNumber(team),
     milestone: target,
     phase: 'running',
     topic: topic ?? prev.topic,
-    attempt: 0,
+    attempt: Math.min(attempts[target] ?? 0, MAX_ATTEMPTS),
+    attempts,
     startedAt: new Date().toISOString(),
     endedAt: null,
   });
@@ -573,6 +613,45 @@ export function startRound(team, { topic = null, milestone = null } = {}) {
 }
 
 /**
+ * 이 라운드를 이 판정으로 닫아도 되는가. 안 되면 이유, 되면 null.
+ *
+ * R3·R6·R8 은 판정 카드 없이, 또는 REVISE 카드 뒤에 `end -v PASS` 로 닫혀 로드맵에 "마일스톤 1 통과" 가 찍혔다
+ * (2026-09-12). "만든 사람이 판정하지 않는다" 가 산문에만 있었다. 여기서 막는다 (대표 결정, 2026-09-13).
+ *   - PASS 는 이 라운드에 판정 카드가 있고, 마지막 카드가 PASS 이며, 그 뒤에 사회자의 판정 완료 note
+ *     (meta.verdictFlow: 'pass') 가 있을 때만. 마지막이 REVISE·FAIL 이면 PASS 로 못 닫는다.
+ *   - FAIL 로 막힌 방(blocked)은 대표가 말해 풀기 전엔 어떤 판정으로도 닫지 못한다.
+ */
+export function endRefusal(team, { verdict = null } = {}) {
+  const state = readState(team);
+  // round 번호가 아니라 phase 로 본다. 번호는 닫힌 뒤에도 남아 있어서, 번호만 보면 같은 라운드를
+  // 두 번 닫고 배너·색인·세션 리셋이 두 번 난다 (Fable 재점검, 2026-09-12).
+  if (!state.round || state.phase === 'idle') return '진행 중인 라운드가 없습니다.';
+  if (state.phase === 'blocked') return `대표 판단 대기 중입니다 (라운드 ${state.round}, FAIL). 대표가 이 방에 말해 풀기 전엔 닫을 수 없습니다.`;
+  if (String(verdict ?? '').toUpperCase() !== 'PASS') return null;
+  const events = readLog(team).filter((e) => e.round === state.round);
+  let last = -1;
+  for (let i = events.length - 1; i >= 0; i--) if (events[i].type === 'verdict' && !events[i].meta?.stale) { last = i; break; }
+  if (last < 0) return 'PASS 로 닫으려면 이 라운드에 판정 카드가 있어야 합니다. 감사역을 부르세요 (node bus/round.mjs verdict).';
+  const v = events[last].meta?.verdict;
+  if (v !== 'PASS') return `마지막 판정이 ${v} 입니다. PASS 로 닫을 수 없습니다.`;
+  if (!events.slice(last + 1).some((e) => e.type === 'note' && e.meta?.verdictFlow === 'pass')) {
+    return '판정 카드는 PASS 인데 사회자의 판정 완료 note 가 없습니다. 판정은 /verdict 흐름으로 받습니다 (node bus/round.mjs verdict).';
+  }
+  return null;
+}
+
+/** 닫을 수 없으면 사유를 방에 남기고 던진다. 서버(/api/round)는 미루기 전에, endRound 는 닫기 직전에 부른다. */
+export function assertEndable(team, opts = {}) {
+  const why = endRefusal(team, opts);
+  if (!why) return;
+  const state = readState(team);
+  if (state.round && state.phase !== 'idle') {
+    emit(team, { type: 'note', actor: 'system', text: `라운드 ${state.round} 닫기 거부${opts.verdict ? ' (' + String(opts.verdict).toUpperCase() + ')' : ''} — ${why}`, meta: { endRefused: true } });
+  }
+  throw new Error(why);
+}
+
+/**
  * 라운드를 닫는다.
  *
  * 대화록은 그대로 둔다 — 구분선이 하나 들어갈 뿐이다.
@@ -580,10 +659,8 @@ export function startRound(team, { topic = null, milestone = null } = {}) {
  * 달라지면서 자연히 끊긴다 (readContext 참고).
  */
 export function endRound(team, { verdict = null, summary = null } = {}) {
+  assertEndable(team, { verdict });
   const state = readState(team);
-  // round 번호가 아니라 phase 로 본다. 번호는 닫힌 뒤에도 남아 있어서, 번호만 보면 같은 라운드를
-  // 두 번 닫고 배너·색인·세션 리셋이 두 번 난다 (Fable 재점검, 2026-09-12).
-  if (!state.round || state.phase === 'idle') throw new Error('진행 중인 라운드가 없습니다.');
 
   emit(team, {
     type: 'round_end',
@@ -648,9 +725,11 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
   // 라운드가 닫히고 다음이 열린 경우. 새 라운드의 반박 횟수를 올리면 안 되고, 새 라운드에 찍혀도 안 된다.
   // 자기 라운드 번호로 남기되 판정으로 세지 않는다. 지금 방이 막혀 있어도 마찬가지다 — 이건 옛 라운드의 말이다
   // (레오 감사, 2026-09-12: blocked 검사가 앞에 있어 예외가 났다).
-  if (round != null && round !== state.round) {
+  // 닫힌 방(idle)에 온 판정도 같다 — R12 는 닫힌 뒤에 카드 둘이 찍혔고 번호가 같아 판정으로 보였다 (2026-09-12).
+  // 총괄실은 라운드가 없어 phase 가 늘 idle 이다 — 거기서는 이 검사를 하지 않는다.
+  if ((round != null && round !== state.round) || (state.phase === 'idle' && !isOffice(team))) {
     return emit(team, {
-      round, type: 'verdict', actor, text,
+      round: round ?? state.round, type: 'verdict', actor, text,
       meta: { verdict: v, target, attempt: 0, max: MAX_ATTEMPTS, stale: true },
     });
   }
@@ -661,16 +740,20 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
   let attempt = state.attempt || 0;
   let final = v;
 
-  // 반박 카운터는 라운드의 것이다. 총괄실은 라운드가 없어 endRound 로 리셋될 길이 없는데
+  // 반박 카운터는 마일스톤의 것이다. 총괄실은 라운드가 없어 리셋될 길이 없는데
   // 제리의 대조 REVISE 가 여기 쌓여 총괄실이 대표 호출로 잠길 뻔했다 (Fable 감사, 2026-09-02).
   // 총괄실의 REVISE 는 그냥 REVISE 다 — 세지 않는다.
-  if (v === 'REVISE' && !isOffice(team)) {
-    attempt = Math.min(attempt + 1, MAX_ATTEMPTS);
-    if (attempt >= MAX_ATTEMPTS) final = 'FAIL';
+  if (!isOffice(team)) {
+    if (v === 'REVISE') {
+      attempt = Math.min(attempt + 1, MAX_ATTEMPTS);
+      if (attempt >= MAX_ATTEMPTS) final = 'FAIL';
+    }
+    // 감사 PASS 는 이 마일스톤의 반박 횟수를 0 으로 돌린다 — 0 복귀는 이것과 대표의 재개뿐이다.
+    if (v === 'PASS') attempt = 0;
+    const attempts = { ...(state.attempts ?? {}), [state.milestone]: attempt };
+    // 총괄실은 라운드가 없다 — 막을 것도 없다. FAIL 은 그냥 한 마디다.
+    writeState(team, final === 'FAIL' ? { attempt, attempts, phase: 'blocked' } : { attempt, attempts });
   }
-  // 총괄실은 라운드가 없다 — 막을 것도 없다. FAIL 은 그냥 한 마디다.
-  if (final === 'FAIL' && !isOffice(team)) writeState(team, { attempt, phase: 'blocked' });
-  else if (v === 'REVISE' && !isOffice(team)) writeState(team, { attempt });
 
   const rec = emit(team, {
     type: 'verdict', actor, text,
@@ -696,7 +779,7 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
 export function resumeRound(team, { text = null } = {}) {
   const state = readState(team);
   if (state.phase !== 'blocked') return null;
-  writeState(team, { phase: 'running', attempt: 0 });
+  writeState(team, { phase: 'running', attempt: 0, attempts: { ...(state.attempts ?? {}), [state.milestone]: 0 } });
   emit(team, {
     type: 'note', actor: 'system',
     text: `대표 판단으로 재개합니다. 반박 횟수를 0 으로 되돌립니다.${text ? ' — ' + String(text).replace(/\s+/g, ' ').slice(0, 80) : ''}`,

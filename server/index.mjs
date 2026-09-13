@@ -15,7 +15,7 @@ import { WebSocketServer } from 'ws';
 import {
   paths, listTeams, defaultTeam, teamExists, teamSummary,
   readCast, readRoadmap, readTail, listRounds, parseJSONL, emit,
-  readState, startRound, endRound, resumeRound, readLog, isOffice, quiet, addressee,
+  readState, startRound, assertEndable, resumeRound, readLog, isOffice, quiet, addressee,
   listApprovals, decideApproval, APPROVAL_GRADES,
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
@@ -351,6 +351,8 @@ const server = http.createServer((req, res) => {
           };
           const st = readState(t);
           if (!st.round || st.phase === 'idle') return json(res, 409, { error: '진행 중인 라운드가 없습니다.' });
+          // 닫아도 되는지는 미루기 전에 본다 — 미룬 뒤 일지까지 받고 나서 거부되면 그 일지가 헛돈다. endRound 가 닫기 직전에 한 번 더 본다.
+          try { assertEndable(t, opts); } catch (e) { return json(res, 409, { error: e.message, refused: true }); }
           // 누가 일하는 중이면 턴이 끝난 뒤 닫는다. 지금 닫으면 마지막 발언이 훅에서 버려진다.
           if (session.closeWhenIdle(t, opts)) return json(res, 202, { deferred: true, round: st.round });
           // 일지 → 닫기 → 비우기. 일지가 있어야 다음 세션이 어제를 인용한다.

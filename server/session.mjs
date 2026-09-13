@@ -22,7 +22,11 @@ import {
 
 const STORE = path.join(ROOT, 'state', 'sessions.json');
 
-/** 한 턴이 이 시간 안에 안 끝나면 죽은 것으로 본다. */
+/**
+ * 이 시간 동안 아무 신호(스트림 이벤트 — 도구 호출·출력)가 없으면 죽은 것으로 본다.
+ * 턴 시작부터 재던 때는 15분 넘게 편집 중이던 테라를 "응답하지 않아" 로 잘랐다 (R13, 2026-09-13 03:52).
+ * 일하는 중이면 이벤트가 계속 오므로 타이머는 마지막 이벤트에서 다시 잰다 — 진짜 무응답만 죽는다 (대표 결정 17).
+ */
 const TURN_TIMEOUT = Number(process.env.PPANAM_TURN_TIMEOUT || 15 * 60_000);
 /** 조립한 시스템 프롬프트의 상한(문자). 넘으면 일지부터 줄인다 — 다 기억시키면 느려지고 나빠진다. */
 const PROMPT_CAP = Number(process.env.PPANAM_PROMPT_CAP || 12_000);
@@ -330,6 +334,9 @@ function drain(s) {
     let msg;
     try { msg = JSON.parse(line); } catch { continue; }
 
+    // 살아 있다는 신호다. 일하는 중이면 타이머를 여기서 다시 잰다.
+    if (s.busy) arm(s);
+
     if (msg.session_id && msg.session_id !== s.id) {
       s.id = msg.session_id;
       rememberId(s.team, s.actor, s.id);
@@ -354,15 +361,20 @@ function drain(s) {
 
 /* ── 보내기 ── */
 
+/** 무응답 타이머를 (다시) 잰다. 턴을 보낼 때, 그리고 스트림 이벤트가 올 때마다. */
+function arm(s) {
+  clearTimeout(s.timer);
+  s.timer = setTimeout(() => {
+    die(s, `${name(s)}이 ${Math.round(TURN_TIMEOUT / 60_000)}분 동안 아무 신호가 없어(도구 호출도 출력도) 세션을 닫았습니다.`);
+  }, TURN_TIMEOUT);
+}
+
 function write(s, turn) {
   s.busy = true;
   s.inflight = turn;
-  clearTimeout(s.timer);
   // 턴의 종류(판정·일지)는 stdin 에 쓰기 전에 적는다. 훅의 UserPromptSubmit 도 적지만 비동기라 늦을 수 있다.
   if (turn.kind) { try { writeTurn(s.team, s.actor, turn.kind, turn.extra ?? '', s.id); } catch { /* 훅이 적는다 */ } }
-  s.timer = setTimeout(() => {
-    die(s, `${name(s)}이 ${Math.round(TURN_TIMEOUT / 60_000)}분 동안 응답하지 않아 세션을 닫았습니다.`);
-  }, TURN_TIMEOUT);
+  arm(s);
 
   s.child.stdin.write(JSON.stringify({
     type: 'user',

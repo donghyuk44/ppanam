@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile, execFileSync } from 'node:child_process';
-import { listApprovals, emit } from '../bus/bus.mjs';
+import { listApprovals, emit, protectedBranch } from '../bus/bus.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STORE = path.join(REPO, 'state', 'executor.json');
@@ -41,9 +41,6 @@ function isPush(r) {
   return r.grade === 'B' && r.status === 'passed' && r.action?.type === 'push';
 }
 
-/** 실행자가 밀지 않는 브랜치. 메인 병합은 C 등급이다 — B 요청에 main 이 박혀 있어도 안 민다. */
-const PROTECTED = new Set(['main', 'master']);
-
 /** 몇 번 터지면 포기하나. 실패를 done 에 안 남기면 250ms 마다 영원히 다시 시도해 총괄실을 도배한다. */
 const MAX_TRIES = 3;
 
@@ -58,7 +55,10 @@ function invalidAction(a) {
   // 이름 규칙은 git 이 안다. 정규식으로 흉내내면 'foo.' 'foo@{bar' 'foo//bar' '/foo' 가 샌다 (레오 감사, 2026-09-12).
   try { execFileSync('git', ['check-ref-format', '--branch', a.branch], { cwd: REPO, stdio: 'ignore' }); }
   catch { return '브랜치 이름이 git 규칙에 맞지 않음'; }
-  if (PROTECTED.has(a.branch)) return `'${a.branch}' 는 C 등급(메인 병합)이라 실행자가 밀지 않음`;
+  // 원격 기본 브랜치는 C 등급(메인 병합)이다 — B 요청에 박혀 있어도 안 민다. 어느 브랜치인지 모르면 안전한 쪽으로 — 안 민다.
+  const guarded = protectedBranch();
+  if (!guarded) return '원격 기본 브랜치를 알 수 없어(refs/remotes/origin/HEAD 없음) 실행자가 밀지 않음 — git remote set-head origin -a';
+  if (a.branch === guarded) return `'${a.branch}' 는 원격 기본 브랜치(C 등급, 메인 병합)라 실행자가 밀지 않음`;
   if (a.remote != null && (typeof a.remote !== 'string' || !/^[A-Za-z0-9_.-]+$/.test(a.remote))) return '원격 이름이 이상함';
   return null;
 }

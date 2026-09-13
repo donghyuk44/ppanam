@@ -218,6 +218,19 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
     return 1;
   }
 
+  // 승인 대조(apr_…)를 시키는 쪽을 먼저 본다. --team 은 다른 방의 외부감사를 빌려 묻는 데 쓰라고 열어둔 것인데
+  // (룸메이트 렌즈), 개발팀 세션이 --team hq --ask "승인 요청 apr_x 대조" 로 제리에게 자기 요청의 대조를 기록하게 할 수
+  // 있었다 (Fable 재점검, 2026-09-12). 서버가 띄운 세션은 PPANAM_TEAM 을 갖는다 — 총괄실 세션이 아니면 대조는 없다.
+  // 환경이 없는 셸도 막는다. "대표의 터미널" 이라고 열어 뒀지만 그 셸이 대표인지 확인할 길이 없다 (대표 결정, 2026-09-13).
+  // 대화(talk)는 승인을 건드리지 않는다 — 대조는 --ask 로만 시킨다. 부르기 전에 막아 codex 를 헛돌리지 않는다.
+  const apr = talk ? null : /apr_[0-9a-f]{8}/.exec(question)?.[0];
+  const caller = process.env.PPANAM_TEAM ?? null;
+  if (apr && caller !== 'hq') {
+    emit(team, { actor: 'system', type: 'note', text: `${apr} 대조 요청을 거부했습니다 — 총괄실 세션이 아니면(${caller ?? '환경 없는 셸'}) 대조를 시킬 수 없습니다.` });
+    console.error(`거부: ${apr} 대조는 총괄실 세션(PPANAM_TEAM=hq)만 시킬 수 있습니다.`);
+    return 1;
+  }
+
   const slot = slotOf(team);
   const prior = slot?.id ?? null;
   const name = readCast(team).agents?.outside?.name ?? '외부감사';
@@ -275,19 +288,9 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
     return 0;
   }
 
-  // 승인 대조였으면 그 판정을 외부감사 이름으로 큐에 남긴다.
+  // 승인 대조였으면 그 판정을 외부감사 이름으로 큐에 남긴다 (시키는 쪽은 위에서 이미 걸렀다 — 총괄실 세션뿐).
   // codex 샌드박스는 파일을 못 쓰므로 그녀 대신 이 프로세스가 쓴다 — 이 프로세스가 곧 그녀다.
-  // 대화(talk)는 승인을 건드리지 않는다 — 대조는 --ask 로만 시킨다.
-  //
-  // 그리고 시키는 쪽도 본다. --team 은 다른 방의 외부감사를 빌려 묻는 데 쓰라고 열어둔 것인데(룸메이트 렌즈),
-  // 개발팀 세션이 --team hq --ask "승인 요청 apr_x 대조" 로 제리에게 자기 요청의 대조를 기록하게 할 수 있었다
-  // (Fable 재점검, 2026-09-12). 서버가 띄운 세션은 PPANAM_TEAM 을 갖는다 — 총괄실이 아니면 대조는 없다.
-  // 환경이 없는 셸은 대표의 터미널이라 막지 않는다.
-  const apr = talk ? null : /apr_[0-9a-f]{8}/.exec(question)?.[0];
-  const caller = process.env.PPANAM_TEAM ?? null;
-  if (apr && caller && caller !== 'hq') {
-    emit(team, { actor: 'system', type: 'note', text: `${apr} 대조 요청을 무시했습니다 — 총괄실 밖(${caller})에서는 대조를 시킬 수 없습니다.` });
-  } else if (apr && verdict && verdict !== 'FAIL') {
+  if (apr && verdict && verdict !== 'FAIL') {
     try { decideApproval(apr, { by: 'outside', decision: verdict, reason: body.split('\n')[0].slice(0, 200), team }); }
     catch (e) { emit(team, { actor: 'system', type: 'note', text: `${name} 의 승인 판정을 못 남겼습니다 — ${e.message}` }); }
   }

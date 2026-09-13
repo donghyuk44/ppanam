@@ -1,21 +1,24 @@
 #!/usr/bin/env node
 // 라운드 제어.
 //
-//   node bus/round.mjs start "9월 캠페인 헤드라인" -m 2
-//   node bus/round.mjs status                 # 전체 팀 한눈에
-//   node bus/round.mjs end -v PASS "1안 확정"
+//   node bus/round.mjs start --topic "가드" -m 1      # 주제는 게이트 이름
+//   node bus/round.mjs status                        # 전체 팀 한눈에
+//   node bus/round.mjs end -v PASS --summary "1안 확정"
 //   node bus/round.mjs log --limit 20
+//   node bus/round.mjs check                         # 닫기 가드 자가 시험 (임시 방에서, 기록 안 남음)
 //
 // 라운드가 끝나도 대화록은 지워지지 않는다. 비워지는 건 AI 컨텍스트뿐이다.
+// --topic · --summary 가 없던 때는 그 단어가 주제·요약 본문에 그대로 박혔다 (R11·R12, 2026-09-12).
 
+import fs from 'node:fs';
 import {
-  startRound, endRound, readState, readTail, readContext, listRounds,
-  listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS,
+  startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound,
+  listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
-const o = { team: null, milestone: null, verdict: null, limit: 20 };
+const o = { team: null, milestone: null, verdict: null, limit: 20, topic: null, summary: null };
 const words = [];
 
 for (let i = 1; i < argv.length; i++) {
@@ -24,15 +27,20 @@ for (let i = 1; i < argv.length; i++) {
   else if (a === '--milestone' || a === '-m') o.milestone = Number(argv[++i]);
   else if (a === '--verdict' || a === '-v') o.verdict = String(argv[++i]).toUpperCase();
   else if (a === '--limit' || a === '-n') o.limit = Number(argv[++i]);
+  else if (a === '--topic') o.topic = argv[++i];
+  else if (a === '--summary') o.summary = argv[++i];
   else words.push(a);
 }
 
 const team = o.team ?? process.env.PPANAM_TEAM ?? defaultTeam();
-if (cmd !== 'status' && !teamExists(team)) {
+if (cmd !== 'status' && cmd !== 'check' && !teamExists(team)) {
   console.error(`오류: '${team}' 팀이 없습니다.`);
   process.exit(1);
 }
+// 플래그가 우선이고, 없으면 남은 단어가 주제(start)·요약(end)이다.
 const phrase = words.join(' ').trim() || null;
+const topic = o.topic ?? phrase;
+const summary = o.summary ?? phrase;
 
 /**
  * 서버에 부탁한다. 라운드를 닫는 정본은 서버다 — 실무가 일하는 중이면 턴이 끝난 뒤 닫고, 그 방의
@@ -57,8 +65,8 @@ async function viaServer(body, api = '/api/round') {
 switch (cmd) {
   case 'start': {
     try {
-      const s = startRound(team, { topic: phrase, milestone: o.milestone });
-      console.log(`[${team}] 라운드 ${s.round} 시작 · 마일스톤 ${s.milestone}${s.topic ? ' — ' + s.topic : ''}`);
+      const s = startRound(team, { topic, milestone: o.milestone });
+      console.log(`[${team}] 라운드 ${s.round} 시작 · 마일스톤 ${s.milestone}${s.topic ? ' — ' + s.topic : ''}${s.attempt ? ` · 반박 ${s.attempt}/${MAX_ATTEMPTS} 물려받음` : ''}`);
     } catch (e) {
       console.error('오류: ' + e.message);
       process.exit(1);
@@ -66,7 +74,7 @@ switch (cmd) {
     break;
   }
   case 'end': {
-    const r = await viaServer({ team, action: 'end', verdict: o.verdict, summary: phrase });
+    const r = await viaServer({ team, action: 'end', verdict: o.verdict, summary });
     if (r) {
       if (r.deferred) {
         console.log(`[${team}] 실무 턴이 끝나면 라운드 ${r.round} 이 닫힙니다. 세션 컨텍스트도 그때 비워집니다.`);
@@ -78,7 +86,7 @@ switch (cmd) {
     }
     // 서버가 없다. 직접 닫는다 — 세션 컨텍스트는 다음에 서버가 뜰 때 정리된다.
     try {
-      const n = endRound(team, { verdict: o.verdict, summary: phrase });
+      const n = endRound(team, { verdict: o.verdict, summary });
       console.log(`[${team}] 라운드 ${n} 종료${o.verdict ? ' · ' + o.verdict : ''} (서버 없이 직접 닫음)`);
       console.log('대화록은 그대로 남습니다. 다음 라운드부터 AI 컨텍스트만 새로 시작합니다.');
     } catch (e) {
@@ -116,6 +124,46 @@ switch (cmd) {
     console.log(`[${team}] 현재 라운드 컨텍스트 ${events.length}건 — AI 가 읽는 범위입니다.`);
     for (const e of events) console.log(`  ${e.actor.padEnd(8)} ${e.type.padEnd(11)} ${e.text.slice(0, 56)}`);
     break;
+  }
+  case 'check': {
+    // 닫기 가드 자가 시험. 실제 방을 건드리지 않으려고 임시 방 `_check` 에서 돌리고 지운다.
+    // 대표가 정한 통과 시험 넷 (2026-09-13): 카드 없이 PASS → 거부 · REVISE 뒤 PASS → 거부 · 정식 흐름 → 성공 + 로드맵 pass ·
+    // 원격 기본 브랜치의 푸시 요청 → 거부. 덧붙여 blocked 는 못 닫음 · 반박 횟수 상속 · 닫힌 방의 판정은 stale.
+    const T = '_check';
+    const dir = paths(T).dir;
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(paths(T).roadmap, JSON.stringify({ milestones: [{ n: 1, title: '시험', status: 'now' }, { n: 2, title: '둘', status: 'wait' }] }));
+    const refuses = (fn, want) => { try { fn(); return '✗ 통과됨 (거부돼야 함)'; } catch (e) { return e.message.includes(want) ? '✓ 거부' : `✗ 다른 이유로 거부: ${e.message}`; } };
+    const out = [];
+    try {
+      startRound(T, { topic: '가드', milestone: 1 });
+      out.push(['카드 없이 end -v PASS', refuses(() => endRound(T, { verdict: 'PASS' }), '판정 카드가 있어야')]);
+      recordVerdict(T, { actor: 'outside', verdict: 'REVISE', text: '근거 없음' });
+      out.push(['REVISE 뒤 end -v PASS', refuses(() => endRound(T, { verdict: 'PASS' }), '마지막 판정이 REVISE')]);
+      recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: '됐다' });
+      out.push(['PASS 카드만, 완료 note 없이', refuses(() => endRound(T, { verdict: 'PASS' }), '완료 note 가 없습니다')]);
+      emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass' } });
+      let ok = false; try { endRound(T, { verdict: 'PASS' }); ok = true; } catch (e) { out.push(['정식 흐름', `✗ ${e.message}`]); }
+      if (ok) out.push(['정식 흐름 → 닫힘 + 로드맵 pass', readRoadmap(T).milestones[0].status === 'pass' && readState(T).phase === 'idle' ? '✓' : '✗ 로드맵이 pass 가 아님']);
+      out.push(['닫힌 방의 판정 → stale', recordVerdict(T, { actor: 'outside', verdict: 'REVISE', text: '늦음' }).meta.stale ? '✓' : '✗']);
+      startRound(T, { milestone: 2 });
+      recordVerdict(T, { actor: 'outside', verdict: 'REVISE', text: '하나' });
+      endRound(T, { summary: '닫고' });
+      const s = startRound(T, { milestone: 2 });
+      out.push(['반박 횟수를 다음 라운드가 물려받음', s.attempt === 1 ? '✓ 1/3' : `✗ ${s.attempt}`]);
+      recordVerdict(T, { actor: 'outside', verdict: 'FAIL', text: '명백' });
+      out.push(['FAIL(blocked) 뒤 닫기', refuses(() => endRound(T, {}), '대표가 이 방에 말해')]);
+      resumeRound(T, { text: '풀어라' });
+      out.push(['대표 재개 → 반박 0 · 닫힘', readState(T).attempt === 0 && (endRound(T, {}), true) ? '✓' : '✗']);
+      const guarded = protectedBranch();
+      out.push([`원격 기본 브랜치(${guarded ?? '모름'}) 푸시 요청`, guarded ? refuses(() => pushAction(guarded, '0'.repeat(40)), '원격 기본 브랜치') : '✗ origin/HEAD 없음 — git remote set-head origin -a']);
+      out.push(['다른 브랜치 푸시 요청', pushAction('feature/x', '0'.repeat(40)).type === 'push' ? '✓ 허용' : '✗']);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    for (const [name, r] of out) console.log(`${r.startsWith('✓') ? '✓' : '✗'}  ${name.padEnd(28)} ${r}`);
+    process.exit(out.every(([, r]) => r.startsWith('✓')) ? 0 : 1);
   }
   case 'status':
   default: {
