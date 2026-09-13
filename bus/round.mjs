@@ -298,6 +298,12 @@ switch (cmd) {
         '대표님, allow 한 줄 허용해 주세요.', '대표님, 이 명령 실행 한 번만요.', '대표님, 서버 다시 띄워 주세요.'].map((t) => asksBoss(t, pcast));
       const plain = ['대표님, 시안 올렸습니다 — out/screens/seoul.png.', '대표님, 커밋했고 check 46건 됐습니다.', '대표님, 보고드립니다.\n\n클레멘타인, 부품 목록 적어 줘.'].map((t) => asksBoss(t, pcast));
       out.push(['부탁도 종(결정 66)', favors.every(Boolean) && !plain.some(Boolean) ? '✓ 주시면·부탁·허용·실행·주세요 5건 결정 · 올렸습니다·됐습니다·남의 문단 부탁 3건 보고' : '✗ ' + JSON.stringify({ favors, plain })]);
+      // 종이 보고에 울렸다는 실측(out/m6-screen-findings.md 맨 위) — 그 세 말 중 원문을 찾은 둘은 "시스템," 으로 시작하고 대표 문단이 없다. 지금 표로는 부름도 물음도 아니어야 한다.
+      const sysTom = '시스템, 됐다 — `state/teams.json` 은 경영·경영 작전실, `teams/finance/cast.json` 은 유진(유)·노라(노)·빅터(빅) 로 결정 4 원문대로. 남은 건 0건이고 상황판에도 "경영" 으로 뜬다.';
+      const sysHenry = '시스템, 세라는 `characters.json` 열여섯째로 넣었습니다 — 나이를 말하는 부착물은 없어요. 시안은 올렸으니 dolls-lineup 2차와 함께 뽑아 주세요. 클레멘타인, 세라 옷색은 개발 몫이라 톰한테 한 줄 남겨야겠다.';
+      const sysCast = { ...pcast, system: { name: '시스템' }, boss: { name: '함동혁(댄)' } };
+      const sysGot = [callsBoss(sysTom, sysCast), asksBoss(sysTom, sysCast), callsBoss(sysHenry, sysCast), asksBoss(sysHenry, sysCast)];
+      out.push(['"시스템," 보고는 종이 아님(findings 맨 위)', sysGot.every((x) => x === false) ? '✓ 톰·헨리 둘 다 부름 아님·물음 아님 — "뽑아 주세요" 는 시스템에게' : '✗ ' + JSON.stringify(sysGot)]);
       // 총괄이 옮겨온 대표 말(meta.via) 은 대표 카드에 안 잡힌다 — 결정 원문이 "하는 일" 로 떴다 (시스템 R21).
       const pe3 = peopleOf([...plog, { id: 'e8', ts: at(7), actor: 'boss', type: 'message', text: '47. 공동 프로젝트 (대표 원문)', meta: { via: 'chief' } }], pcast, { now: d0.getTime() + 10 * 60_000 });
       out.push(['옮겨온 대표 말은 대표 카드 밖', pe3.boss.lastText === null && pe3.boss.todaySay === 0 && pe3.guide.bossCall === null ? '✓ 카드 비고 · 호출은 답한 것으로' : '✗ ' + JSON.stringify(pe3.boss)]);
