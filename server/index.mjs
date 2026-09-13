@@ -42,6 +42,8 @@ const MIME = {
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
   // 산출물의 글은 브라우저가 그 자리에서 보여 주게 — text/markdown 은 내려받기가 된다.
   '.md': 'text/plain; charset=utf-8', '.txt': 'text/plain; charset=utf-8', '.jsonl': 'text/plain; charset=utf-8', '.csv': 'text/plain; charset=utf-8',
+  // 마을 3D 부품(Kenney glTF, M5). octet-stream 이어도 GLTFLoader 는 읽지만 종류를 맞춰 둔다.
+  '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json', '.bin': 'application/octet-stream',
 };
 
 const json = (res, code, body) => {
@@ -478,7 +480,11 @@ const server = http.createServer((req, res) => {
     return sendFile(res, file, { 'cache-control': 'no-cache' });
   }
 
-  const rel = url.pathname === '/' ? '/index.html' : url.pathname;
+  // 경로는 풀어서 연다 — Kenney 부품 폴더 이름에 빈칸이 있다("GLB format"). 안 풀면 `GLB%20format` 을 찾아 404 (레오 R24).
+  let rel = url.pathname === '/' ? '/index.html' : url.pathname;
+  try { rel = decodeURIComponent(rel); } catch { res.writeHead(400); return res.end('bad path'); }
+  // `%00` 은 풀면 널 문자 — fs.readFile 이 콜백이 아니라 그 자리에서 던져 서버가 죽는다. 먼저 거른다.
+  if (rel.includes('\0')) { res.writeHead(400); return res.end('bad path'); }
   const file = path.join(PUBLIC_DIR, path.normalize(rel));
   if (!file.startsWith(PUBLIC_DIR)) { res.writeHead(403); return res.end('forbidden'); }
   sendFile(res, file);
