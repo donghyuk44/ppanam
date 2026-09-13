@@ -16,7 +16,7 @@ import {
   paths, listTeams, defaultTeam, teamExists, teamSummary,
   readCast, readRoadmap, readTail, listRounds, parseJSONL, emit,
   readState, startRound, assertEndable, resumeRound, readLog, isOffice, quiet, addressee,
-  listApprovals, decideApproval, APPROVAL_GRADES,
+  listApprovals, decideApproval, APPROVAL_GRADES, approvalPreview,
 } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
@@ -89,6 +89,9 @@ const summaryOf = (team) => {
 };
 const summaries = () => Object.fromEntries(listTeams().map((t) => [t.id, summaryOf(t.id)]));
 
+/** 대기 중인 승인 카드 — 행동(action)을 지금 상태로 푼 preview 를 붙여서 (결정 20-2). 대기 건수가 바뀔 때만 받아 가므로 git·파일을 읽어도 된다. */
+const pendingCards = () => listApprovals({ status: 'pending' }).map((r) => ({ ...r, preview: approvalPreview(r) }));
+
 /**
  * teams/<팀>/progress.json — 지금 어디까지 왔나. 로드맵이 목적지라면 이건 현재 위치다.
  * 한 것 · 하는 중 · 남은 것 · 이슈. 로드맵(C 등급)과 분리해 두므로 누구든 갱신할 수 있다.
@@ -153,7 +156,7 @@ const server = http.createServer((req, res) => {
       teams: listTeams(),
       defaultTeam: defaultTeam(),
       summaries: summaries(),
-      approvals: listApprovals({ status: 'pending' }),
+      approvals: pendingCards(),
       told: notified(),
       grades: APPROVAL_GRADES,
     });
@@ -161,7 +164,7 @@ const server = http.createServer((req, res) => {
 
   // 승인 큐. 대표는 화면에서 C 등급을 판정한다. B 는 톰·제리가 CLI 로 한다.
   if (url.pathname === '/api/approvals' && req.method === 'GET') {
-    return json(res, 200, { pending: listApprovals({ status: 'pending' }), all: listApprovals(), told: notified() });
+    return json(res, 200, { pending: pendingCards(), all: listApprovals(), told: notified() });
   }
   if (url.pathname === '/api/approvals' && req.method === 'POST') {
     readBody(req, res, ({ id, decision, reason }) => {

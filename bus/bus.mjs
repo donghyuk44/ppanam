@@ -289,14 +289,56 @@ export function requestApproval(team, { by = 'guide', grade, what, detail = '', 
     // 자유 텍스트를 정규식으로 훑어 "푸시인가"를 짐작하지 않는다 (레오 감사, 2026-09-02).
     ...(action ? { action } : {}),
   };
-  appendApproval(rec);
   // 방에도 남긴다 — 화면에서 가장 약한 줄이지만, 나중에 "언제 요청했나"를 찾을 수 있어야 한다.
-  emit(team, {
+  // 그 줄의 id 를 레코드에 박아 카드의 "방에서 보기" 가 요청자 원문으로 건너간다 (결정 20-2).
+  const ev = emit(team, {
     actor: by, type: 'note',
     text: `승인 요청 [${g}] ${rec.what}${g === 'A' ? ' — 자동 통과' : ''}`,
     meta: { approval: rec.id, grade: g },
   });
+  rec.note = ev.id;
+  appendApproval(rec);
   return listApprovals().find((r) => r.id === rec.id);
+}
+
+/**
+ * 카드가 펼칠 "바뀌는 것" — 요청에 박힌 action 을 지금 상태로 푼다 (결정 20-2). 큐 파일에는 안 쓴다.
+ * 읽을 때마다 git·파일을 보므로 API 가 카드를 줄 때만 부른다. 못 읽으면 { error } — 모르면서 승인하게 두지 않는다.
+ */
+export function approvalPreview(r) {
+  const a = r.action;
+  if (!a) return null;
+  try {
+    if (a.type === 'push') {
+      const g = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      let base = null;
+      try { base = g(['rev-parse', '--verify', '--quiet', `${a.remote ?? 'origin'}/${a.branch}`]) && `${a.remote ?? 'origin'}/${a.branch}`; } catch { /* 원격에 아직 없는 브랜치 */ }
+      if (!base) { const p = protectedBranch(); base = p ? `origin/${p}` : null; }
+      if (!base) return { error: '비교할 기준 브랜치를 모릅니다 (origin/HEAD 없음)' };
+      const count = Number(g(['rev-list', '--count', `${base}..${a.sha}`])) || 0;
+      const commits = g(['log', '--format=%s', '--max-count=8', `${base}..${a.sha}`]).split('\n').filter(Boolean);   // 제목은 앞 8개만
+      const files = g(['diff', '--name-only', `${base}...${a.sha}`]).split('\n').filter(Boolean);
+      return { branch: a.branch, sha: a.sha, base, count, commits, files };
+    }
+    if (a.type === 'milestone') {
+      const m = (readRoadmap(r.team).milestones ?? []).find((x) => x.n === a.n);
+      return m ? { n: a.n, title: m.title ?? a.title ?? null, deliverable: m.deliverable ?? null } : { error: `마일스톤 ${a.n} 이 로드맵에 없습니다` };
+    }
+    if (a.type === 'roadmap') {
+      const src = path.resolve(paths(r.team).out, path.basename(String(a.file)));
+      const p = JSON.parse(fs.readFileSync(src, 'utf8'));
+      if (!Array.isArray(p.milestones)) return { error: `${path.basename(src)}: milestones 가 배열이 아닙니다` };
+      return {
+        file: path.basename(src),
+        destination: p.destination ?? null,
+        milestones: p.milestones.map((m) => ({ n: m.n, title: m.title ?? '', status: m.status ?? null })),
+        cutList: Array.isArray(p.cutList) ? p.cutList : [],
+      };
+    }
+    return null;
+  } catch (e) {
+    return { error: String(e.message).slice(0, 160) };
+  }
 }
 
 export function voidApproval(id, reason = '') {

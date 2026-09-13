@@ -124,7 +124,8 @@ function renderRail() {
     b.setAttribute('aria-current', String(t.id === active));
 
     const dot = el('span', 'team__dot');
-    dot.dataset.s = s.needsBoss ? 'alert' : s.phase === 'running' ? 'running' : 'idle';
+    // 대표를 부른 방(bossCall)도 빨간 점 — 배지만 알고 레일은 몰랐다 (독립검수 #9).
+    dot.dataset.s = s.needsBoss || s.bossCall ? 'alert' : s.phase === 'running' ? 'running' : 'idle';
     b.appendChild(dot);
 
     const body = el('span', 'team__body');
@@ -136,7 +137,7 @@ function renderRail() {
     b.appendChild(body);
 
     const badge = el('span', 'team__badge');
-    if (s.needsBoss) {
+    if (s.needsBoss || s.bossCall) {
       badge.textContent = '대표';
       badge.dataset.kind = 'alert';
     } else if (unread[t.id] > 0 && t.id !== active) {
@@ -161,22 +162,54 @@ function bossTurns() {
   const cards = approvals.filter((r) => r.grade === 'C');
   return { rooms, cards, n: rooms.length + cards.length };
 }
+/** 방 하나가 대표 차례인 이유 — 한 줄. */
+function bossWhyOf(t) {
+  const s = summaries[t.id] ?? {};
+  if (s.needsBoss) return BOSS_WHY[s.needsBossWhy] ?? '대표 판단';
+  if (s.bossCall) return `${s.cast?.[s.bossCall.by]?.name ?? s.bossCall.by}이 불렀습니다 · ${ago(s.bossCall.ts)}`;
+  return '';
+}
+/**
+ * 종 — 모든 탭 오른쪽 위, 빨간 배지에 대표 차례 수 (네이버 폰 화면 기준, 결정 34). 0 이면 회색 종만.
+ * 누르면 항목 목록(막힌 방 · 부른 방 · 승인)이 열리고, 고르면 그 방 또는 관제탑으로 간다 (독립검수 #9 — 전에는
+ * C 카드가 하나라도 있으면 무조건 관제탑, 이유는 툴팁뿐이라 폰에서 안 보였다).
+ */
 function renderBossBadge() {
-  const b = $('bossBadge');
   const { rooms, cards, n } = bossTurns();
-  b.hidden = n === 0;
-  // 숨길 때 글자도 지운다 — "대표 차례 2" 가 hidden 인 채 남아 DOM 만 본 사람이 고장으로 읽었다 (R15).
-  b.textContent = n ? `대표 차례 ${n}` : '';
-  b.title = n
-    ? [...rooms.map((t) => `${t.name}: ${summaries[t.id].needsBoss ? BOSS_WHY[summaries[t.id].needsBossWhy] ?? '대표 판단' : (summaries[t.id].cast?.[summaries[t.id].bossCall.by]?.name ?? summaries[t.id].bossCall.by) + '이 불렀습니다'}`), ...cards.map((r) => `승인: ${r.what}`)].join('\n')
-    : '대표 차례 — 누르면 관제탑';
+  $('bell').dataset.n = String(n);
+  const num = $('bellN');
+  num.hidden = n === 0;
+  num.textContent = n ? (n > 99 ? '99+' : String(n)) : '';
+  $('bossBadge').title = n ? [...rooms.map((t) => `${t.name}: ${bossWhyOf(t)}`), ...cards.map((r) => `승인: ${r.what}`)].join('\n') : '대표 차례 없음';
+  if (!$('bellMenu').hidden) renderBellMenu();
 }
 const BOSS_WHY = { blocked: '대표 결정 기다리는 중 (FAIL)', attempts: '고쳐 오기 3번 다 씀', silent: '하루 넘게 말이 없음' };
-$('bossBadge').addEventListener('click', () => {
+function renderBellMenu() {
+  const m = $('bellMenu');
+  m.replaceChildren();
   const { rooms, cards } = bossTurns();
-  if (cards.length) return setView('tower');
-  if (rooms.length) { pickTeam(rooms[0].id); setView('room'); }
+  if (!rooms.length && !cards.length) { m.appendChild(el('div', 'bell__empty', '대표 차례가 없습니다. 팀이 달리는 중입니다.')); return; }
+  for (const t of rooms) {
+    const b = el('button', null, `${t.room ?? t.name}`); b.type = 'button';
+    b.appendChild(el('small', null, bossWhyOf(t)));
+    b.addEventListener('click', () => { closeBell(); pickTeam(t.id); setView('room'); });
+    m.appendChild(b);
+  }
+  for (const r of cards) {
+    const t = teams.find((x) => x.id === r.team);
+    const b = el('button', null, `승인 [${r.grade}] ${r.what}`); b.type = 'button';
+    b.appendChild(el('small', null, `${t?.name ?? r.team} · ${(summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by} · ${ago(r.ts)}`));
+    b.addEventListener('click', () => { closeBell(); setView('tower'); });
+    m.appendChild(b);
+  }
+}
+const closeBell = () => { $('bellMenu').hidden = true; };
+$('bossBadge').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const m = $('bellMenu');
+  if (m.hidden) { renderBellMenu(); m.hidden = false; } else closeBell();
 });
+document.addEventListener('click', (e) => { if (!$('bell').contains(e.target)) closeBell(); });
 
 /* ── 가운데 머리 ── */
 
@@ -835,7 +868,61 @@ const ago = (ts) => {
   return `${Math.floor(s / 86400)}일 전`;
 };
 
-/* 승인 대기. 대표가 돌아왔을 때 200발언을 읽지 않고 이것부터 본다. */
+/** 이름·값 표. 승인 카드의 "바뀌는 것" 이 쓴다. 값은 줄바꿈 그대로. */
+function kvTable(rows) {
+  const tb = el('table');
+  for (const [k, v] of rows) {
+    const tr = el('tr');
+    tr.appendChild(el('td', null, k));
+    const td = el('td');
+    if (v instanceof Node) td.appendChild(v); else td.textContent = v ?? '';
+    tr.appendChild(td);
+    tb.appendChild(tr);
+  }
+  return tb;
+}
+
+/**
+ * 카드가 펼치는 "바뀌는 것" — 요청에 박힌 action 을 서버가 preview 로 푼 것 (결정 20-2).
+ * 푸시면 브랜치·커밋·파일, 착수면 마일스톤과 통과 조건, 로드맵이면 마일스톤 표와 컷 목록. 못 읽었으면 그 사실을.
+ */
+function previewNode(r) {
+  const a = r.action, p = r.preview;
+  if (!a) return null;
+  const box = el('div', 'apr__pv');
+  if (!p) { box.appendChild(el('div', 'err', `행동 ${a.type} — 내용을 못 받았습니다 (옛 서버?)`)); return box; }
+  if (p.error) { box.appendChild(el('div', 'err', `바뀌는 것을 읽지 못했습니다 — ${p.error}`)); return box; }
+  if (a.type === 'push') {
+    box.appendChild(kvTable([
+      ['푸시', `origin/${p.branch} @ ${String(p.sha).slice(0, 8)} — 통과하면 서버가 정확히 이 커밋을 민다`],
+      ['기준', p.base],
+      ['커밋', p.count ? `${p.count}개\n` + p.commits.join('\n') + (p.count > p.commits.length ? '\n…' : '') : '(없음 — 기준과 같다)'],
+      ['파일', p.files.length ? `${p.files.length}개 — ${p.files.slice(0, 12).join(', ')}${p.files.length > 12 ? ' …' : ''}` : '(없음)'],
+    ]));
+  } else if (a.type === 'milestone') {
+    box.appendChild(kvTable([
+      ['착수', `마일스톤 ${p.n} — ${p.title ?? ''}`],
+      ['통과 조건', p.deliverable ?? '(로드맵에 없음)'],
+    ]));
+  } else if (a.type === 'roadmap') {
+    const ms = el('div');
+    for (const m of p.milestones) ms.appendChild(el('div', null, `${m.n}. ${m.title}${m.status ? ` (${m.status})` : ''}`));
+    const cut = el('div');
+    if (p.cutList.length) for (const c of p.cutList) cut.appendChild(el('div', null, `· ${c}`)); else cut.textContent = '(없음)';
+    box.appendChild(kvTable([
+      ['교체', `out/${p.file} → roadmap.json — 지금 로드맵은 통째로 바뀐다`],
+      ['목적지', p.destination ?? '(없음)'],
+      [`마일스톤 ${p.milestones.length}`, ms],
+      ['하지 않는 것', cut],
+    ]));
+  } else {
+    box.appendChild(el('div', null, `행동: ${a.type}`));
+  }
+  return box;
+}
+
+/* 승인 대기. 대표가 돌아왔을 때 200발언을 읽지 않고 이것부터 본다.
+ * 카드 하나 = 누가·언제 → 주제 → 왜·바뀌는 것 → 행동 → 버튼 (레딧 글 카드 순서, 결정 34). 버튼만 있는 카드는 없다 (결정 20-2). */
 function renderApprovals() {
   const box = $('approvals');
   box.replaceChildren();
@@ -844,13 +931,22 @@ function renderApprovals() {
   box.appendChild(el('div', 'approvals__k', `승인 대기 ${approvals.length}건`));
   for (const r of approvals) {
     const row = el('div', 'apr');
+    const head = el('div', 'apr__head');
     const g = el('span', 'apr__g', r.grade); g.dataset.g = r.grade; g.title = grades[r.grade]?.desc ?? '';
-    row.appendChild(g);
+    head.appendChild(g);
     const t = teams.find((x) => x.id === r.team);
-    row.appendChild(el('span', 'apr__team', `${t?.name ?? r.team} · ${(summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by}`));
-    const w = el('div', 'apr__what', r.what);
-    if (r.detail) w.appendChild(el('small', null, r.detail));
-    row.appendChild(w);
+    head.appendChild(el('span', 'apr__team', `${t?.name ?? r.team} · ${(summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by} · ${ago(r.ts)}`));
+    if (r.note) {
+      const link = el('button', 'apr__link', '방에서 보기'); link.type = 'button';
+      link.addEventListener('click', () => jumpTo(r.team, r.note));
+      head.appendChild(link);
+    }
+    row.appendChild(head);
+    row.appendChild(el('div', 'apr__what', r.what));
+    // 왜·바뀌는 것 — 요청자가 --detail 에 적은 것. 한 줄로 자르지 않는다 ("옛 M4~M6 픽셀 타일은 컷" 이 … 뒤에 숨었다, 독립검수 #2).
+    row.appendChild(el('div', 'apr__detail', r.detail || '(왜·바뀌는 것이 안 적혔습니다 — 요청자에게 물어보세요)'));
+    const pv = previewNode(r);
+    if (pv) row.appendChild(pv);
     if (r.grade === 'C') {
       const act = el('div', 'apr__act');
       const err = el('div', 'apr__err'); err.hidden = true;
@@ -901,7 +997,10 @@ function renderTower() {
     const running = office || s.phase === 'running' || s.phase === 'blocked';
 
     const card = el('div', 'tcard');
-    card.dataset.alert = s.needsBoss ? '1' : '0';
+    // 대표 차례인 카드 — 막힌 방(needsBoss)과 대표를 불렀는데 답이 없는 방(bossCall) 둘 다. 후자는 배지만 알고
+    // 카드는 '진행 중' 이라 누가 기다리는지 못 찾았다 (독립검수 #9).
+    const call = s.bossCall ? `${agents[s.bossCall.by]?.name ?? s.bossCall.by}이 불렀습니다 · ${ago(s.bossCall.ts)}` : null;
+    card.dataset.alert = s.needsBoss || call ? '1' : '0';
 
     // 이름과 상태
     const top = el('div', 'tcard__top');
@@ -910,8 +1009,8 @@ function renderTower() {
     name.addEventListener('click', async () => { await selectTeam(t.id); setView('room'); });
     top.appendChild(name);
     const flag = el('span', 'tcard__flag',
-      s.needsBoss ? '대표 호출' : office ? '1:1' : running ? '진행 중' : '대기');
-    flag.dataset.k = s.needsBoss ? 'boss' : running ? 'run' : 'idle';
+      s.needsBoss ? (BOSS_WHY[s.needsBossWhy] ?? '대표 호출') : call ? call : office ? '1:1' : running ? '진행 중' : '대기');
+    flag.dataset.k = s.needsBoss || call ? 'boss' : running ? 'run' : 'idle';
     top.appendChild(flag);
     card.appendChild(top);
 

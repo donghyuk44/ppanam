@@ -124,11 +124,19 @@ body {
 
 /* ══ 가운데 · 대화 ══ */
 
+/* 여섯 자식(머리·라운드 줄·열기 폼·피드·안내 줄·입력창)에 행을 못박는다. 넷만 적었을 때 열기 폼이 보이면 폼이 1fr 을
+ * 먹고 피드가 암시적 행으로 밀려, 빈 방에서 폼이 화면 한가운데 떴다 (독립검수 #3). 숨은 자식은 행을 안 차지한다(auto=0). */
 .room {
-  display: grid; grid-template-rows: auto auto 1fr auto;
+  display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
   min-width: 0; min-height: 0;
   border-right: 1px solid var(--line);
 }
+.room > .bar { grid-row: 1; }
+.room > .roundbar { grid-row: 2; }
+.room > .roundopen { grid-row: 3; }
+.room > .feed { grid-row: 4; }
+.room > .composer__msg { grid-row: 5; }
+.room > .composer { grid-row: 6; }
 
 .bar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -362,13 +370,36 @@ body {
 }
 @media (pointer: coarse) { .composer__nl { display: grid; place-items: center; } }
 
-/* 대표 차례 배지 — 탭 줄에 붙어 어느 화면에서든 보인다 (결정 19-2). */
-.bossbadge {
-  flex: none !important; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px !important;
-  background: var(--bad) !important; color: var(--bad-bg) !important; border-color: var(--bad) !important;
-  padding: 3px 8px !important; border-radius: 999px !important;
+/* 종 — 모든 탭 오른쪽 위에 고정, 빨간 배지에 대표 차례 수 (네이버 폰 화면 기준, 결정 34 · 19-2).
+ * 0 이면 회색 종만. 누르면 항목 목록(막힌 방·부른 방·승인)이 열리고 고르면 그리로 간다 (독립검수 #9). */
+.bell { position: fixed; top: 9px; right: 12px; z-index: 8; }
+.bell__btn {
+  position: relative; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink-3); cursor: pointer;
 }
-.bossbadge[hidden] { display: none !important; }
+.bell__btn:hover { color: var(--ink); }
+.bell[data-n]:not([data-n="0"]) .bell__btn { color: var(--ink); border-color: var(--bad-line); }
+.bell__n {
+  position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: var(--bad); color: var(--bad-bg); font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; font-weight: 500;
+  display: grid; place-items: center; border: 2px solid var(--panel);
+}
+.bell__n[hidden] { display: none; }
+.bell__menu {
+  position: absolute; top: 42px; right: 0; width: min(320px, calc(100vw - 24px));
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12); font-size: 12.5px;
+}
+.bell__menu[hidden] { display: none; }
+.bell__menu button {
+  display: block; width: 100%; text-align: left; font: inherit; font-size: 12.5px; color: var(--ink);
+  background: transparent; border: 0; border-radius: 6px; padding: 8px 10px; cursor: pointer; min-height: 40px;
+}
+.bell__menu button:hover { background: var(--sunk); }
+.bell__menu button small { display: block; font-size: 11px; color: var(--ink-4); }
+.bell__menu .bell__empty { padding: 8px 10px; color: var(--ink-4); font-size: 12px; }
+/* 종이 덮는 자리를 비운다 */
+.side__head, .tower__head, .world__bar { padding-right: 56px; }
 
 /* 대표를 부른 말풍선 — 눈에 걸리게. */
 .row.calls-boss .bub { box-shadow: inset 3px 0 0 var(--bad); }
@@ -480,34 +511,45 @@ body {
 .approvals {
   margin: 16px 16px 0; padding: 14px 16px;
   background: var(--panel); border: 1px solid var(--me-line); border-radius: 12px;
+  /* 승인이 서너 건 쌓이면 방 대화가 화면에서 사라졌다 (독립검수 #13) — 블록 안에서 스크롤 */
+  max-height: 40vh; overflow-y: auto;
 }
 .approvals[hidden] { display: none; }
 .approvals__k {
   font-family: 'Gowun Batang', serif; font-size: 14.5px;
   padding-bottom: 9px; margin-bottom: 10px; border-bottom: 1px solid var(--line-2);
 }
-.apr { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line-2); font-size: 12.5px; }
+/* 카드 하나 = 위에서 아래로 누가·언제 → 주제 → 왜·바뀌는 것 → 행동 → 버튼 (레딧 글 카드, 결정 34).
+ * 세로 쌓기라 폰에서 격자가 깨질 것이 없다 (독립검수 #8). */
+.apr { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line-2); font-size: 12.5px; }
 .apr:first-of-type { border-top: none; }
+.apr__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .apr__g {
-  font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; flex: none;
   padding: 2px 7px; border-radius: 4px; background: var(--sunk); color: var(--ink-2);
 }
 .apr__g[data-g="C"] { background: var(--me); color: var(--me-ink); }
 .apr__g[data-g="B"] { background: var(--seal); color: var(--seal-ink); }
-.apr__team { font-size: 11px; color: var(--ink-4); white-space: nowrap; }
-.apr__what { min-width: 0; color: var(--ink); }
-.apr__what small { display: block; font-size: 11px; color: var(--ink-4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.apr__act { display: flex; gap: 5px; flex: none; }
+.apr__team { font-size: 11px; color: var(--ink-4); }
+.apr__link { margin-left: auto; font: inherit; font-size: 11px; color: var(--ink-3); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+.apr__what { color: var(--ink); font-weight: 600; word-break: break-word; }
+.apr__detail { font-size: 12px; color: var(--ink-2); white-space: pre-wrap; word-break: break-word; line-height: 1.5; }
+.apr__pv { font-size: 11.5px; color: var(--ink-2); background: var(--sunk); border-radius: 8px; padding: 8px 10px; }
+.apr__pv table { border-collapse: collapse; width: 100%; }
+.apr__pv td { padding: 2px 8px 2px 0; vertical-align: top; white-space: pre-wrap; word-break: break-word; }
+.apr__pv td:first-child { width: 1%; white-space: nowrap; color: var(--ink-4); font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; }
+.apr__pv .err { color: var(--bad); }
+.apr__act { display: flex; gap: 6px; flex-wrap: wrap; }
 .apr__act button {
-  font: inherit; font-size: 11.5px; padding: 3px 9px; border-radius: 5px; cursor: pointer;
+  font: inherit; font-size: 12px; padding: 6px 14px; min-height: 36px; border-radius: 6px; cursor: pointer;
   border: 1px solid var(--line); background: transparent; color: var(--ink-2);
 }
 .apr__act button[data-d="PASS"] { border-color: var(--good-line); background: var(--good-bg); color: var(--good); }
 .apr__act button[data-d="REVISE"] { border-color: var(--bad-line); background: var(--bad-bg); color: var(--bad); }
-.apr__wait { font-size: 11px; color: var(--ink-4); white-space: normal; text-align: right; max-width: 260px; }
-.apr__reason { grid-column: 1 / -1; font: inherit; font-size: 12px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--ink); }
+.apr__wait { font-size: 11px; color: var(--ink-4); white-space: normal; }
+.apr__reason { font: inherit; font-size: 12px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--ink); }
 .apr__reason[hidden], .apr__err[hidden] { display: none; }
-.apr__err { grid-column: 1 / -1; font-size: 11.5px; color: var(--bad); }
+.apr__err { font-size: 11.5px; color: var(--bad); }
 
 /* ── 관제탑 카드 ── */
 
@@ -521,7 +563,8 @@ body {
 .tcard__name { font-family: 'Gowun Batang', serif; font-size: 15.5px; cursor: pointer; }
 .tcard__name:hover { text-decoration: underline; }
 .tcard__flag {
-  margin-left: auto; flex: none; font-size: 10.5px; letter-spacing: .02em;
+  margin-left: auto; flex: none; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 10.5px; letter-spacing: .02em;
   border: 1px solid var(--line); border-radius: 20px; padding: 2px 8px; color: var(--ink-3);
 }
 .tcard__flag[data-k="run"]  { border-color: var(--good-line); background: var(--good-bg); color: var(--good); }
@@ -641,9 +684,6 @@ body {
   .rail { grid-row: 2; }
   .room, .tower, .analysis, .world { grid-row: 3; }
   .approvals { margin: 8px 10px 0; padding: 10px 12px; }
-  .apr { grid-template-columns: auto minmax(0, 1fr); }
-  .apr__team { grid-column: 2; }
-  .apr__act, .apr__wait { grid-column: 1 / -1; text-align: left; max-width: none; }
   .rail { flex-direction: row; border-right: none; border-bottom: 1px solid var(--line); min-width: 0; }
   .rail__head { display: none; }
 
@@ -656,8 +696,9 @@ body {
   .an__body { padding: 12px; }
   .rail__list {
     flex-direction: row; overflow-x: auto; overflow-y: hidden;
-    padding: 8px 10px; gap: 6px; scrollbar-width: none;
+    padding: 8px 52px 8px 10px; gap: 6px; scrollbar-width: none;   /* 오른쪽은 종 자리 */
   }
+  .approvals { padding-right: 52px; }   /* 첫 카드의 오른쪽 끝(방에서 보기)이 종 밑에 안 들어가게 */
   .rail__list::-webkit-scrollbar { display: none; }
   .team { width: auto; flex: none; padding: 6px 11px; border-color: var(--line); background: var(--panel); }
   .team__sub { display: none; }
