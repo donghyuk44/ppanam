@@ -244,6 +244,25 @@ M3 데이터 전까지 빈 상태 문구). 마지막에 본 탭은 브라우저�
 빨강은 대표 차례·승인·막힘 중 안 읽은 것이 있을 때. 항목 한 줄 = 팀 색 아바타(`by` 의 색, 없으면 팀) + 이름 · 한 줄 · "N분 전" · 오른쪽
 썸네일 또는 방 아이콘 · 안 읽음 점. 패널 머리는 "알림" + ⚙(설정 — 지금은 자리만) + "모두 읽음". 폰 412 에서 전체 폭.
 
+**막힌 것 — 한 목록** (결정 92 "뭐가 막혔나", M6 준비 — 화면은 도면(결정 100) 뒤, 낱말은 하영 몫이라 여기 이름은 임시).
+지금은 "대표 차례" 를 세는 코드가 셋(`bossTurns` · `notificationsOf` · 팀 줄 알약)이라 타일은 3, 내가 할 일은 5 가 뜬다(`out/m6-screen-findings.md` #6).
+새 화면·보고서 탭은 **이 목록 하나**를 자른다. 순수 함수 `server/public/notify.js blockedOf({ teams, summaries, approvals, requests, infra }, { now })`
+— 서버는 값을 재서 넘기기만 하고(`peopleOf` 와 같은 경계) 화면과 `round.mjs check` 가 같은 함수를 쓴다. 항목 `{ id, kind, where, team, teamName, by, waitOn, text, since, wait, state, target }`:
+
+| `kind` | 어디서 | `waitOn` (누가 움직여야 풀리나) | `since` |
+| --- | --- | --- | --- |
+| `boss` 결정을 청했는데 답 없음 | 팀 요약 `bossCall` + `people[by].bossCall.text` | `boss` | 그 말의 `ts` |
+| `blocked` 방이 멈춤 | 팀 요약 `needsBoss`(`blocked`·`attempts`·`silent`) | `boss` | `lastSpokeAt` |
+| `approval` 승인 대기 | `approvals` 대기 중 — C 는 대표, B 는 톰·제리 | C → `boss` · B → `chief` | 요청 `ts` |
+| `request` 요청 블록이 답을 기다림 | `requests` 중 안 닫힌 것 — `open` 은 받는 쪽, `done` 은 요청한 쪽(받았다), `acked` 는 톰(확인) | `{ team, actor }` 또는 `chief` | `updatedAt` |
+| `board` 실무가 적은 막힌 것 | 팀 요약 `progress.blocked[]` | 그 팀 실무 `guide` | `progress.at` |
+| `infra` 밑바닥 | `infra.{server,codex,sessions,disk}` — 서버가 밖에서 잰 값 `{ ok, at, timeout, detail }` | `ops` | 잰 시각 `at` |
+
+`wait` 는 `now - since`(ms) — 목록은 **오래 기다린 것이 위**(`since` 오름차순). 종류별 순서 없음 — 화면이 `waitOn` 으로 자른다(대표 것만 → "내가 할 일", 전부 → 관제탑).
+`infra` 는 잰 값이 없으면 항목도 없다(안 잰 것은 막힘이 아니다). `ok:false` 면 `state:'down'`, 잰 시각이 `timeout` 보다 오래됐으면 **`ok` 가 무엇이든** `state:'unknown'` —
+마지막 성공값이 남아 죽은 밑바닥이 산 것처럼 보이면 안 된다(레오, R25). `ok:true` 이고 시각이 신선하면 항목 없음. 잰 값에는 `at`·`timeout` 이 반드시 있다 — 없으면 `unknown`.
+`id` 는 `<kind>:<이벤트 id · 승인 id · 요청 id · 팀 · infra 키>` — 같은 일은 한 항목이라 알림의 읽음 목록과 같은 열쇠를 쓴다.
+
 **상황판 — 지금 어디까지 왔나** (결정 23 — "상황판은 업데이트도 안 되고 이상한 걸로 채워져 있고"). 팀마다 `teams/<팀>/progress.json`
 하나. 로드맵이 목적지라면 이건 현재 위치다. **실무가 턴 끝·라운드 닫기마다 갱신한다** — `node bus/progress.mjs --team <팀> --doing "…"
 --blocked "…" --boss "…" --next "…"`(플래그는 여러 번, 준 항목만 통째로 바뀌고 안 준 항목은 그대로, `--clear <항목>` 으로 비움).

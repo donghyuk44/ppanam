@@ -74,3 +74,74 @@ export function notificationsOf({ teams = [], summaries = {}, approvals = [] } =
   const urgent = items.some((it) => it.unread && URGENT.has(it.kind));
   return { items, unread, urgent };
 }
+
+/** 밑바닥 항목의 이름 — infra 키 → 사람 말. */
+export const INFRA_LABEL = { server: '서버', codex: '외부 감사(codex) 연결', sessions: '세션', disk: '디스크' };
+
+/**
+ * 막힌 것 — 한 목록 (결정 92 "뭐가 막혔나", M6 준비). 계약은 docs/event-schema.md 3절 "막힌 것 — 한 목록".
+ * "대표 차례" 를 세는 코드가 셋(bossTurns · notificationsOf · 팀 줄 알약)이라 3 이냐 5 냐가 갈렸다(findings #6) — 새 화면·보고서 탭은 이것 하나를 자른다.
+ * 값만 받는다 — 서버가 밖에서 재서 넘긴다(peopleOf 와 같은 경계). 화면과 round.mjs check 가 같은 함수를 쓴다.
+ *
+ * @param teams      [{ id, name, room }]
+ * @param summaries  { [팀]: 팀 요약 } — bossCall · needsBoss · needsBossWhy · lastSpokeAt · people[자리].bossCall · progress · cast
+ * @param approvals  대기 중인 승인 [{ id, grade, team, by, what, ts }] — C 는 대표, B 는 톰·제리
+ * @param requests   요청 블록 [{ id, from:{team,actor}, to:{team,actor}, what, status, updatedAt }] — 닫힌 것은 건너뛴다
+ * @param infra      { server, codex, sessions, disk } — 각 { ok, at, timeout(ms), detail }. 없으면 항목 없음(안 잰 것은 막힘이 아니다)
+ * @returns 항목 [{ id, kind, where, team, teamName, by, waitOn, text, since, wait, state, target }] — since 오름차순(오래 기다린 것이 위)
+ */
+export function blockedOf({ teams = [], summaries = {}, approvals = [], requests = [], infra = null } = {}, { now = Date.now() } = {}) {
+  const items = [];
+  const byTeam = new Map(teams.map((t) => [t.id, t]));
+  const teamName = (id) => byTeam.get(id)?.name ?? id ?? '';
+  const nameOf = (team, actor) => summaries[team]?.cast?.[actor]?.name ?? actor;
+  const push = (it) => items.push({ ...it, teamName: teamName(it.team), since: it.since ?? null, wait: it.since ? Math.max(0, now - new Date(it.since).getTime()) : null });
+
+  for (const t of teams) {
+    const s = summaries[t.id];
+    if (!s) continue;
+    if (s.bossCall) {
+      const quote = s.people?.[s.bossCall.by]?.bossCall?.text ?? '';
+      push({ id: `boss:${s.bossCall.id}`, kind: 'boss', where: 'room', team: t.id, by: s.bossCall.by, waitOn: 'boss', state: null,
+        text: oneLine(quote, 80) || `${nameOf(t.id, s.bossCall.by)} 불렀습니다`, since: s.bossCall.ts,
+        target: { view: 'room', team: t.id, event: s.bossCall.id } });
+    }
+    if (s.needsBoss) {
+      push({ id: `blocked:${t.id}`, kind: 'blocked', where: 'room', team: t.id, by: null, waitOn: 'boss', state: s.needsBossWhy ?? null,
+        text: BOSS_WHY[s.needsBossWhy] ?? '대표 판단', since: s.lastSpokeAt ?? s.lastAt ?? null,
+        target: { view: 'room', team: t.id, event: null } });
+    }
+    for (const [i, line] of (s.progress?.blocked ?? []).entries()) {
+      push({ id: `board:${t.id}:${i}`, kind: 'board', where: 'board', team: t.id, by: 'guide', waitOn: { team: t.id, actor: 'guide' }, state: null,
+        text: oneLine(line, 160), since: s.progress?.at ?? null, target: { view: 'room', team: t.id, event: null } });
+    }
+  }
+  for (const r of approvals) {
+    if (r.grade !== 'C' && r.grade !== 'B') continue;
+    push({ id: `approval:${r.id}`, kind: 'approval', where: 'approval', team: r.team, by: r.by, waitOn: r.grade === 'C' ? 'boss' : 'chief', state: r.grade,
+      text: `승인 [${r.grade}] ${oneLine(r.what, 120)}`, since: r.ts, target: { view: 'tower', team: r.team, approval: r.id } });
+  }
+  // 요청 블록 — 상태가 곧 누구 차례인지다(bus/requests.mjs foldRequest): open 은 받는 쪽(done 을 내야), done 은 요청한 쪽(ack), acked 는 톰(confirm).
+  for (const r of requests) {
+    if (!r || r.status === 'closed') continue;
+    const waitOn = r.status === 'open' ? r.to : r.status === 'done' ? r.from : 'chief';
+    const who = waitOn === 'chief' ? '톰' : nameOf(waitOn?.team, waitOn?.actor);
+    push({ id: `request:${r.id}`, kind: 'request', where: 'request', team: r.status === 'done' ? r.from?.team : r.to?.team, by: r.from?.actor ?? null, waitOn, state: r.status,
+      text: `${who} 차례 — ${oneLine(r.what, 100)}`, since: r.updatedAt ?? r.ts ?? null, target: { view: 'tower', team: r.to?.team, request: r.id } });
+  }
+  // 밑바닥 — 잰 값이 없으면 항목도 없다. 시각이 timeout 보다 오래되면 ok 가 무엇이든 '모름'(마지막 성공값이 산 것처럼 남지 않게, 레오 R25).
+  for (const key of Object.keys(INFRA_LABEL)) {
+    const m = infra?.[key];
+    if (!m) continue;
+    const at = m.at ? new Date(m.at).getTime() : NaN;
+    const stale = !Number.isFinite(at) || !(m.timeout > 0) || now - at > m.timeout;
+    if (!stale && m.ok === true) continue;
+    const state = stale ? 'unknown' : 'down';
+    const ago = Number.isFinite(at) ? `${Math.max(1, Math.round((now - at) / 60_000))}분째` : '시각 없음';
+    push({ id: `infra:${key}`, kind: 'infra', where: 'infra', team: null, by: null, waitOn: 'ops', state,
+      text: state === 'unknown' ? `${INFRA_LABEL[key]} — 못 잼 (${ago})${m.detail ? ' · ' + oneLine(m.detail, 80) : ''}` : `${INFRA_LABEL[key]} 죽음${m.detail ? ' — ' + oneLine(m.detail, 80) : ''}`,
+      since: Number.isFinite(at) ? new Date(at).toISOString() : null, target: { view: 'tower', team: null } });
+  }
+  items.sort((a, b) => String(a.since ?? '9').localeCompare(String(b.since ?? '9')));   // since 없는 것은 맨 뒤
+  return items;
+}

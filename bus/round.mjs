@@ -536,6 +536,35 @@ switch (cmd) {
         const n3 = notificationsOf({ teams: xTeams, summaries: xSum, approvals: [] });
         const dup = n3.items.filter((it) => it.by === 'chief');
         out.push(['같은 말 두 방 → 알림 하나', dup.length === 1 && dup[0].teamName === '개발·총괄' && n3.items.length === 5 ? '✓ 톰 한 줄 · 개발·총괄' : '✗ ' + JSON.stringify(dup.map((d) => [d.id, d.teamName]))]);
+        // 막힌 것 한 목록 (결정 92, M6 준비 — 계약 3절 "막힌 것 — 한 목록"). 여섯 종류가 한 목록에, since 오름차순(오래 기다린 것이 위), waitOn 은 누가 움직여야 풀리나.
+        const { blockedOf } = await import('../server/public/notify.js');
+        const bNow = new Date('2026-09-13T12:00:00Z').getTime();
+        const bSum = { ...nSum, dev: { ...nSum.dev, progress: { at: '2026-09-13T11:00:00Z', blocked: ['디스크 꽉 참'] } } };
+        const bReq = [
+          { id: 'req_o', status: 'open', from: { team: 'dev', actor: 'guide' }, to: { team: 'design', actor: 'guide' }, what: '첫 화면 넘김', updatedAt: '2026-09-13T06:00:00Z' },
+          { id: 'req_d', status: 'done', from: { team: 'dev', actor: 'guide' }, to: { team: 'design', actor: 'guide' }, what: '됐다 뒤', updatedAt: '2026-09-13T06:30:00Z' },
+          { id: 'req_a', status: 'acked', from: { team: 'dev', actor: 'guide' }, to: { team: 'design', actor: 'guide' }, what: '받았다 뒤', updatedAt: '2026-09-13T06:40:00Z' },
+          { id: 'req_c', status: 'closed', from: { team: 'dev', actor: 'guide' }, to: { team: 'design', actor: 'guide' }, what: '닫힘', updatedAt: '2026-09-13T05:00:00Z' },
+        ];
+        const b1 = blockedOf({ teams: nTeams, summaries: bSum, approvals: nApr, requests: bReq }, { now: bNow });
+        const bOrder = b1.map((it) => it.id).join(',');
+        const bWait = b1.map((it) => typeof it.waitOn === 'string' ? it.waitOn : `${it.waitOn.team}/${it.waitOn.actor}`).join(',');
+        const bWant = bOrder === 'request:req_o,request:req_d,request:req_a,approval:apr_1,approval:apr_2,blocked:design,boss:e1,board:dev:0'
+          && bWait === 'design/guide,dev/guide,chief,boss,chief,boss,boss,dev/guide'
+          && b1[0].wait === 6 * 3600_000 && b1[0].text.startsWith('헨리 차례') && b1[6].text.includes('골라 주세요') && b1.every((it) => it.teamName !== undefined);
+        out.push(['막힌 것 한 목록(결정 92)', bWant ? '✓ 8건 · since 오름차순 · 닫힌 요청 제외 · waitOn 여섯 가지' : '✗ ' + JSON.stringify({ bOrder, bWait, wait0: b1[0]?.wait, t0: b1[0]?.text })]);
+        // 밑바닥 넷 — 잰 값이 없으면 항목 없음 · ok 신선하면 없음 · ok:false 는 down · 시각이 timeout 넘으면 ok 여도 unknown(마지막 성공값 잔존, 레오) · 시각 없으면 unknown.
+        const fresh = new Date(bNow - 60_000).toISOString(), old = new Date(bNow - 30 * 60_000).toISOString();
+        const b2 = blockedOf({ teams: [], infra: {
+          server: { ok: true, at: fresh, timeout: 5 * 60_000 },
+          codex: { ok: false, at: fresh, timeout: 5 * 60_000, detail: 'codex 없음' },
+          sessions: { ok: true, at: old, timeout: 5 * 60_000 },
+          disk: { ok: true, timeout: 5 * 60_000 },
+        } }, { now: bNow });
+        const bInfra = b2.map((it) => `${it.id}=${it.state}`).join(',');
+        const b3 = blockedOf({ teams: [], infra: { server: { ok: true, at: fresh, timeout: 5 * 60_000 } } }, { now: bNow });
+        out.push(['밑바닥 넷(레오 세 경우)', bInfra === 'infra:sessions=unknown,infra:codex=down,infra:disk=unknown' && b3.length === 0 && b2[1].text.includes('codex 없음') && b2[0].text.includes('30분째')
+          ? '✓ 신선 ok 없음 · down · 잔존 ok 는 unknown · 시각 없음 unknown · 안 잰 것 없음' : '✗ ' + JSON.stringify({ bInfra, b3: b3.length, t: b2.map((i) => i.text) })]);
       }
       // 생존 알림 문장 (결정 31 ②) — 신호가 최근이면 "아직 작업 중 (N분째, 마지막: …)", 신호도 끊겼으면 그렇게.
       const { aliveNoteText } = await import('../server/session.mjs');
