@@ -14,7 +14,10 @@
       "Bash(git diff:*)",
       "Bash(git log:*)",
       "Write",
-      "Edit"
+      "Edit",
+      "WebSearch",
+      "WebFetch",
+      "Bash(node bus/request.mjs:*)"
     ]
   },
   "hooks": {

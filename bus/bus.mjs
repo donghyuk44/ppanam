@@ -868,10 +868,14 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
  * FAIL 은 멈춘다 — 인격 문장이 아니라 여기서. 방은 phase 'blocked' 가 되고, 그 뒤로는 판정을 낼 수 없다.
  * 대표가 이 방에 말을 하면 풀린다 (resumeRound). 개발팀 대화록 09-02: FAIL 두 번 뒤에도 작업이 이어졌고
  * 뒤이은 PASS 가 경고를 지웠다 — 규칙이 산문에만 있었다 (Fable 재점검, 2026-09-12).
+ *
+ * sha — 감사가 **본** 커밋. 부르는 쪽(outside.mjs)이 감사를 시작할 때 잡은 HEAD 를 넘긴다. 안 넘기면 지금 HEAD 인데, 그건
+ * 감사 도중 들어온 커밋이 안 본 채로 찍히는 틈이다(레오 REVISE, R22) — 정식 경로는 늘 넘긴다. 푸시 문(결정 63)이 이 값을 본다.
  */
-export function recordVerdict(team, { actor, verdict, text, target = 'guide', round = null }) {
+export function recordVerdict(team, { actor, verdict, text, target = 'guide', round = null, sha = undefined }) {
   const v = String(verdict || '').toUpperCase();
   if (!VERDICTS.has(v)) throw new Error(`판정은 ${[...VERDICTS].join(' / ')} 중 하나여야 합니다.`);
+  const seen = sha === undefined ? headSha() : sha;
 
   const state = readState(team);
 
@@ -911,8 +915,8 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
 
   const rec = emit(team, {
     type: 'verdict', actor, text,
-    // sha — 판정 순간의 HEAD. 외부감사의 PASS 카드가 어느 커밋을 본 것인지 남겨 B 푸시의 문이 대조한다 (결정 63).
-    meta: { verdict: final, target, attempt, max: MAX_ATTEMPTS, sha: headSha() },
+    // sha — 감사가 본 커밋(감사 시작 때의 HEAD). B 푸시의 문이 이 값을 대조한다 (결정 63).
+    meta: { verdict: final, target, attempt, max: MAX_ATTEMPTS, sha: seen },
   });
 
   if (final === 'FAIL' && !isOffice(team)) {

@@ -26,7 +26,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readCast, readState, appendJournal,
-  defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt,
+  defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, headSha,
 } from './bus.mjs';
 // 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
 import { assemblePrompt, personaOf as seatPersonaOf } from '../server/session.mjs';
@@ -248,6 +248,9 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   const name = readCast(team).agents?.outside?.name ?? '외부감사';
   // 지금 라운드를 잡아둔다. 생각하는 5분 사이 라운드가 바뀌면 답은 이 번호로 남고 판정으로 세지 않는다.
   const round = readState(team).round;
+  // HEAD 도 지금 잡아둔다 — 카드에 찍히는 sha 는 그가 **본** 커밋이어야 한다(결정 63). 답이 돌아온 뒤의 HEAD 를 찍으면
+  // 감사 도중 들어온 커밋이 안 본 채로 PASS 로 찍혀 푸시 문이 열린다 (레오 REVISE, R22).
+  const sha = headSha();
 
   // 인격은 턴마다. 대화는 첫 턴에 지금까지 전부, 이어지는 턴에는 지난번 이후 새로 온 말만 —
   // 자기 세션이 앞의 대화는 이미 기억하고 있으니, 못 들은 부분만 채워주면 된다. 인격은 다르다: 세션이 라운드를
@@ -328,7 +331,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   let rec;
   if (verdict && !apr) {
     try {
-      rec = recordVerdict(team, { actor: 'outside', verdict, text: body, target: 'guide', round });
+      rec = recordVerdict(team, { actor: 'outside', verdict, text: body, target: 'guide', round, sha });
     } catch (e) {
       // 방이 막혀 있다(FAIL 뒤 대표 판단 대기). 판정으로 세지 않고 말로만 남긴다.
       rec = emit(team, { round, actor: 'outside', type: 'message', text: `[${verdict} — 판정으로 세지 않음: ${e.message}] ${body}`, meta: { engine: ENGINE } });
