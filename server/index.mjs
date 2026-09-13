@@ -202,7 +202,28 @@ const server = http.createServer((req, res) => {
       approvals: pendingCards(),
       told: notified(),
       grades: APPROVAL_GRADES,
+      // 개인 카드의 엔진·모델·강도 고르기 (결정 69) — 목록은 bus.mjs 하나.
+      castOptions: { engines: bus.ENGINES, claude: bus.CLAUDE_MODELS, codex: bus.CODEX_MODELS, efforts: bus.EFFORTS },
     });
+  }
+
+  // 자리의 엔진·모델·추론 강도 (결정 69) — 대표가 관제탑 개인 카드에서 고른다. 이 서버는 이 PC 안에서만 열려 있어 화면 = 대표다.
+  // cast.json 은 C 잠금 파일이라 서버가 대신 쓴다. 다음 턴부터 — claude 자리는 턴이 끝난 뒤 세션을 내리고(id 는 남김), codex 는 매 턴 읽는다.
+  if (url.pathname === '/api/cast' && req.method === 'POST') {
+    readBody(req, res, ({ team: t, actor, model, llm, codexModel, effort }) => {
+      if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
+      let r;
+      try { r = bus.updateCastAgent(t, actor, { model, llm, codexModel, effort }); }
+      catch (e) { return json(res, 400, { error: e.message }); }
+      let restart = null;
+      if (Object.keys(r.to).length) {
+        emit(t, { actor: 'system', type: 'note', text: bus.castChangeText(r.agent.name ?? actor, r.to), meta: { castChange: { actor, from: r.from, to: r.to } } });
+        // 엔진이 claude 인 자리만 세션이 있다. gpt 로 바뀐 자리의 claude 세션은 그냥 내린다 — 다음 차례는 outside.mjs 가 받는다.
+        restart = r.agent.model === 'claude' || r.to.model === 'gpt' ? session.restartAfterTurn(t, actor) : null;
+      }
+      return json(res, 200, { agent: r.agent, from: r.from, to: r.to, restart });
+    });
+    return;
   }
 
   // 승인 큐. 대표는 화면에서 C 등급을 판정한다. B 는 톰·제리가 CLI 로 한다.

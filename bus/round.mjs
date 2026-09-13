@@ -19,6 +19,7 @@ import {
   startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound,
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
   addressees, callsBoss, asksBoss, bossNotesOf, readLog, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
+  castChangeError, updateCastAgent, castChangeText, codexArgs,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -368,6 +369,34 @@ switch (cmd) {
       const mc = mergeCarry({ round: 4, items: [['review', 'called'], ['guide', 'third']] }, sc);
       const mc0 = mergeCarry(null, []);
       out.push(['넘겨 둔 것 + 묶음 호명 합치기', mc.map((x) => x.join(':')).join(',') === 'review:4,guide:4,outside:3' && mc0.length === 0 ? '✓ 안젤 하나(carry 와 묶음 둘 다) · 테라 carry 만 · 다니엘 묶음만 · 둘 다 없으면 0' : '✗ ' + JSON.stringify(mc)]);
+      // 자리의 엔진·모델·추론 강도 (결정 69) — 순수 castChangeError 가 거르고, updateCastAgent 가 임시 방 cast.json 에 쓴다. 엔진 바꾸기는 아직 거부(같은 값은 통과).
+      {
+        fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
+        const ag = readCast(T).agents;
+        const errs = [
+          castChangeError('guide', ag.guide, { llm: 'opus', effort: 'high' }),          // 통과
+          castChangeError('guide', ag.guide, { model: 'claude', effort: 'low' }),       // 같은 엔진은 통과
+          castChangeError('guide', ag.guide, { model: 'gpt' }),                         // 엔진 바꾸기 거부
+          castChangeError('outside', ag.outside, { model: 'claude' }),                  // outside 도 거부
+          castChangeError('guide', ag.guide, { llm: 'gpt-5' }),                         // 목록 밖
+          castChangeError('guide', ag.guide, { effort: 'max' }),                        // 목록 밖
+          castChangeError('boss', ag.boss, { effort: 'high' }),                         // 사람
+          castChangeError('nobody', null, { effort: 'high' }),                          // 없는 자리
+          castChangeError('guide', ag.guide, {}),                                       // 빈 패치
+          castChangeError('outside', ag.outside, { codexModel: 'gpt-5.1', effort: 'xhigh' }),   // 통과
+        ];
+        const eWant = errs[0] === null && errs[1] === null && errs[2]?.includes('아직') && errs[3]?.includes('아직') && errs[4]?.includes('claude 모델') && errs[5]?.includes('추론 강도')
+          && errs[6]?.includes('사람') && errs[7]?.includes('없습니다') && errs[8]?.includes('바꿀 값') && errs[9] === null;
+        const up = updateCastAgent(T, 'guide', { llm: 'opus', effort: 'high', model: 'claude' });
+        const again = readCast(T).agents.guide;
+        const uWant = up.to.llm === 'opus' && up.to.effort === 'high' && up.to.model === undefined && up.from.llm === null && again.llm === 'opus' && again.effort === 'high' && again.model === 'claude';
+        const txt = castChangeText('테라', up.to), txt2 = castChangeText('안젤', { effort: 'low' });
+        const ca = codexArgs({ model: 'gpt-5.1', effort: 'high', resume: 'sid' }), cb = codexArgs({ model: 'gpt-5.1', outPath: '/tmp/o' });
+        const cWant = ca.join(' ') === 'exec resume sid --skip-git-repo-check -c model=gpt-5.1 -c sandbox_mode=read-only -c model_reasoning_effort=high -'
+          && cb.join(' ') === 'exec --skip-git-repo-check --sandbox read-only -m gpt-5.1 -o /tmp/o -';
+        out.push(['자리 엔진·모델·강도(결정 69)', eWant && uWant && cWant && txt === '대표가 테라를 opus·high 로 바꿨습니다 — 다음 턴부터.' && txt2.startsWith('대표가 안젤을')
+          ? '✓ 거르기 10경우 · cast.json 에 씀(바뀐 값만) · note 글 을/를 · codex 인자 resume/새 세션' : '✗ ' + JSON.stringify({ errs, up, txt, ca, cb })]);
+      }
       // 알림 목록 (결정 68) — 요약·승인에서 종류 순(대표 차례→승인→막힘→보고), 같은 종류는 최근 것부터, 보고는 ask 아닌 것만, C 승인만,
       // out/ 그림이 있으면 썸네일, 읽음 집합에 있으면 unread:false, 급한 것이 안 읽혔을 때만 urgent.
       {

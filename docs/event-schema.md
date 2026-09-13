@@ -71,6 +71,24 @@ teams/<방>/
 
 말풍선 색·이름·모델은 `cast.json` 이 정한다. 별도 매핑 파일을 두지 않는다.
 
+**자리의 엔진·모델·추론 강도** (결정 69) — `cast.json agents[자리]` 의 네 값. 대표가 관제탑 개인 카드에서 고친다(비용 직결 — 대표만).
+
+| 값 | 무엇 | 없으면 | 어디에 닿나 |
+| --- | --- | --- | --- |
+| `model` | 엔진 — `claude` · `gpt`(codex) | — | 자리의 세션 종류. claude 는 `server/session.mjs`, gpt 는 `bus/outside.mjs` |
+| `llm` | claude 모델 — `opus` · `sonnet` · `haiku` | 방의 모델(`state/teams.json`) | `claude --model` |
+| `codexModel` | codex 모델 — `CODEX_MODELS` 목록(`bus/bus.mjs`) | 환경 `PPANAM_CODEX_MODEL`, 그것도 없으면 목록 첫 것 | `codex exec -m` · `resume -c model=` (전엔 전 자리 공통 환경변수 하나) |
+| `effort` | 추론 강도 — `low` · `medium` · `high` · `xhigh` | 엔진 기본(플래그 안 붙임) | `claude --effort` · `codex -c model_reasoning_effort=` |
+
+`POST /api/cast { team, actor, model?, llm?, codexModel?, effort? }` — 순수 `bus.castChangeError(agent, patch)` 가 거르고(없는 자리·`boss`·`system`·
+목록 밖 값·엔진에 안 맞는 모델 → `400`), 통과하면 **서버가** `cast.json` 을 쓴다(`bus.updateCastAgent` — 파일은 C 잠금이라 화면 요청을 서버가
+대신 쓰는 것) + 방에 `note` "대표가 테라를 opus·high 로 바꿨습니다"(`meta.castChange { actor, from, to }`). **다음 턴부터** — claude 자리는
+도는 턴을 안 끊고 턴이 끝나면(놀고 있으면 바로) 세션을 내려서 다음 `send` 가 새 인자로 다시 띄운다(id 는 남겨 `--resume` 으로 잇는다);
+codex 자리는 `outside.mjs` 가 매번 `cast.json` 을 읽으니 저절로. **엔진(`model`) 바꾸기는 아직 거부한다**(같은 값만 통과) — `outside` 는
+다른 회사 모델이어야 하고(CLAUDE.md, 판정 흐름도 `outside = gpt` 를 전제), 다른 자리의 codex 화는 `outside.mjs`·훅·일지가 자리 이름
+`outside` 에 묶여 있어 그 뒤 갈래(`--actor`). 화면의 엔진 알약은 보이되 누를 수 없다. 응답 `{ agent, from, to, restart: 'now' | 'after-turn' | null }`.
+`/api/boot` 의 `castOptions { engines, claude, codex, efforts }` 가 화면의 목록이다.
+
 ---
 
 ## 2. 레코드 형식

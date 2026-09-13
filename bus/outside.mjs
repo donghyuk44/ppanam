@@ -26,7 +26,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readLog, readCast, readState, appendJournal,
-  defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, headSha,
+  defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, headSha, codexModelOf, codexArgs,
 } from './bus.mjs';
 // 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
 import { assemblePrompt, personaOf as seatPersonaOf } from '../server/session.mjs';
@@ -35,10 +35,13 @@ const run = promisify(execFile);
 const TIMEOUT = Number(process.env.PPANAM_OUTSIDE_TIMEOUT || 300_000);
 const API_MODEL = process.env.PPANAM_OUTSIDE_MODEL || 'gpt-5.1';
 
-// codex 는 모델이 아니라 CLI 다. 그 안에서 도는 모델을 여기서 못 박는다.
-// 기본값에 얹어두면 어느 엔진이 판정했는지 기록에 남지 않는다.
-const CODEX_MODEL = process.env.PPANAM_CODEX_MODEL || 'gpt-5.6-sol';
-const ENGINE = `codex · ${CODEX_MODEL}`;
+// codex 는 모델이 아니라 CLI 다. 그 안에서 도는 모델을 여기서 못 박는다 — 기본값에 얹어두면 어느 엔진이 판정했는지 기록에 남지 않는다.
+// 모델은 자리별이다 (결정 69): cast.json 의 codexModel 이 먼저, 없으면 환경 PPANAM_CODEX_MODEL(옛 길, 전 자리 공통), 그것도 없으면 목록 첫 것.
+// 추론 강도(effort)도 cast.json — 없으면 안 넘겨 codex 기본. 대표가 관제탑에서 바꾸면 다음 호출이 여기서 새로 읽는다.
+const seatOf = (team) => readCast(team).agents?.outside ?? null;
+const codexModelFor = (team) => codexModelOf(seatOf(team));
+const effortFor = (team) => seatOf(team)?.effort ?? null;
+const engineOf = (team) => `codex · ${codexModelFor(team)}`;
 
 const STORE = path.join(ROOT, 'state', 'outside-sessions.json');
 // --debug: codex 의 stderr 머리말을 그대로 보여준다 — 세션 id 를 못 읽을 때 무엇이 오는지 보려고 (2026-09-13).
@@ -91,15 +94,10 @@ async function hasCodex() {
  *
  * 샌드박스는 건드리지 않는다. 기본값이 읽기 전용이고, 감사역은 고치면 안 된다.
  */
-function runCodex(input, { resume = null } = {}) {
+function runCodex(input, { resume = null, model = codexModelOf(null), effort = null } = {}) {
   const outPath = path.join(os.tmpdir(), `ppanam-outside-${crypto.randomBytes(4).toString('hex')}.txt`);
-  // 샌드박스는 읽기 전용으로 못 박는다. 기본값에 맡겼더니 codex 0.154 가 워크트리에 시험 디렉터리와 수정을 남겼다
-  // (2026-09-12). 감사역이 고치면 감사가 아니다 — 인격 문장이 아니라 플래그로.
-  // `exec resume` 는 --sandbox · -m · -o 를 받지 않는다 (codex 0.154: 사용법 오류로 exit 2). 같은 뜻을 -c 로 넘기고
-  // 최종 답은 stdout 으로 받는다 — 실측(2026-09-12): 새 세션은 -o 파일과 stdout 둘 다, 이어붙이기는 stdout 에만 답이 온다.
-  const args = resume
-    ? ['exec', 'resume', resume, '--skip-git-repo-check', '-c', `model=${CODEX_MODEL}`, '-c', 'sandbox_mode=read-only', '-']
-    : ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '-m', CODEX_MODEL, '-o', outPath, '-'];
+  // 인자는 bus.codexArgs 하나 — 샌드박스 읽기 전용 · resume 은 -c 로 · 자리별 모델 · 추론 강도(결정 69). check 가 같은 함수를 돌려본다.
+  const args = codexArgs({ model, effort, resume, outPath });
 
   return new Promise((resolve, reject) => {
     const child = spawn('codex', args, { cwd: ROOT, stdio: ['pipe', 'pipe', 'pipe'] });
@@ -226,6 +224,7 @@ const TURN = {
  * 그의 답은 그가 직접 대화록에 남기고, 다른 자리들은 각자 다음 차례에 듣는다 — 들려주기는 사회자의 일이다.
  */
 async function ask(team, question, { talk = false, lull = false, turn = null, text = null, dry = false, fromRound = null } = {}) {
+  const ENGINE = engineOf(team);   // 이 호출이 쓰는 엔진 — meta.engine 에 그대로 남는다 (자리별 모델, 결정 69)
   if (!dry && !await hasCodex()) {
     emit(team, {
       actor: 'outside', type: 'note',
@@ -290,7 +289,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
 
   let res;
   try {
-    res = await runCodex(input, { resume: prior });
+    res = await runCodex(input, { resume: prior, model: codexModelFor(team), effort: effortFor(team) });
   } catch (e) {
     // 이어붙이기가 깨졌으면 세션을 버리고 다음에 새로 연다.
     if (prior) forget(team);
@@ -388,7 +387,7 @@ async function status() {
   if (codex) {
     let v = '';
     try { v = (await run('codex', ['--version'], { timeout: 15_000 })).stdout.trim(); } catch { /* 무시 */ }
-    lines.push(`codex CLI 있음${v ? ` (${v})` : ''} · 모델 ${CODEX_MODEL}` +
+    lines.push(`codex CLI 있음${v ? ` (${v})` : ''} · 모델 ${team ? codexModelFor(team) : codexModelOf(null)}${team && effortFor(team) ? ` · 강도 ${effortFor(team)}` : ''}` +
       (process.env.CODEX_API_KEY ? ' · CODEX_API_KEY 설정됨' : ' · 저장된 로그인 사용'));
     const open = Object.keys(readStore());
     lines.push(open.length
@@ -476,7 +475,7 @@ if (mode === 'check') {
     try {
       const r = await fn(question);
       if (r) {
-        console.log(`[${name === 'codex' ? ENGINE : `openai · ${API_MODEL}`}] ${r}`);
+        console.log(`[${name === 'codex' ? `codex · ${codexModelOf(null)}` : `openai · ${API_MODEL}`}] ${r}`);
         process.exit(0);
       }
     } catch (e) { errors.push(`${name}: ${String(e.message).split('\n')[0].slice(0, 200)}`); }

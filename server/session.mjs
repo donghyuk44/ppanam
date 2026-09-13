@@ -239,6 +239,8 @@ function spawnFor(team, actor) {
   // 자리마다 다른 모델. cast.json 의 llm 이 우선, 없으면 방의 모델 (state/teams.json).
   const model = cast.llm ?? listTeams().find((t) => t.id === team)?.model;
   if (model) args.push('--model', model);
+  // 추론 강도 (결정 69) — cast.json 의 effort. 없으면 플래그를 안 붙여 엔진 기본. 대표가 관제탑에서 바꾸면 다음 턴에 여기로 들어온다.
+  if (cast.effort) args.push('--effort', cast.effort);
 
   const prompt = assemblePrompt(team, actor);
   if (prompt) args.push('--append-system-prompt', prompt);
@@ -379,6 +381,9 @@ function drain(s) {
       done?.resolve?.(typeof msg.result === 'string' ? msg.result : '');
       if (closing.has(s.team)) { dropped(s); maybeFinishClose(s.team); return; }
       next(s);
+      // 대표가 모델·강도를 바꿨다 (결정 69) — 도는 턴은 안 끊고, 쌓인 것까지 다 끝난 뒤 내린다. 다음 send 가 새 인자로 다시 띄운다(id 는 남긴다).
+      // 그 뒤 차례는 그대로 준다 — 닫히는 중의 send 는 pendingAfterClose 로 갔다가 새 프로세스가 받는다(onClosed).
+      if (!s.busy && s.restartAfterTurn) { s.restartAfterTurn = false; stop(s.team, s.actor); }
       if (!s.busy) for (const fn of turnEndListeners) { try { fn(s.team, s.actor); } catch { /* 듣는 쪽 사정 */ } }
     }
   }
@@ -520,6 +525,18 @@ export function stop(team, actor = ownerOf(team)) {
   const t2 = setTimeout(() => { try { c.kill('SIGKILL'); } catch { /* 이미 죽음 */ } }, 40_000);
   c.once('close', () => { clearTimeout(t1); clearTimeout(t2); });
   return true;
+}
+
+/**
+ * 모델·강도가 바뀌었다 (결정 69) — 다음 턴부터 새 인자로. 놀고 있으면 지금 내리고('now'), 일하는 중이면 턴이 끝난 뒤('after-turn'),
+ * 세션이 없으면 할 게 없다(null — 다음 send 가 어차피 cast.json 을 읽는다). id 는 남겨 --resume 으로 잇는다.
+ */
+export function restartAfterTurn(team, actor) {
+  const s = sessions.get(keyOf(team, actor));
+  if (!s || s.closing) return null;
+  if (s.busy || s.queue.length) { s.restartAfterTurn = true; return 'after-turn'; }
+  stop(team, actor);
+  return 'now';
 }
 
 /** 방의 모든 자리를 닫는다 (id 는 남긴다). */

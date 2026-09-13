@@ -639,6 +639,84 @@ export function readCast(team) {
   return readJSON(paths(team).cast, { agents: {} });
 }
 
+/* ── 자리의 엔진·모델·추론 강도 (대표 결정 69) ──
+ * 대표가 관제탑 개인 카드에서 고른다. cast.json 은 C 잠금 파일이라 화면 요청을 서버가 대신 쓴다(updateCastAgent).
+ * 목록은 여기 하나 — 화면(/api/boot 의 castOptions)·검증·outside.mjs 가 같은 것을 본다. 계약은 docs/event-schema.md 1절.
+ */
+export const CLAUDE_MODELS = ['opus', 'sonnet', 'haiku'];
+export const CODEX_MODELS = ['gpt-5.6-sol', 'gpt-5.1'];
+export const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
+export const ENGINES = ['claude', 'gpt'];
+export const CAST_FIELDS = ['model', 'llm', 'codexModel', 'effort'];
+/** 이 자리의 codex 모델 — 자리별 값이 먼저, 없으면 환경(전 자리 공통, 옛 길), 그것도 없으면 목록 첫 것. */
+export const codexModelOf = (agent) => agent?.codexModel ?? process.env.PPANAM_CODEX_MODEL ?? CODEX_MODELS[0];
+/**
+ * codex CLI 인자 — 순수, bus/outside.mjs 가 쓰고 round.mjs check 가 돌려본다.
+ * 샌드박스는 읽기 전용으로 못 박는다 — 기본값에 맡겼더니 codex 0.154 가 워크트리에 시험 디렉터리와 수정을 남겼다(2026-09-12).
+ * `exec resume` 는 --sandbox · -m · -o 를 받지 않는다(사용법 오류 exit 2) — 같은 뜻을 -c 로. 추론 강도는 둘 다 -c model_reasoning_effort(결정 69), 없으면 안 붙인다.
+ */
+export function codexArgs({ model, effort = null, resume = null, outPath = null }) {
+  const eff = effort ? ['-c', `model_reasoning_effort=${effort}`] : [];
+  return resume
+    ? ['exec', 'resume', resume, '--skip-git-repo-check', '-c', `model=${model}`, '-c', 'sandbox_mode=read-only', ...eff, '-']
+    : ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '-m', model, ...eff, '-o', outPath, '-'];
+}
+
+/**
+ * 고쳐도 되는 값인가 — 못 고치면 이유, 되면 null. 순수 — round.mjs check 가 돌려본다.
+ * @param actorId 자리 이름 · @param agent cast.json 의 그 자리(없으면 null) · @param patch { model?, llm?, codexModel?, effort? }
+ */
+export function castChangeError(actorId, agent, patch) {
+  if (!agent) return `'${actorId}' 자리가 없습니다.`;
+  if (actorId === 'boss' || actorId === 'system') return `'${actorId}' 는 사람이거나 장치라 엔진이 없습니다.`;
+  const keys = Object.keys(patch ?? {}).filter((k) => patch[k] !== undefined);
+  if (!keys.length) return '바꿀 값이 없습니다 (model · llm · codexModel · effort).';
+  const bad = keys.find((k) => !CAST_FIELDS.includes(k));
+  if (bad) return `'${bad}' 는 고칠 수 있는 값이 아닙니다 (model · llm · codexModel · effort).`;
+  if (patch.model !== undefined) {
+    if (!ENGINES.includes(patch.model)) return `엔진은 ${ENGINES.join(' · ')} 중 하나입니다: ${patch.model}`;
+    // 엔진 바꾸기는 아직 — outside 는 다른 회사 모델이어야 하고(CLAUDE.md: 클로드가 외부감사인 척하지 않는다, 판정 흐름도 outside=gpt 를 전제),
+    // 다른 자리의 codex 화는 outside.mjs·훅·일지가 자리 이름 'outside' 에 묶여 있어 다음 갈래(--actor). 같은 값은 통과(바뀐 게 없다).
+    if (patch.model !== agent.model) return `엔진 바꾸기는 아직 안 됩니다 — ${actorId} 는 ${agent.model === 'gpt' ? 'codex' : 'claude'} 그대로 (다음 갈래). 모델·추론 강도는 바꿀 수 있습니다.`;
+  }
+  if (patch.llm !== undefined && !CLAUDE_MODELS.includes(patch.llm)) return `claude 모델은 ${CLAUDE_MODELS.join(' · ')} 중 하나입니다: ${patch.llm}`;
+  if (patch.codexModel !== undefined && !CODEX_MODELS.includes(patch.codexModel)) return `codex 모델은 ${CODEX_MODELS.join(' · ')} 중 하나입니다: ${patch.codexModel}`;
+  if (patch.effort !== undefined && !EFFORTS.includes(patch.effort)) return `추론 강도는 ${EFFORTS.join(' · ')} 중 하나입니다: ${patch.effort}`;
+  return null;
+}
+
+/** 자리 값을 cast.json 에 쓴다 — 서버만 부른다. 돌려주는 것: { from, to, agent } (from·to 는 바뀐 값만). */
+export function updateCastAgent(team, actorId, patch) {
+  const cast = readCast(team);
+  const agent = cast.agents?.[actorId] ?? null;
+  const err = castChangeError(actorId, agent, patch);
+  if (err) throw new Error(err);
+  const from = {}, to = {};
+  for (const k of CAST_FIELDS) {
+    if (patch[k] === undefined || patch[k] === agent[k]) continue;
+    from[k] = agent[k] ?? null; to[k] = patch[k]; agent[k] = patch[k];
+  }
+  if (Object.keys(to).length) writeJSON(paths(team).cast, cast);
+  return { from, to, agent };
+}
+
+/** 목적격 조사 — 받침이 있으면 "을", 없으면 "를" (toollabel.js 의 ga 와 같은 규칙). "안젤를" 이 뜨지 않게. */
+const eul = (name) => {
+  const s = String(name ?? '');
+  const c = s.charCodeAt(s.length - 1);
+  const hangul = c >= 0xac00 && c <= 0xd7a3;
+  return s + (hangul && (c - 0xac00) % 28 !== 0 ? '을' : '를');
+};
+/** note 한 줄 — "대표가 테라를 opus·high 로 바꿨습니다". 바뀐 값만, 엔진은 이름으로. */
+export function castChangeText(name, to) {
+  const words = [];
+  if (to.model) words.push(to.model === 'gpt' ? 'codex' : 'claude');
+  if (to.llm) words.push(to.llm);
+  if (to.codexModel) words.push(to.codexModel);
+  if (to.effort) words.push(to.effort);
+  return `대표가 ${eul(name)} ${words.join('·')} 로 바꿨습니다 — 다음 턴부터.`;
+}
+
 export function readRoadmap(team) {
   return readJSON(paths(team).roadmap, { destination: null, milestones: [], cutList: [] });
 }
