@@ -563,8 +563,12 @@ switch (cmd) {
         } }, { now: bNow });
         const bInfra = b2.map((it) => `${it.id}=${it.state}`).join(',');
         const b3 = blockedOf({ teams: [], infra: { server: { ok: true, at: fresh, timeout: 5 * 60_000 } } }, { now: bNow });
-        out.push(['밑바닥 넷(레오 세 경우)', bInfra === 'infra:sessions=unknown,infra:codex=down,infra:disk=unknown' && b3.length === 0 && b2[1].text.includes('codex 없음') && b2[0].text.includes('30분째')
-          ? '✓ 신선 ok 없음 · down · 잔존 ok 는 unknown · 시각 없음 unknown · 안 잰 것 없음' : '✗ ' + JSON.stringify({ bInfra, b3: b3.length, t: b2.map((i) => i.text) })]);
+        // 경계(레오): 딱 timeout 은 신선 · 1ms 넘으면 unknown · 못 읽는 시각 unknown · 미래 시각은 허용 시차(1분) 안이면 신선, 넘으면 unknown(시계 틀린 기계가 영원히 살아 있지 않게)
+        const edge = (at, ok = true) => blockedOf({ teams: [], infra: { server: { ok, at, timeout: 5 * 60_000 } } }, { now: bNow })[0]?.state ?? 'none';
+        const bEdge = [edge(new Date(bNow - 5 * 60_000).toISOString()), edge(new Date(bNow - 5 * 60_000 - 1).toISOString()), edge('어제쯤'), edge(new Date(bNow + 30_000).toISOString()), edge(new Date(bNow + 61_000).toISOString()), edge(new Date(bNow + 61_000).toISOString(), false)].join(',');
+        out.push(['밑바닥 넷(레오 세 경우 + 경계)', bInfra === 'infra:sessions=unknown,infra:codex=down,infra:disk=unknown' && b3.length === 0 && b2[1].text.includes('codex 없음') && b2[0].text.includes('30분째')
+          && bEdge === 'none,unknown,unknown,none,unknown,unknown'
+          ? '✓ 신선 ok 없음 · down · 잔존 ok 는 unknown · 시각 없음 unknown · 안 잰 것 없음 · 딱 timeout 신선 · +1ms unknown · 미래 1분 넘으면 unknown' : '✗ ' + JSON.stringify({ bInfra, b3: b3.length, bEdge, t: b2.map((i) => i.text) })]);
       }
       // 생존 알림 문장 (결정 31 ②) — 신호가 최근이면 "아직 작업 중 (N분째, 마지막: …)", 신호도 끊겼으면 그렇게.
       const { aliveNoteText } = await import('../server/session.mjs');

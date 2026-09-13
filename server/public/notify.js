@@ -77,6 +77,8 @@ export function notificationsOf({ teams = [], summaries = {}, approvals = [] } =
 
 /** 밑바닥 항목의 이름 — infra 키 → 사람 말. */
 export const INFRA_LABEL = { server: '서버', codex: '외부 감사(codex) 연결', sessions: '세션', disk: '디스크' };
+/** 잰 시각이 지금보다 이만큼 넘게 앞서면 시계가 틀린 것 — unknown. */
+export const INFRA_SKEW_MS = 60_000;
 
 /**
  * 막힌 것 — 한 목록 (결정 92 "뭐가 막혔나", M6 준비). 계약은 docs/event-schema.md 3절 "막힌 것 — 한 목록".
@@ -134,7 +136,8 @@ export function blockedOf({ teams = [], summaries = {}, approvals = [], requests
     const m = infra?.[key];
     if (!m) continue;
     const at = m.at ? new Date(m.at).getTime() : NaN;
-    const stale = !Number.isFinite(at) || !(m.timeout > 0) || now - at > m.timeout;
+    // 미래 시각도 unknown — 시계가 크게 틀린 뒤 영원히 살아 있는 값이 된다(레오). 허용 시차는 INFRA_SKEW_MS 하나.
+    const stale = !Number.isFinite(at) || !(m.timeout > 0) || now - at > m.timeout || at - now > INFRA_SKEW_MS;
     if (!stale && m.ok === true) continue;
     const state = stale ? 'unknown' : 'down';
     const ago = Number.isFinite(at) ? `${Math.max(1, Math.round((now - at) / 60_000))}분째` : '시각 없음';
