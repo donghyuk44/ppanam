@@ -1,5 +1,5 @@
 {
-  "destination": "이 작전실이 진짜 커맨드센터가 된다. 대표가 자리를 비워도 팀들이 승인 등급 안에서 스스로 달리고, 돌아온 대표는 관제탑 첫 화면 30초로 무엇이 통과하고 무엇이 막혔는지 안다. 마을 탭은 Three.js 로 그려져 디자인팀이 낸 파일(빌보드 열다섯·건물 아홉)을 그대로 꽂아 쓰고, 폰에서도 누가 어디 있는지 이름표로 보인다. 인격은 세션이 죽어도 리셋되지 않는다.",
+  "destination": "이 작전실이 진짜 커맨드센터가 된다. 대표가 자리를 비워도 팀들이 승인 등급 안에서 스스로 달리고, 돌아온 대표는 관제탑 첫 화면 30초로 무엇이 통과하고 무엇이 막혔는지 안다. 마을 탭은 Three.js 로 그려진 인형 서울(결정 54·55)이라 디자인팀이 낸 glTF 부품과 수정 표를 그대로 꽂아 쓰고, 폰에서도 누가 어디 있는지 이름표로 보인다. 인격은 세션이 죽어도 리셋되지 않는다.",
   "baseline": "2026-09-13 R16 까지 — 가드(R13)·G-UX 두 반나절(R14·R15)·산출물 보기(R16, /out/<팀>/ 내보내기)가 들어갔다. 승인 체인 부품(approvals.jsonl·approve.mjs·등급 A/B/C·관제탑 카드·미리보기)은 있으나 서버가 실제로 원격에 민 횟수는 0 — 그래서 로드맵에 pass 가 하나도 없다(결정 18). 마을은 canvas 2D(server/public/world/world.js) 타일·걷기 시트이고, 세계 엔진은 Three.js 로 정해졌다(결정 16). 디자인 로드맵 4단계가 승인됐고(결정 33) 파일 계약은 개발 쪽 답까지 냈다(out/village-file-contract.md, 결정 38 ①). 오픈소스는 7개만 쓴다(결정 39). 검수 22건 중 8건 처리, 14건 남음(out/ux-audit-r14.md #4 #6 #7 #11 #12 #14~#22). 일지는 라운드마다 쌓이고(journalAll) decisions.md 는 원문·해석이 나뉜다. codex 자리는 첫 턴에만 인격을 받는다(bus/outside.mjs personaOf). 재시도·폴백은 0.",
   "milestones": [
     {
@@ -32,8 +32,8 @@
     },
     {
       "n": 5,
-      "title": "그리기 층 Three.js — 첫 화면",
-      "deliverable": "마을 탭의 canvas 2D 를 Three.js 로 바꾼다. 서버 계약·연출·재생·카드 코드는 그대로(결정 16). 들어가는 것: map.json 좌표 그대로 (x,0,z) · OrthographicCamera 남쪽 40° · Sprite 빌보드(billboards.json 읽기, 발 앵커) · 건물은 Box/Cylinder/Cone/Plane + 텍스처(buildings.json 읽기) · CSS2DRenderer 이름표·말풍선 · MapControls 휠/핀치/드래그(결정 13 의 줌은 여기서) · EasyStar.js 길찾기 · NearestFilter, CDN 은 cdnjs/jsDelivr(결정 39). 디자인 M2·M3 파일이 오기 전엔 지금 sprites64 와 자리표시 도형으로 세우고 오면 꽂는다. 산출물: out/three/first-scene.md (무엇을 바꿨고 무엇이 그대로인지) + 첫 화면 스크린샷(Android+Chrome 폭, 결정 10) → 디자인 M4 로 넘긴다. 레오가 폰 폭에서 실측",
+      "title": "그리기 층 Three.js — 첫 화면 (인형 서울)",
+      "deliverable": "마을 탭의 canvas 2D 를 Three.js 로 바꾼다. 서버 계약·연출·재생·카드 코드는 그대로(결정 16). 그림 방향은 결정 54·55 — 평면 도트가 아니라 **인형 마을(미니어처 디오라마) 3D 로 본 서울 랜드마크**(남산타워·경복궁·한강 등). 들어가는 것: map.json 좌표 그대로 (x,0,z) · OrthographicCamera 아이소메트릭(각도는 헨리와 정한다) · 사람은 Kenney Mini Characters(CC0, glTF) 를 GLTFLoader 로 올려 팀 색 옷으로 — 2D 빌보드 아님 · 집·골목은 Kenney City Kit Suburban·Commercial 부품을 코드로 고쳐 쓴다(색·비율·부품 조합·텍스처 교체 — 기와 지붕·흙벽·간판) · 랜드마크는 먼저 기본 도형 조립, 마음에 안 들면 그때 생성 서비스(Meshy, 유료 — C) · 재질·빛은 매트 재질 + 따뜻한 빛 + 부드러운 그림자(Airbnb Buck 참고, teams/design/ref/samples/style/) · 확대하면 집 안이 보이는 컷어웨이 · CSS2DRenderer 이름표·말풍선 · MapControls 휠/핀치/드래그(결정 13 의 줌은 여기서) · EasyStar.js 길찾기 · CDN 은 cdnjs/jsDelivr(결정 39). 파일 계약은 'glTF 부품 + 수정 표' 로 헨리와 다시 쓴다(out/village-file-contract.md 개정 — billboards.json·buildings.json 의 png 계약은 내린다). 디자인 파일이 오기 전엔 Kenney 원본 부품과 자리표시 도형으로 세우고 오면 꽂는다. 산출물: out/three/first-scene.md (무엇을 바꿨고 무엇이 그대로인지) + 첫 화면 스크린샷(Android+Chrome 폭, 결정 10) → 디자인 M4 로 넘긴다. 레오가 폰 폭에서 실측",
       "timebox": "3 라운드",
       "status": "wait"
     },
@@ -61,8 +61,8 @@
     "HQ 첫 화면(옛 M5) 별도 마일스톤 — M2 팀/개인 탭과 M4 G-UX 셋째의 '내가 할 일' 블록·카드 정렬(#12)로 흡수",
     "비용 티어(옛 M6)의 모델 조정(실무 sonnet·ops haiku) — 결정 8 팀장 opus 유지와 어긋남. 상한 코드만 M7 실패 수습에",
     "캔버스 마을에 휠·핀치 줌 넣기(결정 13) — Three.js MapControls 가 대신한다. 캔버스는 버그 수정만",
-    "걷기 애니메이션·8방향 — 빌보드는 정지 그림(디자인 컷과 같음)",
-    "3D 모델 생성·리깅 — 결정 5",
+    "걷기 애니메이션·8방향 — 인형은 정지 자세로 미끄러져 이동(결정 55 의 3D 인형도 같음, 리깅·애니메이션은 안 만든다)",
+    "3D 모델 생성 서비스(Meshy 등)·리깅 — 결정 55: Kenney CC0 부품 + 코드 수정이 먼저. 생성은 랜드마크 도형이 마음에 안 들 때 대표 C",
     "메인 병합 — 결정 9 절차(보호 브랜치 → 레오 사후 감사 → C) 전엔 하지 않는다. M3 은 새 브랜치 푸시까지",
     "마케팅·디자인 방의 일 — 그 방이 한다. 개발은 서버·화면·파일 계약만"
   ],
