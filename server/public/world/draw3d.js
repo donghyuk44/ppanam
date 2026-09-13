@@ -392,6 +392,9 @@ function render(mode) {
     if (d.lengthSq() < 1e-4) D.goal = null; else { D.controls.target.add(d); D.camera.position.add(d); }
   }
   D.controls.update();
+  // 멀리서 보면 이름표·말풍선이 마을을 덮는다(폰 폭 "화면 작게" 에서 열여섯 이름표가 한 줄로 겹침, R24 첫 그림). 칸 하나가 10px 아래면 방 이름만 남긴다.
+  const ppu = D.w / (D.camera.right - D.camera.left) * D.camera.zoom;
+  D.labels.domElement.classList.toggle('world__labels--far', ppu < 10);
   D.renderer.render(D.scene, D.camera);
   D.labels.render(D.scene, D.camera);
 }

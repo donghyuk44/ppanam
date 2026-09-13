@@ -31,6 +31,7 @@
 .world__stage .world__gl { position: absolute; left: 0; top: 0; width: 100% !important; height: 100% !important; display: block; cursor: grab; }
 .world__stage .world__gl:active { cursor: grabbing; }
 .world__stage .world__labels { position: absolute; left: 0; top: 0; pointer-events: none; overflow: hidden; }
+.world__labels--far .wv-tag { display: none; }   /* 멀리서는 방 이름만 — draw3d.js 가 칸 크기로 켜고 끈다 */
 
 /* 사람 머리 위 기둥 — 말풍선(위)과 이름표(아래). 자리는 CSS2D 가 transform 으로 옮긴다. */
 .wv-tag { display: flex; flex-direction: column; align-items: center; gap: 7px; pointer-events: none; white-space: nowrap; }
@@ -101,7 +102,12 @@
 }
 
 @media (max-width: 1179px) { .app[data-view="world"] { grid-template-columns: 210px minmax(0, 1fr); } }
-@media (max-width: 819px) { .app[data-view="world"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); } .world__hint { display: none; } }
+@media (max-width: 819px) {
+  .app[data-view="world"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); }
+  .world__hint { display: none; }
+  /* 폰에서 마을 탭일 때 대표 차례 카드가 화면의 반을 먹어 무대가 280px 로 줄었다(R24 첫 그림). 카드는 그대로 뜨되(결정 20) 높이만 잡고 안에서 넘긴다. */
+  .app[data-view="world"] > .approvals { max-height: 132px; overflow: auto; }
+}
 
 /* 세상의 시계 (W2) */
 .world__clock { font: 12px Galmuri11, 'IBM Plex Sans KR', sans-serif; color: var(--ink-2, #6b6357); margin-left: 8px; white-space: nowrap; }

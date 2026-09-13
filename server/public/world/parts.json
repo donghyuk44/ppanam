@@ -37,7 +37,7 @@
     "background": "#f3e9d8",
     "sky": "#fff4e0", "ground": "#d9c9b0", "hemi": 1.1,
     "sun": { "color": "#ffe8c8", "intensity": 2.2, "from": [-1, 2.2, 1.2] },
-    "night": { "background": "#2a2f4a", "sky": "#6d78b8", "ground": "#2a2a3a", "hemi": 0.5, "sun": 0.35 },
+    "night": { "background": "#3b4166", "sky": "#94a0e0", "ground": "#3a3a4e", "hemi": 0.85, "sun": 0.75 },
     "evening": { "background": "#efd3b8", "sky": "#ffd2a8", "ground": "#c9a88a", "hemi": 0.9, "sun": 1.6 }
   },
   "characters": {
