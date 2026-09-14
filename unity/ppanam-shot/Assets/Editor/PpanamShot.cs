@@ -104,8 +104,10 @@ public static class PpanamShot
         QualitySettings.shadowCascades = 1; QualitySettings.shadowProjection = ShadowProjection.CloseFit; QualitySettings.shadowmaskMode = ShadowmaskMode.DistanceShadowmask;
         var from = light["sun"]["from"]; sun.transform.rotation = Quaternion.LookRotation(-ToUnityDir((float)from[0], (float)from[1], (float)from[2]));
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-        RenderSettings.ambientSkyColor = Hex((string)light["sky"]); RenderSettings.ambientEquatorColor = Hex((string)light["ground"]); RenderSettings.ambientGroundColor = Hex((string)light["ground"]);
-        RenderSettings.ambientIntensity = 0.45f;
+        // 따뜻한 빛(첫 시안 "저녁 느낌") — 넷째 판은 하늘 환경광(#dfe9f3, 푸른빛)이 해(#ffe1bf)를 눌러 중립으로 보였다(나리). 환경광 셋 다 땅 색(#e9dccb, 따뜻)으로, 해는 0.8.
+        var warm = Hex((string)light["ground"]);
+        RenderSettings.ambientSkyColor = warm; RenderSettings.ambientEquatorColor = warm; RenderSettings.ambientGroundColor = warm;
+        RenderSettings.ambientIntensity = 0.45f; sun.intensity = 0.8f;
 
         // ⑤ 카메라 — draw3d.js 와 같은 식: fov 25, azimuth 45, elevation 35, 짧은 변에 fit["1"]=60 칸
         var cam = new GameObject("cam").AddComponent<Camera>();
@@ -227,9 +229,11 @@ public static class PpanamShot
         tex.SetPixels32(src); tex.Apply();
     }
     static int RadiusAt(int y, int h)
-    {   // 텍스처 y 는 아래가 0. 또렷한 띠는 화면 46~54%, 거기서 멀어질수록(제곱) 커진다 — 화면 끝이 MAX
-        float t = (float)y / h; float d = t < 0.46f ? (0.46f - t) / 0.46f : t > 0.54f ? (t - 0.54f) / 0.46f : 0f;
-        return Mathf.RoundToInt(d * BLUR_MAX);   // 선형 — 제곱이면 마을 가장자리(띠에서 0.2~0.3)가 1px 도 안 돼 안 보인다
+    {   // 텍스처 y 는 아래가 0. 가운데(u=0)에서 화면 끝(u=1)까지 — 넷째 판은 마을 가장자리(u≈0.32·0.36)가 1~2px 라 "흐림 없음"(나리). 거기서 5px 안팎이 되게:
+        // u<0.08 또렷, 0.32 에서 5, 끝에서 MAX. 마을 한가운데(u 0.1~0.25)도 1~3px 로 살짝 — 그게 미니어처(틸트시프트)다.
+        float u = Mathf.Abs((float)y / h - 0.5f) / 0.5f;
+        float r = Mathf.Max(0f, (u - 0.08f) / 0.24f) * 5f;
+        return Mathf.Min(BLUR_MAX, Mathf.RoundToInt(r));
     }
     static Color32 Avg(Color32[] p, int w, int h, int x, int y, int rx, int ry)
     {
