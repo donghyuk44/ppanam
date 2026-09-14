@@ -576,6 +576,36 @@ body {
 .app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"] { grid-template-columns: 224px minmax(0, 1fr); }
 
 .dash__body { padding: 16px 22px; overflow: auto; }
+.dash__sub { font-size: 12px; color: var(--ink-4); font-weight: 400; }
+
+/* ── 앞날 띠 (헨리 시안 1판 dashboard.svg · 결정 128) — 줄 = 팀, 가로 = 앞으로의 시간, 칸 = 단계. 채움 = 잡힌 예정, 점선 = 대표 답 뒤, 빨강 = 늦음/막힘 ── */
+.band { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px 6px; margin-bottom: 12px; }
+.band__head, .band__row { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 8px; align-items: center; }
+.band__row { padding: 9px 0; border-top: 1px dashed var(--line-2); position: relative; flex-wrap: wrap; }
+.band__scale { position: relative; height: 16px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink-4); }
+.band__tick { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.band__tick:first-child { transform: none; }
+.band__team { min-width: 0; font-size: 12.5px; line-height: 1.3; }
+.band__team b { display: block; font-weight: 600; }
+.band__team span { display: block; font-size: 11px; color: var(--ink-4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.band__lane { position: relative; height: 26px; border-left: 1px dashed var(--ink); background: repeating-linear-gradient(90deg, transparent 0 24.9%, var(--line-2) 24.9% 25%); }
+.band__box {
+  position: absolute; top: 2px; height: 22px; box-sizing: border-box; border-radius: 6px; padding: 0 6px;
+  font: 10.5px/20px 'IBM Plex Sans KR', sans-serif; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; min-width: 24px;
+  background: var(--team); color: #f4efe4; border: 1px solid transparent; opacity: .88;
+}
+.band__box--planned { opacity: .45; }
+.band__box--gated { background: transparent; color: var(--ink-3); border: 1px dashed var(--ink-4); opacity: 1; }
+.band__box--blocked { background: color-mix(in srgb, var(--bad) 25%, transparent); color: var(--bad); border-color: var(--bad); opacity: 1; }
+/* 늦은 것 — 빨간 띠가 지금 선에서 오른쪽으로 자라고 옆에 얼마나(분·시간·일) */
+.band__late { position: absolute; left: 0; top: 100%; margin-top: 3px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--bad); white-space: nowrap; }
+.band__late::before { content: ''; display: block; width: var(--w, 12%); height: 5px; border-radius: 3px; background: var(--bad); }
+.band__row--late { padding-bottom: 26px; }
+.band__why { grid-column: 1 / -1; font-size: 12px; color: var(--ink-2); background: var(--panel-2); border-radius: 8px; padding: 6px 10px; margin-top: 6px; }
+.gates { margin-bottom: 14px; }
+.gates__k { font-size: 10.5px; letter-spacing: .12em; color: var(--ink-4); margin: 6px 0 6px; }
+.gates__card { background: var(--panel); border: 1px solid var(--me-line); border-radius: 8px; padding: 6px 10px; font-size: 13px; margin-bottom: 6px; }
+.gates__card b { font-weight: 600; margin-right: 4px; }
 .dash__body table { border-collapse: collapse; width: 100%; margin-bottom: 18px; font-size: 13px; }
 .dash__body th, .dash__body td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top; }
 .dash__body th { background: var(--panel); font-weight: 600; }
@@ -900,6 +930,8 @@ button.dash__row:hover b { text-decoration: underline; }
   .dash__tile { padding: 10px 10px; }
   /* 예정 작업 표(결정 128)는 폰에서 줄마다 카드 — 칸 다섯을 412 에 욱여넣으면 글자가 한 자씩 세로로 떨어졌다(나리 실측 R25). 머리글은 칸 앞 작은 글자(td[data-label]). 헨리 '앞날 띠' 시안 전까지의 임시. */
   .dash__body { padding: 12px; }
+  .band { padding: 8px 8px 4px; }
+  .band__head, .band__row { grid-template-columns: 96px minmax(0, 1fr); gap: 6px; }   /* 헨리 폰 시안 — 팀 이름 칸 좁게, 눈금 넷 */
   .dash__body table, .dash__body tr, .dash__body td { display: block; width: 100%; }
   .dash__body th { display: none; }
   .dash__body tr { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 8px 10px; margin-bottom: 8px; }

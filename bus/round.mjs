@@ -21,7 +21,7 @@ import {
   addressees, callsBoss, asksBoss, bossNotesOf, doneOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
   mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, overdue, setMilestoneStatus,
-  roomRules, allowedIn,
+  roomRules, allowedIn, plansOf, timeboxRounds, DEFAULT_ROUND_MS,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -859,10 +859,28 @@ switch (cmd) {
           && sp3.every((p) => p.length <= PIECE) && sp3.join(' ') === '가 '.repeat(70).trim()
           && sp4.length === PIECES && sp4[PIECES - 1].endsWith(' …')
           && spBoss.every((p) => p.length <= PIECE + 2) && spBoss.length >= 3 && spBoss.length <= PIECES && splitSpeech('') .length === 0;
+        // 앞날 띠(대시보드, 헨리 시안 1판 · 결정 128) — plansOf 순수. timebox × 회차 평균, 지난 것 없음, 대표 timebox 는 gated, 막힘은 blocked, 늦음은 late ms.
+        const pNow = Date.parse('2026-09-14T03:00:00Z');
+        const pRounds = [{ startedAt: '2026-09-13T14:00:00Z', endedAt: '2026-09-13T16:00:00Z' }, { startedAt: '2026-09-13T10:00:00Z', endedAt: '2026-09-13T11:00:00Z' }];   // 평균 90분
+        const pRoad = { milestones: [
+          { n: 5, title: '지난', status: 'pass', timebox: '1 라운드' }, { n: 6, title: '지금', status: 'now', timebox: '2 라운드' },
+          { n: 7, title: '다음', status: 'wait', timebox: '반 라운드' }, { n: 8, title: '대표 뒤', status: 'wait', timebox: '대표 방향 뒤 정함' }, { n: 9, title: '그 뒤', status: 'wait', timebox: '1 라운드' } ] };
+        const p1 = plansOf({ roadmap: pRoad, state: { phase: 'running', round: 25, milestone: 6, startedAt: '2026-09-14T01:00:00Z' }, rounds: pRounds, now: pNow });
+        const p2 = plansOf({ roadmap: pRoad, state: { phase: 'blocked', round: 25, milestone: 6, startedAt: '2026-09-13T20:00:00Z' }, rounds: pRounds, progress: { blocked: ['디스크 꽉 참'] }, now: pNow });
+        const p3 = plansOf({ roadmap: { milestones: [] }, state: { phase: 'idle' }, rounds: [], now: pNow });
+        const s1 = p1.stages;
+        const plansOk = p1.roundMs === 90 * 60_000 && s1.length === 4 && s1.map((s) => s.status).join(',') === 'running,planned,gated,planned'
+          && s1[0].plannedFrom === '2026-09-14T01:00:00.000Z' && s1[0].plannedTo === '2026-09-14T04:00:00.000Z' && s1[0].late === 0
+          && s1[1].plannedFrom === '2026-09-14T04:00:00.000Z' && s1[1].plannedTo === '2026-09-14T04:45:00.000Z'
+          && s1[2].plannedTo === null && s1[2].gate === '대표 방향 뒤 정함' && s1[3].plannedFrom === '2026-09-14T04:45:00.000Z'
+          && p2.stages[0].status === 'blocked' && p2.stages[0].blockedWhy === '디스크 꽉 참' && p2.stages[0].late === 4 * 3600_000
+          && p3.stages.length === 0 && p3.roundMs === DEFAULT_ROUND_MS && timeboxRounds('대표가 방식을 고른 뒤 2 라운드') === null;
+        out.push(['앞날 띠(plansOf)', plansOk ? '✓ 회차 평균 90분 · 지난 것 없음 · 지금→다음 잇기 · 반 라운드 · 대표 timebox 는 gated · 막힘 blocked+late 4h · 빈 계획표' : '✗ ' + JSON.stringify({ p1, p2, p3 })]);
         // 비서실 규칙(결정 132, 계약 0절) — roomRules·allowedIn 순수. 실제 teams.json 의 sera 가 그 규칙을 갖는지도 본다.
         const sr = roomRules('sera'), hr = roomRules('hq'), dr = roomRules('dev');
         const rulesOk = sr.owner === 'secretary' && hr.owner === 'chief' && dr.owner === 'guide' && !hr.speakers && !dr.only
           && allowedIn(sr, { actor: 'boss', type: 'message' }) && allowedIn(sr, { actor: 'secretary', type: 'message' })
+          && allowedIn(sr, { actor: 'system', type: 'message' })   // 나리 — 대표 초대(09-14). 말은 남고
           && !allowedIn(sr, { actor: 'secretary', type: 'tool' }) && !allowedIn(sr, { actor: 'system', type: 'note' }) && !allowedIn(sr, { actor: 'chief', type: 'message' })
           && allowedIn(hr, { actor: 'system', type: 'note' }) && allowedIn(dr, { actor: 'guide', type: 'tool' });
         // 상주 gemini 스트림 파서(결정 122) — 실측 줄(나리 R25): 알맹이가 사건 이름 밑에 한 겹(result.result.response). 첫 실측이 그래서 빈 답이었다. 평평한 모양도 같이.
@@ -879,7 +897,7 @@ switch (cmd) {
         const gmOk = nested.answer === '4입니다.' && nested.sessionId === 'dd6f16b7-0000' && nested.firstMs != null
           && flat.answer === '5' && flat.sessionId === 'c-flat' && noResp.answer === '여섯' && /ERROR.*quota/.test(gmErr ?? '');
         out.push(['상주 gemini 파서(server/gemini.mjs)', gmOk ? '✓ 한 겹 안 result.response · 평평한 모양 · response 없으면 조각 합 · 첫 낱말 시각 · ERROR 는 거부' : '✗ ' + JSON.stringify({ nested, flat, noResp, gmErr })]);
-        out.push(['비서실 규칙(결정 132)', rulesOk ? '✓ 주인 세라 · 대표·세라 message 만 · 도구·안내·톰 버림 · 총괄실·작전실은 열린 방' : '✗ ' + JSON.stringify({ sr, hr, dr })]);
+        out.push(['비서실 규칙(결정 132)', rulesOk ? '✓ 주인 세라 · 대표·세라·나리 message 만 · 도구·안내·톰 버림 · 총괄실·작전실은 열린 방' : '✗ ' + JSON.stringify({ sr, hr, dr })]);
         // 세라 재료(결정 98) — briefOf('sera', 'secretary') 가 안 죽고 다섯 팀·승인·요청 세 절을 담는지. 지금 있는 값 그대로(고정 값 안 만듦).
         {
           const { briefOf } = await import('../server/session.mjs');

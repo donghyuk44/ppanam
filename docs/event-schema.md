@@ -22,7 +22,7 @@
 | 값 | 무엇 | 총괄실 | 비서실 |
 | --- | --- | --- | --- |
 | `owner` | 방 주인 — 대표 지시가 먼저 가는 자리(`session.ownerOf`) | (없음 = `chief`) | `secretary` |
-| `speakers[]` | 이 방에 기록될 수 있는 화자. 밖의 화자는 `bus.emit` 이 **버린다**(오류가 아니라 null — 훅·안내·승인·카드 어느 것도 이 방에 못 들어온다) | (없음 = 누구나) | `["boss","secretary"]` |
+| `speakers[]` | 이 방에 기록될 수 있는 화자. 밖의 화자는 `bus.emit` 이 **버린다**(오류가 아니라 null — 훅·안내·승인·카드 어느 것도 이 방에 못 들어온다) | (없음 = 누구나) | `["boss","secretary","system"]` — 나리(`system`)는 대표 초대(09-14). `only` 가 message 라 나리의 말만 남고 자동 안내(note)는 여전히 안 들어온다 |
 | `only[]` | 기록될 수 있는 종류. 밖은 버린다 — 도구 줄·안내(note)·입장(enter)이 안 남는다 | (없음 = 모두) | `["message"]` |
 
 버린 것은 서버 stderr 에 한 줄 남긴다(`emit 버림 sera/system note`). 판정은 `bus.roomRules(team)` · `bus.allowedIn(team, event)` — 순수, `round.mjs check` 가 돌린다.
@@ -321,12 +321,15 @@ codex 는 `which codex` · 세션은 메모리 맵의 좀비 수(`session.health
 | 자리 | 질문 · 시간 | 읽는 것 | 어떻게 자르나 | 없을 때 |
 | --- | --- | --- | --- | --- |
 | 관제탑 | 지금 무슨 일이 벌어지고 있나 · **지금** | `blockedOf(...)` 전부 · `doneOf`(오늘 0시~) · `summaries` 팀 다섯 줄 + `progress` 네 칸 · `infra` | 순서 고정 — **① 뭐가 막혔나**(`waitOn:'boss'` 가 맨 위 = 종·"내 차례"와 **같은 목록**, 그 아래 나머지 `waitOn`) **② 누가 뭘 했나**(팀별로 접어 한 줄) **③ 내 차례**(결정 80 의 것, 늘 보인다). `infra` 는 `state!=='ok'` 일 때만 맨 위 띠. 상황판 네 칸(하는 것·막힌 것·대표 차례·다음)은 팀 줄을 펼치면 글자 그대로 — `progress.mjs` 그대로 | "막힌 것 없어요. 팀이 일하는 중이에요." |
-| 대시보드 | 앞으로 언제 뭐가 되나 · **앞** | `teams/hq/out/plan-table.md`(톰이 관리, 읽기만) + 팀마다 로드맵 `now`·`wait` 마일스톤과 `progress.next[]` | 다섯 팀 예정이 **한 화면** — 표가 위, 팀별 다음 마일스톤·다음 할 일이 아래. **지난 것은 여기 안 온다**(관제탑·분석 몫) | "예정이 비었어요 — 톰이 plan-table.md 를 씁니다." |
+| 대시보드 | 앞으로 언제 뭐가 되나 · **앞** | 팀마다 로드맵 `now`·`wait` 마일스톤(`pass` 는 지난 것 — 안 온다) + 그 팀 `rounds.jsonl`(회차 길이) + `round.json`(지금 회차 시작) + 대기 승인 C + `progress.boss[]` | 헨리 시안 1판(`teams/design/out/screens/ui/dashboard.svg`) **앞날 띠** — 줄 = 팀(비서실·마케팅·개발·디자인·경영), 가로 = 앞으로의 시간, 칸 = 단계. 채움 = 잡힌 예정, 점선 = 대표 답이 있어야 열림, 빨강 = 늦음/막힘(지금 선에서 오른쪽으로 자람). 예정 시각은 **timebox × 그 팀 회차 평균 길이**로 계산 — 손으로 안 적는다. 세는 숫자 없음. 아래 "대표가 정해야 열리는 것" 카드. 누르면 왜(펼친 줄) → 계획표 카드. 다섯 팀이 **한 화면**, 폰 412 도. plan-table.md(결정 128 1판) 는 그 아래 그대로 | "단계 없음 — 계획표가 오면 뜹니다." |
 | 분석 | 왜 자꾸 이렇게 되나 · **뒤** | 라운드 기록(`rounds.jsonl`)·판정·승인·막힘의 되풀이 | 숫자 하나는 안 온다 — **다른 숫자와 견줄 때만**(같은 자리에서 몇 번째 막힘, 라운드 길이의 흐름). 항목은 대표가 `out/analysis-inventory.md` 에서 고른 것만(로드맵 M6) | "견줄 만큼 쌓이지 않았어요." |
 | 보고서 | 어제 하루가 어땠나 · **어제 하루** | `doneOf` 를 창으로(어젯밤 = 어제 18시~오늘 9시 · 날짜 고름) + `progress.next[]` + `out/**` 그림(`listOut`, 창 안 mtime) + 대리 결정(`note meta.proxy`) + 사람 글(`teams/hq/out/reports/<날짜>.md`) | 결정 80 의 다섯 절, 폰에서 30초 — ① 사이 있었던 일 ② 대표님이 보실 것(= 관제탑 ① 과 같은 목록) ③ 오늘 각 방이 할 일 ④ 한마디(글 있는 날만) ⑤ 사이 나온 그림 + 맨 위 "대표님 대신 정한 것"(결정 85 ③). **틀은 경영팀**(대표 09-14) — 개발은 아래층(집계)만 | "이 사이엔 한 일이 없어요." |
 | 카드 | 이 하나를 더 보고 싶다 · (깊이) | `GET /api/actor` · 승인 레코드 · 마일스톤 · 방 요약 | 탭이 아니라 **문** — 어느 화면에서든 **두 번 눌러** 닿는다(한 줄 → 펼친 줄 → 카드). 넷째 겹은 없다. 사람 카드는 결정 130 ① 의 정사각형(얼굴·이름·직책·열 줄 1번·상태 알약) | — |
 
-서버 문: `GET /api/dashboard` → `{ text, at, plans: {팀: { now, wait: [], next: [] }} }`(`text`·`at` 은 지금 것 — plan-table.md 원문과 mtime, 결정 128 · `plans` 는 M6 에서 더한다) ·
+서버 문: `GET /api/dashboard` → `{ text, at, now, teams: [{ id, name, room, color, stages: [{ n, title, status, plannedFrom, plannedTo, late, blockedWhy, gate }], roundMs }], bossGates: [{ kind, team, what, id }] }`
+— `text`·`at` 은 결정 128 1판(plan-table.md 원문·mtime) 그대로. `stages` 는 헨리 시안 맨 밑 줄 그대로: `status` = `running`(지금 단계, 채움) · `planned`(잡힌 예정, 채움 옅게) · `gated`(대표 답 뒤, 점선 — `gate` 에 무엇) · `blocked`(FAIL 로 막힘, 빨강) · `plannedFrom/To` ISO 또는 null(기간을 셀 수 없을 때 = gated) · `late` ms(plannedTo 를 지난 만큼, 아니면 0) · `blockedWhy` 한 줄.
+`roundMs` = 그 팀 닫힌 회차 최근 여덟의 평균 길이(없으면 기본 90분). 계산은 순수 함수 `bus.plansOf({ roadmap, state, rounds, progress, now })` — `round.mjs check` 가 돌린다. 지금 단계의 `plannedFrom` 은 지금 회차 `startedAt`, `plannedTo` 는 거기에 timebox 회차 수 × `roundMs`; 다음 단계들은 앞 단계 `plannedTo` 뒤로 잇는다. timebox 에 "대표" 가 있으면 `gated`.
+`bossGates` = 대기 중인 C 승인(`kind:'approval'`) + 팀 상황판 `progress.boss[]`(`kind:'progress'`) + gated 단계(`kind:'stage'`) — 순서 그대로. ·
 `GET /api/report?since&until` → `{ done: [팀별], next: {팀: []}, images: [], proxy: [], chief: md|null }` · 관제탑은 지금처럼 `summaries`(+`infra`, `blockedOf` 는 화면이 센다).
 셋 다 **파일을 새로 만들지 않는다** — 있는 것을 읽어 조립할 뿐. 사람 글이 없어도 탭은 뜬다(아래층이 정본, 글은 그 위 한 문단 — `out/m6-screen-inventory.md` 3절).
 문이 있는 자리(지금): 작전실 말풍선의 얼굴·이름과 오른쪽 참여 줄 → 관제탑 사람 카드가 팝업으로(`app.js openPersonPop`, 부품은 `personCard` 하나) · 마을 인형 → `/api/actor` 카드 · 관제탑 사람 탭은 카드 자체. 대표는 카드 없음. 나리(system 자리)는 세션이 없어 이름·직책만 — 인격 파일이 생기면 그 첫 줄이 붙는다.

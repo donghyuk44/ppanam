@@ -1831,13 +1831,80 @@ function mdToDom(text) {
   return box;
 }
 
+/* ── 앞날 띠 (헨리 시안 1판 dashboard.svg · 결정 128) — 줄 = 팀, 가로 = 앞으로의 시간, 칸 = 단계.
+ * 시간 눈금은 폰 넷(오늘·내일·모레·이번 주)·컴퓨터 다섯(+다음 주). 지금 선이 왼쪽 끝 — 지난 것은 없다.
+ * 자리(px)는 시각 → 띠 폭의 비율. 창은 지금부터 HORIZON 까지, 그 뒤는 오른쪽 끝에 붙는다("이번 주" 눈금 뒤). 늦은 것은 빨간 띠가 지금 선에서 오른쪽으로 자란다.
+ * 세는 숫자 없음 — 단계 번호·날짜·늦은 시간만(헨리). 누르면 왜(펼친 줄) → 한 번 더 = 계획표 카드(관제탑 팀 카드의 계획표와 같은 부품은 다음 손).
+ */
+const DAY = 86_400_000;
+const seoulDayStart = (ms) => Math.floor((ms + 9 * 3600_000) / DAY) * DAY - 9 * 3600_000;   // 계약의 dayStartSeoul 과 같은 식 — 눈금 "내일" 은 우리 시각 자정
+function bandTicks(now, wide) {
+  const d0 = seoulDayStart(now);
+  const ticks = [{ at: now, label: '오늘' }, { at: d0 + DAY, label: '내일' }, { at: d0 + 2 * DAY, label: '모레' }, { at: d0 + 7 * DAY, label: '이번 주' }];
+  if (wide) ticks.push({ at: d0 + 14 * DAY, label: '다음 주' });
+  return ticks;
+}
+function loadDashboardBand(r) {
+  const band = $('dashBand'), gates = $('dashGates');
+  band.replaceChildren(); gates.replaceChildren();
+  const now = Date.parse(r.now ?? '') || Date.now();
+  const wide = window.innerWidth >= 1180;
+  const ticks = bandTicks(now, wide);
+  const end = ticks[ticks.length - 1].at + (wide ? 3 * DAY : DAY);   // 마지막 눈금 뒤 여유 — 그 너머는 끝에 붙는다
+  const x = (t) => Math.min(100, Math.max(0, ((t - now) / (end - now)) * 100));   // %
+  // 눈금 머리
+  const head = el('div', 'band__head');
+  head.appendChild(el('span', 'band__corner', ''));
+  const scale = el('div', 'band__scale');
+  for (const t of ticks) { const s = el('span', 'band__tick', t.label); s.style.left = `${x(t.at)}%`; scale.appendChild(s); }
+  head.appendChild(scale); band.appendChild(head);
+  const fmtTo = (iso) => { const t = Date.parse(iso); if (!Number.isFinite(t)) return ''; const dd = Math.floor((seoulDayStart(t) - seoulDayStart(now)) / DAY); const hm = new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' }); return dd <= 0 ? `오늘 ${hm}` : dd === 1 ? `내일 ${hm}` : dd === 2 ? `모레 ${hm}` : `${dd}일 뒤`; };
+  const fmtLate = (ms) => { const m = Math.round(ms / 60000); return m < 60 ? `${m}분 늦음` : m < 60 * 48 ? `${Math.round(m / 60)}시간 늦음` : `${Math.round(m / 1440)}일 늦음`; };
+  for (const t of r.teams ?? []) {
+    const row = el('div', 'band__row'); row.dataset.team = t.id;
+    const label = el('div', 'band__team');
+    label.appendChild(el('b', null, t.room ?? t.name));
+    const nowStage = t.stages.find((s) => s.status === 'running' || s.status === 'blocked');
+    label.appendChild(el('span', null, nowStage ? `${nowStage.n}단계 ${nowStage.title}`.slice(0, 22) : '단계 없음'));
+    row.appendChild(label);
+    const lane = el('div', 'band__lane'); lane.style.setProperty('--team', t.color ?? 'var(--ink-4)');
+    if (!t.stages.length) {   // 계획표가 없다 — 대표가 열어야 한다(헨리 시안: 비서실·경영)
+      const g = el('button', 'band__box band__box--gated', '계획표 — 대표가 연다'); g.type = 'button'; g.style.left = '0'; g.style.width = '48%'; lane.appendChild(g);
+    }
+    let cursorPct = 0;
+    for (const s of t.stages) {
+      const from = s.plannedFrom ? Math.max(now, Date.parse(s.plannedFrom)) : null;
+      const to = s.plannedTo ? Date.parse(s.plannedTo) : null;
+      let left = from != null ? x(from) : cursorPct, width = to != null ? Math.max(x(to) - left, 6) : 18;
+      if (left + width > 100) width = 100 - left;
+      if (width < 6) { left = Math.max(0, 100 - 6); width = 6; }
+      cursorPct = left + width + 1;
+      const b = el('button', `band__box band__box--${s.status}`); b.type = 'button';
+      const text = s.status === 'gated' ? `${s.n != null ? s.n + '단계' : s.title} — ${s.gate}` : s.status === 'blocked' ? `${s.n}단계 — 막힘${s.blockedWhy ? '(' + s.blockedWhy + ')' : ''}` : `${s.n}단계${to ? ' · ' + fmtTo(s.plannedTo) + '까지' : ''}`;
+      b.textContent = text; b.title = `${s.n != null ? s.n + '단계 ' : ''}${s.title}`;
+      b.style.left = `${left}%`; b.style.width = `${width}%`;
+      b.addEventListener('click', () => { const why = row.querySelector('.band__why'); if (why) { why.remove(); return; } const w = el('div', 'band__why'); w.textContent = `${s.n != null ? s.n + '단계 ' : ''}${s.title}${s.plannedFrom ? ` · ${fmtTo(s.plannedFrom)} → ${fmtTo(s.plannedTo)}` : ''}${s.gate ? ` · ${s.gate}` : ''}${s.blockedWhy ? ` · ${s.blockedWhy}` : ''}${s.late ? ` · ${fmtLate(s.late)}` : ''} — 계획표는 관제탑 팀 카드에`; row.appendChild(w); });
+      lane.appendChild(b);
+      if (s.late > 0) { const lt = el('span', 'band__late', fmtLate(s.late)); lt.style.setProperty('--w', `${Math.max(3, Math.min(40, x(now + s.late)))}%`); lane.appendChild(lt); row.classList.add('band__row--late'); }
+    }
+    row.appendChild(lane); band.appendChild(row);
+  }
+  const bg = r.bossGates ?? [];
+  gates.appendChild(el('div', 'gates__k', `대표가 정해야 열리는 것 ${bg.length}`));
+  if (!bg.length) gates.appendChild(el('div', 'tcard__quiet', '지금 정하실 것 없어요.'));
+  for (const g of bg) { const c = el('div', 'gates__card'); c.appendChild(el('b', null, teams.find((t) => t.id === g.team)?.name ?? g.team)); c.append(' ' + g.what); gates.appendChild(c); }
+}
+
 async function loadDashboard() {
   const r = await fetch('/api/dashboard').then((r) => r.json()).catch(() => null);
   const body = $('dashBody');
-  if (dashMark === r?.at) return;   // 안 바뀌었으면 다시 안 그린다(입력 중이면 커서 튐 방지 — 다른 탭과 같은 습관)
-  dashMark = r?.at ?? '';
+  const mark = r ? `${r.at ?? ''}|${(r.teams ?? []).map((t) => t.stages.map((s) => `${s.n}${s.status}${s.plannedTo}${s.late > 0}`).join(',')).join(';')}|${(r.bossGates ?? []).length}|${window.innerWidth >= 1180}` : '';
+  if (dashMark === mark) return;   // 안 바뀌었으면 다시 안 그린다(펼친 줄이 닫히지 않게 — 다른 탭과 같은 습관)
+  dashMark = mark;
+  if (r?.teams) loadDashboardBand(r);
   body.replaceChildren();
   if (!r?.text) { body.appendChild(el('p', 'tcard__quiet', '아직 예정 작업 표가 없어요 — teams/hq/out/plan-table.md 가 오면 여기 뜹니다.')); return; }
+  body.appendChild(el('div', 'gates__k', '예정 작업 표 (톰)'));
   body.appendChild(mdToDom(r.text));
 }
 

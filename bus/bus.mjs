@@ -1595,6 +1595,60 @@ export function bossNotesOf(log, cast, { now = Date.now(), limit = 30 } = {}) {
  *   kind: report(대표에게 보고 — 결정 안 청한 말) · verdict(판정 카드, ref=sha) · decision(승인 판정, ref=승인 id) · proxy(대리 결정) ·
  *         request(요청 블록 닫힘, ref=요청 id) · milestone(통과) · round(닫힘, ref=판정)
  */
+/**
+ * 앞날 띠 (대시보드 = "앞으로 언제 뭐가 되나", 헨리 시안 1판 dashboard.svg · 결정 128) — 한 팀의 단계들을 시간 위에 놓는다. 순수 — check 가 돌린다.
+ * 지난 것(pass)은 없다(나리 규칙 — 현황과 안 겹치게). 예정 시각은 손으로 안 적는다 — timebox("2 라운드") × 이 팀 회차 평균 길이.
+ *
+ * @param roadmap   { milestones: [{ n, title, status, timebox }] }
+ * @param state     round.json — { phase, round, milestone, startedAt }
+ * @param rounds    rounds.jsonl 항목들(최근 것 먼저여도 된다) — startedAt·endedAt 으로 회차 길이
+ * @param progress  progress.json(blocked[]·boss[]) 또는 null
+ * @param now       ms
+ * @returns { stages: [{ n, title, status, plannedFrom, plannedTo, late, blockedWhy, gate }], roundMs }
+ *   status: running(지금 단계) · planned(잡힌 예정) · gated(대표 답 뒤 — gate 에 무엇) · blocked(FAIL 로 막힘)
+ */
+export const DEFAULT_ROUND_MS = 90 * 60_000;
+export function timeboxRounds(timebox) {
+  const s = String(timebox ?? '').trim();
+  if (!s || /대표/.test(s)) return null;                          // "대표 방향 뒤 정함" · "대표가 방식을 고른 뒤 2 라운드" — 대표가 열어야 센다
+  if (/^반\s*라운드/.test(s)) return 0.5;
+  const m = /(\d+(?:\.\d+)?)\s*라운드/.exec(s);
+  return m ? Number(m[1]) : null;
+}
+export function roundLengthMs(rounds, { fallback = DEFAULT_ROUND_MS, n = 8 } = {}) {
+  const lens = (rounds ?? []).filter((r) => r.startedAt && r.endedAt).map((r) => Date.parse(r.endedAt) - Date.parse(r.startedAt)).filter((x) => Number.isFinite(x) && x > 0);
+  const last = lens.slice(0, n);
+  return last.length ? Math.round(last.reduce((a, b) => a + b, 0) / last.length) : fallback;
+}
+export function plansOf({ roadmap, state, rounds = [], progress = null, now = Date.now() } = {}) {
+  const roundMs = roundLengthMs(rounds);
+  const ms = (roadmap?.milestones ?? []).filter((m) => m.status !== 'pass').sort((a, b) => (a.n ?? 0) - (b.n ?? 0));
+  const phase = state?.phase ?? 'idle';
+  const blockedWhy = phase === 'blocked' ? (progress?.blocked?.[0] ?? 'FAIL 로 막힘 — 대표 판단 대기') : null;
+  const stages = [];
+  let cursor = null;   // 앞 단계가 끝나는 시각 — 다음 단계는 여기서 시작
+  for (const m of ms) {
+    const isNow = m.status === 'now' || m.n === state?.milestone;
+    const box = timeboxRounds(m.timebox);
+    const gate = box == null ? (String(m.timebox ?? '').trim() || '대표가 정한 뒤') : null;
+    let from = null, to = null;
+    if (box != null) {
+      from = isNow ? (state?.startedAt && phase !== 'idle' ? Date.parse(state.startedAt) : now) : (cursor ?? now);
+      to = from + box * roundMs;
+      cursor = Math.max(to, now);
+    }
+    const late = isNow && to != null && now > to ? now - to : 0;
+    const status = isNow && blockedWhy ? 'blocked' : gate ? 'gated' : isNow ? 'running' : 'planned';
+    stages.push({
+      n: m.n, title: m.title, status, gate,
+      plannedFrom: from != null ? new Date(from).toISOString() : null,
+      plannedTo: to != null ? new Date(to).toISOString() : null,
+      late, blockedWhy: isNow ? blockedWhy : null,
+    });
+  }
+  return { stages, roundMs };
+}
+
 /** 우리 시각(서울, +09:00 고정 — 서머타임 없음)의 그날 0시를 UTC ms 로. 서버 프로세스의 TZ 와 무관하다 — 결정 101 의 아홉 시간 오류가 집계에서 다시 나지 않게(레오, R25). */
 export const SEOUL_OFFSET_MS = 9 * 3600_000;
 export const dayStartSeoul = (now = Date.now()) => Math.floor((now + SEOUL_OFFSET_MS) / 86_400_000) * 86_400_000 - SEOUL_OFFSET_MS;

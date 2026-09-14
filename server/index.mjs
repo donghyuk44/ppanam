@@ -313,10 +313,24 @@ const server = http.createServer((req, res) => {
   }
 
   // 예정 작업 표(결정 128) — teams/hq/out/plan-table.md 를 그대로 읽어 대시보드 맨 위에 띄운다. 읽기만, 톰이 파일로 관리한다.
+  // 대시보드 = "앞으로 언제 뭐가 되나"(나리 정본 · 헨리 시안 1판 dashboard.svg · 결정 128). text·at 은 1판(plan-table.md) 그대로, 그 위에 앞날 띠 —
+  // 팀마다 bus.plansOf(로드맵 × 회차 평균 길이, 순수) + 대표가 정해야 열리는 것(C 승인 · 상황판 boss[] · gated 단계). 계약 3절 "화면 넷 + 카드".
   if (url.pathname === '/api/dashboard') {
     const file = path.join(paths('hq').out, 'plan-table.md');
-    try { return json(res, 200, { text: fs.readFileSync(file, 'utf8'), at: fs.statSync(file).mtime.toISOString() }); }
-    catch { return json(res, 200, { text: null }); }
+    let text = null, at = null;
+    try { text = fs.readFileSync(file, 'utf8'); at = fs.statSync(file).mtime.toISOString(); } catch { /* 1판 표가 아직 없다 */ }
+    const now = Date.now();
+    const order = ['sera', 'marketing', 'dev', 'design', 'finance'];   // 도면 순서 — 비서실 먼저(헨리 시안)
+    const rows = listTeams().filter((t) => t.id !== 'hq').sort((a, b) => (order.indexOf(a.id) + 1 || 99) - (order.indexOf(b.id) + 1 || 99));
+    const bossGates = listApprovals({ status: 'pending' }).filter((r) => r.grade === 'C').map((r) => ({ kind: 'approval', team: r.team, what: r.what, id: r.id }));
+    const teamsOut = rows.map((t) => {
+      const plan = bus.plansOf({ roadmap: readRoadmap(t.id), state: isOffice(t.id) ? { phase: 'idle' } : readState(t.id), rounds: isOffice(t.id) ? [] : listRounds(t.id), progress: bus.readProgress(t.id), now });
+      for (const b of bus.readProgress(t.id)?.boss ?? []) bossGates.push({ kind: 'progress', team: t.id, what: b, id: null });
+      for (const s of plan.stages) if (s.status === 'gated') bossGates.push({ kind: 'stage', team: t.id, what: `${s.n != null ? s.n + '단계 ' : ''}${s.title} — ${s.gate}`, id: s.n });
+      const color = readCast(t.id).agents?.[bus.roomRules(t.id).owner]?.color ?? null;
+      return { id: t.id, name: t.name, room: t.room, color, ...plan };
+    });
+    return json(res, 200, { text, at, now: new Date(now).toISOString(), teams: teamsOut, bossGates });
   }
 
   // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.
