@@ -470,7 +470,7 @@ const server = http.createServer((req, res) => {
     try { segs = url.pathname.split('/').slice(2).map(decodeURIComponent); } catch { segs = []; }
     const file = segs.length >= 2 ? bus.inFile(segs[0], segs.slice(1).join('/')) : null;
     if (!file) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('404'); }
-    return sendFile(res, file, { 'cache-control': 'no-cache' });
+    return sendFile(res, file, {}, req);
   }
 
   // 판정. 내부감사 → 외부감사 순서로 판정 차례를 준다. 실무가 /verdict 로, 대표가 화면에서 부른다.
