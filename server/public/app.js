@@ -1066,7 +1066,12 @@ function previewNode(r) {
   const a = r.action, p = r.preview;
   if (!a) return null;
   const box = el('div', 'apr__pv');
-  if (!p) { box.appendChild(el('div', 'err', `행동 ${a.type} — 내용을 못 받았습니다 (옛 서버?)`)); return box; }
+  // 미리보기가 없는 종류(request·proxy — bus.approvalPreview 가 아직 안 푼다)는 사실대로. 전엔 "옛 서버?" 라고 해서 대표가 서버를 다시 켰다(하네스 R25).
+  if (!p) {
+    if (a.type === 'request') { const to = a.to ?? {}; box.appendChild(kvTable([['부탁', `${teams.find((t) => t.id === to.team)?.name ?? to.team ?? '?'} 팀 ${summaries[to.team]?.cast?.[to.actor]?.name ?? to.actor ?? ''}에게${a.mode === 'milestone' ? ' — 단계 끝까지(공동 프로젝트)' : ''}`], ...(a.why ? [['왜', a.why]] : []), ...(a.due ? [['기한', a.due]] : [])])); return box; }
+    if (a.type === 'proxy') { box.appendChild(kvTable([['대리 결정', a.kind === 'approval' ? `대표님 대신 결재 ${a.ref} 를 통과시킬지` : a.kind === 'unblock' ? `${a.team} 방의 멈춤을 대표님 대신 풀지` : `${a.team} 방의 물음에 대표님 대신 답할지`]])); return box; }
+    box.appendChild(el('div', 'tcard__quiet', `이 종류(${a.type})는 아직 미리보기가 없어요 — 위 글이 전부예요.`)); return box;
+  }
   if (p.error) { box.appendChild(el('div', 'err', `바뀌는 것을 읽지 못했습니다 — ${p.error}`)); return box; }
   if (a.type === 'push') {
     box.appendChild(kvTable([

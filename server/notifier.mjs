@@ -28,8 +28,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   listApprovals, readCast, readState, readRoadmap, isOffice, quiet, emit, paths, setMilestoneStatus,
-  proxyCandidates, requestApproval, decideApproval, resumeRound, startRound,
+  proxyCandidates, requestApproval, decideApproval, resumeRound, startRound, APPROVAL_GRADES,
 } from '../bus/bus.mjs';
+
+// 다시 부르기(R25) — 총괄실에 한 번 넣고 답이 없으면 30분마다, 세 번까지. 그 뒤엔 요청한 방에 한 줄 남기고 사람 몫.
+export const REASK_MS = Number(process.env.PPANAM_REASK_MS || 30 * 60_000);
+export const REASK_MAX = Number(process.env.PPANAM_REASK_MAX || 3);
 import { listRequests, openRequest, closeByMilestone } from '../bus/requests.mjs';
 import * as session from './session.mjs';
 
@@ -310,6 +314,23 @@ export function runNotifier({ send = (team, text) => session.send(team, quiet(te
         catch (e) { emit('hq', { actor: 'system', type: 'note', text: `승인 요청 ${r.id} 를 총괄실 세션에 넣지 못했습니다 — ${String(e.message).slice(0, 120)}` }); }
       } else {
         t.requested = now(); changed = true;   // 이미 끝난 요청은 알릴 것이 없다
+      }
+    }
+    // (a-2) 다시 부르기 — 한 번 넣고 답이 안 오면 영원히 대기였다(하네스 실측 R25: 제리 호출이 300초에 죽은 뒤 셋이 대표 화면 맨 위에 붙박이).
+    // 아직 안 답한 판정자가 있고 마지막으로 넣은 지 REASK_MS 가 지났으면 그 사람 이름을 불러 다시 넣는다. 최대 REASK_MAX 번 — 그 뒤엔 방에 한 줄 남기고 사람 몫.
+    if (r.grade === 'B' && r.status === 'pending' && t.requested) {
+      const need = (APPROVAL_GRADES[r.grade]?.needs ?? []).filter((w) => !r.decisions?.some((d) => d.by === w));
+      const lastAsk = new Date(t.reasked ?? t.requested).getTime();
+      if (need.length && Date.now() - lastAsk > REASK_MS) {
+        const n = (t.reaskCount ?? 0) + 1;
+        if (n <= REASK_MAX) {
+          const names = need.map((w) => nameOf('hq', w)).join(', ');
+          try { send('hq', `${names}, 승인 요청 ${r.id} 가 ${Math.round((Date.now() - new Date(t.requested).getTime()) / 60_000)}분째 답을 기다립니다 — ${r.what}. 다시 봐 주세요 (${n}/${REASK_MAX}).\n  node bus/approve.mjs --decide ${r.id} --as <자리> PASS|REVISE "이유"`); t.reasked = now(); t.reaskCount = n; changed = true; }
+          catch (e) { emit('hq', { actor: 'system', type: 'note', text: `승인 요청 ${r.id} 다시 부르기를 총괄실 세션에 넣지 못했습니다 — ${String(e.message).slice(0, 120)}` }); }
+        } else if (!t.reaskGaveUp) {
+          t.reaskGaveUp = now(); changed = true;
+          emit(r.team, { actor: 'system', type: 'note', text: `승인 요청 ${r.id} — 총괄실을 ${REASK_MAX}번 다시 불렀는데 답이 없습니다(${need.map((w) => nameOf('hq', w)).join(', ')}). 사람이 봐야 합니다.`, meta: { approval: r.id, reaskGaveUp: true } });
+        }
       }
     }
 
