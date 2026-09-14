@@ -335,6 +335,19 @@ const server = http.createServer((req, res) => {
     return json(res, 200, { text: merged, at, now: new Date(now).toISOString(), teams: teamsOut, bossGates });
   }
 
+  // 누가 뭘 했나 — 한 목록(결정 92, 계약 3절 "한 것 — 한 목록"): 다섯 방 doneOf 를 창으로 잘라 합친다. 관제탑 ②(헨리 시안 2판)·보고서 ①이 같은 문을 쓴다.
+  // since·until 은 ISO 또는 ms, 기본은 우리 시각 오늘 0시~지금(dayStartSeoul). 비서실은 대화록이 보고뿐이라 뺀다.
+  if (url.pathname === '/api/done') {
+    const now = Date.now();
+    const since = url.searchParams.get('since'), until = url.searchParams.get('until');
+    const win = { since: since ? (Number.isFinite(Number(since)) ? Number(since) : since) : null, until: until ? (Number.isFinite(Number(until)) ? Number(until) : until) : null, now };
+    const items = listTeams().filter((t) => !bus.roomRules(t.id).speakers)
+      .flatMap((t) => bus.doneOf(readLog(t.id), readCast(t.id).agents ?? {}, { team: t.id, approvals: listApprovals({ team: t.id }), ...win })
+        .map((it) => ({ ...it, teamName: t.name, name: it.by ? (readCast(t.id).agents?.[it.by]?.name ?? readCast('hq').agents?.[it.by]?.name ?? it.by) : null })))
+      .sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+    return json(res, 200, { since: new Date(win.since != null ? new Date(win.since).getTime() : bus.dayStartSeoul(now)).toISOString(), until: new Date(win.until != null ? new Date(win.until).getTime() : now).toISOString(), items });
+  }
+
   // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.
   if (url.pathname === '/api/analysis') {
     if (!teamExists(team)) return json(res, 404, { error: '그런 팀이 없습니다.' });

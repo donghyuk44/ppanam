@@ -6,7 +6,7 @@
 import * as World from '/world/world.js';
 import { toolLabel, toolPhrase, baseName, ga } from '/toollabel.js';
 import { findOutPaths, linkOutPaths } from '/outlink.js';
-import { notificationsOf } from '/notify.js';
+import { notificationsOf, blockedOf } from '/notify.js';
 
 const $ = (id) => document.getElementById(id);
 const app = $('app'), feed = $('feed'), stream = $('stream');
@@ -24,6 +24,9 @@ let approvals = [];          // 대기 중인 승인 — 모든 탭 맨 위
 let pendingMark = -1;        // 마지막으로 본 대기 건수 합 — 바뀌면 목록을 다시 받는다
 let told = {};               // 승인 id → { requested, decided, executed } — 서버가 언제 알렸나
 let grades = {};
+let infra = null;             // 밑바닥 넷 — 서버가 2분마다 재서 준다(boot.infra · ws infra). blockedOf 의 입력
+let done = { since: null, items: [], fetchedAt: 0, more: false };   // 누가 뭘 했나(/api/done) — 관제탑 ②. more = "더 보기 — 어제까지" 펼침
+let openTeamRows = new Set();  // 관제탑 ④ 팀 줄 — 펼쳐 둔 팀(상황판 네 칸)
 let requestsAll = [];         // 요청 블록 접은 목록 (6-1절) — 관제탑 요청 탭·전체 탭 타일
 let requestsLoaded = false;
 let requestsFetchedAt = 0;
@@ -504,15 +507,17 @@ function renderSide() {
   c.replaceChildren();
   c.appendChild(el('div', 'card__k', '참여'));
   for (const [id, a] of Object.entries(cast.agents ?? {})) {
-    if (id === 'system' || a.from) continue;   // 빌려 온 총괄은 이 방 참여자가 아니다
+    if (a.from) continue;   // 빌려 온 총괄은 이 방 참여자가 아니다
+    // 나리(system)도 참여에 든다 — 결정 129 로 사람. 세션이 없으니 대표처럼 상태 점·'자는 중' 없이 직책만 (대표 "프로필이 없네 나리", 비서실 09-14).
+    const person = id === 'boss' || id === 'system';
     const row = el('div', 'who__row');
     const av = el('div', 'chip', a.initial ?? '?');
     av.style.background = a.color ?? FALLBACK.color;
-    if (id !== 'boss') av.dataset.state = stateOf(id);
+    if (!person) av.dataset.state = stateOf(id);
     row.appendChild(av);
     const t = el('div', 'who__t');
     t.appendChild(el('div', 'who__n', a.name));
-    t.appendChild(el('div', 'who__r', id === 'boss' ? (a.title ?? '') : `${a.title ?? ''} · ${STATE_LABEL[stateOf(id)]}`));
+    t.appendChild(el('div', 'who__r', person ? (a.title ?? '') : `${a.title ?? ''} · ${STATE_LABEL[stateOf(id)]}`));
     row.appendChild(t);
     if (a.model) row.appendChild(el('div', 'who__m', a.model.toUpperCase()));
     if (id !== 'boss') { row.classList.add('door'); row.title = `${a.name} 카드`; row.addEventListener('click', () => openPersonPop(active, id)); }   // 참여 줄도 문
@@ -814,6 +819,8 @@ function connect() {
     }
     // 세상의 시계 — 자리·루틴 (W2). 마을 탭만 본다 — 관제탑은 일 상태다 (결정 58).
     if (msg.kind === 'world') { World.onWorld(msg.world); return; }
+    // 밑바닥 넷(서버·codex·세션·디스크) — blockedOf 의 infra 입력. 2분마다 재서 바뀌면 온다.
+    if (msg.kind === 'infra') { infra = msg.infra ?? null; if (view === 'tower') renderTower(); return; }
     if (msg.kind === 'hello') {
       if (msg.world) World.onWorld(msg.world);
       // 붙을 때 받은 요약도 쓴다 — 전에는 world 만 쓰고 버려서, 다음 방송(어느 팀이든 요약이 바뀔 때)까지
@@ -1262,85 +1269,127 @@ function renderTower() {
   return renderTowerAsks(grid);
 }
 
-/* ── 전체 — 대표가 30초 안에 읽는 첫 화면 (결정 50): 대표 차례 · 승인 대기 · 요청 수 · 팀 다섯 한 줄 · 오늘 보고 ── */
+/* ── 현황 첫 화면 — 헨리 시안 2판(tower.svg) · 나리 '화면이 답하는 질문'(톰·제리 B): "지금 무슨 일이 벌어지고 있나".
+ * 위에서 아래로 넷뿐 — ① 뭐가 막혔나(blockedOf, 대표 몫 아닌 것) ② 누가 뭘 했나(/api/done 오늘, 더 보기 = 어제까지) ③ 내 차례(대표가 답할 것)
+ * ④ 팀(단계 N/M · 회차, 누르면 상황판 네 칸 그대로, 한 번 더 = 카드). 없으면 그 칸이 사라진다. 막힌 것은 스크롤 없이.
+ * 숫자는 넷뿐 — 막힌 것 수 · 내 차례 수 · 단계 N/M · 회차(결정 92 통계 타일 탈락). 낱말은 하영. ── */
+const agoShort = (ts) => { const m = Math.max(0, Math.round((Date.now() - new Date(ts)) / 60000)); return m < 1 ? '방금' : m < 60 ? `${m}분 전` : m < 60 * 36 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
+const forShort = (ms) => { const m = Math.round(ms / 60000); return m < 1 ? '방금부터' : m < 60 ? `${m}분째` : m < 60 * 36 ? `${Math.round(m / 60)}시간째` : `${Math.round(m / 1440)}일째`; };
+const dayStartSeoulMs = (ms) => Math.floor((ms + 9 * 3600_000) / 86_400_000) * 86_400_000 - 9 * 3600_000;
+
+/** 누가 뭘 했나 — 창이 바뀌었거나 30초 지났으면 다시 받는다. 받으면 관제탑을 다시 그린다. */
+function loadDone() {
+  const since = done.more ? dayStartSeoulMs(Date.now()) - 86_400_000 : dayStartSeoulMs(Date.now());
+  if (done.since === since && Date.now() - done.fetchedAt < 30_000) return;
+  done.since = since; done.fetchedAt = Date.now();
+  fetch(`/api/done?since=${since}`).then((r) => r.json()).then((r) => { done.items = r.items ?? []; if (view === 'tower' && towerTab === 'all') renderTower(); }).catch(() => {});
+}
+
 function renderTowerAll(grid) {
-  const { n } = bossTurns();
   const goRoom = (t) => async () => { await selectTeam(t.id); setView('room'); };
+  const pendingAll = approvals.map((r) => ({ id: r.id, grade: r.grade, team: r.team, by: r.by, what: r.what, ts: r.requestedAt ?? r.ts }));
+  const openReq = requestsAll.filter((r) => r.status !== 'closed');
+  const blocked = blockedOf({ teams, summaries, approvals: pendingAll, requests: openReq, infra }, { now: Date.now() });
 
-  const stats = el('div', 'dash__stats');
-  const tile = (k, v, alert) => {
-    const d = el('div', 'dash__tile'); d.dataset.alert = alert ? '1' : '0';
-    d.appendChild(el('b', null, v)); d.appendChild(el('span', null, k)); return d;
-  };
-  stats.appendChild(tile('대표님이 보실 것', String(n), n > 0));
-  stats.appendChild(tile('결재', String(approvals.length), false));
-  // 블록 수다 — 다섯 방 requestCounts 합이 아니다(한 블록이 두 방에 걸친다, 6-1절). 아직 못 받아 왔으면 자리만.
-  const reqOpen = requestsAll.filter((r) => r.status !== 'closed').length;
-  const reqClosed = requestsAll.length - reqOpen;
-  stats.appendChild(tile('부탁한 일 진행 / 끝', requestsLoaded ? `${reqOpen} / ${reqClosed}` : '— / —', false));
-  grid.appendChild(stats);
+  // ① 뭐가 막혔나 — 대표가 풀 것이 아닌 막힘(팀·톰·운영·밑바닥). 대표 몫(waitOn boss)은 ③.
+  const stuck = blocked.filter((it) => it.waitOn !== 'boss');
+  if (stuck.length) {
+    const sec = el('section', 'dash__card'); sec.dataset.block = 'stuck';
+    sec.appendChild(el('div', 'dash__k', `뭐가 막혔나 ${stuck.length}`));
+    for (const it of stuck) {
+      const row = el('button', 'dash__row'); row.type = 'button';
+      const who = it.kind === 'infra' ? '밑바닥' : `${it.teamName}${it.name && it.kind !== 'blocked' && it.kind !== 'board' ? ' · ' + it.name : ''}`;
+      row.appendChild(el('b', null, who));
+      row.appendChild(el('span', 'dash__sub', `${it.text}${it.wait != null ? ' · ' + forShort(it.wait) : ''}`));
+      row.addEventListener('click', () => { const tg = it.target ?? {}; if (tg.view === 'tower') setTowerTab(tg.tab ?? 'asks'); else if (tg.team) jumpTo(tg.team, tg.event ?? null); });
+      sec.appendChild(row);
+    }
+    grid.appendChild(sec);
+  }
 
-  // "내가 할 일" (결정 13·19-3) — 대표가 정하거나 눌러야 하는 것만, 한 블록. 알림 패널의 급한 것(대표 차례 → 승인 → 막힘, notify.js 와 같은 목록)
-  // + 각 방 상황판(progress.json)의 '대표 차례' 줄. 보고는 여기 안 온다 — 아래 '오늘 보고'.
-  const todo = el('section', 'dash__card');
-  const urgent = notifications().items.filter((it) => it.kind === 'boss' || it.kind === 'approval' || it.kind === 'blocked');
+  // ② 누가 뭘 했나 · 오늘 — doneOf(계약 3절) 여섯 줄, "더 보기 — 어제까지"
+  loadDone();
+  const sec2 = el('section', 'dash__card'); sec2.dataset.block = 'done';
+  sec2.appendChild(el('div', 'dash__k', `누가 뭘 했나 · ${done.more ? '어제부터' : '오늘'}`));
+  const items = done.items.slice(0, done.more ? 30 : 6);
+  if (!items.length) sec2.appendChild(el('div', 'dash__empty', done.fetchedAt ? '오늘 끝낸 일이 아직 없어요.' : '읽는 중…'));
+  for (const it of items) {
+    const row = el('button', 'dash__row'); row.type = 'button';
+    row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${agoShort(it.ts)}`));
+    row.appendChild(el('span', 'dash__sub', it.text));
+    row.addEventListener('click', () => { if (it.kind === 'decision' || it.kind === 'proxy') setTowerTab('all'); else jumpTo(it.team, String(it.id).split(':')[1] ?? null); });
+    sec2.appendChild(row);
+  }
+  const more = el('button', 'dash__more'); more.type = 'button'; more.textContent = done.more ? '오늘만' : '더 보기 — 어제까지';
+  more.addEventListener('click', () => { done.more = !done.more; done.fetchedAt = 0; loadDone(); renderTower(); });
+  sec2.appendChild(more);
+  grid.appendChild(sec2);
+
+  // ③ 내 차례 — 대표가 답할 것: 결재(C)·물어봄(bossCall)·막힘(FAIL 대표 판단) + 각 방 상황판의 '대표 차례' 줄. 알림 종과 같은 목록(notify.js).
+  const mine = blocked.filter((it) => it.waitOn === 'boss');
   const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
-  todo.appendChild(el('div', 'dash__k', `정하실 것 ${urgent.length + fromBoard.length}`));
-  if (!urgent.length && !fromBoard.length) todo.appendChild(el('div', 'dash__empty', '지금 정하실 것 없어요. 팀이 일하는 중이에요.'));
-  for (const it of urgent) {
-    const row = el('button', 'dash__row'); row.type = 'button';
-    row.appendChild(el('b', null, `${KIND_LABEL[it.kind]} · ${it.teamName}${it.name && it.kind !== 'blocked' ? ' · ' + it.name : ''}`));
-    row.appendChild(el('span', 'dash__sub', it.kind === 'approval' ? `${it.text} — 위 결재 칸에서 확인` : it.text));
-    row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (tg.view === 'tower') setTowerTab('all'); else jumpTo(tg.team, tg.event ?? null); });
-    todo.appendChild(row);
+  if (mine.length || fromBoard.length) {
+    const sec3 = el('section', 'dash__card'); sec3.dataset.block = 'mine'; sec3.dataset.alert = '1';
+    sec3.appendChild(el('div', 'dash__k', `내 차례 ${mine.length + fromBoard.length}`));
+    for (const it of mine) {
+      const row = el('button', 'dash__row'); row.type = 'button';
+      row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '결재' : it.kind === 'boss' ? '물어봄' : '멈춤'}`));
+      row.appendChild(el('span', 'dash__sub', it.text));
+      row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '읽고 답하기' : '방으로'));
+      row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (it.kind === 'approval') { setTowerTab('all'); document.querySelector('.approvals')?.scrollIntoView({ block: 'start' }); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
+      sec3.appendChild(row);
+    }
+    for (const b of fromBoard) {
+      const row = el('button', 'dash__row'); row.type = 'button';
+      row.appendChild(el('b', null, `${b.teamName} · 상황판`));
+      row.appendChild(el('span', 'dash__sub', b.text));
+      row.addEventListener('click', goRoom(teams.find((t) => t.id === b.team)));
+      sec3.appendChild(row);
+    }
+    grid.appendChild(sec3);
   }
-  for (const b of fromBoard) {
-    const row = el('button', 'dash__row'); row.type = 'button';
-    row.appendChild(el('b', null, `상황판 · ${b.teamName}`));
-    row.appendChild(el('span', 'dash__sub', b.text));
-    row.addEventListener('click', goRoom(teams.find((t) => t.id === b.team)));
-    todo.appendChild(row);
-  }
-  grid.appendChild(todo);
 
-  const tl = el('section', 'dash__card');
-  tl.appendChild(el('div', 'dash__k', '팀'));
-  for (const t of teams) {
+  // ④ 팀 — 단계 N/M · 회차 · 알약. 누르면 그 자리에서 상황판 네 칸(하는 것·막힌 것·대표 차례·다음) 글자 그대로, 한 번 더 = 카드(팀 탭). 비서실은 줄이 없다.
+  const tl = el('section', 'dash__card'); tl.dataset.block = 'teams';
+  tl.appendChild(el('div', 'dash__k', '팀 — 누르면 하는 것 · 막힌 것 · 대표 차례 · 다음'));
+  for (const t of teams.filter((x) => x.id !== 'sera')) {
     const s = summaries[t.id] ?? {};
     const office = t.kind === 'office';
     const running = office || s.phase === 'running' || s.phase === 'blocked';
-    const row = el('button', 'dash__row'); row.type = 'button';
+    const row = el('button', 'dash__row'); row.type = 'button'; row.dataset.open = openTeamRows.has(t.id) ? '1' : '0';
     const head = el('span', 'dash__head');
     head.appendChild(el('b', null, t.name));
+    if (!office) {
+      const total = (s.milestonesTotal ?? null);
+      head.appendChild(el('span', 'dash__stage', s.milestone ? `${s.milestone}단계${total ? `/${total}` : ''}${s.round ? ` · ${s.round}회차` : ''}` : '단계 없음'));
+    }
     head.appendChild(pill(
       s.needsBoss ? '대표님 답 기다림' : s.bossCall ? '대표님께 물어봄' : office ? '대표님과 톰' : s.phase === 'blocked' ? '멈춤' : running ? '일하는 중' : '쉬는 중',
       s.needsBoss || s.bossCall ? 'boss' : s.phase === 'blocked' ? 'bad' : running ? 'live' : 'idle'));
     row.appendChild(head);
-    const bits = [];
-    if (!office) bits.push(s.round ? `${s.round}회차 · ${s.milestone}단계${s.milestoneTitle ? ' ' + s.milestoneTitle : ''}` : '지금 하는 회차 없음');
-    const busy = Object.entries(s.people ?? {}).filter(([id, p]) => id !== 'boss' && p.busy).map(([id]) => s.cast?.[id]?.name ?? id);
-    if (busy.length) bits.push(`${busy.join('·')} 일하는 중`);
-    if (s.approvals?.pending) bits.push(`결재 ${s.approvals.pending}`);
-    if (bits.length) row.appendChild(el('span', 'dash__sub', bits.join(' · ')));
-    row.addEventListener('click', goRoom(t));
+    if (!office && s.milestoneTitle) row.appendChild(el('span', 'dash__sub', s.milestoneTitle));
+    row.addEventListener('click', () => { if (openTeamRows.has(t.id)) openTeamRows.delete(t.id); else openTeamRows.add(t.id); renderTower(); });
     tl.appendChild(row);
+    if (openTeamRows.has(t.id)) {   // 펼친 줄 — 상황판 네 칸 글자 그대로(progress.json). 없으면 그렇다고.
+      const p = s.progress;
+      const box = el('div', 'dash__open');
+      if (!p) box.appendChild(el('div', 'dash__empty', office ? '총괄실은 상황판이 없어요 — 승인·부탁·보고서가 일이에요.' : '아직 상황판을 안 썼어요.'));
+      else for (const [k, label] of [['doing', '하는 것'], ['blocked', '막힌 것'], ['boss', '대표 차례'], ['next', '다음']]) {
+        const lines = p[k] ?? [];
+        const kv = el('div', 'dash__kv');
+        kv.appendChild(el('b', null, label));
+        kv.appendChild(el('span', null, lines.length ? lines.join(' / ') : '없음'));
+        box.appendChild(kv);
+      }
+      if (p?.at) box.appendChild(el('div', 'dash__empty', `갱신 ${agoShort(p.at)}${p.by ? ' · ' + (s.cast?.[p.by]?.name ?? p.by) : ''}${p.fresh === false ? ' · 낡음' : ''}`));
+      const doors = el('div', 'dash__doors');
+      const card = el('button', 'dash__door', '카드'); card.type = 'button'; card.addEventListener('click', () => setTowerTab('teams'));
+      const room = el('button', 'dash__door', '방으로'); room.type = 'button'; room.addEventListener('click', goRoom(t));
+      doors.append(card, room); box.appendChild(doors);
+      tl.appendChild(box);
+    }
   }
   grid.appendChild(tl);
-
-  // 오늘 보고 — 대표를 부른 말 중 결정이 아닌 것 (결정 52). 결정이 필요한 말은 종·대표 차례가 맡는다.
-  const notes = teams.flatMap((t) => (summaries[t.id]?.bossNotes ?? []).map((x) => ({ ...x, team: t.id, teamName: t.name })))
-    .filter((x) => !x.ask).sort((a, b) => b.ts.localeCompare(a.ts));
-  const rp = el('section', 'dash__card');
-  rp.appendChild(el('div', 'dash__k', `오늘 보고 ${notes.length}`));
-  if (!notes.length) rp.appendChild(el('div', 'dash__empty', '오늘 올라온 보고가 아직 없어요.'));
-  for (const x of notes.slice(0, 12)) {
-    const row = el('button', 'dash__row'); row.type = 'button';
-    row.appendChild(el('b', null, `${x.teamName} · ${summaries[x.team]?.cast?.[x.by]?.name ?? x.by} · ${hhmm(x.ts)}`));
-    row.appendChild(el('span', 'dash__sub', x.text));
-    row.addEventListener('click', () => jumpTo(x.team, x.id));
-    rp.appendChild(row);
-  }
-  grid.appendChild(rp);
 }
 
 /* ── 개인 — 열넷 + 대표. 헨리 설계 3절 (1판, 가설). 데이터는 요약의 people ── */
@@ -2065,6 +2114,7 @@ summaries = boot.summaries ?? {};
 approvals = boot.approvals ?? [];
 told = boot.told ?? {};
 grades = boot.grades ?? {};
+infra = boot.infra ?? null;
 castOptions = boot.castOptions ?? {};
 for (const t of teams) unread[t.id] = 0;
 pendingMark = Object.values(summaries).reduce((n, s) => n + (s.approvals?.pending ?? 0), 0);
