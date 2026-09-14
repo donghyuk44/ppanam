@@ -1,0 +1,10 @@
+# 유니티가 만드는 것과 복사본 — 저장소에 안 둔다
+Library/
+Logs/
+Temp/
+Obj/
+UserSettings/
+Assets/Kenney/
+*.log
+*.csproj
+*.sln
