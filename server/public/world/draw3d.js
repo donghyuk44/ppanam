@@ -511,6 +511,24 @@ function render(mode) {
   setCut(ppu >= 22);                                                  // 확대하면 집 안이 보인다 — "화면 크게" 나 핀치로 당겼을 때
   D.renderer.render(D.scene, D.camera);
   D.labels.render(D.scene, D.camera);
+  clampLabels();
+}
+
+/**
+ * 표찰이 화면 가장자리에서 반쯤 잘린다(하네스 r28 안쪽 그림 ① — "작전실"·"대표 집무"·"유진"). CSS2DRenderer 는 자리 그대로 두고 부모가 자른다 —
+ * 그래서 그린 뒤에 표찰을 화면 안으로 민다(가로만 — 세로는 머리 위 자리라 밀면 사람이 가려진다). 화면 밖 자리면 CSS2DRenderer 가 이미 숨긴다.
+ */
+const TRANSLATE_RE = /translate\(-50%,\s*-50%\)\s*translate\(([-\d.]+)px,\s*([-\d.]+)px\)/;
+function clampLabels() {
+  const w = D.w; if (!w) return;
+  for (const el of D.labels.domElement.children) {
+    if (el.style.display === 'none') continue;
+    const m = TRANSLATE_RE.exec(el.style.transform); if (!m) continue;
+    const half = el.offsetWidth / 2; if (!half) continue;
+    const x = Number(m[1]), y = Number(m[2]);
+    const cx = Math.min(Math.max(x, half + 2), w - half - 2);
+    if (cx !== x) el.style.transform = `translate(-50%,-50%) translate(${cx}px,${y}px)`;
+  }
 }
 
 /** 시험용 — 화면을 안 보고도 무엇이 섰는지. */
