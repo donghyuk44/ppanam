@@ -587,7 +587,8 @@ function draw(e) {
       const av = el('div', 'av', a.initial ?? '?');
       av.style.background = a.color ?? FALLBACK.color;
       // 얼굴·이름은 문이다(결정 130 ① · 화면이-답하는-질문 "카드는 문") — 누르면 관제탑 사람 카드가 그 자리에 뜬다. 대표·system 은 카드가 없다(마을과 같다).
-      const door = (node) => { if (me || e.actor === 'system') return; node.classList.add('door'); node.title = `${a.name} 카드`; node.addEventListener('click', () => openPersonPop(e.meta?.from ?? active, e.actor)); };
+      // 나리(system 자리)도 문이 있다 — 결정 129 로 사람이 됐다. 세션이 없어 상태·일지는 비고 이름·직책만(나리 R25 "사람인데 문이 없는 자리").
+      const door = (node) => { if (me) return; node.classList.add('door'); node.title = `${a.name} 카드`; node.addEventListener('click', () => openPersonPop(e.meta?.from ?? active, e.actor)); };
       door(av);
       row.appendChild(av);
       const stack = el('div', 'stack');
@@ -1411,7 +1412,7 @@ const WORK_PILL = { working: ['일하는 중', 'live'], bossCall: ['대표님께
  * 지금은 카드 부품 그대로. 대표·system(나리)은 카드가 없다(마을과 같다). 요약이 아직 안 왔으면 상태 없이 이름·직책만.
  */
 function openPersonPop(teamId, id) {
-  const t = teams.find((x) => x.id === teamId); if (!t || id === 'boss' || id === 'system') return;
+  const t = teams.find((x) => x.id === teamId); if (!t || id === 'boss') return;
   const s = summaries[teamId] ?? {};
   const a = s.cast?.[id] ?? (teamId === active ? cast.agents?.[id] : null); if (!a) return;
   closePop();
