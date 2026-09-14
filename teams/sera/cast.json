@@ -1,0 +1,20 @@
+{
+  "agents": {
+    "secretary": {
+      "name": "세라",
+      "initial": "세",
+      "color": "#2f6f8f",
+      "title": "비서",
+      "does": "다섯 팀 상황을 대표 말로 요약해 보고한다",
+      "model": "claude"
+    },
+    "boss": {
+      "name": "함동혁(댄)",
+      "initial": "댄",
+      "color": "#8a7320",
+      "title": "대표",
+      "does": "사람",
+      "model": null
+    }
+  }
+}

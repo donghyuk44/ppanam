@@ -18,7 +18,7 @@ import { spawn as spawnProc } from 'node:child_process';
 import {
   ROOT, emit, listTeams, isOffice, paths, endRound, startRound, readCast, readState, readRoadmap, listRounds,
   readLog, quiet, RELAY_QUIET, appendJournal, journalPrompt, collectJournals, writeTurn, readProgress, progressFresh, progressText,
-  isForeign, engineName,
+  isForeign, engineName, roomRules,
 } from '../bus/bus.mjs';
 import { toolPhrase } from './public/toollabel.js';
 
@@ -62,8 +62,8 @@ export function onTurnEnd(fn) { turnEndListeners.push(fn); }
 
 const keyOf = (team, actor) => `${team}:${actor}`;
 
-/** 방 주인 — 작전실이면 실무, 총괄실이면 총괄. 대표의 지시가 먼저 가는 자리. */
-export const ownerOf = (team) => (isOffice(team) ? 'chief' : 'guide');
+/** 방 주인 — 작전실이면 실무, 총괄실이면 총괄, 비서실이면 세라(teams.json 의 owner, 결정 132). 대표의 지시가 먼저 가는 자리. */
+export const ownerOf = (team) => roomRules(team).owner;
 
 /** 이 방에서 claude 세션을 갖는 자리. outside(codex)·boss·system 은 아니다. */
 export function claudeActors(team) {

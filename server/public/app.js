@@ -331,9 +331,11 @@ function renderHead() {
   if (turns) document.title = `(${turns}) ` + document.title;   // 탭 제목에도 — 다른 창에 있어도 보이게
 
   // 글자는 하영 사전 3-2 그대로. 표에 없는 두 줄(멈춤 띠·회차 없음 안내)은 1절 낱말(회차·답·멈춤)로만 조립 — 하영에게 표에 더해 달라고 부탁함(R25).
-  $('rnum').textContent = office ? '대표님과 톰' : open ? `${summary.round}회차` : '—';
+  // office 방의 주인은 teams.json 의 owner — 총괄실은 톰, 비서실(결정 132)은 세라. 비서실 줄 글자는 하영 확정 전 임시.
+  const owner = t?.owner ?? 'chief';
+  $('rnum').textContent = office ? `대표님과 ${who(owner).name}` : open ? `${summary.round}회차` : '—';
   $('rtitle').textContent = office
-    ? '여기서 한 말을 톰이 팀에 나눠요'
+    ? (owner === 'chief' ? '여기서 한 말을 톰이 팀에 나눠요' : `${who(owner).name}가 다섯 팀 상황을 요약해서 알려 드려요`)
     : blocked
       ? `대표님 답을 기다려요 — 검토에서 멈춤이 났어요. 여기에 답을 적으면 ${summary.round}회차가 이어져요`
       : open

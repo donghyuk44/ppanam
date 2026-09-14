@@ -8,7 +8,7 @@
 //   snapshot()        { hour, mode, debug, actors: { '<팀>:<자리>': { place, act } } }   place 는 map.json 의 자리 이름
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, listTeams, readCast, isOffice, isForeign } from '../bus/bus.mjs';
+import { ROOT, listTeams, readCast, isOffice, isForeign, roomRules } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 
 const FILE = path.join(ROOT, 'state', 'world.json');
@@ -50,6 +50,7 @@ export function snapshot() {
   const actors = {};
   let i = 0;
   for (const t of listTeams()) {
+    if (roomRules(t.id).speakers) continue;   // 비서실(결정 132) — 세라의 인형은 총괄실 자리 하나뿐. 지도에 이 방의 자리가 없다
     const cast = readCast(t.id).agents ?? {};
     const st = session.statusAll(t.id);
     for (const [id, a] of Object.entries(cast)) {

@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { ROOT, emit, isOffice, readState, parseJSONL } from './bus.mjs';
+import { ROOT, emit, readState, parseJSONL, roomRules } from './bus.mjs';
 
 export const REQUESTS_DIR = path.join(ROOT, 'state', 'requests');
 
@@ -178,7 +178,7 @@ export function whoAmI() {
   const actor = process.env.PPANAM_ACTOR;
   const team = process.env.PPANAM_TEAM;
   if (actor && team) return { team, actor };
-  if (team) return { team, actor: isOffice(team) ? 'chief' : 'guide' };
+  if (team) return { team, actor: roomRules(team).owner };
   return null;
 }
 

@@ -23,7 +23,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
   ROOT, requestApproval, decideApproval, voidApproval, listApprovals, APPROVAL_GRADES,
-  defaultTeam, teamExists, listTeams, readCast, readRoadmap, paths, isOffice, pushAction,
+  defaultTeam, teamExists, listTeams, readCast, readRoadmap, paths, isOffice, pushAction, roomRules,
 } from './bus.mjs';
 import { untilOf } from './requests.mjs';
 
@@ -60,7 +60,7 @@ function whoAmI() {
   const actor = process.env.PPANAM_ACTOR;
   const team = process.env.PPANAM_TEAM;
   if (actor) return { actor, team };
-  if (team) return { actor: isOffice(team) ? 'chief' : 'guide', team };
+  if (team) return { actor: roomRules(team).owner, team };
   return null;
 }
 const me = whoAmI();

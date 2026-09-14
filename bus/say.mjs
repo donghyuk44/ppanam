@@ -98,6 +98,8 @@ try {
   console.error('오류: ' + e.message);
   process.exit(1);
 }
+// 방의 규칙이 버렸다(결정 132 — 비서실엔 대표·세라의 말만). 오류가 아니라 안 남은 것이다 — 그렇다고 말한다.
+if (!rec) { console.error(`[${team}] 이 방엔 ${o.actor} 의 ${o.type} 이 남지 않습니다 — 방 규칙(state/teams.json speakers·only)`); process.exit(2); }
 
 const label = rec.meta?.verdict ? `${rec.type}:${rec.meta.verdict}` : rec.type;
 const head = rec.text.length > 48 ? rec.text.slice(0, 48) + '…' : rec.text;

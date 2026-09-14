@@ -635,6 +635,25 @@ export function kindOf(id) {
 
 export const isOffice = (id) => kindOf(id) === 'office';
 
+/**
+ * 방의 규칙 셋(결정 132, 계약 0절) — state/teams.json 의 owner · speakers · only. 없으면 열린 방.
+ * 비서실(sera)은 { owner:'secretary', speakers:['boss','secretary'], only:['message'] } — 세라의 보고와 대표 말만 남는다.
+ */
+export function roomRules(id) {
+  const t = listTeams().find((x) => x.id === id) ?? {};
+  return {
+    owner: t.owner ?? (t.kind === 'office' ? 'chief' : 'guide'),
+    speakers: Array.isArray(t.speakers) && t.speakers.length ? t.speakers : null,
+    only: Array.isArray(t.only) && t.only.length ? t.only : null,
+  };
+}
+/** 이 사건이 이 방에 기록될 수 있나 — 순수(규칙 → 참/거짓). emit 이 쓰고 check 가 돌린다. */
+export function allowedIn(rules, { actor = 'system', type = 'message' } = {}) {
+  if (rules.speakers && !rules.speakers.includes(actor)) return false;
+  if (rules.only && !rules.only.includes(type)) return false;
+  return true;
+}
+
 export function paths(team) {
   const dir = path.join(ROOT, 'teams', team);
   return {
@@ -977,6 +996,12 @@ export function readRoadmap(team) {
  * appendFileSync 한 번으로 개행까지 붙여야 줄이 섞이지 않는다.
  */
 export function emit(team, event) {
+  // 방의 규칙(결정 132) — 비서실엔 대표·세라의 말만. 밖의 것은 오류가 아니라 버림(null): 훅·안내·승인 어느 길로 와도 못 들어온다. 버린 건 stderr 한 줄.
+  const rules = roomRules(team);
+  if (!allowedIn(rules, { actor: event.actor || 'system', type: EVENT_TYPES.has(event.type) ? event.type : 'message' })) {
+    process.stderr.write(`emit 버림 ${team}/${event.actor || 'system'} ${event.type ?? 'message'}\n`);
+    return null;
+  }
   const state = readState(team);
   const record = {
     id: 'evt_' + crypto.randomBytes(5).toString('hex'),

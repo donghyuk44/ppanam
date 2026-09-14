@@ -21,6 +21,7 @@ import {
   addressees, callsBoss, asksBoss, bossNotesOf, doneOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
   mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, overdue, setMilestoneStatus,
+  roomRules, allowedIn,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -858,6 +859,13 @@ switch (cmd) {
           && sp3.every((p) => p.length <= PIECE) && sp3.join(' ') === '가 '.repeat(70).trim()
           && sp4.length === PIECES && sp4[PIECES - 1].endsWith(' …')
           && spBoss.every((p) => p.length <= PIECE + 2) && spBoss.length >= 3 && spBoss.length <= PIECES && splitSpeech('') .length === 0;
+        // 비서실 규칙(결정 132, 계약 0절) — roomRules·allowedIn 순수. 실제 teams.json 의 sera 가 그 규칙을 갖는지도 본다.
+        const sr = roomRules('sera'), hr = roomRules('hq'), dr = roomRules('dev');
+        const rulesOk = sr.owner === 'secretary' && hr.owner === 'chief' && dr.owner === 'guide' && !hr.speakers && !dr.only
+          && allowedIn(sr, { actor: 'boss', type: 'message' }) && allowedIn(sr, { actor: 'secretary', type: 'message' })
+          && !allowedIn(sr, { actor: 'secretary', type: 'tool' }) && !allowedIn(sr, { actor: 'system', type: 'note' }) && !allowedIn(sr, { actor: 'chief', type: 'message' })
+          && allowedIn(hr, { actor: 'system', type: 'note' }) && allowedIn(dr, { actor: 'guide', type: 'tool' });
+        out.push(['비서실 규칙(결정 132)', rulesOk ? '✓ 주인 세라 · 대표·세라 message 만 · 도구·안내·톰 버림 · 총괄실·작전실은 열린 방' : '✗ ' + JSON.stringify({ sr, hr, dr })]);
         out.push(['말풍선 쪼개기(speech.js)', spOk ? `✓ 짧은 셋 → 1 · 줄바꿈 2 · 긴 한 문장 ${sp3.length}조각(≤${PIECE}) · 넘치면 ${PIECES}+… · 대표 사진 문장 ${spBoss.length}조각` : '✗ ' + JSON.stringify({ sp1, sp2, sp3: sp3.map((p) => p.length), sp4: sp4.length, spBoss })]);
       }
     } finally {
