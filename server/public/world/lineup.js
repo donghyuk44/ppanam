@@ -79,8 +79,8 @@ function customProp(id) {
   return g;
 }
 
-const GAP = 1.05;                                   // 사람 사이(월드 단위) — 어깨가 안 닿게
-const ROWS = ONLY ? 1 : Number(q.get('rows') || 2);  // 두 줄(8+8)이면 1920 폭에서 인형이 두 배 크게 보인다 — 색표를 보는 그림이라 크기가 먼저
+const GAP = Number(q.get('gap') || 1.2);             // 사람 사이(월드 단위) — 헨리: 1.2 씩, 가운데 0 기준 −9~+9
+const ROWS = ONLY ? 1 : Number(q.get('rows') || 1);  // 헨리: 한 줄. (두 줄이 크게 보이지만 디자이너가 한 줄로 봤다 — ?rows=2 로 열 수 있다)
 const n = chars.length, COLS = Math.ceil(n / ROWS), ROW_GAP = 1.7;
 const x0 = -((COLS - 1) * GAP) / 2;
 let maxH = 0;
@@ -106,14 +106,17 @@ const jobs = chars.map(async ([key, spec], i) => {
     g.add(m);
     g.userData.body = m;
     // 부착물 — 머리 위. Kenney 것은 glb, 우리 것은 위 customProp.
+    // 소품 자리 — 헨리(R25, 모델 원본 단위, 배율 전): 갓 = 머리 꼭대기 (0, 0.78, 0.02) · 안경/선글라스 = 눈높이 얼굴 앞 (0, 0.46, 0.18) · 세라 리본 = 땋은 머리 끝 등 뒤 (0, 0.36, −0.20)
+    const PROP_AT = { gat: [0, 0.78, 0.02], ribbon: [0, 0.36, -0.20], kenney: [0, 0.46, 0.18] };
     const prop = spec.prop ?? design?.characters?.[key]?.prop ?? null;
     if (prop?.kind === 'kenney' && prop.file) {
-      try { const p = (await loadGlb(KIT_URL(parts.kits.characters, prop.file))).clone(); p.scale.setScalar(k); p.traverse((o) => { if (o.isMesh) o.castShadow = true; }); g.add(p); }
-      catch { window.__lineup.failed += 1; }
+      try {
+        const p = (await loadGlb(KIT_URL(parts.kits.characters, prop.file))).clone(); p.scale.setScalar(k); p.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+        const [x, y, z] = PROP_AT.kenney; p.position.set(x * k, y * k, z * k); g.add(p);
+      } catch { window.__lineup.failed += 1; }
     } else if (prop?.kind === 'custom') {
       const p = customProp(prop.id);
-      if (prop.id === 'gat') p.position.y = height * 0.97;                                   // 정수리에 얹는다
-      else if (prop.id === 'ribbon') { p.position.set(0.17, height * 0.80, 0.02); p.rotation.y = -0.6; }   // 머리 옆(오른쪽 땋은 머리 위) — 정면에서 보이게
+      const [x, y, z] = PROP_AT[prop.id] ?? [0, 0.78, 0]; p.position.set(x * k, y * k, z * k);
       g.add(p);
     }
     window.__lineup.loaded += 1;
@@ -129,7 +132,7 @@ await Promise.all(jobs);
 
 // 카메라 — 정면(살짝 위). 줄은 폭에 맞추고, 하나짜리는 키에 맞춘다. 직교라 원근 없이 나란히. 뒷줄은 기울기 때문에 위로 올라가 보인다.
 const span = (COLS - 1) * GAP + GAP / 2 + 1.6;
-const tilt = FRONT ? 0.08 : 0.32;   // 정면 요청이면 거의 수평, 아니면 마을처럼 위에서 내려다보는 기운
+const tilt = FRONT ? 0.08 : 0.18;   // 정면 요청이면 거의 수평, 아니면 정면 살짝 위(헨리)
 const depthRise = (ROWS - 1) * ROW_GAP * Math.sin(tilt);   // 뒷줄이 화면에서 올라가는 만큼
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
 const aspect = W / H;
