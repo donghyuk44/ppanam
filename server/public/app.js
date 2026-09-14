@@ -1254,6 +1254,7 @@ function renderTower() {
   const callers = teams.reduce((n, t) => n + Object.entries(summaries[t.id]?.people ?? {}).filter(([id, p]) => id !== 'boss' && p.bossCall).length, 0);
   for (const b of $('towerTabs').querySelectorAll('button')) {
     b.setAttribute('aria-current', String(b.dataset.tab === towerTab));
+    b.setAttribute('aria-selected', String(b.dataset.tab === towerTab));   // 재는 도구가 이 이름을 본다(나리 R25 — "하나도 선택 안 됨" 은 이 속성이 없어서였다)
     const n = b.querySelector('.tabs__n');
     if (!n) continue;
     const v = b.dataset.tab === 'teams' ? bossRooms : callers;
@@ -1643,13 +1644,30 @@ function requestCard(r, rerender = renderTower) {
   return card;
 }
 
+/* 요청 탭 — 세 겹(한 줄 → 펼친 줄 → 카드). 전엔 블록마다 카드를 다 펼쳐 한 화면에 16,686자·3,819px 가 섰다(나리 실측 R25 — "텍스트로만 구성하면 그게 대시보드야?").
+ * 한 줄 = 알약 · 누가 → 누구 · 무엇 · N시간 전. 누르면 그 자리에서 카드(requestCard). 열린 것이 위, 닫힌 것은 아래로. */
+const openAsks = new Set();
 function renderTowerAsks(grid) {
   const box = el('section', 'dash__card');
-  box.appendChild(el('div', 'dash__k', requestsAll.length ? `요청 ${requestsAll.length}` : '요청'));
+  const open = requestsAll.filter((r) => r.status !== 'closed'), closed = requestsAll.filter((r) => r.status === 'closed');
+  box.appendChild(el('div', 'dash__k', requestsAll.length ? `요청 — 열림 ${open.length} · 닫힘 ${closed.length}` : '요청'));
   if (!requestsAll.length) {
     box.appendChild(el('div', 'dash__empty', requestsLoaded ? '팀끼리 부탁한 일이 아직 없어요.' : '불러오는 중…'));
   } else {
-    for (const r of requestsAll) box.appendChild(requestCard(r));
+    for (const r of [...open, ...closed]) {
+      const row = el('button', 'dash__row'); row.type = 'button'; row.dataset.open = openAsks.has(r.id) ? '1' : '0';
+      const head = el('span', 'dash__head');
+      const [pt, pk] = requestPill(r);
+      const fromName = teams.find((t) => t.id === r.from.team)?.name ?? r.from.team, toName = teams.find((t) => t.id === r.to.team)?.name ?? r.to.team;
+      head.appendChild(el('b', null, `${fromName} → ${toName}`));
+      head.appendChild(el('span', 'dash__stage', ago(r.updatedAt)));
+      head.appendChild(pill(pt, pk));
+      row.appendChild(head);
+      row.appendChild(el('span', 'dash__sub', r.what));
+      row.addEventListener('click', () => { if (openAsks.has(r.id)) openAsks.delete(r.id); else openAsks.add(r.id); renderTower(); });
+      box.appendChild(row);
+      if (openAsks.has(r.id)) { const o = el('div', 'dash__open'); o.appendChild(requestCard(r)); box.appendChild(o); }
+    }
   }
   grid.appendChild(box);
 }
