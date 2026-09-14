@@ -93,13 +93,17 @@ public static class PpanamShot
         // ⑤ 빛 — 키 #ffe1bf 왼쪽 위, 환경광 하늘/땅, 부드러운 그림자
         var light = parts["light"];
         // 세기는 Three 값(2.4, ACES 톤매핑 뒤)을 그대로 못 쓴다 — built-in 은 톤매핑이 없어 1.5 만 줘도 벽(#f4efe4)·받침이 흰색으로 날아갔다(첫 판 실측 R25). 해 1.0 · 환경광 0.6.
-        var sun = new GameObject("sun").AddComponent<Light>(); sun.type = LightType.Directional; sun.color = Hex((string)light["sun"]["color"]); sun.intensity = 1.0f;
-        sun.shadows = LightShadows.Soft; sun.shadowStrength = 0.55f; sun.shadowBias = 0.02f; sun.shadowNormalBias = 0.4f;
-        QualitySettings.shadows = ShadowQuality.All; QualitySettings.shadowDistance = 400f; QualitySettings.shadowResolution = ShadowResolution.VeryHigh;   // 카메라가 130 넘게 떨어져 있다 — 기본 150 이면 그림자가 끊긴다
+        // 둘째 판(placed 50)도 받침 윗면이 흰색 — 해 1.0 + 하늘 0.6 이 윗면에서 1.6× 라 #d9d1bf 가 날아갔다. 해 0.7 · 환경광 0.45(윗면 ≈ 0.98×).
+        var sun = new GameObject("sun").AddComponent<Light>(); sun.type = LightType.Directional; sun.color = Hex((string)light["sun"]["color"]); sun.intensity = 0.7f;
+        sun.shadows = LightShadows.Soft; sun.shadowStrength = 0.6f; sun.shadowBias = 0.02f; sun.shadowNormalBias = 0.4f; sun.shadowResolution = UnityEngine.Rendering.LightShadowResolution.VeryHigh;
+        sun.lightmapBakeType = LightmapBakeType.Realtime;
+        // 그림자 — 둘째 판엔 하나도 안 찍혔다(나리). 카메라가 130 넘게 떨어져 있어 기본 거리 150·캐스케이드 둘이면 끊기거나 안 든다 → 거리 400, 캐스케이드 하나, CloseFit.
+        QualitySettings.shadows = ShadowQuality.All; QualitySettings.shadowDistance = 400f; QualitySettings.shadowResolution = ShadowResolution.VeryHigh;
+        QualitySettings.shadowCascades = 1; QualitySettings.shadowProjection = ShadowProjection.CloseFit; QualitySettings.shadowmaskMode = ShadowmaskMode.DistanceShadowmask;
         var from = light["sun"]["from"]; sun.transform.rotation = Quaternion.LookRotation(-ToUnityDir((float)from[0], (float)from[1], (float)from[2]));
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
         RenderSettings.ambientSkyColor = Hex((string)light["sky"]); RenderSettings.ambientEquatorColor = Hex((string)light["ground"]); RenderSettings.ambientGroundColor = Hex((string)light["ground"]);
-        RenderSettings.ambientIntensity = 0.6f;
+        RenderSettings.ambientIntensity = 0.45f;
 
         // ⑤ 카메라 — draw3d.js 와 같은 식: fov 25, azimuth 45, elevation 35, 짧은 변에 fit["1"]=60 칸
         var cam = new GameObject("cam").AddComponent<Camera>();
@@ -111,8 +115,10 @@ public static class PpanamShot
         var target = ToUnity(w / 2, 0, h / 2);
         cam.transform.position = target + dir * dist; cam.transform.LookAt(target); cam.nearClipPlane = 0.1f; cam.farClipPlane = 800f; cam.aspect = aspect;
 
-        var rt = new RenderTexture(W, H, 24); rt.antiAliasing = 4; cam.targetTexture = rt; cam.Render();
+        var rt = new RenderTexture(W, H, 24); rt.antiAliasing = 4; cam.targetTexture = rt;
+        cam.Render(); cam.Render();   // 첫 그리기는 그림자 맵을 만드는 판 — 두 번째가 진짜(배치 모드에서 한 번이면 그림자가 빠진 적이 있다)
         RenderTexture.active = rt; var tex = new Texture2D(W, H, TextureFormat.RGB24, false); tex.ReadPixels(new Rect(0, 0, W, H), 0, 0); tex.Apply(); RenderTexture.active = null;
+        TiltShift(tex);   // ⑤ 흐림 — first-scene.md '초점 흐림'. 후처리 패키지 없이 찍은 픽셀에 직접(Three 판은 CSS 띠로 같은 것)
         var outPath = Path.GetFullPath(Path.Combine(Root, "teams/dev/out/shots/r25-unity-village-412.png"));
         Directory.CreateDirectory(Path.GetDirectoryName(outPath));
         File.WriteAllBytes(outPath, tex.EncodeToPNG());
@@ -191,6 +197,41 @@ public static class PpanamShot
             var g = new GameObject("ribbon"); g.transform.SetParent(go.transform, false); g.transform.localPosition = new Vector3(0.12f, 0.62f, -0.05f);
             for (int i = 0; i < 2; i++) { var b = GameObject.CreatePrimitive(PrimitiveType.Cube); b.transform.SetParent(g.transform, false); b.transform.localPosition = new Vector3(i == 0 ? -0.055f : 0.055f, 0, 0); b.transform.localRotation = Quaternion.Euler(0, 0, i == 0 ? 25 : -25); b.transform.localScale = new Vector3(0.12f, 0.06f, 0.04f); b.GetComponent<Renderer>().sharedMaterial = Mat(Hex("#c94a3a")); }
         }
+    }
+
+    /* ── 틸트시프트 흐림 — 가운데 띠(35~65%)는 또렷, 위·아래로 갈수록 반지름이 커진다(끝에서 MAX). 상자 흐림 세 번 = 가우스 비슷. 412×915 라 CPU 로 충분. ── */
+    const int BLUR_MAX = 6;
+    static void TiltShift(Texture2D tex)
+    {
+        int w = tex.width, h = tex.height;
+        var src = tex.GetPixels32(); var dst = new Color32[src.Length];
+        for (int pass = 0; pass < 3; pass++)
+        {
+            // 가로
+            for (int y = 0; y < h; y++)
+            {
+                int r = RadiusAt(y, h); if (r == 0) { Array.Copy(src, y * w, dst, y * w, w); continue; }
+                for (int x = 0; x < w; x++) dst[y * w + x] = Avg(src, w, h, x, y, r, 0);
+            }
+            // 세로
+            for (int y = 0; y < h; y++)
+            {
+                int r = RadiusAt(y, h); if (r == 0) { Array.Copy(dst, y * w, src, y * w, w); continue; }
+                for (int x = 0; x < w; x++) src[y * w + x] = Avg(dst, w, h, x, y, 0, r);
+            }
+        }
+        tex.SetPixels32(src); tex.Apply();
+    }
+    static int RadiusAt(int y, int h)
+    {   // 텍스처 y 는 아래가 0. 또렷한 띠는 화면 35~65%
+        float t = (float)y / h; float d = t < 0.35f ? (0.35f - t) / 0.35f : t > 0.65f ? (t - 0.65f) / 0.35f : 0f;
+        return Mathf.RoundToInt(d * d * BLUR_MAX);
+    }
+    static Color32 Avg(Color32[] p, int w, int h, int x, int y, int rx, int ry)
+    {
+        int r = 0, g = 0, b = 0, n = 0;
+        for (int dy = -ry; dy <= ry; dy++) { int yy = y + dy; if (yy < 0 || yy >= h) continue; for (int dx = -rx; dx <= rx; dx++) { int xx = x + dx; if (xx < 0 || xx >= w) continue; var c = p[yy * w + xx]; r += c.r; g += c.g; b += c.b; n++; } }
+        return new Color32((byte)(r / n), (byte)(g / n), (byte)(b / n), 255);
     }
 
     // 무광(first-scene.md roughness 0.9) — glTFast built-in 셰이더는 roughnessFactor·metallicFactor, Standard 는 _Glossiness·_Metallic
