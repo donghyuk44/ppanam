@@ -379,6 +379,10 @@ body {
   border: 1px solid var(--line); background: transparent; color: var(--ink-3); cursor: pointer;
 }
 @media (pointer: coarse) { .composer__nl { display: grid; place-items: center; } }
+.composer__img {
+  flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; font: inherit;
+  border: 1px solid var(--line); background: transparent; color: var(--ink-3); cursor: pointer;
+}
 
 /* 종 — 모든 탭 오른쪽 위에 고정, 빨간 배지에 대표 차례 수 (네이버 폰 화면 기준, 결정 34 · 19-2).
  * 0 이면 회색 종만. 누르면 항목 목록(막힌 방·부른 방·승인)이 열리고 고르면 그리로 간다 (독립검수 #9). */
@@ -523,6 +527,24 @@ body {
 
 .scrim { position: fixed; inset: 0; background: rgba(20, 16, 10, .38); z-index: 5; }
 .scrim[hidden] { display: none; }
+
+/* 사람 카드 문 (결정 130 ①) — 방에서 얼굴·이름·참여 줄을 누르면 관제탑 사람 카드가 가운데 뜬다. 모양(정사각형·얼굴)은 시안 뒤, 지금은 부품 그대로. */
+.door { cursor: pointer; }
+.door:hover { filter: brightness(.94); }
+.name b.door:hover { text-decoration: underline; text-underline-offset: 2px; }
+.pop__scrim { z-index: 20; }
+.pop {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 21;
+  width: min(92vw, 420px); max-height: 86dvh; overflow-y: auto;
+  animation: pop-in .14s ease-out;
+}
+.pop > .pcard { box-shadow: 0 12px 40px rgba(20, 16, 10, .28); }
+.pop__x {
+  position: absolute; right: 6px; top: 4px; z-index: 1; width: 28px; height: 28px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--ink-3); font-size: 18px; line-height: 1; cursor: pointer;
+}
+.pop__x:hover { color: var(--ink); background: var(--panel-2); }
+@keyframes pop-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* ══ 좁아질 때 ══ */
 

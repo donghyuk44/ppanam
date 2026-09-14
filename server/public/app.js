@@ -125,7 +125,7 @@ const fmtSize = (n) => (n >= 1_048_576 ? `${(n / 1_048_576).toFixed(1)}MB` : n >
  */
 function outFileNode(f) {
   const box = el('div', 'outf'); box.dataset.kind = f.kind;
-  const a = el('a', 'outa', `${f.team}/out/${f.rel}`); a.href = f.url; a.target = '_blank'; a.rel = 'noopener';
+  const a = el('a', 'outa', `${f.team}/${f.root ?? 'out'}/${f.rel}`); a.href = f.url; a.target = '_blank'; a.rel = 'noopener';
   box.appendChild(a);
   if (f.missing) { box.appendChild(el('span', 'outf__miss', ' — 파일이 없습니다')); return box; }
   if (f.size != null) box.appendChild(el('span', 'outf__meta', ` ${fmtSize(f.size)}`));
@@ -513,6 +513,7 @@ function renderSide() {
     t.appendChild(el('div', 'who__r', id === 'boss' ? (a.title ?? '') : `${a.title ?? ''} · ${STATE_LABEL[stateOf(id)]}`));
     row.appendChild(t);
     if (a.model) row.appendChild(el('div', 'who__m', a.model.toUpperCase()));
+    if (id !== 'boss') { row.classList.add('door'); row.title = `${a.name} 카드`; row.addEventListener('click', () => openPersonPop(active, id)); }   // 참여 줄도 문
     c.appendChild(row);
   }
 
@@ -583,11 +584,14 @@ function draw(e) {
       const row = el('div', `row${me ? ' me' : ''}${cont ? ' cont' : ''}${called ? ' calls-boss' : ''}`);
       const av = el('div', 'av', a.initial ?? '?');
       av.style.background = a.color ?? FALLBACK.color;
+      // 얼굴·이름은 문이다(결정 130 ① · 화면이-답하는-질문 "카드는 문") — 누르면 관제탑 사람 카드가 그 자리에 뜬다. 대표·system 은 카드가 없다(마을과 같다).
+      const door = (node) => { if (me || e.actor === 'system') return; node.classList.add('door'); node.title = `${a.name} 카드`; node.addEventListener('click', () => openPersonPop(e.meta?.from ?? active, e.actor)); };
+      door(av);
       row.appendChild(av);
       const stack = el('div', 'stack');
       if (!cont && !me) {
         const name = el('div', 'name');
-        name.appendChild(el('b', null, a.name));
+        const nb = el('b', null, a.name); door(nb); name.appendChild(nb);
         name.append(' ' + hhmm(e.ts));
         // 총괄실에서 옮겨온 말 — 톰이 이 방 사람을 불렀다 (결정 21).
         if (e.meta?.from) name.appendChild(el('span', 'fromtag', `${teams.find((t) => t.id === e.meta.from)?.room ?? e.meta.from}에서`));
@@ -950,6 +954,25 @@ $('composerNl').addEventListener('click', () => {
   input.value = value.slice(0, s) + '\n' + value.slice(t);
   input.selectionStart = input.selectionEnd = s + 1;
   fitInput(); input.focus();
+});
+
+// 그림 올리기 (결정 130 ② — 대표가 방에 그림을 올릴 수 있어야 한다). 버튼이 숨은 file input 을 누르고, 고르면 바로 올린다.
+$('uploadBtn').addEventListener('click', () => $('uploadFile').click());
+$('uploadFile').addEventListener('change', async () => {
+  const f = $('uploadFile').files?.[0];
+  $('uploadFile').value = '';   // 같은 파일 다시 골라도 change 가 나게
+  if (!f || !active) return;
+  const data = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(f);
+  }).catch(() => null);
+  if (!data) return say('그림을 읽지 못했습니다.');
+  say('올리는 중…', 0);
+  const r = await post('/api/upload', { team: active, mime: f.type, data }).catch(() => null);
+  if (!r?.ok) return say(r?.data?.error ?? '그림을 올리지 못했습니다.');
+  say('올렸습니다.');
 });
 
 async function sendSay(text) {
@@ -1379,6 +1402,27 @@ function whyStopped(t, p) {
 
 /** 일 상태 → 알약 글자·색 (결정 58 ①, 계약 3절 "일 상태"). 글자는 하영 사전 — 관제탑 셋·방 둘이 같은 글자. 서버의 people[자리].state — 마을 시계는 여기 없다. */
 const WORK_PILL = { working: ['일하는 중', 'live'], bossCall: ['대표님께 물어봄', 'boss'], blocked: ['멈춤', 'bad'], waiting: ['쉬는 중', 'idle'], resting: ['자리 비움', 'idle'] };
+
+/**
+ * 사람 카드 문 (결정 130 ① · 화면이-답하는-질문 "카드는 탭이 아니다. 문이다") — 방에서 얼굴·이름·참여 줄을 누르면
+ * 관제탑의 그 사람 카드(personCard, 같은 부품)가 팝업으로 뜬다. 어디서든 두 번 안에 카드. 얼굴 그림·정사각형 모양은 129·130 시안 뒤 —
+ * 지금은 카드 부품 그대로. 대표·system(나리)은 카드가 없다(마을과 같다). 요약이 아직 안 왔으면 상태 없이 이름·직책만.
+ */
+function openPersonPop(teamId, id) {
+  const t = teams.find((x) => x.id === teamId); if (!t || id === 'boss' || id === 'system') return;
+  const s = summaries[teamId] ?? {};
+  const a = s.cast?.[id] ?? (teamId === active ? cast.agents?.[id] : null); if (!a) return;
+  closePop();
+  const scrim = el('div', 'scrim pop__scrim'); scrim.addEventListener('click', closePop);
+  const pop = el('div', 'pop'); pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', `${a.name} 카드`);
+  const x = el('button', 'pop__x', '×'); x.type = 'button'; x.title = '닫기'; x.addEventListener('click', closePop);
+  pop.appendChild(x);
+  pop.appendChild(personCard(t, id, a, s.people?.[id] ?? { state: 'waiting' }));
+  document.body.append(scrim, pop);
+  x.focus();
+}
+function closePop() { for (const n of document.querySelectorAll('.pop, .pop__scrim')) n.remove(); }
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closePop(); });
 
 function personCard(t, id, a, p) {
   const card = el('div', 'pcard'); card.dataset.actor = `${t.id}:${id}`;

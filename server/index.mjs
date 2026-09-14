@@ -10,6 +10,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import {
@@ -413,6 +414,63 @@ const server = http.createServer((req, res) => {
       }
     });
     return;
+  }
+
+  // 방에 그림 올리기 (대표 결정 130 ② — "이미지 업로드하고싶은데 안 되네"). base64 로 받아 teams/<팀>/in/ 에 저장하고
+  // in/<파일> 을 적은 말로 /api/say 와 같은 규칙(idle 채팅 표시·FAIL 풀기·호명·codex/claude 배달)을 그대로 태운다.
+  // /api/say 코드를 공유 함수로 뽑지 않고 나란히 둔 것은 지금 그 경로가 결정 127 로 막 바뀌어서 — 여기서 리팩터로 흔들지 않는다.
+  const UPLOAD_MIME = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
+  const UPLOAD_MAX = 8 * 1024 * 1024;   // base64 문자열 기준 — 디코드하면 6MB 안팎. 채팅 그림이지 자료실이 아니다.
+  if (url.pathname === '/api/upload' && req.method === 'POST') {
+    readBody(req, res, ({ team: t, data, mime, quiet: q }) => {
+      if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
+      const ext = UPLOAD_MIME[String(mime ?? '')];
+      if (!ext) return json(res, 400, { error: `그림 형식만 됩니다 (png·jpg·gif·webp) — 받은 것: ${mime}` });
+      const b64 = String(data ?? '').replace(/^data:[^,]*,/, '');
+      if (!b64) return json(res, 400, { error: '그림이 비어 있습니다.' });
+      let buf;
+      try { buf = Buffer.from(b64, 'base64'); } catch { return json(res, 400, { error: '그림을 읽지 못했습니다.' }); }
+      if (!buf.length) return json(res, 400, { error: '그림을 읽지 못했습니다.' });
+
+      const name = `${new Date().toISOString().replace(/[:.]/g, '-')}-${crypto.randomBytes(3).toString('hex')}.${ext}`;
+      const dir = paths(t).in;
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, name), buf);
+
+      const say = `그림을 올렸습니다: in/${name}`;
+      const phase = isOffice(t) ? 'running' : readState(t).phase;
+      if (phase === 'idle' && !q) bus.allowIdleChat(t);
+      if (phase === 'blocked' && !q) resumeRound(t, { text: say });
+      try {
+        const cast = readCast(t).agents ?? {};
+        const to = q ? null : addressee(say, cast);
+        if (to && bus.isForeign(cast[to]?.model)) {
+          const rec = emit(t, { actor: 'boss', type: 'message', text: say });
+          return json(res, 200, { ok: true, to, name });
+        }
+        const owner = session.ownerOf(t);
+        if (!to && bus.isForeign(cast[owner]?.model)) {
+          if (!q) { emit(t, { actor: 'boss', type: 'message', text: say }); wake(t, owner); }
+          return json(res, 200, { ok: true, to: owner, name });
+        }
+        const actor = to && (cast[to]?.model === 'claude') ? to : undefined;
+        const sent = session.send(t, q ? quiet(say) : say, actor);
+        if (sent.refused) return json(res, 409, { error: sent.reason, closing: true });
+        json(res, 200, { ok: true, to: actor ?? session.ownerOf(t), name, ...sent });
+      } catch (e) {
+        json(res, 500, { error: `실무에게 전달하지 못했습니다 — ${e.message}` });
+      }
+    }, UPLOAD_MAX);
+    return;
+  }
+
+  // 올린 그림 보기 — teams/<팀>/in/** 을 읽기 전용으로. out/ 과 같은 경계(bus.inFile), 폴더만 다르다.
+  if (url.pathname.startsWith('/in/') && (req.method === 'GET' || req.method === 'HEAD')) {
+    let segs;
+    try { segs = url.pathname.split('/').slice(2).map(decodeURIComponent); } catch { segs = []; }
+    const file = segs.length >= 2 ? bus.inFile(segs[0], segs.slice(1).join('/')) : null;
+    if (!file) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('404'); }
+    return sendFile(res, file, { 'cache-control': 'no-cache' });
   }
 
   // 판정. 내부감사 → 외부감사 순서로 판정 차례를 준다. 실무가 /verdict 로, 대표가 화면에서 부른다.

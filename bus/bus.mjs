@@ -434,7 +434,7 @@ export function approvalArtifacts(r) {
   for (const f of r.files ?? []) add(outItem(r.team, String(f).replace(/^out\//, '')));
   for (const f of findOutPaths(`${r.what ?? ''}\n${r.detail ?? ''}`, r.team)) add(f);
   return [...items.values()].map((f) => {
-    const file = outFile(f.team, f.rel);
+    const file = f.root === 'in' ? inFile(f.team, f.rel) : outFile(f.team, f.rel);
     try {
       const st = fs.statSync(file);
       if (!st.isFile()) throw new Error('not a file');
@@ -452,6 +452,19 @@ export function outFile(team, rel) {
   const parts = String(rel ?? '').split('/');
   if (!parts.length || parts.some((s) => !s || s === '..' || s.startsWith('.'))) return null;
   const dir = paths(team).out;
+  const file = path.join(dir, ...parts);
+  return file.startsWith(dir + path.sep) ? file : null;
+}
+
+/**
+ * GET /in/<팀>/<경로> 가 여는 실제 파일 — 대표가 방에 올린 그림(결정 130 ②). teams/<팀>/in/ 밖(..)·숨김 파일·없는 팀은 null.
+ * out/ 과 같은 경계(outFile), 폴더만 다르다 — 여기도 서버가 이 경로로 쓰지 않는다(업로드 저장만 새 파일 이름으로).
+ */
+export function inFile(team, rel) {
+  if (!/^[A-Za-z0-9_-]+$/.test(String(team ?? '')) || !teamExists(team)) return null;
+  const parts = String(rel ?? '').split('/');
+  if (!parts.length || parts.some((s) => !s || s === '..' || s.startsWith('.'))) return null;
+  const dir = paths(team).in;
   const file = path.join(dir, ...parts);
   return file.startsWith(dir + path.sep) ? file : null;
 }
@@ -632,6 +645,7 @@ export function paths(team) {
     cast: path.join(dir, 'cast.json'),
     roadmap: path.join(dir, 'roadmap.json'),
     out: path.join(dir, 'out'),
+    in: path.join(dir, 'in'),
   };
 }
 
