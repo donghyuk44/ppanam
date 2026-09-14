@@ -194,7 +194,7 @@ export function briefOf(team, actor) {
     const roomName = listTeams().find((t) => t.id === team)?.room ?? '이 방';
     lines.push(`${roomName}은 라운드가 없다 — 늘 열려 있다.`);
     // 비서실(결정 98·132) — 세라의 재료는 다섯 팀 상황 파일·승인 목록·요청 블록. 대표에게 요약해 보고하는 게 이 방의 전부다.
-    if (team === 'sera') lines.push('', ...secretaryBriefLines());
+    if (roomRules(team).owner === 'secretary') lines.push('', ...secretaryBriefLines());
   } else {
     const st = readState(team);
     const rm = readRoadmap(team);
@@ -230,6 +230,8 @@ function secretaryBriefLines() {
   lines.push('', `### 열린 요청 블록 ${requests.length}건`);
   for (const r of requests) lines.push(`- ${r.from.team} → ${r.to.team}: ${r.what}${r.goal ? ' — ' + r.goal : ''} (${r.status})`);
   if (!requests.length) lines.push('- 없음');
+  // 이 값은 세션이 켜질 때(시스템 프롬프트) 한 번 박힌다 — 재개(resume)로 오래 사는 세션은 턴마다 다시 안 받는다(테라 감사, R25).
+  lines.push('', '이 값은 세션이 켜질 때 것이다. 보고 전에 다시 읽어라 — `teams/<팀>/progress.json` · `node bus/approve.mjs --list` · `node bus/request.mjs --list`.');
   return lines;
 }
 
