@@ -8,7 +8,8 @@ import { findOutPaths } from './outlink.js';
 export const KIND_ORDER = ['boss', 'approval', 'blocked', 'report'];
 /** 급한 종류 — 안 읽은 것이 하나라도 있으면 종이 빨갛다. 보고는 아니다. */
 export const URGENT = new Set(['boss', 'approval', 'blocked']);
-export const BOSS_WHY = { blocked: '대표 결정 기다리는 중 (FAIL)', attempts: '고쳐 오기 3번 다 씀', silent: '하루 넘게 말이 없음' };
+// 글자는 하영 사전 3-1 "왜 멈췄나" 표 그대로(app.js BOSS_WHY 와 같은 글자) — 결정 43 ⑥.
+export const BOSS_WHY = { blocked: '대표님 답을 기다려요 — 검토에서 멈춤이 났어요', attempts: '대표님 답을 기다려요 — 세 번 고쳐도 안 돼서요', silent: '하루 넘게 아무 말이 없어요' };
 
 const oneLine = (s, n) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 const firstImage = (text, team) => findOutPaths(text, team).find((f) => f.kind === 'image')?.url ?? null;
@@ -38,7 +39,7 @@ export function notificationsOf({ teams = [], summaries = {}, approvals = [] } =
     // 막힘 — 상태라 이벤트 id 가 없다. 팀당 하나, 시각은 마지막 발언.
     if (s.needsBoss) {
       items.push({ id: `blocked:${t.id}`, kind: 'blocked', team: t.id, by: null, name: t.room ?? t.name,
-        text: BOSS_WHY[s.needsBossWhy] ?? '대표 판단', ts: s.lastSpokeAt ?? s.lastAt ?? null, thumb: null,
+        text: BOSS_WHY[s.needsBossWhy] ?? '대표님 답을 기다려요', ts: s.lastSpokeAt ?? s.lastAt ?? null, thumb: null,
         target: { view: 'room', team: t.id, event: null } });
     }
     // 보고 — 오늘 대표를 불렀지만 결정을 청한 건 아닌 말.
@@ -110,7 +111,7 @@ export function blockedOf({ teams = [], summaries = {}, approvals = [], requests
     }
     if (s.needsBoss) {
       push({ id: `blocked:${t.id}`, kind: 'blocked', where: 'room', team: t.id, by: null, waitOn: 'boss', state: s.needsBossWhy ?? null,
-        text: BOSS_WHY[s.needsBossWhy] ?? '대표 판단', since: s.lastSpokeAt ?? s.lastAt ?? null,
+        text: BOSS_WHY[s.needsBossWhy] ?? '대표님 답을 기다려요', since: s.lastSpokeAt ?? s.lastAt ?? null,
         target: { view: 'room', team: t.id, event: null } });
     }
     for (const [i, line] of (s.progress?.blocked ?? []).entries()) {

@@ -641,7 +641,7 @@ switch (cmd) {
         const order = n1.items.map((it) => it.id).join(',');
         const n2 = notificationsOf({ teams: nTeams, summaries: nSum, approvals: nApr }, { read: new Set(['boss:e1', 'approval:apr_1', 'blocked:design']) });
         const nWant = order === 'boss:e1,approval:apr_1,blocked:design,report:e5,report:e0' && n1.unread === 5 && n1.urgent
-          && n1.items[4].thumb === '/out/dev/shots/a.png' && n1.items[3].thumb === null && n1.items[0].name === '테라' && n1.items[2].text.includes('FAIL')
+          && n1.items[4].thumb === '/out/dev/shots/a.png' && n1.items[3].thumb === null && n1.items[0].name === '테라' && n1.items[2].text.includes('멈춤')
           && n2.unread === 2 && !n2.urgent;
         out.push(['알림 목록(결정 68)', nWant ? '✓ 종류 순 5건 · B 승인·ask 제외 · 썸네일 · 읽음 뒤 unread 2 · urgent 꺼짐' : '✗ ' + JSON.stringify({ order, unread: n1.unread, urgent: n1.urgent, thumb: n1.items.map((i) => i.thumb), n2: [n2.unread, n2.urgent] })]);
         // 총괄실에서 부른 말이 그 방에도 남아(crossPost) 같은 알림이 둘로 뜨던 것(하네스 실측 R23 ①) — 같은 사람의 같은 글은 한 줄, 방은 "개발·총괄".

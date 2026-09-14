@@ -295,7 +295,7 @@ function goTo(name) {
 const LABEL = (name) => {
   const m = S.map.labels ?? {};
   const [a, b, c] = name.split('.');
-  if (name === 'plaza') return '광장'; if (a === 'cafe') return `카페 ${b === 'seat' ? c : ''}번 자리`;
+  if (name === 'plaza') return '광장'; if (a === 'cafe') return `찻집 ${b === 'seat' ? c : ''}번 자리`;   // 세계관 문서가 찻집이라 부른다(하영 3-3)
   if (name === 'village.gate') return '성문 앞'; if (name === 'castle.entrance') return '회사 정문';
   if (name === 'home.boss') return '댄의 집'; if (name === 'boss.desk') return '대표 집무실';
   if (name === 'hq.board') return '총괄실 게시판'; if (name === 'hq.bossdoor') return '총괄실 안쪽 문';
@@ -487,9 +487,9 @@ async function loadRounds(team) {
 
 async function play() {
   const team = $('wvTeam').value, round = Number($('wvRound').value);
-  if (!team || !round) return toast('재생할 라운드가 없습니다.');
+  if (!team || !round) return toast('다시 볼 회차가 없어요.');
   const r = await fetch(`/api/log?team=${encodeURIComponent(team)}&round=${round}`).then((x) => x.json()).catch(() => ({}));
-  if (!r.events?.length) return toast('그 라운드에 기록이 없습니다.');
+  if (!r.events?.length) return toast('그 회차엔 기록이 없어요.');
   replay(team, r.events, round);
 }
 /** 사건 목록을 그 방에서 재생한다. 화면의 재생 버튼도, 바깥(예: 작전실의 "마을에서 보기")도 이걸 부른다. */
@@ -500,7 +500,7 @@ export function replay(team, events, round = events[0]?.round ?? null) {
   syncPicker(team, round);
   for (const a of S.actors.values()) if (a.team === team) teleport(a, a.home);
   clearBubbles(team);
-  $('wvPlay').textContent = '일시정지'; $('wvStop').hidden = false;
+  $('wvPlay').textContent = '잠깐 멈춤'; $('wvStop').hidden = false;
   const [scene, room] = roomOf(team);
   if (room && S.cam) { if (scene !== S.scene) setScene(scene); S.gl.lookAtXZ(room.x + room.w / 2, room.y + room.h / 2); }   // 그 방 가운데로 (전엔 sc.name 이 없는 값이라 장면이 안 바뀌었다)
   step();
@@ -522,7 +522,7 @@ function pause() {
   if (!R.events.length) return;
   R.playing = !R.playing;
   clearTimeout(R.timer);
-  $('wvPlay').textContent = R.playing ? '일시정지' : '이어서';
+  $('wvPlay').textContent = R.playing ? '잠깐 멈춤' : '이어서';
   if (R.playing) step();
 }
 function stop(quiet) {
@@ -589,7 +589,7 @@ async function submitTalk(ev) {
   const r = await fetch('/api/say', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ team: a.team, text }) })
     .then(async (x) => ({ ok: x.ok, data: await x.json().catch(() => ({})) })).catch(() => ({ ok: false, data: {} }));
   if (r.ok) { S.talkTarget = { key: a.key, at: performance.now() }; toast(`${a.name}에게 전했습니다. 답은 여기와 작전실에 같이 뜹니다.`); }
-  else toast(r.data.needsRound ? `${a.team} 방의 라운드를 먼저 여세요(작전실에서).` : (r.data.error ?? '전하지 못했습니다.'), 5000);
+  else toast(r.data.needsRound ? `${a.team} 방 회차를 먼저 시작하세요.` : (r.data.error ?? '전하지 못했어요.'), 5000);
   closeTalk();
 }
 
@@ -642,7 +642,7 @@ function onStageClick(cx, cy) {
   const a = actorAt(cx, cy);
   if (a) openCard(a); else closeCard();
 }
-const ACT_LABEL = { typing: '작업 중', sleep: '자는 중', idle: '듣는 중', talking: '말하는 중', walking: '이동 중' };
+const ACT_LABEL = { typing: '일하는 중', sleep: '자는 중', idle: '듣는 중', talking: '말하는 중', walking: '걷는 중' };   // 하영 3-3 — "일하는 중" 은 관제탑 알약과 같은 글자
 let cardKey = null;
 async function openCard(a) {
   const box = $('wvCard'); cardKey = a.key;
@@ -652,7 +652,7 @@ async function openCard(a) {
   catch { r = null; }
   if (cardKey !== a.key) return;                    // 그새 다른 사람을 눌렀다
   box.replaceChildren();
-  if (!r || r.error) { box.appendChild(node('div', 'wc__sec', r?.error ?? '카드를 못 불러왔습니다.')); return; }
+  if (!r || r.error) { box.appendChild(node('div', 'wc__sec', r?.error ?? '카드를 못 불러왔어요.')); return; }
   const team = S.teams.find((t) => t.id === a.team);
   const head = node('div', 'wc__head');
   const av = node('span', 'wc__av'); av.style.background = r.color ?? a.color ?? '#888'; head.appendChild(av);
@@ -665,7 +665,7 @@ async function openCard(a) {
   // 지금
   const w = r.world ?? S.world?.actors?.[a.key] ?? null;
   const st = r.status ?? {};
-  const now = [w?.place ? `${LABEL(w.place)}에서` : null, st.busy ? '말하는 중' : (ACT_LABEL[w?.act] ?? (st.alive ? '듣는 중' : st.engine === 'codex' ? '부르면 온다' : '자리 비움'))].filter(Boolean).join(' ');
+  const now = [w?.place ? `${LABEL(w.place)}에서` : null, st.busy ? '말하는 중' : (ACT_LABEL[w?.act] ?? (st.alive ? '듣는 중' : st.engine && st.engine !== 'claude' ? '부르면 와요' : '자리 비움'))].filter(Boolean).join(' ');
   const s0 = node('div', 'wc__sec'); s0.appendChild(node('div', 'wc__h', '지금')); s0.appendChild(node('div', 'wc__state', now || '—')); box.appendChild(s0);
 
   // 누구
@@ -677,7 +677,7 @@ async function openCard(a) {
       if (lines.every((l) => /^\s{4}/.test(l))) for (const l of lines) s1.appendChild(node('div', 'wc__q', l.trim()));
       else s1.appendChild(node('p', 'wc__p', para.replace(/\*\*/g, '')));
     }
-  } else if (!r.persona?.identity) s1.appendChild(node('div', 'wc__empty', '인격 파일이 없다 — 대표가 정한다.'));
+  } else if (!r.persona?.identity) s1.appendChild(node('div', 'wc__empty', '캐릭터 설정이 아직 없어요 — 대표님이 정해요.'));
   box.appendChild(s1);
 
   // 어제 — 일지 맨 위 문단. 첫 문장("나는 …")이 한 줄로 먼저(결정 13), 나머지는 그 아래.
@@ -692,11 +692,11 @@ async function openCard(a) {
       const tail = flat.slice(r.journal.first.length).trim();
       if (tail) s2.appendChild(node('p', 'wc__p', tail));
     } else s2.appendChild(node('p', 'wc__p', body));
-  } else s2.appendChild(node('div', 'wc__empty', '아직 라운드를 마친 적이 없다.'));
+  } else s2.appendChild(node('div', 'wc__empty', '아직 회차를 끝낸 적이 없어요.'));
   box.appendChild(s2);
 
   // 최근 발언 — 누르면 작전실의 그 자리로
-  const s3 = node('div', 'wc__sec'); s3.appendChild(node('div', 'wc__h', '최근 발언'));
+  const s3 = node('div', 'wc__sec'); s3.appendChild(node('div', 'wc__h', '최근에 한 말'));
   if (r.recent?.length) {
     for (const m of [...r.recent].reverse()) {
       const b = node('button', 'wc__msg'); b.type = 'button';
@@ -706,7 +706,7 @@ async function openCard(a) {
       b.addEventListener('click', () => S.jump?.(a.team, m.id));
       s3.appendChild(b);
     }
-  } else s3.appendChild(node('div', 'wc__empty', '아직 한 말이 없다.'));
+  } else s3.appendChild(node('div', 'wc__empty', '아직 한 말이 없어요.'));
   box.appendChild(s3);
 
   const foot = node('div', 'wc__foot');
