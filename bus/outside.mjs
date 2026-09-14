@@ -562,7 +562,11 @@ async function viaPoolOnce(prompt) {
   // 조용히 null 로 넘어가면 "설정 안 됨" 만 보여 왜 안 됐는지 모른다(R25 실측) — 서버 없음·문 없음·빈 답을 갈라 '시도한 것' 에 남긴다
   if (!r) throw new Error(`서버 없음(${SERVER_URL}) 또는 문 없음(404 — 재시작 전 서버)`);
   if (!r.answer) throw new Error(`빈 답 (conversation ${r.sessionId ?? '없음'} · 첫 낱말 ${r.firstMs != null ? (r.firstMs / 1000).toFixed(1) + '초' : '?'} · 끝까지 ${r.totalMs != null ? (r.totalMs / 1000).toFixed(1) + '초' : '?'})${r.raw?.length ? '\n    온 줄들:\n    ' + r.raw.map((l) => l.slice(0, 240)).join('\n    ') : ''}`);
-  return `${r.answer}\n(conversation ${r.sessionId ?? '없음'} · 첫 낱말 ${r.firstMs != null ? (r.firstMs / 1000).toFixed(1) + '초' : '?'} · 끝까지 ${r.totalMs != null ? (r.totalMs / 1000).toFixed(1) + '초' : '?'})`;
+  const line = (x, tag) => `${tag} 첫 낱말 ${x.firstMs != null ? (x.firstMs / 1000).toFixed(1) + '초' : '?'} · 끝까지 ${x.totalMs != null ? (x.totalMs / 1000).toFixed(1) + '초' : '?'}`;
+  // 같은 프로세스에 한 번 더 — 첫 부름은 띄우는 값이 들어가고, 이어지는 부름이 결정 122 의 "그냥 불렀는데" 숫자다. 실측(R25): 첫 6.6초 · 이어서 ?초.
+  let warm = null;
+  try { warm = await runGeminiPool(withTurn(DEFAULT_PERSONA, '한 줄로만: 방금 한 답을 그대로 다시.'), { team: team ?? 'dev', model: geminiModelOf(null), resume: r.sessionId }); } catch { /* 두 번째는 덤 */ }
+  return `${r.answer}\n(conversation ${r.sessionId ?? '없음'} · ${line(r, '첫 부름')}${warm?.answer ? ` · ${line(warm, '이어서')}` : ''})`;
 }
 
 async function viaOpenAI(prompt) {
