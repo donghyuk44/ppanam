@@ -108,7 +108,7 @@ function persist(team) {
     pending: [...r.pending].map(([a, p]) => [a, p.kind]),
     inflight: [...r.inflight].map(([a, p]) => [a, p.kind, p.cursor ?? null]),
     carry: r.carry, carryFrom: r.carryFrom ?? null,
-    flow: r.flow ?? null,   // 판정 흐름도 살아남는다(결정 117 곁다리) — 전엔 메모리에만 있어 재시작에 흐름이 사라지고 verdict 차례만 남았다
+    flow: r.flow ?? null,   // 판정 흐름도 살아남는다(결정 118 곁다리) — 전엔 메모리에만 있어 재시작에 흐름이 사라지고 verdict 차례만 남았다
   };
   try { writeStore(all); }
   catch (e) { note(team, `차례를 저장하지 못했습니다 — ${String(e.message).slice(0, 120)}. 서버가 꺼지면 이 방의 대기 차례가 사라질 수 있습니다.`); }
@@ -387,7 +387,7 @@ export function startVerdict(team, target) {
   if (r.flow) throw new Error(`이미 판정이 돌고 있습니다 (${r.flow.waiting ?? r.flow.steps?.[r.flow.i] ?? '?'} 차례).`);
   const cast = readCast(team).agents ?? {};
   // 내부감사는 엔진이 무엇이든(대표가 codex 로 바꿨을 수도, 결정 69 ①) 그 자리가 있으면 한 걸음. 외부감사는 다른 회사 엔진이어야 한다(CLAUDE.md — codex 든 gemini 든).
-  // 외부감사 걸음을 건너뛸 때는 **조용히 빠지지 않는다**(결정 117 ②) — 왜 건너뛰는지 flow 에 적고 방에 note. 전에는 경고 한 줄 없이 버렸다.
+  // 외부감사 걸음을 건너뛸 때는 **조용히 빠지지 않는다**(결정 118 ②) — 왜 건너뛰는지 flow 에 적고 방에 note. 전에는 경고 한 줄 없이 버렸다.
   const out = cast.outside ?? null;
   const outsideWhy = !out ? 'no-seat' : out.suspended ? 'suspended' : !isForeign(out.model) ? 'not-foreign' : null;
   const steps = [cast.review?.model ? 'review' : null, outsideWhy ? null : 'outside'].filter(Boolean);
@@ -397,7 +397,7 @@ export function startVerdict(team, target) {
   emit(team, { actor: 'system', type: 'note', text: `판정 시작 — ${r.flow.target}. ${steps.map((s) => nameOf(team, s)).join(' → ')} 순서.`, meta: { verdictFlow: 'start', steps, skipped: r.flow.skipped, reason: outsideWhy } });
   if (out && outsideWhy) {
     const why = outsideWhy === 'suspended' ? `중단 중 — ${out.suspended} 복귀 예정` : outsideWhy === 'not-foreign' ? `자리 엔진이 ${out.model ?? '없음'} 이라 외부 감사가 아님` : '자리 없음';
-    emit(team, { actor: 'system', type: 'note', text: `외부 감사 없이 판정합니다 — ${nameOf(team, 'outside')} ${why}. 이 라운드는 기록에 '외부 감사 안 봄' 으로 남고, 돌아오면 다시 봅니다 (결정 117).`, meta: { verdictFlow: 'skip', skipped: ['outside'], reason: outsideWhy } });
+    emit(team, { actor: 'system', type: 'note', text: `외부 감사 없이 판정합니다 — ${nameOf(team, 'outside')} ${why}. 이 라운드는 기록에 '외부 감사 안 봄' 으로 남고, 돌아오면 다시 봅니다 (결정 118).`, meta: { verdictFlow: 'skip', skipped: ['outside'], reason: outsideWhy } });
   }
   askStep(team);
   return r.flow;
@@ -414,7 +414,7 @@ function askStep(team) {
 }
 
 /**
- * 판정 흐름 시간 제한(결정 117 곁다리) — 외부감사가 답을 못 내면 flow 가 waiting 으로 굳고 다음 /verdict 가 "이미 돌고 있습니다" 로 거부됐다(오늘 아침 실제로).
+ * 판정 흐름 시간 제한(결정 118 곁다리) — 외부감사가 답을 못 내면 flow 가 waiting 으로 굳고 다음 /verdict 가 "이미 돌고 있습니다" 로 거부됐다(오늘 아침 실제로).
  * codex·gemini 호출 상한(PPANAM_OUTSIDE_TIMEOUT 5분)의 두 배를 넘으면 흐름을 놓고 방에 남긴다. 다시 부르면 된다.
  */
 export const FLOW_TIMEOUT_MS = 2 * Number(process.env.PPANAM_OUTSIDE_TIMEOUT || 300_000);
@@ -442,7 +442,7 @@ function onFlowEvent(team, e) {
     if (v === 'PASS' && f.i + 1 < f.steps.length) { f.i += 1; askStep(team); return; }
     r.flow = null; persist(team);
     if (v === 'PASS') {
-      // 검수 #7 — 이 note 는 대표 화면에 게시된다. CLI 문장은 실무가 안다. 사람 말로. meta 에는 기계가 읽을 걸음(결정 117 ①) — 누가 봤고 누구를 왜 건너뛰었나.
+      // 검수 #7 — 이 note 는 대표 화면에 게시된다. CLI 문장은 실무가 안다. 사람 말로. meta 에는 기계가 읽을 걸음(결정 118 ①) — 누가 봤고 누구를 왜 건너뛰었나.
       const skipNote = f.skipped?.length ? ` (${f.skipped.map((s) => nameOf(team, s)).join('·')} 없이 — ${f.reason})` : '';
       emit(team, { actor: 'system', type: 'note', text: `판정 완료 — ${f.steps.map((s) => nameOf(team, s)).join('·')} 모두 통과${skipNote}. 이제 ${ga(nameOf(team, session.ownerOf(team)))} 이 회의를 통과로 닫을 수 있습니다.`,
         meta: { verdictFlow: 'pass', steps: f.steps, skipped: f.skipped ?? [], reason: f.reason ?? null } });

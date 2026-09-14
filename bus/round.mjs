@@ -559,7 +559,7 @@ switch (cmd) {
           && staleBefore === false && freshNow;
         out.push(['상황판 progress(결정 23)', pWant ? '✓ 옛 모양 읽기 · 준 항목만 바뀜 · clear · 네 줄 글 · 라운드 안 갱신 판별' : '✗ ' + JSON.stringify({ old, m1, m2, txt, staleBefore, freshNow })]);
       }
-      // 누가 봤나 · 중단(결정 117) — ① auditorsOf 순수 · rounds.jsonl 행에 auditors/outsideAudited ② endRefusal 이 카드 actor 를 본다: review 만 PASS 면 거부, outside 를 중단(suspended)으로 적으면 닫히되 outsideAudited:false·why 가 박힌다.
+      // 누가 봤나 · 중단(결정 118) — ① auditorsOf 순수 · rounds.jsonl 행에 auditors/outsideAudited ② endRefusal 이 카드 actor 를 본다: review 만 PASS 면 거부, outside 를 중단(suspended)으로 적으면 닫히되 outsideAudited:false·why 가 박힌다.
       {
         const { auditorsOf } = await import('./bus.mjs');
         const av = auditorsOf([
@@ -590,7 +590,7 @@ switch (cmd) {
         const sWant = refused === '✓ 거부' && susText === '대표가 레오를 중단(2026-09-20 복귀 예정) 로 바꿨습니다 — 다음 턴부터.' && bad?.includes('outside') && badDate?.includes('YYYY')
           && closed?.outsideAudited === false && closed?.outsideWhy === 'suspended' && closed?.auditors?.[0]?.actor === 'review' && closed.verdict === 'PASS'
           && unsus.to.suspended === null && readCast(T).agents.outside?.suspended === undefined;
-        out.push(['누가 봤나 · 중단(결정 117)', avWant && rowWant && sWant ? '✓ auditorsOf(stale 제외·자리당 마지막) · R1 행 outsideAudited:true · review 만 PASS 거부 · 중단이면 닫히고 false·suspended · 해제 null' : '✗ ' + JSON.stringify({ avWant, rowWant, refused, susText, bad, badDate, closed })]);
+        out.push(['누가 봤나 · 중단(결정 118)', avWant && rowWant && sWant ? '✓ auditorsOf(stale 제외·자리당 마지막) · R1 행 outsideAudited:true · review 만 PASS 거부 · 중단이면 닫히고 false·suspended · 해제 null' : '✗ ' + JSON.stringify({ avWant, rowWant, refused, susText, bad, badDate, closed })]);
       }
       // codex 가 도는 중 표시 — outside.mjs 가 두고 지우는 파일. 내 pid 로 두면 참, 지우면 null, 죽은 pid 는 무시(SIGKILL 로 못 지운 표시).
       {

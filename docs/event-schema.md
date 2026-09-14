@@ -84,7 +84,7 @@ teams/<방>/
 | `codexModel` | codex 모델 — `CODEX_MODELS` 목록(`bus/bus.mjs`) | 환경 `PPANAM_CODEX_MODEL`, 그것도 없으면 목록 첫 것 | `codex exec -m` · `resume -c model=` (전엔 전 자리 공통 환경변수 하나) |
 | `geminiModel` | gemini 모델 — `GEMINI_MODELS` 목록(`gemini-3.6-flash` · `gemini-3.1-pro`) | 목록 첫 것 | 물음 파일의 `model` |
 | `effort` | 추론 강도 — `low` · `medium` · `high` · `xhigh` | 엔진 기본(플래그 안 붙임) | `claude --effort` · `codex -c model_reasoning_effort=` (gemini 는 안 씀) |
-| `suspended` | 외부감사 자리만 — "지금 못 부른다" 를 명시(결정 117 ②). 값은 복귀 예정일 `YYYY-MM-DD`, `none` 으로 해제(파일에는 지워짐) | 없음(= 부른다) | 판정 흐름이 이 걸음을 건너뛰고 `skip` note 를 남긴다(5-1절). `endRefusal` 이 그의 카드를 안 요구한다. 라운드 기록에 `outsideAudited:false` · `outsideWhy:'suspended'` |
+| `suspended` | 외부감사 자리만 — "지금 못 부른다" 를 명시(결정 118 ②). 값은 복귀 예정일 `YYYY-MM-DD`, `none` 으로 해제(파일에는 지워짐) | 없음(= 부른다) | 판정 흐름이 이 걸음을 건너뛰고 `skip` note 를 남긴다(5-1절). `endRefusal` 이 그의 카드를 안 요구한다. 라운드 기록에 `outsideAudited:false` · `outsideWhy:'suspended'` |
 | `fallback` | 기본 엔진이 못 돌면 누가 인계받나(결정 116 ②) — `gpt` · `gemini` · `none`(대표께 올림) | 다른 회사 엔진 중 나머지 하나(`bus.fallbackOf`) — 빈칸은 없다 | codex 계정 한도(쿨다운) 때 `outside.mjs` 가 이 호출을 폴백으로 돌리고 방에 한 번 알린다. 판정문 `meta.engine` 은 답한 엔진 |
 
 **"다른 회사 엔진"** 은 `gpt`·`gemini` 둘 — 코드는 `'gpt'` 를 직접 비교하지 않고 `bus.isForeign(model)` 하나를 쓴다(흩어진 비교가 하나 빠지면 그 자리가 조용히 죽는다 — 결정 77).
@@ -444,7 +444,7 @@ codex 는 `which codex` · 세션은 메모리 맵의 좀비 수(`session.health
 말로 남고(`meta.noVerdict`) 사회자가 한 번 더 묻는다. 순서는 내부감사 → (PASS 면) 외부감사. 둘 다 PASS 면 `note`
 (`meta.verdictFlow: 'pass'`) — 라운드를 닫는 것은 실무나 대표다. `meta.stale` 카드(옛 라운드의 늦은 답)는 흐름에
 세지 않고 계속 기다린다 — 지난 라운드의 PASS 가 이번 완료 note 를 만들면 안 된다 (레오 감사, 2026-09-13).
-**누가 봤나는 기계가 읽는 칸에**(결정 117 ①): 흐름의 note 마다 `meta: { verdictFlow, steps, skipped, reason }` — `verdictFlow` 는 `start` · `skip`(외부감사 걸음을 건너뜀) ·
+**누가 봤나는 기계가 읽는 칸에**(결정 118 ①): 흐름의 note 마다 `meta: { verdictFlow, steps, skipped, reason }` — `verdictFlow` 는 `start` · `skip`(외부감사 걸음을 건너뜀) ·
 `pass` · `abort` · `timeout`, `steps` 는 실제로 물은 자리, `skipped` 는 건너뛴 자리, `reason` 은 `suspended`(중단 — 1절 `suspended`) · `not-foreign`(자리 엔진이 클로드) · `no-seat`.
 **건너뛸 때는 조용히 빠지지 않는다** — `skip` note 가 방에 남는다("외부 감사 없이 판정합니다 — 레오 중단 중, 9/20 복귀 예정", CLAUDE.md "외부 모델이 연결돼 있지 않으면 작전실에 남긴다").
 흐름은 `state/conductor.json` `_queue.<방>.flow` 에 저장돼 재시작에 살아남고(같은 라운드만), 기다리는 자리가 **호출 상한의 두 배**(기본 10분) 안에 판정을 안 내면
@@ -684,13 +684,13 @@ codex 를 부르기 전에 `note` 로 거부된다.
 1. 이 라운드에 `stale` 아닌 판정 카드가 있다.
 2. 그중 마지막 카드가 `PASS` 다. 마지막이 `REVISE`·`FAIL` 이면 거부.
 3. 그 카드 뒤에 사회자의 판정 완료 `note`(`meta.verdictFlow: 'pass'`)가 있다 — 판정은 `/verdict` 흐름으로 받는다.
-4. **카드의 자리를 본다**(결정 117 ②) — 외부감사 자리가 다른 회사 엔진이고 중단(`suspended`)이 아니면 **그의 PASS 카드**가 있어야 한다. 전엔 안 봐서
+4. **카드의 자리를 본다**(결정 118 ②) — 외부감사 자리가 다른 회사 엔진이고 중단(`suspended`)이 아니면 **그의 PASS 카드**가 있어야 한다. 전엔 안 봐서
    review 자리가 있는 방은 내부감사 클로드 혼자 단계를 넘길 수 있었다. 중단이면 없이 닫히되 기록에 남는다(아래).
 
 거부되면 방에 `note`(`meta.endRefused`)가 남고 서버는 `409 { refused: true }` 를 돌려준다. 서버는 닫기를 미루기(202) 전에
 먼저 본다. 통과한 `PASS` 는 로드맵의 그 마일스톤을 `pass` 로 옮긴다 — R3·R6·R8 의 "마일스톤 1 통과"(2026-09-12)는
 이 조건이 없던 때 카드 없이, 또는 REVISE 카드 뒤에 찍힌 것이다. `rounds.jsonl` 은 고치지 않는다.
-**누가 봤나가 기록에 남는다**(결정 117 ①): `milestone` 이벤트 `meta` 와 `rounds.jsonl` 행에 `auditors: [{ actor, verdict, sha, engine, ts }]`(이 라운드의 stale 아닌 카드,
+**누가 봤나가 기록에 남는다**(결정 118 ①): `milestone` 이벤트 `meta` 와 `rounds.jsonl` 행에 `auditors: [{ actor, verdict, sha, engine, ts }]`(이 라운드의 stale 아닌 카드,
 자리당 마지막 하나 — `bus.auditorsOf`) · `outsideAudited: true|false` · 없으면 `outsideWhy`(`suspended` · `not-foreign` · `no-seat` · `no-card`). 판정 카드 `meta.engine` 은
 답한 엔진(`codex · gpt-5.1` · `gemini · …` · `claude`). 라운드당 한 줄이라 "외부 감사 없이 통과한 단계" 를 한 번에 뽑는다 — 20일에 codex 가 돌아오면 그것만 다시 본다.
 

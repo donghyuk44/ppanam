@@ -758,7 +758,7 @@ export const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
 export const ENGINES = ['claude', 'gpt', 'gemini'];
 export const CAST_FIELDS = ['model', 'llm', 'codexModel', 'geminiModel', 'effort', 'fallback', 'suspended'];
 /**
- * 중단(결정 117 ②) — 외부 감사 자리를 "지금 못 부른다" 로 명시한다. 값은 복귀 예정일 'YYYY-MM-DD'(또는 'none' → 해제). 조용히 빠지는 게 아니라
+ * 중단(결정 118 ②) — 외부 감사 자리를 "지금 못 부른다" 로 명시한다. 값은 복귀 예정일 'YYYY-MM-DD'(또는 'none' → 해제). 조용히 빠지는 게 아니라
  * 상태다: 판정 흐름이 그 걸음을 건너뛰되 방에 note 를 남기고(CLAUDE.md "외부 모델이 연결돼 있지 않으면 작전실에 남긴다"), 라운드 기록에 outsideAudited:false 가 박힌다.
  */
 export const SUSPEND_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -1085,11 +1085,11 @@ export function endRefusal(team, { verdict = null } = {}) {
   if (!events.slice(last + 1).some((e) => e.type === 'note' && e.meta?.verdictFlow === 'pass')) {
     return '판정 카드는 PASS 인데 사회자의 판정 완료 note 가 없습니다. 판정은 /verdict 흐름으로 받습니다 (node bus/round.mjs verdict).';
   }
-  // 카드의 actor 를 본다(결정 117 ②) — 전에는 안 봐서 review 자리가 있는 방은 내부감사 클로드 혼자 PASS 로 단계를 넘길 수 있었다.
+  // 카드의 actor 를 본다(결정 118 ②) — 전에는 안 봐서 review 자리가 있는 방은 내부감사 클로드 혼자 PASS 로 단계를 넘길 수 있었다.
   // 외부감사 자리가 다른 회사 엔진이고 중단(suspended)이 아니면 그의 PASS 카드가 있어야 한다. 중단이면 없이 닫히되 기록에 outsideAudited:false 가 박힌다(endRound).
   const out = readCast(team).agents?.outside ?? null;
   if (out && isForeign(out.model) && !out.suspended && !auditorsOf(events).outsideAudited) {
-    return `외부감사(${out.name ?? 'outside'})의 PASS 카드가 이 라운드에 없습니다 — 내부감사만으로는 PASS 로 닫지 못합니다 (CLAUDE.md). 외부 감사를 못 부르는 동안이면 그 자리를 중단(suspended)으로 적으세요 (결정 117 ②).`;
+    return `외부감사(${out.name ?? 'outside'})의 PASS 카드가 이 라운드에 없습니다 — 내부감사만으로는 PASS 로 닫지 못합니다 (CLAUDE.md). 외부 감사를 못 부르는 동안이면 그 자리를 중단(suspended)으로 적으세요 (결정 118 ②).`;
   }
   return null;
 }
@@ -1113,7 +1113,7 @@ export function assertEndable(team, opts = {}) {
  * 달라지면서 자연히 끊긴다 (readContext 참고).
  */
 /**
- * 누가 봤나 (결정 117 ①) — 이 라운드의 stale 아닌 판정 카드에서 감사자를 뽑는다. 순수 함수 — round.mjs check 가 돌린다.
+ * 누가 봤나 (결정 118 ①) — 이 라운드의 stale 아닌 판정 카드에서 감사자를 뽑는다. 순수 함수 — round.mjs check 가 돌린다.
  * 전에는 어디에도 안 남아 개발 1단계가 판정 카드 0장인 라운드에서 pass 가 됐고 파일만 봐서는 레오가 제대로 본 5단계와 구별이 안 됐다.
  * 20일에 codex 가 돌아오면 `outsideAudited:false` 로 박힌 단계만 다시 본다 — 그래서 이 칸이 있어야 한다.
  * @returns { auditors: [{ actor, verdict, sha, engine, ts }], outsideAudited } — 같은 자리는 마지막 카드 하나
@@ -1139,7 +1139,7 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
     meta: { verdict },
   });
 
-  // 누가 봤나 — 이 라운드의 판정 카드에서(결정 117 ①). 마일스톤 이벤트와 rounds.jsonl 행 둘 다에 박는다.
+  // 누가 봤나 — 이 라운드의 판정 카드에서(결정 118 ①). 마일스톤 이벤트와 rounds.jsonl 행 둘 다에 박는다.
   const roundEvents = readLog(team).filter((e) => e.round === state.round);
   const { auditors, outsideAudited } = auditorsOf(roundEvents);
   const outsideSeat = readCast(team).agents?.outside ?? null;
@@ -1183,7 +1183,7 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
     eventCount: events.length,
     startedAt: state.startedAt,
     endedAt: new Date().toISOString(),
-    // 누가 봤나(결정 117 ①) — 라운드당 한 줄이라 "외부 감사 없이 통과한 단계" 를 한 번에 뽑는다
+    // 누가 봤나(결정 118 ①) — 라운드당 한 줄이라 "외부 감사 없이 통과한 단계" 를 한 번에 뽑는다
     auditors, outsideAudited, ...(outsideWhy ? { outsideWhy } : {}),
   }) + '\n');
 
@@ -1234,7 +1234,7 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
   const v = String(verdict || '').toUpperCase();
   if (!VERDICTS.has(v)) throw new Error(`판정은 ${[...VERDICTS].join(' / ')} 중 하나여야 합니다.`);
   const seen = sha === undefined ? headSha() : sha;
-  // engine — 답한 엔진(결정 78, "codex · gpt-5.1" · "gemini · …"). 안 주면 자리의 엔진 이름. 라운드 기록의 auditors 가 이걸 모은다(결정 117).
+  // engine — 답한 엔진(결정 78, "codex · gpt-5.1" · "gemini · …"). 안 주면 자리의 엔진 이름. 라운드 기록의 auditors 가 이걸 모은다(결정 118).
   const eng = engine ?? engineName(readCast(team).agents?.[actor]?.model) ?? null;
 
   const state = readState(team);
