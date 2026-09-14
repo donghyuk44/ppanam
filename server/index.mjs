@@ -56,12 +56,23 @@ const json = (res, code, body) => {
   res.end(buf);
 };
 
-/** 파일 하나를 그대로 낸다. 없거나 폴더면 404. 모르는 확장자는 내려받기. */
-function sendFile(res, file, extra = {}) {
-  fs.readFile(file, (err, data) => {
-    if (err) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('404'); }
-    res.writeHead(200, { 'content-type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream', 'content-length': data.length, ...extra });
-    res.end(data);
+/**
+ * 파일 하나를 그대로 낸다. 없거나 폴더면 404. 모르는 확장자는 내려받기.
+ * 화면 파일은 늘 다시 확인하게(no-cache + Last-Modified) — 고친 CSS 가 대표 화면에 안 보여 "아직 그대로" 가 됐다(R25 대시보드 86줄).
+ * 안 바뀐 파일은 304 로 짧게 — 마을 glb 몇 MB 를 열 때마다 다시 보내지 않게. req 를 주면 If-Modified-Since 를 본다.
+ */
+function sendFile(res, file, extra = {}, req = null) {
+  fs.stat(file, (serr, st) => {
+    if (serr || !st.isFile()) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('404'); }
+    const mtime = new Date(Math.floor(st.mtimeMs / 1000) * 1000);   // HTTP 날짜는 초 단위 — 그대로 비교하면 늘 "바뀜"
+    const since = req?.headers['if-modified-since'] ? Date.parse(req.headers['if-modified-since']) : NaN;
+    const head = { 'cache-control': 'no-cache', 'last-modified': mtime.toUTCString(), ...extra };
+    if (Number.isFinite(since) && since >= mtime.getTime()) { res.writeHead(304, head); return res.end(); }
+    fs.readFile(file, (err, data) => {
+      if (err) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('404'); }
+      res.writeHead(200, { 'content-type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream', 'content-length': data.length, ...head });
+      res.end(data);
+    });
   });
 }
 
@@ -509,7 +520,7 @@ const server = http.createServer((req, res) => {
     try { segs = url.pathname.split('/').slice(2).map(decodeURIComponent); } catch { segs = []; }
     const file = segs.length >= 2 ? outFile(segs[0], segs.slice(1).join('/')) : null;
     if (!file) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('404'); }
-    return sendFile(res, file, { 'cache-control': 'no-cache' });
+    return sendFile(res, file, {}, req);
   }
 
   // 경로는 풀어서 연다 — Kenney 부품 폴더 이름에 빈칸이 있다("GLB format"). 안 풀면 `GLB%20format` 을 찾아 404 (레오 R24).
@@ -519,7 +530,7 @@ const server = http.createServer((req, res) => {
   if (rel.includes('\0')) { res.writeHead(400); return res.end('bad path'); }
   const file = path.join(PUBLIC_DIR, path.normalize(rel));
   if (!file.startsWith(PUBLIC_DIR)) { res.writeHead(403); return res.end('forbidden'); }
-  sendFile(res, file);
+  sendFile(res, file, {}, req);
 });
 
 // 세상의 시계가 사회자의 침묵 차례를 켜고 끈다 — 밤·휴식엔 아무도 깨우지 않는다 (W2).
