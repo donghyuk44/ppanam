@@ -794,6 +794,28 @@ button.dash__row:hover b { text-decoration: underline; }
 .dash__sub { font-size: 12px; color: var(--ink-3); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .dash__empty { font-size: 12px; color: var(--ink-4); font-style: italic; padding: 6px 0; }
 
+/* 그림 부품 — 헨리 numbers.md 한 벌: 점 8 · 막대 5 라운드 2.5 · 시간 띠 · 큰 숫자 28/이름 11. 상태 색은 여기서만(초록·빨강·노랑·회색), 팀·사람 색은 자리 색. */
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-4); flex: none; vertical-align: middle; }
+.dot--bad { background: var(--bad) !important; }
+.wait { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--bad); white-space: nowrap; }
+.bar { display: inline-block; width: 72px; height: 5px; border-radius: 2.5px; background: var(--line); overflow: hidden; flex: none; vertical-align: middle; }
+.bar__fill { display: block; height: 100%; border-radius: 2.5px; background: var(--ink-4); }
+.tband { position: relative; display: block; height: 12px; margin-top: 4px; background: var(--sunk); border-radius: 3px; width: 100%; }
+.tband__dot { position: absolute; top: 2px; width: 8px; height: 8px; border-radius: 50%; transform: translateX(-50%); background: var(--ink-4); }
+.tband__dot--bad { background: var(--bad); }
+.tband__span { position: absolute; top: 3px; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--bad) 55%, transparent); }
+.bands { display: flex; flex-direction: column; gap: 4px; padding: 2px 0 8px; border-bottom: 1px solid var(--line-2); margin-bottom: 4px; }
+.bands__row { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 8px; align-items: center; }
+.bands__who { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bands__row .tband { margin-top: 0; }
+.forest { display: flex; gap: 10px; margin-bottom: 2px; }
+.num { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; }
+.num b { font-family: 'Gowun Batang', serif; font-size: 28px; font-weight: 400; line-height: 1.1; }
+.num span { font-size: 11px; color: var(--ink-4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.num[data-tone="boss"] { border-color: var(--me-line); } .num[data-tone="boss"] b { color: var(--me-ink); }
+.num[data-tone="bad"] { border-color: var(--bad-line); } .num[data-tone="bad"] b { color: var(--bad); }
+.num[data-tone="live"] b { color: var(--good); }
+
 /* 현황 첫 화면 넷(헨리 시안 2판): 막힌 것 → 한 것 → 내 차례 → 팀. 막힌 것·내 차례는 테두리로 튀고, 팀 줄은 펼쳐진다. */
 .dash__card[data-block="stuck"] { border-color: var(--bad-line); }
 .dash__card[data-block="stuck"] .dash__k { color: var(--bad); }

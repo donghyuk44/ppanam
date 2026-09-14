@@ -1286,37 +1286,87 @@ function loadDone() {
   fetch(`/api/done?since=${since}`).then((r) => r.json()).then((r) => { done.items = r.items ?? []; if (view === 'tower' && towerTab === 'all') renderTower(); }).catch(() => {});
 }
 
+/* ── 그림 부품 — 헨리 '숫자를 어떻게 보여 주나 — 한 벌'(numbers.md). 이 문서 밖 모양은 안 쓴다.
+ * 진행 막대(높이 5, 채움 = 끝난 만큼, 옆에 N/M 하나) · 시간 띠(가로가 오늘 우리 시각, 한 것 = 점, 막힌 것 = 빨간 점, 멈춘 구간 = 빨간 띠) · 큰 숫자 셋 · 강조(그것만 색). */
+const teamColor = (id) => summaries[id]?.cast?.[id === 'hq' ? 'chief' : 'guide']?.color ?? 'var(--ink-4)';
+const seatColor = (team, by) => summaries[team]?.cast?.[by]?.color ?? summaries.hq?.cast?.[by]?.color ?? 'var(--ink-4)';
+function progressBar(doneN, total, color) {
+  const w = el('span', 'bar'); w.title = `${doneN}/${total} 단계`;
+  const f = el('span', 'bar__fill'); f.style.width = `${total ? Math.round((doneN / total) * 100) : 0}%`; f.style.background = color; w.appendChild(f);
+  return w;
+}
+/** 시간 띠 — start~end 를 가로 100% 로. marks [{ at, color, kind:'done'|'bad', title }], spans [{ from, to }](빨간 띠). 점은 8px, 손 올리면 한 줄. */
+function timeBand(start, end, marks, spans = []) {
+  const b = el('span', 'tband');
+  const x = (t) => Math.min(100, Math.max(0, ((t - start) / Math.max(1, end - start)) * 100));
+  for (const s of spans) { const sp = el('span', 'tband__span'); sp.style.left = `${x(s.from)}%`; sp.style.width = `${Math.max(1, x(s.to) - x(s.from))}%`; b.appendChild(sp); }
+  for (const m of marks) { const d = el('span', `tband__dot tband__dot--${m.kind ?? 'done'}`); d.style.left = `${x(m.at)}%`; if (m.color && m.kind !== 'bad') d.style.background = m.color; if (m.title) d.title = m.title; b.appendChild(d); }
+  return b;
+}
+
 function renderTowerAll(grid) {
   const goRoom = (t) => async () => { await selectTeam(t.id); setView('room'); };
+  const now = Date.now(), day0 = dayStartSeoulMs(now);
   const pendingAll = approvals.map((r) => ({ id: r.id, grade: r.grade, team: r.team, by: r.by, what: r.what, ts: r.requestedAt ?? r.ts }));
   const openReq = requestsAll.filter((r) => r.status !== 'closed');
-  const blocked = blockedOf({ teams, summaries, approvals: pendingAll, requests: openReq, infra }, { now: Date.now() });
-
-  // ① 뭐가 막혔나 — 대표가 풀 것이 아닌 막힘(팀·톰·운영·밑바닥). 대표 몫(waitOn boss)은 ③.
+  const blocked = blockedOf({ teams, summaries, approvals: pendingAll, requests: openReq, infra }, { now });
   const stuck = blocked.filter((it) => it.waitOn !== 'boss');
+  const mine = blocked.filter((it) => it.waitOn === 'boss');
+  const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
+  loadDone();
+  const today = done.items.filter((it) => new Date(it.ts).getTime() >= day0);
+
+  // 숲 — 큰 숫자 셋(numbers.md 4절): 대표님이 보실 것 · 막힌 것 · 오늘 한 것. 0 이면 그 칸 자체가 없다.
+  const nums = [['대표님이 보실 것', mine.length + fromBoard.length, 'boss'], ['막힌 것', stuck.length, 'bad'], ['오늘 한 것', today.length, 'live']].filter(([, n]) => n > 0);
+  if (nums.length) {
+    const box = el('div', 'forest');
+    for (const [k, n, tone] of nums) { const d = el('div', 'num'); d.dataset.tone = tone; d.appendChild(el('b', null, String(n))); d.appendChild(el('span', null, k)); box.appendChild(d); }
+    grid.appendChild(box);
+  }
+
+  // ① 뭐가 막혔나 — 대표가 풀 것이 아닌 막힘(팀·톰·운영·밑바닥). 강조: 그 팀 점만 색, 빨간 점 + N시간째. 대표 몫(waitOn boss)은 ③.
   if (stuck.length) {
     const sec = el('section', 'dash__card'); sec.dataset.block = 'stuck';
     sec.appendChild(el('div', 'dash__k', `뭐가 막혔나 ${stuck.length}`));
     for (const it of stuck) {
       const row = el('button', 'dash__row'); row.type = 'button';
+      const head = el('span', 'dash__head');
+      const dot = el('span', 'dot'); dot.style.background = it.team ? teamColor(it.team) : 'var(--ink-4)'; head.appendChild(dot);
       const who = it.kind === 'infra' ? '밑바닥' : `${it.teamName}${it.name && it.kind !== 'blocked' && it.kind !== 'board' ? ' · ' + it.name : ''}`;
-      row.appendChild(el('b', null, who));
-      row.appendChild(el('span', 'dash__sub', `${it.text}${it.wait != null ? ' · ' + forShort(it.wait) : ''}`));
+      head.appendChild(el('b', null, who));
+      if (it.wait != null) { const w = el('span', 'wait'); w.appendChild(el('i', 'dot dot--bad')); w.append(forShort(it.wait)); head.appendChild(w); }
+      row.appendChild(head);
+      row.appendChild(el('span', 'dash__sub', it.text));
       row.addEventListener('click', () => { const tg = it.target ?? {}; if (tg.view === 'tower') setTowerTab(tg.tab ?? 'asks'); else if (tg.team) jumpTo(tg.team, tg.event ?? null); });
       sec.appendChild(row);
     }
     grid.appendChild(sec);
   }
 
-  // ② 누가 뭘 했나 · 오늘 — doneOf(계약 3절) 여섯 줄, "더 보기 — 어제까지"
-  loadDone();
+  // ② 누가 뭘 했나 · 오늘 — 숲: 사람마다 시간 띠 한 줄(한 것 = 점, 우리 시각 0시 → 지금). 나무: 여섯 줄, "더 보기 — 어제까지"(numbers.md 시간 띠)
   const sec2 = el('section', 'dash__card'); sec2.dataset.block = 'done';
   sec2.appendChild(el('div', 'dash__k', `누가 뭘 했나 · ${done.more ? '어제부터' : '오늘'}`));
+  const byPerson = new Map();
+  for (const it of today) { const k = `${it.team}:${it.by ?? '팀'}`; if (!byPerson.has(k)) byPerson.set(k, { team: it.team, by: it.by, name: it.name ?? it.teamName, items: [] }); byPerson.get(k).items.push(it); }
+  if (byPerson.size) {
+    const bands = el('div', 'bands');
+    for (const p of [...byPerson.values()].sort((a, b) => b.items.length - a.items.length).slice(0, 8)) {
+      const line = el('div', 'bands__row');
+      const lab = el('span', 'bands__who'); const d = el('span', 'dot'); d.style.background = p.by ? seatColor(p.team, p.by) : teamColor(p.team); lab.appendChild(d); lab.append(p.name); line.appendChild(lab);
+      line.appendChild(timeBand(day0, now, p.items.map((it) => ({ at: new Date(it.ts).getTime(), color: p.by ? seatColor(p.team, p.by) : teamColor(p.team), title: `${p.name} · ${it.text} · ${hhmm(it.ts)}` }))));
+      bands.appendChild(line);
+    }
+    sec2.appendChild(bands);
+  }
   const items = done.items.slice(0, done.more ? 30 : 6);
   if (!items.length) sec2.appendChild(el('div', 'dash__empty', done.fetchedAt ? '오늘 끝낸 일이 아직 없어요.' : '읽는 중…'));
   for (const it of items) {
     const row = el('button', 'dash__row'); row.type = 'button';
-    row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${agoShort(it.ts)}`));
+    const head = el('span', 'dash__head');
+    const dot = el('span', 'dot'); dot.style.background = it.by ? seatColor(it.team, it.by) : teamColor(it.team); head.appendChild(dot);
+    head.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''}`));
+    head.appendChild(el('span', 'dash__stage', agoShort(it.ts)));
+    row.appendChild(head);
     row.appendChild(el('span', 'dash__sub', it.text));
     row.addEventListener('click', () => { if (it.kind === 'decision' || it.kind === 'proxy') setTowerTab('all'); else jumpTo(it.team, String(it.id).split(':')[1] ?? null); });
     sec2.appendChild(row);
@@ -1326,9 +1376,7 @@ function renderTowerAll(grid) {
   sec2.appendChild(more);
   grid.appendChild(sec2);
 
-  // ③ 내 차례 — 대표가 답할 것: 결재(C)·물어봄(bossCall)·막힘(FAIL 대표 판단) + 각 방 상황판의 '대표 차례' 줄. 알림 종과 같은 목록(notify.js).
-  const mine = blocked.filter((it) => it.waitOn === 'boss');
-  const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
+  // ③ 내 차례 — 대표가 답할 것: 결재(C)·물어봄(bossCall)·막힘(FAIL 대표 판단) + 각 방 상황판의 '대표 차례' 줄. 알림 종과 같은 목록(notify.js). 노랑(numbers.md 상태 색).
   if (mine.length || fromBoard.length) {
     const sec3 = el('section', 'dash__card'); sec3.dataset.block = 'mine'; sec3.dataset.alert = '1';
     sec3.appendChild(el('div', 'dash__k', `내 차례 ${mine.length + fromBoard.length}`));
@@ -1359,16 +1407,23 @@ function renderTowerAll(grid) {
     const running = office || s.phase === 'running' || s.phase === 'blocked';
     const row = el('button', 'dash__row'); row.type = 'button'; row.dataset.open = openTeamRows.has(t.id) ? '1' : '0';
     const head = el('span', 'dash__head');
+    const tdot = el('span', 'dot'); tdot.style.background = teamColor(t.id); head.appendChild(tdot);
     head.appendChild(el('b', null, t.name));
-    if (!office) {
-      const total = (s.milestonesTotal ?? null);
-      head.appendChild(el('span', 'dash__stage', s.milestone ? `${s.milestone}단계${total ? `/${total}` : ''}${s.round ? ` · ${s.round}회차` : ''}` : '단계 없음'));
+    if (!office) {   // 진행 막대(numbers.md 1절) — 채움 = 끝난 단계, 옆에 N/M 하나. 회차는 글자.
+      const total = s.milestonesTotal ?? 0;
+      head.appendChild(progressBar(s.milestonesDone ?? 0, total, teamColor(t.id)));
+      head.appendChild(el('span', 'dash__stage', s.milestone ? `${s.milestonesDone ?? 0}/${total}${s.round ? ` · ${s.round}회차` : ''}` : '단계 없음'));
     }
     head.appendChild(pill(
       s.needsBoss ? '대표님 답 기다림' : s.bossCall ? '대표님께 물어봄' : office ? '대표님과 톰' : s.phase === 'blocked' ? '멈춤' : running ? '일하는 중' : '쉬는 중',
       s.needsBoss || s.bossCall ? 'boss' : s.phase === 'blocked' ? 'bad' : running ? 'live' : 'idle'));
     row.appendChild(head);
-    if (!office && s.milestoneTitle) row.appendChild(el('span', 'dash__sub', s.milestoneTitle));
+    if (!office && s.milestoneTitle) row.appendChild(el('span', 'dash__sub', `${s.milestone}단계 ${s.milestoneTitle}`));
+    // 팀 시간 띠 한 줄(numbers.md "다섯 팀을 나란히") — 오늘 한 것 = 사람 색 점, 대표에게 물어봄 = 빨간 점, 멈춘 구간(FAIL) = 빨간 띠
+    const marks = today.filter((it) => it.team === t.id).map((it) => ({ at: new Date(it.ts).getTime(), color: it.by ? seatColor(t.id, it.by) : teamColor(t.id), title: `${it.name ?? t.name} · ${it.text} · ${hhmm(it.ts)}` }));
+    if (s.bossCall?.ts) marks.push({ at: new Date(s.bossCall.ts).getTime(), kind: 'bad', title: `대표님께 물어봄 · ${hhmm(s.bossCall.ts)}` });
+    const spans = s.phase === 'blocked' ? [{ from: Math.max(day0, new Date(s.lastAt ?? now).getTime()), to: now }] : [];
+    row.appendChild(timeBand(day0, now, marks, spans));
     row.addEventListener('click', () => { if (openTeamRows.has(t.id)) openTeamRows.delete(t.id); else openTeamRows.add(t.id); renderTower(); });
     tl.appendChild(row);
     if (openTeamRows.has(t.id)) {   // 펼친 줄 — 상황판 네 칸 글자 그대로(progress.json). 없으면 그렇다고.
