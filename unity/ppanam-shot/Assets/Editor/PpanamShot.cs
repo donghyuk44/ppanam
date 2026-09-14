@@ -95,7 +95,9 @@ public static class PpanamShot
         // 세기는 Three 값(2.4, ACES 톤매핑 뒤)을 그대로 못 쓴다 — built-in 은 톤매핑이 없어 1.5 만 줘도 벽(#f4efe4)·받침이 흰색으로 날아갔다(첫 판 실측 R25). 해 1.0 · 환경광 0.6.
         // 둘째 판(placed 50)도 받침 윗면이 흰색 — 해 1.0 + 하늘 0.6 이 윗면에서 1.6× 라 #d9d1bf 가 날아갔다. 해 0.7 · 환경광 0.45(윗면 ≈ 0.98×).
         var sun = new GameObject("sun").AddComponent<Light>(); sun.type = LightType.Directional; sun.color = Hex((string)light["sun"]["color"]); sun.intensity = 0.7f;
-        sun.shadows = LightShadows.Soft; sun.shadowStrength = 0.6f; sun.shadowBias = 0.02f; sun.shadowNormalBias = 0.4f; sun.shadowResolution = UnityEngine.Rendering.LightShadowResolution.VeryHigh;
+        sun.shadows = LightShadows.Soft; sun.shadowStrength = 0.6f; sun.shadowBias = 0.02f; sun.shadowNormalBias = 0.4f;
+        // 셋째 판(ceaa94d)에도 그림자 0 — 방향광 그림자 맵 크기는 화면 크기에서 나오는데 배치 모드엔 화면이 없다(0). 크기를 직접 못박는다.
+        sun.shadowCustomResolution = 4096;
         sun.lightmapBakeType = LightmapBakeType.Realtime;
         // 그림자 — 둘째 판엔 하나도 안 찍혔다(나리). 카메라가 130 넘게 떨어져 있어 기본 거리 150·캐스케이드 둘이면 끊기거나 안 든다 → 거리 400, 캐스케이드 하나, CloseFit.
         QualitySettings.shadows = ShadowQuality.All; QualitySettings.shadowDistance = 400f; QualitySettings.shadowResolution = ShadowResolution.VeryHigh;
@@ -123,6 +125,7 @@ public static class PpanamShot
         Directory.CreateDirectory(Path.GetDirectoryName(outPath));
         File.WriteAllBytes(outPath, tex.EncodeToPNG());
         Debug.Log($"PpanamShot: placed {placed} · missing {missing} · {outPath}");
+        Debug.Log($"PpanamShot: screen {Screen.width}x{Screen.height} · supportsShadows {SystemInfo.supportsShadows} · quality {QualitySettings.names[QualitySettings.GetQualityLevel()]} shadows={QualitySettings.shadows} dist={QualitySettings.shadowDistance} · sun shadows={sun.shadows} res={sun.shadowCustomResolution}");   // 그림자가 또 없으면 이 줄이 단서
         if (placed == 0) throw new Exception("부품을 하나도 못 세웠다 — Assets/Kenney/ 에 glb 가 없거나 glTFast 가 import 를 못 했다");
     }
 
@@ -199,8 +202,9 @@ public static class PpanamShot
         }
     }
 
-    /* ── 틸트시프트 흐림 — 가운데 띠(35~65%)는 또렷, 위·아래로 갈수록 반지름이 커진다(끝에서 MAX). 상자 흐림 세 번 = 가우스 비슷. 412×915 라 CPU 로 충분. ── */
-    const int BLUR_MAX = 6;
+    /* ── 틸트시프트 흐림 — 가운데 띠(46~54%)는 또렷, 위·아래로 갈수록 반지름이 커진다(끝에서 MAX). 상자 흐림 세 번 = 가우스 비슷. 412×915 라 CPU 로 충분.
+       셋째 판은 띠가 35~65% 라 마을 전체가 또렷한 안에 들어 흐림이 하나도 안 보였다 — 마을이 화면 38~67% 에 서니 띠를 좁혀 앞(강)·뒤(궁 지붕)가 살짝 풀리게. ── */
+    const int BLUR_MAX = 8;
     static void TiltShift(Texture2D tex)
     {
         int w = tex.width, h = tex.height;
@@ -223,9 +227,9 @@ public static class PpanamShot
         tex.SetPixels32(src); tex.Apply();
     }
     static int RadiusAt(int y, int h)
-    {   // 텍스처 y 는 아래가 0. 또렷한 띠는 화면 35~65%
-        float t = (float)y / h; float d = t < 0.35f ? (0.35f - t) / 0.35f : t > 0.65f ? (t - 0.65f) / 0.35f : 0f;
-        return Mathf.RoundToInt(d * d * BLUR_MAX);
+    {   // 텍스처 y 는 아래가 0. 또렷한 띠는 화면 46~54%, 거기서 멀어질수록(제곱) 커진다 — 화면 끝이 MAX
+        float t = (float)y / h; float d = t < 0.46f ? (0.46f - t) / 0.46f : t > 0.54f ? (t - 0.54f) / 0.46f : 0f;
+        return Mathf.RoundToInt(d * BLUR_MAX);   // 선형 — 제곱이면 마을 가장자리(띠에서 0.2~0.3)가 1px 도 안 돼 안 보인다
     }
     static Color32 Avg(Color32[] p, int w, int h, int x, int y, int rx, int ry)
     {
