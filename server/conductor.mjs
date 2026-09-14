@@ -11,7 +11,8 @@
 //   3. 대표   — 대표 발언은 /api/say 가 주인(또는 대표가 부른 사람)에게 바로 넣는다. 여기서 다시 주지 않는다.
 //   4. 침묵   — LULL_MS 동안 message·tool 이 없고 아무도 busy 아니면, 가장 오래 침묵한 참여자 한 명. (패스) 가능.
 //               방당 시간당 MAX_LULL_PER_HOUR. 호명·판정·대표는 상한과 무관하다.
-//   5. (브레이크 없음 — 두 사람 왕복 3회 제한은 결정 120 으로 철회. "대화로 풀어가라".) 'third' 차례 종류는 옛 저장 차례 호환으로만 남는다.
+//   5. 잡담 브레이크 — 같은 둘이 **침묵 차례로만** MAX_CHAT 회씩 오가면 누가 부르거나 다른 사람이 말할 때까지 침묵 차례를 안 준다(결정 121).
+//               호명·판정·요청 블록 안의 왕복은 일이라 안 센다 — 100번 오가도 안 끊는다(결정 120 "대화로 풀어가라"). 'third' 종류는 옛 저장 차례 호환으로만.
 //               한 자리에 한 번에 한 턴. 일하는 중이면 큐에 쌓이고, 쌓인 차례는 합쳐서 한 턴이 된다.
 //   6. 문 닫힘 — 라운드가 idle 이면 차례 없음(총괄실 예외). blocked 면 대표만(호명도 안 준다).
 //               세상의 시계(world.mjs, C)가 오면 근무 시간 밖의 침묵 차례를 끈다.
@@ -46,7 +47,10 @@ function room(team) {
     rooms.set(team, {
       pending: new Map(),   // actor → { kind, from: [] }
       inflight: new Map(),  // actor → { kind, cursor } — 지금 나가 있는 차례. 서버가 죽으면 세션도 죽으니 이것도 되살린다 (결정 104)
-      recent: [],           // 최근 발언자 (브레이크)
+      recent: [],           // 최근 발언자 (관제탑 snapshot)
+      chat: [],             // 침묵 차례에서 나온 발언자 줄 — 잡담 브레이크(결정 121). 호명·판정·대표 말이 오면 비운다
+      chatNoted: false,
+      lastGiven: new Map(), // 자리 → 마지막으로 준 차례 종류
       lullTimer: null,
       lastLull: 0,
       lulls: [],            // 침묵 차례 시각 (시간당 상한)
@@ -227,6 +231,7 @@ const INSTRUCTION = {
 function giveTurn(team, actor, kind) {
   const r = room(team);
   const target = r.flow?.target ?? '';
+  (r.lastGiven ??= new Map()).set(actor, kind);   // 이 자리의 다음 말이 어떤 차례에서 나왔나 — 잡담 브레이크(결정 121)가 본다
 
   if (isOutside(team, actor)) {
     // codex 는 프로세스가 턴마다 뜬다. outside.mjs 가 자기 커서(lastSeen)로 못 들은 말을 붙이므로 여기선 종류만 넘긴다.
@@ -502,6 +507,11 @@ function armLull(team) {
     if (anyBusy(team)) { armLull(team); return; }                     // 일하는 중은 조용한 게 아니다
     if (!isOffice(team) && readState(team).phase !== 'running') return;
     if (!underCap(team)) return;
+    // 잡담 브레이크(결정 121) — 같은 둘이 침묵 차례로만 오가고 있으면 침묵 차례를 안 준다. 호명·판정·대표 말은 그대로 온다.
+    if (chatLoop(r.chat)) {
+      if (!r.chatNoted) { r.chatNoted = true; const [a, b] = [...new Set(r.chat.slice(-MAX_CHAT * 2))]; note(team, `${nameOf(team, a)}·${nameOf(team, b)} 잡담이 길어져 잠시 쉽니다 — 누가 이름을 부르거나 다른 사람이 말하면 이어갑니다.`); }
+      return;
+    }
     const who = quietest(team);
     if (!who) return;
     r.lastLull = Date.now();
@@ -510,7 +520,27 @@ function armLull(team) {
   }, LULL_MS);
 }
 
-/* ── 브레이크 — 없다 (결정 120, 09-14: 두 사람 왕복 3회 제한 철회. 남은 상한은 침묵 차례 방당 시간당 MAX_LULL_PER_HOUR 뿐 — 호명 왕복은 세지 않는다) ── */
+/* ── 잡담 브레이크 (결정 121, 09-14 — 120 을 대표가 고침: "몇 번 제한을 둔다는 아이디어는 괜찮은데, 그게 일을 망치면 안 되지") ──
+ * 일하는 대화는 안 끊는다 — 이름을 불러 오간 차례(호명)·판정·요청 블록 안의 왕복은 세지 않는다. 헨리↔클레멘타인이 색표 고치던 그것.
+ * 세는 건 **아무도 안 부른 침묵 차례(자동 응답)** 뿐 — 같은 둘이 침묵 차례로만 MAX_CHAT 회씩 오가면 누가 부르거나 다른 사람이 말할 때까지 침묵 차례를 안 준다.
+ * 어느 말이 침문 차례에서 나왔는지는 giveTurn 이 자리마다 마지막으로 준 종류(lastGiven)로 안다. 호명·판정·대표·다른 사람 말이 오면 잡담 줄은 비워진다.
+ */
+export const MAX_CHAT = Number(process.env.PPANAM_MAX_CHAT || 3);
+/** 순수 — 침묵 차례 발언자 줄(chat)이 같은 둘로 MAX_CHAT 회씩 채워졌나. round.mjs check 가 돌린다. */
+export function chatLoop(chat, max = MAX_CHAT) {
+  const r = chat.slice(-max * 2);
+  if (r.length < max * 2) return false;
+  const two = new Set(r);
+  if (two.size !== 2) return false;
+  const [a, b] = [...two];
+  return r.filter((x) => x === a).length >= max && r.filter((x) => x === b).length >= max;
+}
+function noteChat(team, e) {
+  const r = room(team);
+  const kind = r.lastGiven?.get(e.actor) ?? null;
+  if (e.actor === 'boss' || (kind !== 'lull' && kind !== 'lunch')) { r.chat = []; r.chatNoted = false; return; }   // 일하는 말 — 잡담 줄을 비운다
+  r.chat.push(e.actor); r.chat = r.chat.slice(-MAX_CHAT * 4);
+}
 
 /* ── 입구 ── */
 
@@ -557,6 +587,7 @@ export function noticeEvents(team, events) {
 
     r.recent.push(e.actor);
     r.recent = r.recent.slice(-RECENT_KEEP);
+    if (e.type === 'message') noteChat(team, e);   // 잡담인가 일인가 — 결정 121
 
     onFlowEvent(team, e);
 

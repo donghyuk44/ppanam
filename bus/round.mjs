@@ -445,6 +445,10 @@ switch (cmd) {
           && later.pending.length === 0 && later.carry?.round === 7 && later.carry.items.map((x) => x.join(':')).join(',') === 'review:called,guide:called' && later.cursors.length === 1
           && none.pending.length === 0 && !none.carry;
         out.push(['서버 재시작 뒤 차례 되살리기(결정 104)', ok ? '✓ 같은 라운드 3건 그대로(나가 있던 턴 포함·커서 되돌림) · 다음 라운드면 호명 2건만 carry · 침묵 버림 · 저장 없으면 0' : '✗ ' + JSON.stringify({ same, later, none })]);
+        // 잡담 브레이크(결정 121) — 침묵 차례 발언자 줄이 같은 둘로 3회씩이면 참. 셋이 섞이거나 짧으면 거짓. (호명은 이 줄에 안 들어가니 여기서 못 걸린다.)
+        const { chatLoop } = await import('../server/conductor.mjs');
+        const cl = [chatLoop(['a', 'b', 'a', 'b', 'a', 'b']), chatLoop(['a', 'a', 'b', 'b', 'a', 'b']), chatLoop(['a', 'b', 'a', 'b', 'a']), chatLoop(['a', 'b', 'c', 'a', 'b', 'a']), chatLoop(['x', 'a', 'b', 'a', 'b', 'a', 'b']), chatLoop([])];
+        out.push(['잡담 브레이크(결정 121)', cl.join(',') === 'true,true,false,false,true,false' ? '✓ 둘이 3회씩 참 · 교대 아니어도 참 · 5개 거짓 · 셋 섞이면 거짓 · 앞에 다른 사람 있어도 마지막 6개로 · 빈 줄 거짓' : '✗ ' + cl.join(',')]);
       }
       // 자리의 엔진·모델·추론 강도 (결정 69) — 순수 castChangeError 가 거르고, updateCastAgent 가 임시 방 cast.json 에 쓴다. 엔진 바꾸기는 아직 거부(같은 값은 통과).
       {
