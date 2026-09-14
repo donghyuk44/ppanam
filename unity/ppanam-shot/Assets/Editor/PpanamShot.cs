@@ -24,8 +24,30 @@ public static class PpanamShot
     const float K = 1.39f;
     const int W = 412, H = 915;
     static readonly string[] PIECES = { "castle", "namsan", "home.design" };   // 헨리 조각 목록 ①②③
+    // buildings.json 의 file 은 "<키트>/<파일>" — 키트 이름 → Assets/Kenney/<폴더> (tools/unity-prep.mjs 의 KIT 와 같은 표). glb 가 옆 폴더 Textures/colormap.png 를 가리켜서 폴더째 흉내 낸다.
+    static readonly Dictionary<string, string> KIT = new Dictionary<string, string> { { "commercial", "city-kit-commercial" }, { "suburban", "city-kit-suburban" }, { "characters", "mini-characters" } };
     static JObject colors;
     static int placed = 0, missing = 0;
+
+    /** 프리팹 하나 — 못 찾으면 glTFast importer 가 남긴 이유(reportItems: code + messages)를 그대로 로그에. 첫 판은 "Failed to import (see inspector)" 만 남아 원인을 몰랐다(R25 — 색표 Textures/colormap.png 없음). importer 클래스가 internal 이라 SerializedObject 로 읽는다. */
+    static GameObject Prefab(string assetPath)
+    {
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+        if (prefab != null) return prefab;
+        var imp = AssetImporter.GetAtPath(assetPath);
+        if (imp == null) { Debug.LogWarning("PpanamShot: import ✗ " + assetPath + " — 파일이 없다 (tools/unity-prep.mjs 를 먼저)"); return null; }
+        var so = new SerializedObject(imp); var items = so.FindProperty("reportItems");
+        if (items == null || !items.isArray || items.arraySize == 0) { Debug.LogWarning("PpanamShot: import ✗ " + assetPath + " — importer 가 이유를 안 남김 (" + imp.GetType().Name + ")"); return null; }
+        for (int i = 0; i < items.arraySize; i++)
+        {
+            var it = items.GetArrayElementAtIndex(i);
+            var code = it.FindPropertyRelative("code"); var msgs = it.FindPropertyRelative("messages"); var type = it.FindPropertyRelative("type");
+            var parts = new List<string>();
+            if (msgs != null && msgs.isArray) for (int k = 0; k < msgs.arraySize; k++) parts.Add(msgs.GetArrayElementAtIndex(k).stringValue);
+            Debug.LogWarning($"PpanamShot: import ✗ {assetPath} — [{(type != null ? type.enumNames[type.enumValueIndex] : "?")}] {(code != null ? code.enumNames[Mathf.Clamp(code.enumValueIndex, 0, code.enumNames.Length - 1)] : "?")} {string.Join(" · ", parts)}");
+        }
+        return null;
+    }
 
     public static void Render()
     {
@@ -70,12 +92,14 @@ public static class PpanamShot
 
         // ⑤ 빛 — 키 #ffe1bf 왼쪽 위, 환경광 하늘/땅, 부드러운 그림자
         var light = parts["light"];
-        var sun = new GameObject("sun").AddComponent<Light>(); sun.type = LightType.Directional; sun.color = Hex((string)light["sun"]["color"]); sun.intensity = 1.5f;
-        sun.shadows = LightShadows.Soft; sun.shadowStrength = 0.55f; sun.shadowBias = 0.02f;
+        // 세기는 Three 값(2.4, ACES 톤매핑 뒤)을 그대로 못 쓴다 — built-in 은 톤매핑이 없어 1.5 만 줘도 벽(#f4efe4)·받침이 흰색으로 날아갔다(첫 판 실측 R25). 해 1.0 · 환경광 0.6.
+        var sun = new GameObject("sun").AddComponent<Light>(); sun.type = LightType.Directional; sun.color = Hex((string)light["sun"]["color"]); sun.intensity = 1.0f;
+        sun.shadows = LightShadows.Soft; sun.shadowStrength = 0.55f; sun.shadowBias = 0.02f; sun.shadowNormalBias = 0.4f;
+        QualitySettings.shadows = ShadowQuality.All; QualitySettings.shadowDistance = 400f; QualitySettings.shadowResolution = ShadowResolution.VeryHigh;   // 카메라가 130 넘게 떨어져 있다 — 기본 150 이면 그림자가 끊긴다
         var from = light["sun"]["from"]; sun.transform.rotation = Quaternion.LookRotation(-ToUnityDir((float)from[0], (float)from[1], (float)from[2]));
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
         RenderSettings.ambientSkyColor = Hex((string)light["sky"]); RenderSettings.ambientEquatorColor = Hex((string)light["ground"]); RenderSettings.ambientGroundColor = Hex((string)light["ground"]);
-        RenderSettings.ambientIntensity = 1.0f;
+        RenderSettings.ambientIntensity = 0.6f;
 
         // ⑤ 카메라 — draw3d.js 와 같은 식: fov 25, azimuth 45, elevation 35, 짧은 변에 fit["1"]=60 칸
         var cam = new GameObject("cam").AddComponent<Camera>();
@@ -127,9 +151,10 @@ public static class PpanamShot
                 var go = GameObject.CreatePrimitive(PrimitiveType.Cube); go.name = owner + ":floor";
                 go.transform.position = ToUnity((x.a + x.b) / 2, y0, (z.a + z.b) / 2); go.transform.localScale = new Vector3(x.b - x.a, 0.02f, z.b - z.a);
                 go.GetComponent<Renderer>().sharedMaterial = Mat(Col((string)p["color"])); placed++; break; }
-            case "model": { // Kenney glb — Assets/Kenney/<파일이름> (tools/unity-prep.mjs 가 복사). 색표는 Kenney 원본(우리 건물 색표는 아직, 헨리)
+            case "model": { // Kenney glb — Assets/Kenney/<키트>/<파일이름> (tools/unity-prep.mjs 가 색표와 같이 복사). 색표는 Kenney 원본(우리 건물 색표는 아직, 헨리)
                 var file = Path.GetFileName((string)p["file"]); var at = (JArray)p["at"];
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Kenney/" + file);
+                var kit = ((string)p["file"]).Contains("/") ? ((string)p["file"]).Split('/')[0] : "commercial";
+                var prefab = Prefab("Assets/Kenney/" + (KIT.ContainsKey(kit) ? KIT[kit] : kit) + "/" + file);
                 float ay = at.Count > 2 ? (float)at[1] : 0f, az = at.Count > 2 ? (float)at[2] : (float)at[1];   // at 은 [x, y, z] 셋(계약 2판) — 옛 둘짜리도 읽는다
                 var pos = ToUnity((float)at[0], ay, az);
                 if (prefab == null) { missing++; var ph = GameObject.CreatePrimitive(PrimitiveType.Cube); ph.name = "missing:" + file; ph.transform.position = pos + Vector3.up * 1.5f; ph.transform.localScale = new Vector3(1.5f, 3, 1.5f); ph.GetComponent<Renderer>().sharedMaterial = Mat(Hex("#e6dccb")); break; }
@@ -144,13 +169,15 @@ public static class PpanamShot
     static void Doll(JObject parts, string key, string colormapFile, Vector3 pos, string prop)
     {
         var ch = parts["characters"][key]; if (ch == null) { missing++; return; }
-        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Kenney/" + (string)ch["model"]);
+        var prefab = Prefab("Assets/Kenney/" + KIT["characters"] + "/" + (string)ch["model"]);
         if (prefab == null) { missing++; var ph = GameObject.CreatePrimitive(PrimitiveType.Capsule); ph.name = "missing:" + key; ph.transform.position = pos + Vector3.up * 0.5f; ph.transform.localScale = Vector3.one * 0.5f; return; }
         var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab); go.name = "doll:" + key;
         go.transform.position = pos; go.transform.localScale = Vector3.one * K; go.transform.rotation = Quaternion.Euler(0, 180, 0);   // 남쪽(카메라 쪽)을 본다
         Matte(go);
+        // 디자인 색표로 갈아 끼움 — glTFast 의 built-in 셰이더는 색표 이름이 baseColorTexture([MainTexture])라 mainTexture 로 닿는다. SkinnedMeshRenderer 도 Renderer 다.
         var tex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Kenney/people/" + colormapFile);
-        if (tex != null) foreach (var r in go.GetComponentsInChildren<Renderer>()) foreach (var m in r.sharedMaterials) if (m != null && m.HasProperty("_MainTex")) { var mm = new Material(m); mm.mainTexture = tex; r.sharedMaterial = mm; }
+        if (tex == null) Debug.LogWarning("PpanamShot: 사람 색표 없음 Assets/Kenney/people/" + colormapFile);
+        else foreach (var r in go.GetComponentsInChildren<Renderer>(true)) { var mats = r.sharedMaterials; for (int i = 0; i < mats.Length; i++) if (mats[i] != null) { var mm = new Material(mats[i]); mm.mainTexture = tex; if (mm.HasProperty("baseColorTexture")) mm.SetTexture("baseColorTexture", tex); mats[i] = mm; } r.sharedMaterials = mats; }
         placed++;
         float hgt = (float)ch["sourceHeight"] * K;
         if (prop == "gat")
@@ -166,7 +193,8 @@ public static class PpanamShot
         }
     }
 
-    static void Matte(GameObject go) { foreach (var r in go.GetComponentsInChildren<Renderer>()) foreach (var m in r.sharedMaterials) if (m != null) { if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", 0.1f); if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0f); } }
+    // 무광(first-scene.md roughness 0.9) — glTFast built-in 셰이더는 roughnessFactor·metallicFactor, Standard 는 _Glossiness·_Metallic
+    static void Matte(GameObject go) { foreach (var r in go.GetComponentsInChildren<Renderer>(true)) foreach (var m in r.sharedMaterials) if (m != null) { if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", 0.1f); if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0f); if (m.HasProperty("roughnessFactor")) m.SetFloat("roughnessFactor", 0.9f); if (m.HasProperty("metallicFactor")) m.SetFloat("metallicFactor", 0f); } }
     static (float a, float b) Range(JToken t) => ((float)t[0], (float)t[1]);
     static Vector3 ToUnity(float x, float y, float z) => new Vector3(x, y, -z);
     static Vector3 ToUnityDir(float x, float y, float z) => new Vector3(x, y, -z).normalized;
