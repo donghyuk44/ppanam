@@ -20,7 +20,7 @@ const effortOf = (e) => (e === 'xhigh' ? 'high' : e || 'medium');
 function spawnOne(key, { model, effort }) {
   const args = ['--input-format', 'stream-json', '--output-format', 'stream-json', '--model', model, '--effort', effortOf(effort), '--add-dir', ROOT];
   const child = spawn(AGY, args, { cwd: ROOT, stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, PATH: `${process.env.HOME}/.local/bin:${process.env.PATH ?? ''}` } });
-  const s = { child, model, effort: effortOf(effort), conversationId: null, buf: '', stderr: '', pending: null, queue: [], since: Date.now(), turns: 0 };
+  const s = { child, model, effort: effortOf(effort), conversationId: null, buf: '', stderr: '', raw: [], pending: null, queue: [], since: Date.now(), turns: 0 };
   child.stdout.on('data', (d) => { s.buf += d; let i; while ((i = s.buf.indexOf('\n')) >= 0) { const line = s.buf.slice(0, i).trim(); s.buf = s.buf.slice(i + 1); if (line) onLine(s, line); } });
   child.stderr.on('data', (d) => { s.stderr = (s.stderr + d).slice(-2000); });
   child.on('close', (code) => {
@@ -34,21 +34,39 @@ function spawnOne(key, { model, effort }) {
   return s;
 }
 
+/** 한 줄에서 모델 글자를 꺼낸다 — 문서의 step_update.text_delta 말고도 gemini-cli 계열 모양(message.content · content[] · delta · text)을 받는다. 대표(user) 줄의 메아리는 뺀다. */
+function textOf(j) {
+  if (j.event === 'user' || j.role === 'user' || j.message?.role === 'user') return '';
+  const pick = (v) => (typeof v === 'string' ? v : Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x : x?.text ?? '')).join('') : '');
+  return pick(j.text_delta) || pick(j.delta) || pick(j.text) || pick(j.message?.content) || pick(j.content) || '';
+}
+
 function onLine(s, line) {
+  s.raw.push(line.slice(0, 400)); if (s.raw.length > 24) s.raw.shift();   // 모양을 모를 때 보는 마지막 줄들 — 빈 답이면 같이 돌려준다
   let j; try { j = JSON.parse(line); } catch { return; }
-  if (j.event === 'init' || j.type === 'init') { s.conversationId = j.conversation_id ?? s.conversationId; return; }
+  if (j.event === 'init' || j.type === 'init') { s.conversationId = j.conversation_id ?? j.session_id ?? s.conversationId; return; }
   const p = s.pending; if (!p) return;
   const ev = j.event ?? j.type;
-  if (ev === 'step_update') {
-    if (typeof j.text_delta === 'string' && j.text_delta) { if (p.first == null) p.first = Date.now(); p.text += j.text_delta; p.onDelta?.(j.text_delta); }
-    return;
-  }
   if (ev === 'result') {
     clearTimeout(p.timer); s.pending = null; s.turns += 1;
     if (j.conversation_id) s.conversationId = j.conversation_id;
-    if (j.status && j.status !== 'SUCCESS') p.reject(new Error(`agy status ${j.status}${j.error ? ' — ' + String(j.error).slice(0, 160) : ''}`));
-    else p.resolve({ answer: String(j.response ?? p.text ?? '').trim(), sessionId: s.conversationId, firstMs: p.first ? p.first - p.at : null, totalMs: Date.now() - p.at, turns: s.turns });
+    const status = String(j.status ?? '').toUpperCase();
+    if (status && status !== 'SUCCESS') p.reject(new Error(`agy status ${j.status}${j.error ? ' — ' + String(j.error).slice(0, 160) : ''}`));
+    else {
+      const answer = String(j.response ?? textOf(j) ?? '').trim() || p.text.trim();
+      const out = { answer, sessionId: s.conversationId, firstMs: p.first ? p.first - p.at : null, totalMs: Date.now() - p.at, turns: s.turns };
+      if (!answer) out.raw = s.raw.slice();   // 빈 답 — 어떤 줄이 왔는지 그대로(outside.mjs --check 가 보여 준다)
+      p.resolve(out);
+    }
     next(s);
+    return;
+  }
+  const t = textOf(j);
+  if (t) {
+    if (p.first == null) p.first = Date.now();
+    p.text = t.startsWith(p.text) ? t : p.text + t;   // 누적 전문을 다시 주는 줄이면 갈아 끼우고, 조각이면 붙인다
+
+    p.onDelta?.(t);
   }
 }
 

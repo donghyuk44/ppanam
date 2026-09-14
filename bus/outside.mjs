@@ -212,7 +212,7 @@ async function runGeminiPool(input, { resume = null, model = geminiModelOf(null)
     if (r.status === 404) return null;   // 옛 서버 — 문이 없다
     const j = await r.json().catch(() => ({}));
     if (!r.ok || j.error) throw new Error(`상주 gemini ${r.status} — ${String(j.error ?? '').slice(0, 200)}`);
-    return { answer: String(j.answer ?? '').trim(), sessionId: j.sessionId ?? resume ?? null, firstMs: j.firstMs ?? null, totalMs: j.totalMs ?? null };
+    return { answer: String(j.answer ?? '').trim(), sessionId: j.sessionId ?? resume ?? null, firstMs: j.firstMs ?? null, totalMs: j.totalMs ?? null, raw: j.raw ?? null };
   } catch (e) {
     if (e?.name === 'AbortError') throw new Error(`상주 gemini 답 없음 (${Math.round(TIMEOUT / 1000)}초 초과)`);
     if (/ECONNREFUSED|fetch failed/.test(String(e?.message ?? e)) || e?.cause?.code === 'ECONNREFUSED') return null;   // 서버 없음 — 다음 길
@@ -551,7 +551,10 @@ async function viaAgyOnce(prompt) {
 /** 상주 gemini 한 번(결정 122) — 서버가 떠 있어야 한다. --check --engine pool. 기록 안 남김, 방은 dev/outside 칸을 빌린다. */
 async function viaPoolOnce(prompt) {
   const r = await runGeminiPool(withTurn(DEFAULT_PERSONA, prompt), { team: team ?? 'dev', model: geminiModelOf(null), resume: 'check' });
-  return r?.answer ? `${r.answer}\n(conversation ${r.sessionId ?? '없음'} · 첫 낱말 ${r.firstMs != null ? (r.firstMs / 1000).toFixed(1) + '초' : '?'} · 끝까지 ${(r.totalMs / 1000).toFixed(1)}초)` : null;
+  // 조용히 null 로 넘어가면 "설정 안 됨" 만 보여 왜 안 됐는지 모른다(R25 실측) — 서버 없음·문 없음·빈 답을 갈라 '시도한 것' 에 남긴다
+  if (!r) throw new Error(`서버 없음(${SERVER_URL}) 또는 문 없음(404 — 재시작 전 서버)`);
+  if (!r.answer) throw new Error(`빈 답 (conversation ${r.sessionId ?? '없음'} · 첫 낱말 ${r.firstMs != null ? (r.firstMs / 1000).toFixed(1) + '초' : '?'} · 끝까지 ${r.totalMs != null ? (r.totalMs / 1000).toFixed(1) + '초' : '?'})${r.raw?.length ? '\n    온 줄들:\n    ' + r.raw.map((l) => l.slice(0, 240)).join('\n    ') : ''}`);
+  return `${r.answer}\n(conversation ${r.sessionId ?? '없음'} · 첫 낱말 ${r.firstMs != null ? (r.firstMs / 1000).toFixed(1) + '초' : '?'} · 끝까지 ${r.totalMs != null ? (r.totalMs / 1000).toFixed(1) + '초' : '?'})`;
 }
 
 async function viaOpenAI(prompt) {
@@ -688,7 +691,7 @@ if (mode === 'check') {
         console.log(`[${name === 'codex' ? `codex · ${codexModelOf(null)}` : name === 'agy' ? `agy · ${geminiModelOf(null)}` : name === 'pool' ? `상주 gemini · ${geminiModelOf(null)}` : `openai · ${API_MODEL}`}] ${r}`);
         process.exit(0);
       }
-    } catch (e) { errors.push(`${name}: ${String(e.message).split('\n')[0].slice(0, 200)}`); }
+    } catch (e) { errors.push(`${name}: ${String(e.message).slice(0, 3000)}`); }   // 여러 줄 그대로 — 상주 gemini 의 '온 줄들' 이 여기 실린다
   }
   console.log('외부감사 설정 안 됨 — 교차검증 없이 진행한다는 사실을 작전실에 남기세요.');
   if (errors.length) console.log('\n시도한 것:\n  ' + errors.join('\n  '));
