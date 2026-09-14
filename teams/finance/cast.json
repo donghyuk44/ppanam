@@ -3,7 +3,7 @@
     "guide": {
       "name": "유진",
       "initial": "유",
-      "color": "#2f4f7a",
+      "color": "#d8b25c",
       "title": "실행",
       "does": "로드맵 · 스코프 방어",
       "model": "claude"
@@ -28,7 +28,8 @@
       "color": "#5b3a63",
       "title": "교차검증",
       "does": "기술감사 · 외부 시각",
-      "model": "gpt"
+      "model": "gemini",
+      "geminiModel": "gemini-3.6-flash"
     },
     "boss": {
       "name": "함동혁(댄)",
@@ -39,11 +40,11 @@
       "model": null
     },
     "system": {
-      "name": "시스템",
-      "initial": "·",
+      "name": "나리",
+      "initial": "나",
       "color": "#8a8175",
-      "title": "훅",
-      "does": "CLI",
+      "title": "안내",
+      "does": "방에 자동으로 뜨는 안내 · 하네스",
       "model": null
     }
   }
