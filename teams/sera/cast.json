@@ -15,6 +15,14 @@
       "title": "대표",
       "does": "사람",
       "model": null
+    },
+    "system": {
+      "name": "나리",
+      "initial": "나",
+      "color": "#8a8175",
+      "title": "안내",
+      "does": "대표가 초대한 자리 — 말만 남고 자동 안내는 안 뜬다",
+      "model": null
     }
   }
 }

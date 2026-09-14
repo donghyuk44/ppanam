@@ -7,6 +7,6 @@
     { "id": "design",    "name": "디자인", "room": "디자인 작전실", "model": "opus" },
     { "id": "finance",   "name": "경영", "room": "경영 작전실", "model": "opus" },
     { "id": "sera",      "name": "세라",   "room": "비서실",       "kind": "office", "model": "opus",
-      "owner": "secretary", "speakers": ["boss", "secretary"], "only": ["message"] }
+      "owner": "secretary", "speakers": ["boss", "secretary", "system"], "only": ["message"] }
   ]
 }
