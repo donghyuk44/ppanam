@@ -186,8 +186,13 @@ function runAgy(input, { resume = null, model = geminiModelOf(null), effort = nu
     child.on('error', (e) => finish(reject, e));
     child.on('close', (code) => {
       if (DEBUG) console.error(`[debug] agy exit ${code} · stdout ${stdout.length}자 · stderr:\n${stderr.slice(0, 800)}`);
-      try { const r = parseAgy(stdout); if (code !== 0 && !r.answer) throw new Error(`agy exit ${code}`); return finish(resolve, r); }
-      catch (e) {
+      try {
+        const r = parseAgy(stdout);
+        if (code !== 0 && !r.answer) throw new Error(`agy exit ${code}`);
+        // 빈 답 + "permission … auto-denied" 는 답이 아니라 권한이다(실측 09-14: 파일 읽으려다 막혀 "(빈 답)"). 조용히 빈 말풍선을 남기지 않는다.
+        if (!r.answer && /permission/i.test(stderr)) throw new Error('agy 권한 — 도구가 헤드리스에서 거부됨. ~/.gemini/antigravity-cli/settings.json 에 읽기 허용을 넣어야 한다: node tools/antigravity/agy-permissions.mjs');
+        return finish(resolve, r);
+      } catch (e) {
         const why = stderr.replace(/\x1b\[[0-9;]*m/g, '').trim().split('\n').slice(-3).join(' ').slice(0, 300);
         finish(reject, new Error(`agy exit ${code} — ${e.message}${why ? ' — ' + why : ''}`));
       }

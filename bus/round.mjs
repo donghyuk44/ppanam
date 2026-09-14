@@ -497,6 +497,12 @@ switch (cmd) {
         const agyWant = aa === '-p 판정해라 --output-format json --model gemini-3.6-flash --print-timeout 5m --effort high --conversation conv_1'
           && ab === '-p x --output-format json --model m --print-timeout 5m --effort medium' && ax.endsWith('--effort high') && !ab.includes('dangerously')
           && pa.answer === 'PASS\n됐다' && pa.sessionId === 'conv_9' && pErr?.includes('ERROR') && pErr?.includes('quota') && pBad?.includes('JSON');
+        // agy 권한 합치기(읽기만) — 있던 규칙은 남고 우리 것이 더해지며 중복 없음, write_file(*) 은 deny.
+        const { mergePermissions } = await import('../tools/antigravity/agy-permissions.mjs');
+        const mp = mergePermissions({ modelProvider: 'gemini', permissions: { allow: ['read_file(*)', 'mcp(x/*)'], deny: ['command(rm -rf)'] } });
+        const mpWant = mp.modelProvider === 'gemini' && mp.permissions.allow.filter((x) => x === 'read_file(*)').length === 1 && mp.permissions.allow.includes('mcp(x/*)')
+          && mp.permissions.allow.includes('command(cat)') && mp.permissions.deny.includes('write_file(*)') && mp.permissions.deny.includes('command(rm -rf)') && !mp.permissions.allow.some((x) => x.startsWith('write_file'));
+        out.push(['agy 권한 합치기(읽기만)', mpWant ? '✓ 있던 것 유지 · 중복 없음 · write_file(*) deny · 빈 설정도 됨' : '✗ ' + JSON.stringify(mp)]);
         out.push(['Antigravity CLI(agy) 인자·봉투', agyWant ? '✓ -p·json·모델·상한·effort·--conversation · 승인 건너뛰기 없음 · 봉투 response/conversation_id · ERROR·비JSON throw' : '✗ ' + JSON.stringify({ aa, ab, pa, pErr, pBad })]);
         out.push(['gemini 임시 외부 감사(09-14)', gWant ? '✓ outside→gemini 통과 · geminiModel 목록 · note gemini · isForeign 셋' : '✗ ' + JSON.stringify({ gErrs, to: gsw.to })]);
         const txt = castChangeText('테라', up.to), txt2 = castChangeText('안젤', { effort: 'low' });
