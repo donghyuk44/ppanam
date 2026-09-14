@@ -175,7 +175,7 @@ async function hasAgy() {
   try { await run('which', [AGY]); return true; } catch { return false; }
 }
 function runAgy(input, { resume = null, model = geminiModelOf(null), effort = null } = {}) {
-  const args = agyArgs({ prompt: input, model, effort, resume, timeout: `${Math.max(1, Math.round(TIMEOUT / 60_000))}m` });
+  const args = agyArgs({ prompt: input, model, effort, resume, timeout: `${Math.max(1, Math.round(TIMEOUT / 60_000))}m`, dir: ROOT });
   return new Promise((resolve, reject) => {
     const child = spawn(AGY, args, { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, PATH: `${process.env.HOME}/.local/bin:${process.env.PATH ?? ''}` } });
     let stdout = '', stderr = '', done = false;
@@ -396,22 +396,20 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   // 인격은 codex 는 턴마다(세션이 압축되며 인격이 먼저 밀려난다 — M1 인격 이음), gemini 는 **대화마다 한 번** — 이어가는 호출(resume)이면
   // 인격·확정조항·일지를 빼고 새 말만 보낸다(대표 지적 09-14 — 매번 똑같은 2,900자). 하네스 창의 대화가 곧 세션이라 앞을 기억한다.
   const persona = KIND === 'gemini' && prior ? null : personaOf(team);
-  const input = [
-    persona,
-    persona ? '\n---\n' : null,
-    ctx ? `그동안 이 방에서 오간 말:\n\n${ctx}\n\n---\n` : null,
-    turn === 'verdict'
-      ? VERDICT_TURN(text || question)
-      : turn === 'journal'
-        ? JOURNAL_TURN(round)
-        : turn
-          ? TURN[turn] ?? TURN.called
-          : lull
-        ? TURN.lull
-        : talk
-          ? `방에서 누가 너에게 한 말이다. 판정이 아니라 대화로 답해라 — 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라. 상대 이름으로 시작해 네 말투로 한두 문장, 사람에게 말하듯. 모르면 모른다고, 돌려봐야 알면 돌려보겠다고 해라.\n\n${question}`
-          : question,
-  ].filter(Boolean).join('\n');
+  const instruction = turn === 'verdict'
+    ? VERDICT_TURN(text || question)
+    : turn === 'journal'
+      ? JOURNAL_TURN(round)
+      : turn
+        ? TURN[turn] ?? TURN.called
+        : lull
+          ? TURN.lull
+          : talk
+            ? `방에서 누가 너에게 한 말이다. 판정이 아니라 대화로 답해라 — 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라. 상대 이름으로 시작해 네 말투로 한두 문장, 사람에게 말하듯. 모르면 모른다고, 돌려봐야 알면 돌려보겠다고 해라.\n\n${question}`
+            : question;
+  const turnBody = (ctx ? `그동안 이 방에서 오간 말:\n\n${ctx}\n\n---\n` : '') + instruction;
+  // gemini 는 차례를 머리말로 갈라 준다(withTurn — 인격만 읽고 "대상을 주십시오" 로 답하던 실측). codex 는 검증된 옛 조립 그대로.
+  const input = KIND === 'gemini' ? withTurn(persona, turnBody) : [persona, persona ? '\n---\n' : null, turnBody].filter(Boolean).join('\n');
 
   // --dry: codex 를 부르지 않고 이 턴이 받을 입력만 보여준다. 기록도 커서 이동도 없다 — 인격이 매 턴 실리는지 눈으로 확인하는 용도.
   if (dry) {
@@ -511,10 +509,16 @@ async function viaCodexOnce(prompt) {
   const { answer } = await runCodex(`${DEFAULT_PERSONA}\n\n---\n\n${prompt}`);
   return answer || null;
 }
+/**
+ * 인격 뒤에 차례를 붙일 때 — gemini(agy)는 인격만 읽고 "역할 수임했습니다, 대상을 주십시오" 로 답하고 끝의 물음을 흘렸다(실측 09-14, 세 번 다).
+ * 차례를 머리말로 가르고 "지금 이것에 답해라" 를 맨 끝에 한 번 더 둔다. codex 도 같은 조립을 받는다 — 해가 없다.
+ */
+const withTurn = (persona, body) => `${persona ? persona + '\n\n---\n\n' : ''}## 지금 네 차례\n\n${body}\n\n---\n위 "지금 네 차례" 에 바로 답해라. 역할을 확인하는 인사나 "대상을 주십시오" 는 쓰지 마라 — 대상은 위에 있다.`;
+
 /** agy 한 번 — --check 의 연기 시험. 기록 안 남김. */
 async function viaAgyOnce(prompt) {
   if (!await hasAgy()) return null;
-  const { answer, sessionId } = await runAgy(`${DEFAULT_PERSONA}\n\n---\n\n${prompt}`, { model: geminiModelOf(null) });
+  const { answer, sessionId } = await runAgy(withTurn(DEFAULT_PERSONA, prompt), { model: geminiModelOf(null) });
   return answer ? `${answer}\n(conversation ${sessionId ?? '없음'})` : null;
 }
 
@@ -596,7 +600,8 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--text') turnText = argv[++i];
   else if (a === '--from-round') fromRound = Number(argv[++i]) || null;   // 넘어온 차례(carried) — 닫힌 라운드의 못 들은 말부터 (결정 25)
   else if (a === '--actor') ACTOR = String(argv[++i] ?? 'outside');        // 어느 자리로 말하나 (결정 69 ① — codex 로 바뀐 자리)
-  else if (a === '--check' || a === '-c') { mode = 'check'; question = argv[++i]; }
+  else if (a === '--check' || a === '-c') { mode = 'check'; if (argv[i + 1] && !argv[i + 1].startsWith('-')) question = argv[++i]; }
+  else if (a === '--engine') i += 1;   // --check --engine <이름> — check 모드가 따로 읽는다. 물음에 섞이지 않게 건너뛴다
   else if (a === '--reset') mode = 'reset';
   else if (a === '--status') mode = 'status';
   else if (a === '--setup' || a === '-h' || a === '--help') mode = 'setup';

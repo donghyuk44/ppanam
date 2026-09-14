@@ -798,11 +798,12 @@ export function codexArgs({ model, effort = null, resume = null, outPath = null 
  * `--output-format json` 이면 stdout 에 { conversation_id, status, response, … } 한 덩어리, `--conversation <id>` 로 이어붙임, `--model`·`--effort`·`--print-timeout`.
  * 헤드리스는 승인이 필요한 도구를 기본 거부한다(soft-deny) — 감사역은 파일을 읽되 고치지 않으니 그 기본을 그대로 쓴다. `--dangerously-skip-permissions` 는 안 붙인다.
  */
-export function agyArgs({ prompt, model, effort = null, resume = null, timeout = '5m' }) {
+export function agyArgs({ prompt, model, effort = null, resume = null, timeout = '5m', dir = null }) {
   // agy 는 --effort 가 필수(실측 09-14: "--model gemini-3.6-flash requires --effort (available: low, medium, high)"). 자리에 없으면 medium, 우리 xhigh 는 high 로.
   const eff = effort === 'xhigh' ? 'high' : (effort || 'medium');
+  // --add-dir: 저장소를 작업 폴더로 명시한다 — cwd 만으로는 에이전트가 ~/.gemini/antigravity-cli 를 제 폴더로 알고 우리 파일을 "없다" 고 했다(실측 09-14).
   return ['-p', prompt, '--output-format', 'json', '--model', model, '--print-timeout', timeout, '--effort', eff,
-    ...(resume ? ['--conversation', resume] : [])];
+    ...(dir ? ['--add-dir', dir] : []), ...(resume ? ['--conversation', resume] : [])];
 }
 /** agy 의 json 봉투에서 답과 대화 id. 순수 — 잘못된 JSON 이나 status 가 SUCCESS 가 아니면 throw. */
 export function parseAgy(stdout) {
