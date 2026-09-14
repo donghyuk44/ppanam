@@ -1820,7 +1820,8 @@ function mdToDom(text) {
       const thead = el('tr'); for (const c of head) thead.appendChild(el('th', null, c)); table.appendChild(thead);
       i += 2;
       while (i < lines.length && lines[i].startsWith('|')) {
-        const tr = el('tr'); for (const c of cells(lines[i])) tr.appendChild(el('td', null, c)); table.appendChild(tr); i++;
+        // 칸마다 머리글을 data-label 로 — 폰(819 이하)에서는 표가 줄마다 카드로 서고 머리글이 칸 앞에 붙는다(나리 실측 R25: 칸 다섯이 412 에서 한 자씩 세로로). 헨리 '앞날 띠' 전까지의 임시.
+        const tr = el('tr'); cells(lines[i]).forEach((c, k) => { const td = el('td', null, c); td.dataset.label = head[k] ?? ''; tr.appendChild(td); }); table.appendChild(tr); i++;
       }
       box.appendChild(table); continue;
     }

@@ -898,6 +898,14 @@ button.dash__row:hover b { text-decoration: underline; }
   /* 개인 탭의 묶음 머리는 위에 붙는다 — 열다섯 장을 내리다 어느 팀인지 잃지 않게 (헨리 설계 4절) */
   .pgroup__head { position: sticky; top: -12px; background: var(--ground); z-index: 1; }
   .dash__tile { padding: 10px 10px; }
+  /* 예정 작업 표(결정 128)는 폰에서 줄마다 카드 — 칸 다섯을 412 에 욱여넣으면 글자가 한 자씩 세로로 떨어졌다(나리 실측 R25). 머리글은 칸 앞 작은 글자(td[data-label]). 헨리 '앞날 띠' 시안 전까지의 임시. */
+  .dash__body { padding: 12px; }
+  .dash__body table, .dash__body tr, .dash__body td { display: block; width: 100%; }
+  .dash__body th { display: none; }
+  .dash__body tr { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 8px 10px; margin-bottom: 8px; }
+  .dash__body td { border: 0; padding: 3px 0; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; word-break: keep-all; overflow-wrap: anywhere; }
+  .dash__body td::before { content: attr(data-label); color: var(--ink-4); font-size: 11.5px; }
+  .dash__body td:empty { display: none; }
   .dash__tile b { font-size: 19px; }
   .an__body { padding: 12px; }
   .rail__list {
