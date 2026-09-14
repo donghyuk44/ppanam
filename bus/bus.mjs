@@ -743,8 +743,10 @@ export function readProgress(team) {
   const raw = readJSON(progressPath(team), null);
   return raw ? normalizeProgress(raw) : null;
 }
+/** "(없음)"·"없음"·"—"·"-" 같은 자리표시 줄은 값이 아니다 — 상황판에 적힌 "(없음)" 이 관제탑에서 막힌 것 하나로 세어졌다(나리 실측 R25). */
+export const isPlaceholderLine = (s) => /^\s*[(（]?\s*(없음|없어요|없다|n\/a|none|-|—|·)\s*[)）]?\s*[.。]?\s*$/i.test(String(s ?? ''));
 export function normalizeProgress(raw) {
-  const list = (v) => (Array.isArray(v) ? v.map((x) => String(x)).filter(Boolean) : []);
+  const list = (v) => (Array.isArray(v) ? v.map((x) => String(x)).filter((x) => x.trim() && !isPlaceholderLine(x)) : []);
   return {
     at: raw.at ?? null, by: raw.by ?? null, round: raw.round ?? null,
     doing: list(raw.doing), blocked: list(raw.blocked ?? raw.issues), boss: list(raw.boss), next: list(raw.next ?? raw.left), done: list(raw.done),

@@ -80,6 +80,8 @@ export function notificationsOf({ teams = [], summaries = {}, approvals = [] } =
 export const INFRA_LABEL = { server: '서버', codex: '외부 감사(codex) 연결', sessions: '세션', disk: '디스크' };
 /** 잰 시각이 지금보다 이만큼 넘게 앞서면 시계가 틀린 것 — unknown. */
 export const INFRA_SKEW_MS = 60_000;
+/** 자리표시 줄 — bus.isPlaceholderLine 과 같은 식(브라우저 파일이라 못 불러온다). 바꾸면 둘 다. */
+export const PLACEHOLDER_RE = /^\s*[(（]?\s*(없음|없어요|없다|n\/a|none|-|—|·)\s*[)）]?\s*[.。]?\s*$/i;
 
 /**
  * 막힌 것 — 한 목록 (결정 92 "뭐가 막혔나", M6 준비). 계약은 docs/event-schema.md 3절 "막힌 것 — 한 목록".
@@ -103,7 +105,8 @@ export function blockedOf({ teams = [], summaries = {}, approvals = [], requests
   for (const t of teams) {
     const s = summaries[t.id];
     if (!s) continue;
-    if (s.bossCall) {
+    // 총괄실·비서실(office)은 대표와 1:1 이라 거기서 대표를 부르는 건 대화지 "기다림" 이 아니다 — 톰이 대표께 나리 얘기 한 것이 46분째 막힘으로 섰다(나리 실측 R25). 결정이 필요한 건 승인 큐에 있다.
+    if (s.bossCall && t.kind !== 'office') {
       const quote = s.people?.[s.bossCall.by]?.bossCall?.text ?? '';
       push({ id: `boss:${s.bossCall.id}`, kind: 'boss', where: 'room', team: t.id, by: s.bossCall.by, waitOn: 'boss', state: null,
         text: oneLine(quote, 80) || `${nameOf(t.id, s.bossCall.by)} 불렀습니다`, since: s.bossCall.ts,
@@ -115,6 +118,7 @@ export function blockedOf({ teams = [], summaries = {}, approvals = [], requests
         target: { view: 'room', team: t.id, event: null } });
     }
     for (const [i, line] of (s.progress?.blocked ?? []).entries()) {
+      if (PLACEHOLDER_RE.test(String(line))) continue;   // "(없음)" 은 막힌 것이 아니다(서버도 normalizeProgress 에서 거른다 — 옛 요약이 올 때를 위해 여기서도)
       push({ id: `board:${t.id}:${i}`, kind: 'board', where: 'board', team: t.id, by: 'guide', waitOn: { team: t.id, actor: 'guide' }, state: null,
         text: oneLine(line, 160), since: s.progress?.at ?? null, target: { view: 'room', team: t.id, event: null } });
     }

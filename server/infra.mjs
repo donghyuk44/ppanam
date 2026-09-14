@@ -32,8 +32,8 @@ export function parseDf(stdout) {
   return Number.isFinite(availKb) ? availKb * 1024 : null;
 }
 
-const run = (cmd, args) => new Promise((resolve, reject) => {
-  execFile(cmd, args, { timeout: PROBE_MS, encoding: 'utf8' }, (err, stdout) => (err ? reject(err) : resolve(stdout)));
+const run = (cmd, args, opts = {}) => new Promise((resolve, reject) => {
+  execFile(cmd, args, { timeout: PROBE_MS, encoding: 'utf8', ...opts }, (err, stdout) => (err ? reject(err) : resolve(stdout)));
 });
 const withTimeout = (p) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${PROBE_MS / 1000}초 안에 답 없음`)), PROBE_MS))]);
 const gb = (b) => `${(b / 1024 ** 3).toFixed(1)}G`;
@@ -54,7 +54,11 @@ export async function probeAll({ port, sessionHealth }) {
     codex: async () => {
       // 바이너리만 보면 한도 소진(R25)이 "산 것" 으로 나온다(솔라) — 쿨다운 파일이 있으면 그게 답이다.
       const cd = outsideCooldown();
-      if (cd) return wrap(false, `계정 사용 한도 — ${cd.until.slice(0, 16)} 까지`);
+      if (cd) {
+        // 한도 중이라도 gemini(agy) 가 대신 돌면 막힌 게 아니다 — 아침에 바꿔 끝난 일이 저녁까지 "밑바닥 죽음" 으로 대표 화면에 남았다(나리 실측 R25). 폴백은 bus.fallbackOf·outside.mjs.
+        const agy = await run('which', ['agy'], { env: { ...process.env, PATH: `${process.env.HOME}/.local/bin:${process.env.PATH ?? ''}` } }).then((s) => s.trim()).catch(() => null);
+        return wrap(!!agy, `계정 사용 한도 — ${cd.until.slice(0, 16)} 까지${agy ? ' · gemini(agy) 가 대신 돈다' : ' · 대신 돌 gemini(agy) 도 없음'}`);
+      }
       try { const where = (await run('which', ['codex'])).trim(); return wrap(true, where); }
       catch { return wrap(false, 'codex CLI 없음 — node bus/outside.mjs --setup'); }
     },

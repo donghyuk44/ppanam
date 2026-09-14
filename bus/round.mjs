@@ -702,6 +702,14 @@ switch (cmd) {
         } }, { now: bNow });
         const bInfra = b2.map((it) => `${it.id}=${it.state}`).join(',');
         const b3 = blockedOf({ teams: [], infra: { server: { ok: true, at: fresh, timeout: 5 * 60_000 } } }, { now: bNow });
+        // 헛막힘 셋(나리 실측 R25): 상황판 "(없음)" 줄 · 총괄실(office)에서 대표 부른 것 · 서버가 거른 자리표시(normalizeProgress)
+        const bFake = blockedOf({ teams: [{ id: 'hq', name: '총괄', room: '총괄실', kind: 'office' }, { id: 'mk', name: '마케팅', room: '마케팅실' }], summaries: {
+          hq: { cast: { chief: { name: '톰' } }, bossCall: { id: 'h1', ts: '2026-09-13T11:00:00Z', by: 'chief' }, people: { chief: { bossCall: { id: 'h1', ts: '2026-09-13T11:00:00Z', text: '대표님, 나리 얘기입니다.' } } } },
+          mk: { cast: { guide: { name: '하영' } }, progress: { at: '2026-09-13T11:00:00Z', blocked: ['(없음)', '없음', '—', '진짜 막힘 하나'] } },
+        } }, { now: bNow });
+        const fakeOk = bFake.length === 1 && bFake[0].kind === 'board' && bFake[0].text === '진짜 막힘 하나'
+          && normalizeProgress({ blocked: ['(없음)', ' ', '막힘'], boss: ['없어요.'] }).blocked.join(',') === '막힘' && normalizeProgress({ boss: ['없어요.'] }).boss.length === 0;
+        out.push(['헛막힘 거르기(자리표시·office 부름)', fakeOk ? '✓ (없음)·없음·— 안 셈 · 총괄실 대표 부름 안 셈 · normalizeProgress 도 거름' : '✗ ' + JSON.stringify({ bFake, np: normalizeProgress({ blocked: ['(없음)', '막힘'] }) })]);
         // 경계(레오): 딱 timeout 은 신선 · 1ms 넘으면 unknown · 못 읽는 시각 unknown · 미래 시각은 허용 시차(1분) 안이면 신선, 넘으면 unknown(시계 틀린 기계가 영원히 살아 있지 않게)
         const edge = (at, ok = true) => blockedOf({ teams: [], infra: { server: { ok, at, timeout: 5 * 60_000 } } }, { now: bNow })[0]?.state ?? 'none';
         const bEdge = [edge(new Date(bNow - 5 * 60_000).toISOString()), edge(new Date(bNow - 5 * 60_000 - 1).toISOString()), edge('어제쯤'), edge(new Date(bNow + 30_000).toISOString()), edge(new Date(bNow + 61_000).toISOString()), edge(new Date(bNow + 61_000).toISOString(), false)].join(',');
