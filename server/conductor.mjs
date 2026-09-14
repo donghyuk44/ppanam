@@ -11,7 +11,7 @@
 //   3. 대표   — 대표 발언은 /api/say 가 주인(또는 대표가 부른 사람)에게 바로 넣는다. 여기서 다시 주지 않는다.
 //   4. 침묵   — LULL_MS 동안 message·tool 이 없고 아무도 busy 아니면, 가장 오래 침묵한 참여자 한 명. (패스) 가능.
 //               방당 시간당 MAX_LULL_PER_HOUR. 호명·판정·대표는 상한과 무관하다.
-//   5. 브레이크 — 같은 둘이 MAX_EXCHANGE 회 왕복이면 호명이어도 제3자에게 넘긴다. 제3자가 없으면 쉰다.
+//   5. (브레이크 없음 — 두 사람 왕복 3회 제한은 결정 120 으로 철회. "대화로 풀어가라".) 'third' 차례 종류는 옛 저장 차례 호환으로만 남는다.
 //               한 자리에 한 번에 한 턴. 일하는 중이면 큐에 쌓이고, 쌓인 차례는 합쳐서 한 턴이 된다.
 //   6. 문 닫힘 — 라운드가 idle 이면 차례 없음(총괄실 예외). blocked 면 대표만(호명도 안 준다).
 //               세상의 시계(world.mjs, C)가 오면 근무 시간 밖의 침묵 차례를 끈다.
@@ -33,7 +33,8 @@ const STORE = path.join(REPO, 'state', 'conductor.json');
 
 export const LULL_MS = Number(process.env.PPANAM_LULL_MS || 90_000);
 export const MAX_LULL_PER_HOUR = Number(process.env.PPANAM_LULL_PER_HOUR || 30);
-export const MAX_EXCHANGE = Number(process.env.PPANAM_MAX_EXCHANGE || 3);
+// (MAX_EXCHANGE — 두 사람 왕복 브레이크 — 는 결정 120 으로 뺐다.) recent 는 관제탑 snapshot 이 보여 주는 최근 발언자 열둘.
+const RECENT_KEEP = 12;
 const HOUR = 3_600_000;
 const HEAR_LINES = 40;    // 한 턴에 들려주는 최대 줄
 const HEAR_CHARS = 600;   // 한 줄 최대 길이
@@ -50,7 +51,6 @@ function room(team) {
       lastLull: 0,
       lulls: [],            // 침묵 차례 시각 (시간당 상한)
       capNoted: 0,
-      loopNoted: false,
       outsideBusy: false,
       outsideAgain: null,
       // 마지막으로 본 라운드 번호 — 바뀌면 상태를 비운다. 서버가 막 떴을 때는 null 이 아니라
@@ -510,23 +510,7 @@ function armLull(team) {
   }, LULL_MS);
 }
 
-/* ── 브레이크 ── */
-
-function inLoop(team) {
-  const r = room(team).recent.slice(-MAX_EXCHANGE * 2);
-  if (r.length < MAX_EXCHANGE * 2) return false;
-  const two = new Set(r);
-  if (two.size !== 2) return false;
-  // 엄격한 교대(A B A B)가 아니어도 둘만 오갔으면 루프다 — 답이 늦어 A A B B 로 찍힐 때가 있다.
-  const [a, b] = [...two];
-  return r.filter((x) => x === a).length >= 2 && r.filter((x) => x === b).length >= 2;
-}
-
-/** 두 사람 사이 핑퐁이면 제3자에게. 없으면 null. */
-function thirdParty(team, a, b) {
-  // 제3자도 클로드 자리에서만 — 다른 회사 엔진은 판정·호명에만(대표 지적 09-14). 오늘 밤 "레오에게 차례를 넘깁니다" 가 열 번 넘게 codex 를 헛돌렸다.
-  return participants(team).find((x) => x !== a && x !== b && !busy(team, x) && !isOutside(team, x)) ?? null;
-}
+/* ── 브레이크 — 없다 (결정 120, 09-14: 두 사람 왕복 3회 제한 철회. 남은 상한은 침묵 차례 방당 시간당 MAX_LULL_PER_HOUR 뿐 — 호명 왕복은 세지 않는다) ── */
 
 /* ── 입구 ── */
 
@@ -540,7 +524,7 @@ export function noticeEvents(team, events) {
     if (state.round !== r.round) {
       // --next 로 닫고 바로 열리면 round_end·round_start 가 한 묶음으로 와서 idle 을 못 본다 — 남은 차례는 지난 라운드 것이라 여기서 넘긴다.
       if (r.pending.size) stash(team, `라운드 ${r.round} 이 닫혀`, r.round);
-      r.round = state.round; r.recent = []; r.loopNoted = false; r.flow = null; r.carryFrom = null;
+      r.round = state.round; r.recent = []; r.flow = null; r.carryFrom = null;
       persist(team);
     }
     if (state.phase !== 'running') {   // idle·blocked: 차례 없음. 막 닫혔으면(idle) 쌓인 차례는 버리지 않고 넘긴다.
@@ -572,26 +556,17 @@ export function noticeEvents(team, events) {
     if (isOffice(team) && e.type === 'message' && !e.meta?.from) crossPost(team, e);
 
     r.recent.push(e.actor);
-    r.recent = r.recent.slice(-MAX_EXCHANGE * 4);
+    r.recent = r.recent.slice(-RECENT_KEEP);
 
     onFlowEvent(team, e);
 
-    // 부른 사람 전부, 부른 순서대로 차례 (결정 22). 브레이크는 첫 상대에게만 건다 — 둘이서 도는 것이 문제지 셋을 부른 게 아니다.
+    // 부른 사람 전부, 부른 순서대로 차례 (결정 22). 두 사람 왕복 브레이크(3회면 제3자·쉼)는 **결정 120 으로 철회** — 대표 09-14 "3번 넘으면 대화 못하게 하는 거 철회해",
+    // 09-02 "대화로 풀어가라고 했잖아". 그 브레이크는 대표가 만든 게 아니라 09-02 하네스가 Fable 감사 뒤 넣은 것(bf81ead)이었다.
     const called = addressees(e.text, cast).filter((to) => to !== e.actor && participants(team).includes(to));
     for (const [k, to] of called.entries()) {
       // 대표가 부른 사람이 claude 자리면 /api/say 가 이미 그에게 넣었다(첫 사람) — 다시 주지 않는다.
       // codex 자리면 넣을 세션이 없어 서버가 말풍선만 남겼다 — 여기서 깨운다 (레오 감사, 2026-09-12).
       if (e.actor === 'boss' && k === 0 && !isOutside(team, to)) continue;
-      if (k === 0 && inLoop(team) && new Set(r.recent.slice(-MAX_EXCHANGE * 2)).has(to)) {
-        const z = thirdParty(team, e.actor, to);
-        if (!r.loopNoted) {
-          r.loopNoted = true;
-          note(team, `${nameOf(team, e.actor)}·${nameOf(team, to)} 사이에서 ${MAX_EXCHANGE}번 넘게 오갔습니다. ${z ? nameOf(team, z) + '에게 차례를 넘깁니다.' : '다른 사람이 말할 때까지 쉽니다.'}`);
-        }
-        if (z) enqueue(team, z, 'third');
-        continue;
-      }
-      if (k === 0) r.loopNoted = false;
       enqueue(team, to, 'called');
     }
     armLull(team);
