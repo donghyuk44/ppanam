@@ -329,7 +329,7 @@ codex 는 `which codex` · 세션은 메모리 맵의 좀비 수(`session.health
 서버 문: `GET /api/dashboard` → `{ text, at, plans: {팀: { now, wait: [], next: [] }} }`(`text`·`at` 은 지금 것 — plan-table.md 원문과 mtime, 결정 128 · `plans` 는 M6 에서 더한다) ·
 `GET /api/report?since&until` → `{ done: [팀별], next: {팀: []}, images: [], proxy: [], chief: md|null }` · 관제탑은 지금처럼 `summaries`(+`infra`, `blockedOf` 는 화면이 센다).
 셋 다 **파일을 새로 만들지 않는다** — 있는 것을 읽어 조립할 뿐. 사람 글이 없어도 탭은 뜬다(아래층이 정본, 글은 그 위 한 문단 — `out/m6-screen-inventory.md` 3절).
-문이 있는 자리(지금): 작전실 말풍선의 얼굴·이름과 오른쪽 참여 줄 → 관제탑 사람 카드가 팝업으로(`app.js openPersonPop`, 부품은 `personCard` 하나) · 마을 인형 → `/api/actor` 카드 · 관제탑 사람 탭은 카드 자체. 대표·system(나리)은 카드 없음.
+문이 있는 자리(지금): 작전실 말풍선의 얼굴·이름과 오른쪽 참여 줄 → 관제탑 사람 카드가 팝업으로(`app.js openPersonPop`, 부품은 `personCard` 하나) · 마을 인형 → `/api/actor` 카드 · 관제탑 사람 탭은 카드 자체. 대표는 카드 없음. 나리(system 자리)는 세션이 없어 이름·직책만 — 인격 파일이 생기면 그 첫 줄이 붙는다.
 관제탑 "전체" 의 타일은 뺀다(결정 92 — 통계 타일 탈락). "내 차례"·팀 줄은 관제탑에 남는다 — 같은 것을 두 군데 두지 않는다(findings #5·#7). **상황판 탭은 없앤다** — 네 칸은 관제탑 팀 줄 안으로(낱말·파일·`progress.mjs` 그대로, 아래 절).
 
 통과 조건(정본 맨 밑, 감사역이 잰다): 화면마다 질문 **하나** · 관제탑에서 막힌 것이 **스크롤 없이** · 대시보드에 다섯 팀 예정이 **한 화면** · 어디서든 **두 번 눌러 카드** · 상황판이라는 독립 자리 없음.
