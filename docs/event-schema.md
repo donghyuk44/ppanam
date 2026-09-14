@@ -318,6 +318,7 @@ codex 는 `which codex` · 세션은 메모리 맵의 좀비 수(`session.health
 서버 문: `GET /api/dashboard` → `{ text, at, plans: {팀: { now, wait: [], next: [] }} }`(`text`·`at` 은 지금 것 — plan-table.md 원문과 mtime, 결정 128 · `plans` 는 M6 에서 더한다) ·
 `GET /api/report?since&until` → `{ done: [팀별], next: {팀: []}, images: [], proxy: [], chief: md|null }` · 관제탑은 지금처럼 `summaries`(+`infra`, `blockedOf` 는 화면이 센다).
 셋 다 **파일을 새로 만들지 않는다** — 있는 것을 읽어 조립할 뿐. 사람 글이 없어도 탭은 뜬다(아래층이 정본, 글은 그 위 한 문단 — `out/m6-screen-inventory.md` 3절).
+문이 있는 자리(지금): 작전실 말풍선의 얼굴·이름과 오른쪽 참여 줄 → 관제탑 사람 카드가 팝업으로(`app.js openPersonPop`, 부품은 `personCard` 하나) · 마을 인형 → `/api/actor` 카드 · 관제탑 사람 탭은 카드 자체. 대표·system(나리)은 카드 없음.
 관제탑 "전체" 의 타일은 뺀다(결정 92 — 통계 타일 탈락). "내 차례"·팀 줄은 관제탑에 남는다 — 같은 것을 두 군데 두지 않는다(findings #5·#7). **상황판 탭은 없앤다** — 네 칸은 관제탑 팀 줄 안으로(낱말·파일·`progress.mjs` 그대로, 아래 절).
 
 통과 조건(정본 맨 밑, 감사역이 잰다): 화면마다 질문 **하나** · 관제탑에서 막힌 것이 **스크롤 없이** · 대시보드에 다섯 팀 예정이 **한 화면** · 어디서든 **두 번 눌러 카드** · 상황판이라는 독립 자리 없음.
@@ -380,6 +381,15 @@ M6(화면이-답하는-질문.md, 톰·제리 B): **화면 자리 ① 은 없앤
 
 ### `note` — 시스템 안내
 그 외 알림 (외부감사 비활성, 반박 상한 도달 등). 가운데, 가장 약한 표시.
+
+---
+
+## 3-1. 방에 그림 올리기 (대표 결정 130 ② — "이미지 업로드하고싶은데 안 되네")
+
+`POST /api/upload { team, mime, data(base64) }` 가 `teams/<팀>/in/<자동 이름>.<png|jpg|gif|webp>` 로 저장하고,
+`그림을 올렸습니다: in/<파일>` 을 텍스트로 하는 `message` 이벤트(actor `boss`)를 남긴다 — 배달 규칙(idle 채팅·FAIL 풀기·호명·codex 자리)은 `/api/say` 와 같다.
+`in/…` 은 `out/…` 과 같은 자리에서 잡힌다(`server/public/outlink.js` 의 `RE` 가 `(out|in)` 둘 다 본다) — 말풍선에 그림이 그대로 뜨고, `GET /in/<팀>/<경로>` 가 읽기 전용으로 연다(`bus.inFile`, `outFile` 과 같은 경계: `..`·숨김·없는 팀은 null).
+`in/` 은 대표가 올린 것, `out/` 은 팀이 낸 산출물 — 방향이 다르다. 서버는 그 경로로 쓰지 않는다(업로드 저장 한 번뿐).
 
 ---
 
