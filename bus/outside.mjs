@@ -200,8 +200,30 @@ function runAgy(input, { resume = null, model = geminiModelOf(null), effort = nu
   });
 }
 
-/** gemini 자리의 길 셋 — ① agy CLI(진짜) ② HTTP 다리(PPANAM_GEMINI_URL, 가설) ③ 파일 왕복(하네스 창, 임시). 위에서부터 되는 것. */
+/**
+ * 상주 gemini(결정 122) — 서버가 자리마다 agy 를 띄워 두고 있으면(server/gemini.mjs) 거기 한 줄. 새 프로세스 시작 비용이 없다.
+ * 서버가 안 떠 있거나 그 문이 없으면(옛 서버) 조용히 다음 길로. 답에 firstMs·totalMs 가 실려 온다 — 대표께 가는 숫자 둘.
+ */
+const SERVER_URL = process.env.PPANAM_URL || `http://127.0.0.1:${process.env.PORT || 4321}`;
+async function runGeminiPool(input, { resume = null, model = geminiModelOf(null), effort = null, team = null } = {}) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), TIMEOUT + 15_000);
+  try {
+    const r = await fetch(`${SERVER_URL}/api/gemini/ask`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ team, actor: ACTOR, prompt: input, model, effort, resume }), signal: ctl.signal });
+    if (r.status === 404) return null;   // 옛 서버 — 문이 없다
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error) throw new Error(`상주 gemini ${r.status} — ${String(j.error ?? '').slice(0, 200)}`);
+    return { answer: String(j.answer ?? '').trim(), sessionId: j.sessionId ?? resume ?? null, firstMs: j.firstMs ?? null, totalMs: j.totalMs ?? null };
+  } catch (e) {
+    if (e?.name === 'AbortError') throw new Error(`상주 gemini 답 없음 (${Math.round(TIMEOUT / 1000)}초 초과)`);
+    if (/ECONNREFUSED|fetch failed/.test(String(e?.message ?? e)) || e?.cause?.code === 'ECONNREFUSED') return null;   // 서버 없음 — 다음 길
+    throw e;
+  } finally { clearTimeout(t); }
+}
+
+/** gemini 자리의 길 넷 — ① 서버 상주(결정 122) ② agy -p(매번 새로) ③ HTTP 다리(PPANAM_GEMINI_URL, 가설) ④ 파일 왕복(하네스 창, 임시). 위에서부터 되는 것. */
 async function runGemini(input, opts = {}) {
+  const pooled = await runGeminiPool(input, opts);
+  if (pooled) return pooled;
   if (await hasAgy()) return runAgy(input, opts);
   if (GEMINI_URL) return runGeminiHttp(input, opts);
   return runGeminiFiles(input, opts);
@@ -331,6 +353,7 @@ const TURN = {
  * 그의 답은 그가 직접 대화록에 남기고, 다른 자리들은 각자 다음 차례에 듣는다 — 들려주기는 사회자의 일이다.
  */
 async function ask(team, question, { talk = false, lull = false, turn = null, text = null, dry = false, fromRound = null } = {}) {
+  const T0 = Date.now();   // 걸린 시간의 기준 — 이 프로세스가 뜬 때(사회자가 부른 직후)
   let KIND = engineKindOf(team);   // 'gpt' → codex CLI · 'gemini' → 파일. 기본이 못 돌면 아래서 폴백으로 바뀐다(결정 116 ②)
   // 계정 한도 쿨다운(R25) — codex 계정 것이라 gpt 자리에만. 폴백(자리의 fallback, 기본은 나머지 다른 회사 엔진)이 있으면 그걸로 이 호출을 돈다 —
   // 오늘 codex 하나가 끊겨 다섯 팀이 다 섰는데 인계받을 사람이 어디에도 안 적혀 있었다. 폴백이 'none' 이면 대표께 올리고 조용히 1 로 나간다(방마다 한 번 알림).
@@ -393,9 +416,9 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   // 이 턴이 들은 마지막 말. 커서를 여기 둔다 — 자기 발언 id 로 두면 생각하는 동안(최대 5분)
   // 도착한 말이 since 밖으로 떨어져 영영 못 듣는다 (Fable 감사, 2026-09-02).
   const seenId = lastEventId(team);
-  // 인격은 codex 는 턴마다(세션이 압축되며 인격이 먼저 밀려난다 — M1 인격 이음), gemini 는 **대화마다 한 번** — 이어가는 호출(resume)이면
-  // 인격·확정조항·일지를 빼고 새 말만 보낸다(대표 지적 09-14 — 매번 똑같은 2,900자). 하네스 창의 대화가 곧 세션이라 앞을 기억한다.
-  const persona = KIND === 'gemini' && prior ? null : personaOf(team);
+  // 인격은 턴마다(결정 15 — 상주 프로세스라도 첫 턴만 인격이면 안 된다, 톰 결정 122 배분). 116 ② 나) 의 "gemini 는 대화마다 한 번" 은 이것으로 접는다 —
+  // 크기는 116 ① 책장(대화록 대신 읽을 것 3~5개)으로 줄인다. 상주라 시작 비용은 없고, 인격 3천 자는 답 시간에 거의 안 실린다(실측은 firstMs 로).
+  const persona = personaOf(team);
   const instruction = turn === 'verdict'
     ? VERDICT_TURN(text || question)
     : turn === 'journal'
@@ -479,20 +502,23 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
     return 0;
   }
 
+  // 걸린 시간(결정 122) — 부른 때부터 첫 낱말·끝까지. 상주면 res 에 실려 오고, 아니면 이 프로세스가 잰다. 대표께 가는 숫자 둘.
+  const ms = { totalMs: res.totalMs ?? (Date.now() - T0), ...(res.firstMs != null ? { firstMs: res.firstMs } : {}) };
   let rec;
   if (verdict && !apr) {
     try {
-      rec = recordVerdict(team, { actor: ACTOR, verdict, text: body, target: 'guide', round, sha });
+      rec = recordVerdict(team, { actor: ACTOR, verdict, text: body, target: 'guide', round, sha, engine: ENGINE });
     } catch (e) {
       // 방이 막혀 있다(FAIL 뒤 대표 판단 대기). 판정으로 세지 않고 말로만 남긴다.
-      rec = emit(team, { round, actor: ACTOR, type: 'message', text: `[${verdict} — 판정으로 세지 않음: ${e.message}] ${body}`, meta: { engine: ENGINE } });
+      rec = emit(team, { round, actor: ACTOR, type: 'message', text: `[${verdict} — 판정으로 세지 않음: ${e.message}] ${body}`, meta: { engine: ENGINE, ...ms } });
     }
   } else {
     // 판정 차례였는데 첫 줄에 판정이 없다 — 말로 남기되 표시한다. 사회자가 한 번 더 묻고, 두 번이면 멈춘다 (레오 감사).
     // --ask 도 판정 경로다(첫 줄 규약). 의견을 물은 것이면 표시가 붙어도 사회자는 기다리는 자리가 아니라 무시한다.
     const missed = !talk && !apr && !verdict;
-    rec = emit(team, { round, actor: ACTOR, type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...(apr ? { approval: apr } : {}), ...(missed ? { noVerdict: true } : {}) } });
+    rec = emit(team, { round, actor: ACTOR, type: 'message', text: (apr && verdict ? `[${verdict}] ` : '') + body, meta: { engine: ENGINE, ...ms, ...(apr ? { approval: apr } : {}), ...(missed ? { noVerdict: true } : {}) } });
   }
+  console.error(`[${ENGINE}] ${team}/${ACTOR} · ${ms.firstMs != null ? `첫 낱말 ${(ms.firstMs / 1000).toFixed(1)}초 · ` : ''}끝까지 ${(ms.totalMs / 1000).toFixed(1)}초`);
 
   // 방금 남긴 것까지가 "이미 본 것"이다. 다음 턴에는 이 뒤로 새로 온 말만 받는다.
   if (res.sessionId) remember(team, res.sessionId, seenId, KIND);
@@ -518,8 +544,14 @@ const withTurn = (persona, body) => `${persona ? persona + '\n\n---\n\n' : ''}##
 /** agy 한 번 — --check 의 연기 시험. 기록 안 남김. */
 async function viaAgyOnce(prompt) {
   if (!await hasAgy()) return null;
+  const t0 = Date.now();
   const { answer, sessionId } = await runAgy(withTurn(DEFAULT_PERSONA, prompt), { model: geminiModelOf(null) });
-  return answer ? `${answer}\n(conversation ${sessionId ?? '없음'})` : null;
+  return answer ? `${answer}\n(conversation ${sessionId ?? '없음'} · agy -p 한 바퀴 ${((Date.now() - t0) / 1000).toFixed(1)}초)` : null;
+}
+/** 상주 gemini 한 번(결정 122) — 서버가 떠 있어야 한다. --check --engine pool. 기록 안 남김, 방은 dev/outside 칸을 빌린다. */
+async function viaPoolOnce(prompt) {
+  const r = await runGeminiPool(withTurn(DEFAULT_PERSONA, prompt), { team: team ?? 'dev', model: geminiModelOf(null), resume: 'check' });
+  return r?.answer ? `${r.answer}\n(conversation ${r.sessionId ?? '없음'} · 첫 낱말 ${r.firstMs != null ? (r.firstMs / 1000).toFixed(1) + '초' : '?'} · 끝까지 ${(r.totalMs / 1000).toFixed(1)}초)` : null;
 }
 
 async function viaOpenAI(prompt) {
@@ -648,12 +680,12 @@ if (mode === 'check') {
   const errors = [];
   // --check --engine agy 면 agy 만, 아니면 codex → agy → openai 순으로 되는 것 하나
   const only = argv.includes('--engine') ? argv[argv.indexOf('--engine') + 1] : null;
-  const tries = [['codex', viaCodexOnce], ['agy', viaAgyOnce], ['openai', viaOpenAI]].filter(([n]) => !only || n === only);
+  const tries = [['codex', viaCodexOnce], ['pool', viaPoolOnce], ['agy', viaAgyOnce], ['openai', viaOpenAI]].filter(([n]) => !only || n === only);
   for (const [name, fn] of tries) {
     try {
       const r = await fn(question);
       if (r) {
-        console.log(`[${name === 'codex' ? `codex · ${codexModelOf(null)}` : name === 'agy' ? `agy · ${geminiModelOf(null)}` : `openai · ${API_MODEL}`}] ${r}`);
+        console.log(`[${name === 'codex' ? `codex · ${codexModelOf(null)}` : name === 'agy' ? `agy · ${geminiModelOf(null)}` : name === 'pool' ? `상주 gemini · ${geminiModelOf(null)}` : `openai · ${API_MODEL}`}] ${r}`);
         process.exit(0);
       }
     } catch (e) { errors.push(`${name}: ${String(e.message).split('\n')[0].slice(0, 200)}`); }

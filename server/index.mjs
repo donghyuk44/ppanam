@@ -26,6 +26,7 @@ import { runNotifier, notified } from './notifier.mjs';
 import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues, expireFlows } from './conductor.mjs';
 import * as world from './world.mjs';
 import { startInfra } from './infra.mjs';
+import * as gemini from './gemini.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
 // 밑바닥 넷(서버·codex·세션·디스크) — 2분마다 재서 값만 넘긴다(결정 92 "막힌 것" 의 infra, M6 준비). 첫 재기 전엔 null — 안 잰 것은 막힘이 아니다.
@@ -199,9 +200,9 @@ function listOut(team) {
 }
 
 /** POST 본문을 JSON 으로 읽는다. 64KB 를 넘으면 끊는다. */
-function readBody(req, res, done) {
+function readBody(req, res, done, max = 64_000) {
   let body = '';
-  req.on('data', (c) => { body += c; if (body.length > 64_000) req.destroy(); });
+  req.on('data', (c) => { body += c; if (body.length > max) req.destroy(); });
   req.on('end', () => {
     try { done(JSON.parse(body || '{}')); }
     catch { json(res, 400, { error: '본문을 읽지 못했습니다.' }); }
@@ -428,6 +429,16 @@ const server = http.createServer((req, res) => {
       recent, status: st, world: world.snapshot().actors?.[`${team}:${actor}`] ?? null,
     });
   }
+  // 상주 gemini(결정 122) — outside.mjs 가 부를 때마다 agy 를 새로 띄우지 않고 서버가 들고 있는 프로세스에 한 줄 쓴다. 이 PC 안에서만 열린 서버라 화면 = 대표.
+  if (url.pathname === '/api/gemini/ask' && req.method === 'POST') {
+    readBody(req, res, async ({ team: t, actor, prompt, model, effort, resume }) => {
+      if (!teamExists(t) || !actor || !prompt || !model) return json(res, 400, { error: 'team · actor · prompt · model 이 있어야 합니다.' });
+      try { return json(res, 200, await gemini.ask({ team: t, actor, prompt, model, effort: effort ?? null, resume: resume ?? null })); }
+      catch (e) { return json(res, 502, { error: String(e?.message ?? e).slice(0, 300) }); }
+    }, 2_000_000);   // 인격 + 방 대화가 실린다 — 한글은 글자당 3바이트
+    return;
+  }
+  if (url.pathname === '/api/gemini/status') return json(res, 200, { pool: gemini.status() });
   if (url.pathname === '/api/world' && req.method === 'GET') return json(res, 200, world.snapshot());
   if (url.pathname === '/api/world' && req.method === 'POST') {
     readBody(req, res, ({ debugHour }) => {
@@ -588,7 +599,7 @@ try { restoreQueues(); } catch (e) { console.error('conductor restore:', e.messa
 
 // 서버가 내려가면 팀 세션도 같이 닫는다. 세션 id 는 남기므로 다시 띄우면 이어진다.
 for (const sig of ['SIGINT', 'SIGTERM']) {
-  process.on(sig, () => { session.stopAll(); process.exit(0); });
+  process.on(sig, () => { session.stopAll(); gemini.stopAll(); process.exit(0); });
 }
 
 server.listen(PORT, HOST, () => {
