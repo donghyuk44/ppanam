@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 const q = new URLSearchParams(location.search);
 const ONLY = q.get('only');
@@ -91,7 +92,9 @@ const jobs = chars.map(async ([key, spec], i) => {
   const height = spec.sourceHeight * k; maxH = Math.max(maxH, height);
   try {
     const src = await loadGlb(KIT_URL(parts.kits.characters, spec.model));
-    const m = src.clone(); m.scale.setScalar(k);
+    // Kenney 인형은 뼈대(SkinnedMesh)가 있다 — Object3D.clone() 은 뼈를 원본 것과 공유해 몸이 원본 자리(원점·배율 1)에 그려지고 부착물만 제자리로 흩어졌다
+    // (하네스 실측 R25: 열여섯이 한 자리에 겹침). SkeletonUtils.clone 이 뼈까지 복사한다.
+    const m = SkeletonUtils.clone(src); m.scale.setScalar(k);
     const meshes = [];
     m.traverse((o) => { if (o.isMesh) { o.castShadow = true; if (o.material) { o.material = o.material.clone(); o.material.roughness = 1; o.material.metalness = 0; } meshes.push(o); } });
     // 색표 — 디자인 characters.json 의 colormap 파일. 없으면 parts.json 것, 그것도 없으면 Kenney 원색.
@@ -101,13 +104,17 @@ const jobs = chars.map(async ([key, spec], i) => {
       catch { window.__lineup.failed += 1; }
     }
     g.add(m);
+    g.userData.body = m;
     // 부착물 — 머리 위. Kenney 것은 glb, 우리 것은 위 customProp.
     const prop = spec.prop ?? design?.characters?.[key]?.prop ?? null;
     if (prop?.kind === 'kenney' && prop.file) {
       try { const p = (await loadGlb(KIT_URL(parts.kits.characters, prop.file))).clone(); p.scale.setScalar(k); p.traverse((o) => { if (o.isMesh) o.castShadow = true; }); g.add(p); }
       catch { window.__lineup.failed += 1; }
     } else if (prop?.kind === 'custom') {
-      const p = customProp(prop.id); p.position.y = height * (prop.id === 'gat' ? 0.98 : 0.86); if (prop.id === 'ribbon') p.position.z = -0.12; g.add(p);
+      const p = customProp(prop.id);
+      if (prop.id === 'gat') p.position.y = height * 0.97;                                   // 정수리에 얹는다
+      else if (prop.id === 'ribbon') { p.position.set(0.17, height * 0.80, 0.02); p.rotation.y = -0.6; }   // 머리 옆(오른쪽 땋은 머리 위) — 정면에서 보이게
+      g.add(p);
     }
     window.__lineup.loaded += 1;
   } catch (e) {
@@ -133,4 +140,22 @@ camera.updateProjectionMatrix();
 camera.position.set(Math.sin(ANGLE) * 20, Math.sin(tilt) * 20, Math.cos(ANGLE) * Math.cos(tilt) * 20);
 camera.lookAt(0, ONLY ? maxH * 0.45 : maxH * 0.45 + depthRise / 2, -(ROWS - 1) * ROW_GAP / 2);
 renderer.render(scene, camera);
+
+// 세운 인형 수를 화면에서 센다(하네스 제안 R25 — exit 0 인데 그림이 틀린 조용한 실패를 잡는다). 몸의 뼈(있으면 첫 뼈, 없으면 몸 자체)의 세계 좌표를 화면에 투영해
+// 서로 24px 넘게 떨어진 자리가 몇 개인지 — 뼈가 원본과 공유되면 전부 한 점에 모여 1 이 된다. 찍는 쪽(tools/lineup-shot.mjs)이 loaded 와 다르면 exit 3.
+scene.updateMatrixWorld(true);
+const spots = [];
+for (const g of scene.children) {
+  const body = g.userData?.body; if (!body) continue;
+  let bone = null; body.traverse((o) => { if (!bone && o.isSkinnedMesh && o.skeleton?.bones?.length) bone = o.skeleton.bones[0]; });
+  const p = new THREE.Vector3(); (bone ?? body).getWorldPosition(p);
+  const gp = new THREE.Vector3(); g.getWorldPosition(gp);
+  // 뼈가 제 자리(그룹) 근처에 있어야 몸이 거기 선 것이다 — 원본 뼈를 공유하면 그룹과 멀리 떨어진 한 점에 모인다
+  if (p.distanceTo(gp) > 2) { window.__lineup.misplaced = (window.__lineup.misplaced ?? 0) + 1; continue; }
+  p.project(camera);
+  const sx = (p.x + 1) / 2 * W, sy = (1 - p.y) / 2 * H;
+  if (sx < -8 || sx > W + 8 || sy < -8 || sy > H + 8) { window.__lineup.offscreen = (window.__lineup.offscreen ?? 0) + 1; continue; }
+  if (!spots.some((s) => Math.hypot(s[0] - sx, s[1] - sy) < 24)) spots.push([sx, sy]);
+}
+window.__lineup.placed = spots.length;
 window.__lineup.ready = true;

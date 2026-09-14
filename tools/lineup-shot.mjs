@@ -40,9 +40,11 @@ await send('Page.navigate', { url: `${SERVER}/world/lineup.html${QUERY ? '?' + Q
 let st = null;
 for (let i = 0; i < 120; i++) { st = await ev('window.__lineup ? JSON.stringify(window.__lineup) : null'); if (st && JSON.parse(st).ready) break; await sleep(500); }
 const info = st ? JSON.parse(st) : null;
-console.log('lineup', info ? `loaded ${info.loaded} · failed ${info.failed} · colormaps ${info.colormaps} · ${info.names.join('·')}` : '(상태 없음)');
+console.log('lineup', info ? `loaded ${info.loaded} · placed ${info.placed ?? '?'} · misplaced ${info.misplaced ?? 0} · offscreen ${info.offscreen ?? 0} · failed ${info.failed} · colormaps ${info.colormaps} · ${info.names.join('·')}` : '(상태 없음)');
 if (!info?.ready) cleanup(3, 'NO_RENDER — lineup.js 가 ready 를 못 냈다 (three CDN? /out/design 색표?)');
 if (info.loaded === 0) cleanup(3, 'NO_DOLLS — 인형을 하나도 못 불렀다');
+// 화면에 선 수가 부른 수와 다르면 그림이 틀린 것이다 — exit 0 에 파일만 있는 조용한 실패를 막는다(하네스 R25: 열여섯이 한 자리에 겹침)
+if ((info.placed ?? 0) !== info.loaded) cleanup(3, `NOT_PLACED — 불러온 ${info.loaded} 중 화면에 제자리에 선 것 ${info.placed ?? 0} (겹침 ${info.misplaced ?? 0} · 화면 밖 ${info.offscreen ?? 0})`);
 await sleep(500);
 const sh = await send('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: Number(W), height: Number(H), scale: 1 }, ...(TRANSPARENT ? { fromSurface: true } : {}) });
 clearTimeout(to);

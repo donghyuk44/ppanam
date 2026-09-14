@@ -11,6 +11,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MapControls } from 'three/addons/controls/MapControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 const TP = 32;                                   // world.js 의 칸 픽셀 — px/TP 가 칸 좌표
 const DEG = Math.PI / 180;
@@ -394,7 +395,9 @@ function addActor(a, { key, name, color: teamColor, boss = false }) {
   ring.rotation.x = -Math.PI / 2; ring.position.y = 0.03; g.add(ring);   // 발밑 팀 색 고리 — 옷을 못 물들이는 동안의 팀 표시
   if (spec) {
     loadGlb(D.parts.kits.characters + spec.model).then((src) => {
-      const m = src.clone(); m.scale.setScalar(k); m.updateMatrixWorld(true);
+      // Kenney 인형 glb 는 뼈대(skins)가 있다 — Object3D.clone() 은 뼈를 원본과 공유해 **몸이 자리에 안 서고 원점에 겹쳐 그려졌다**(이름표·팀 고리만 제자리).
+      // R25 인형 한 줄 렌더에서 드러났고, r27 안쪽 그림에도 댄 고리 위에 몸이 없다. SkeletonUtils.clone 이 뼈까지 복사한다.
+      const m = SkeletonUtils.clone(src); m.scale.setScalar(k); m.updateMatrixWorld(true);
       const meshes = [];
       m.traverse((o) => { if (o.isMesh) { o.castShadow = true; if (o.material) { o.material = o.material.clone(); o.material.roughness = 1; o.material.metalness = 0; } meshes.push(o); } });
       const swap = (tex) => { for (const o of meshes) if (o.material.map) { o.material.map = tex; o.material.needsUpdate = true; } };
