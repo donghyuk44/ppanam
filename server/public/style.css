@@ -841,7 +841,7 @@ button.dash__row:hover b { text-decoration: underline; }
 
 @media (max-width: 1179px) {
   .app { grid-template-columns: 210px minmax(0, 1fr); }
-  .app[data-view="tower"], .app[data-view="analysis"] { grid-template-columns: 210px minmax(0, 1fr); }
+  .app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"] { grid-template-columns: 210px minmax(0, 1fr); }
   .iconbtn { display: grid; }
   .side {
     position: fixed; top: 0; right: 0; bottom: 0; width: min(320px, 86vw);
@@ -855,11 +855,11 @@ button.dash__row:hover b { text-decoration: underline; }
 /* 한 단: 폰. 팀은 위쪽 가로 띠로 접힌다. */
 @media (max-width: 819px) {
   .app,
-  .app[data-view="tower"], .app[data-view="analysis"] {
+  .app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"] {
     grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr);
   }
   .rail { grid-row: 2; }
-  .room, .tower, .analysis, .world { grid-row: 3; }
+  .room, .tower, .dashboard, .analysis, .world { grid-row: 3; }   /* 대시보드(결정 128)도 — 컴퓨터 86줄과 같은 빠짐이 폰에서 또 나지 않게 */
   .approvals { margin: 8px 10px 0; padding: 10px 12px; }
   .rail { flex-direction: row; border-right: none; border-bottom: 1px solid var(--line); min-width: 0; }
   .rail__head { display: none; }
