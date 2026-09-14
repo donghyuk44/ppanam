@@ -23,9 +23,10 @@
     "fence-low":    { "kit": "suburban",   "file": "fence-low.glb",             "size": [1.275, 0.17, 0.8375], "scale": 1.39 }
   },
   "mods": {
-    "roof-tile": { "kind": "cap",   "h": 0.6, "overhang": 0.35, "color": "roof" },
-    "door-team": { "kind": "front", "w": 0.8, "h": 1.3, "y": 0,   "color": "team" },
-    "sign":      { "kind": "front", "w": 1.3, "h": 0.42, "y": 2.0, "color": "sign", "text": "@sign" }
+    "_note": "값은 buildings.json 2판 부품에서(헨리, 마을 파일 계약 2판 req_adf5af93) — 기와 층 0.8·처마 0.5·반지름 0.08 · 문 0.8×1.4 기단(0.15) 위 · 간판 1.2×0.4 y 2.0(글은 마케팅 몫 — 그 전엔 색판). 전엔 0.6/0.35/1.3 이라 Three 마을과 유니티 조각이 달랐다",
+    "roof-tile": { "kind": "cap",   "h": 0.8, "overhang": 0.5, "radius": 0.08, "color": "roof" },
+    "door-team": { "kind": "front", "w": 0.8, "h": 1.4, "y": 0.15, "color": "team" },
+    "sign":      { "kind": "front", "w": 1.2, "h": 0.4, "y": 2.0, "color": "sign", "text": "@sign" }
   },
   "colors": {
     "base": "#d9d1bf", "plaza": "#d9d1bf", "road": "#b7ab92", "grass": "#a9c86a", "yard": "#e9dccb",
