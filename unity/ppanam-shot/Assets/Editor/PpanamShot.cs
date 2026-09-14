@@ -1,16 +1,18 @@
-// 유니티 재기 (결정 123 — 대표 "unity cli 설치했는데 이걸 왜 안써? 진행해").
-// 마을을 옮기는 게 아니다 — 마을 한 조각(집 몇 채 + 인형 둘셋 + 회사·남산 도형)을 city.json/parts.json 그대로 세워
-// out/shots/r26-village-day-412.png 와 같은 각도·같은 크기(원근 fov 25 · 남동 45° · 35° 내려봄 · 412×915 · '작게' = 짧은 변 60칸)로 한 장 찍는다.
-// 결과는 teams/dev/out/shots/r25-unity-village-412.png. 대표가 Three.js 판과 나란히 보고 방향을 정한다(C).
+// 유니티 재기 (결정 123·127 — 대표 "unity cli 설치했는데 이걸 왜 안써? 진행해"). 마을을 옮기는 게 아니다 — 헨리가 준 조각 목록(req_ac6c27b8, 09-14)을
+// teams/design/out/kit/buildings.json 의 부품 그대로 세워 out/shots/r26-village-day-412.png 와 같은 각·크기(원근 fov 25 · 남동 45° · 35° 내려봄 · 412×915 · '작게' 60칸)로 한 장.
+// 조각: ① 근정전 = buildings.json 'castle' 부품(rounded·column) ② 남산타워 = 'namsan'(dome·cylinder·cone, 나무 model 셋) ③ 집 셋 = 'home.design'(model 셋 + 기와 층·기단·문)
+//       ④ 인형 둘 = 댄(male-c + boss.png + 갓) · 세라(female-b + hq-secretary.png + 리본) ⑤ 재질·빛·카메라·받침은 first-scene.md 표.
+// 결과 teams/dev/out/shots/r25-unity-village-412.png — 대표가 Three.js 판과 나란히 보고 방향을 정한다(C).
 //
-// 돌리는 법(헤드리스, 프로젝트 첫 열기에 패키지 받느라 몇 분):
-//   /Applications/Unity/Hub/Editor/6000.6.0f1/Unity.app/Contents/MacOS/Unity -batchmode -nographics -projectPath unity/ppanam-shot \
+// 돌리는 법(헤드리스, 첫 열기에 패키지 받느라 몇 분 — glTFast 가 Assets/Kenney/*.glb 를 프리팹으로 import 한다):
+//   node tools/unity-prep.mjs
+//   /Applications/Unity/Hub/Editor/6000.6.0f1/Unity.app/Contents/MacOS/Unity -batchmode -projectPath unity/ppanam-shot \
 //     -executeMethod PpanamShot.Render -logFile unity/ppanam-shot/shot.log -quit
-//   (-nographics 로 그림자·조명이 안 나오면 -nographics 를 빼고 돌린다)
-// 부품 glb 는 Assets/Kenney/ 에 있어야 한다 — tools/unity-prep.mjs 가 server/public/world/assets 에서 필요한 것만 복사한다(glTFast 가 import 해 프리팹이 된다).
-// 좌표: Three.js 는 x 동·z 남, 유니티는 z 가 앞이라 z 를 뒤집는다(glTFast 도 import 때 z 를 뒤집어 같은 모양이 된다).
+//   (-nographics 는 붙이지 않는다 — 그림자·조명을 그려야 한다)
+// 좌표: buildings.json 은 x 동·z 남·y 위, 유니티는 z 가 앞이라 z 를 뒤집는다(glTFast 도 import 때 z 를 뒤집어 같은 모양).
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -19,8 +21,11 @@ using Newtonsoft.Json.Linq;
 public static class PpanamShot
 {
     const string Root = "../../";                       // unity/ppanam-shot 기준 저장소 뿌리
-    const float K = 1.39f;                              // parts.json scale
+    const float K = 1.39f;
     const int W = 412, H = 915;
+    static readonly string[] PIECES = { "castle", "namsan", "home.design" };   // 헨리 조각 목록 ①②③
+    static JObject colors;
+    static int placed = 0, missing = 0;
 
     public static void Render()
     {
@@ -33,86 +38,46 @@ public static class PpanamShot
         AssetDatabase.Refresh();
         var city = JObject.Parse(File.ReadAllText(Path.Combine(Root, "server/public/world/city.json")));
         var parts = JObject.Parse(File.ReadAllText(Path.Combine(Root, "server/public/world/parts.json")));
-        var scene = UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene);
-        var village = city["scenes"]["village"];
-        float w = 56, h = 30;   // map.json scenes.village — Three 판과 같은 값
+        var buildings = JObject.Parse(File.ReadAllText(Path.Combine(Root, "teams/design/out/kit/buildings.json")));
+        colors = (JObject)buildings["colors"];
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene);
+        float w = 56, h = 30;
         var map = JObject.Parse(File.ReadAllText(Path.Combine(Root, "server/public/world/map.json")));
         if (map["scenes"]?["village"] != null) { w = (float)map["scenes"]["village"]["w"]; h = (float)map["scenes"]["village"]["h"]; }
 
-        // 받침 + 바탕 (헨리 first-scene.md — 60×34×1 #d9d1bf, 바탕 #e9dccb, 하늘 없음)
-        var colors = parts["colors"];
-        var basePad = 2f;
+        // ⑤ 받침 60×34×1 #d9d1bf, 바탕 #e9dccb (first-scene.md)
         var baseGo = GameObject.CreatePrimitive(PrimitiveType.Cube); baseGo.name = "base";
-        baseGo.transform.position = ToUnity(w / 2, -0.5f, h / 2); baseGo.transform.localScale = new Vector3(w + basePad * 2, 1, h + basePad * 2);
-        baseGo.GetComponent<Renderer>().sharedMaterial = Mat(Hex((string)colors["base"]));
-
-        // 바닥 조각
-        foreach (var g in village["ground"] ?? new JArray())
+        baseGo.transform.position = ToUnity(w / 2, -0.5f, h / 2); baseGo.transform.localScale = new Vector3(w + 4, 1, h + 4);
+        baseGo.GetComponent<Renderer>().sharedMaterial = Mat(Col("base"));
+        foreach (var g in city["scenes"]["village"]["ground"] ?? new JArray())
         {
             var x0 = (float)g["x"][0]; var x1 = (float)g["x"][1]; var z0 = (float)g["z"][0]; var z1 = (float)g["z"][1];
             var q = GameObject.CreatePrimitive(PrimitiveType.Cube); q.name = "ground:" + g["kind"];
             q.transform.position = ToUnity((x0 + x1) / 2, 0.015f, (z0 + z1) / 2); q.transform.localScale = new Vector3(x1 - x0, 0.03f, z1 - z0);
-            q.GetComponent<Renderer>().sharedMaterial = Mat(Hex((string)colors[(string)g["kind"]] ?? "#cccccc"));
+            var kind = (string)g["kind"]; q.GetComponent<Renderer>().sharedMaterial = Mat(Hex((string)parts["colors"]?[kind] ?? "#cccccc"));
         }
 
-        // 집 — glb 프리팹(glTFast import). parts.json part → kit 폴더 + file. Assets/Kenney/<file> 로 복사돼 있어야 한다.
-        int placed = 0, missing = 0;
-        foreach (var b in village["buildings"] ?? new JArray())
+        // ①②③ — buildings.json 부품을 그대로
+        foreach (var b in buildings["buildings"] ?? new JArray())
         {
-            var part = parts["parts"][(string)b["part"]]; if (part == null) continue;
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Kenney/" + (string)part["file"]);
-            var at = b["at"]; var pos = ToUnity((float)at[0], 0, (float)at[1]);
-            if (prefab == null) { missing++; var ph = GameObject.CreatePrimitive(PrimitiveType.Cube); ph.name = "missing:" + b["part"]; var s = part["size"]; ph.transform.localScale = new Vector3((float)s[0] * K, (float)s[1] * K, (float)s[2] * K); ph.transform.position = pos + Vector3.up * (float)s[1] * K / 2; ph.GetComponent<Renderer>().sharedMaterial = Mat(Hex("#e6dccb")); continue; }
-            var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab); go.transform.position = pos; go.transform.localScale = Vector3.one * K;
-            go.transform.rotation = Quaternion.Euler(0, -(float)(b["rotY"] ?? 0), 0); placed++;
+            var id = (string)b["id"]; if (Array.IndexOf(PIECES, id) < 0) continue;
+            foreach (var p in b["parts"] ?? new JArray()) Part(p, id);
         }
 
-        // 인형 — parts.characters 에서 셋(댄·테라·헨리)만, 집 앞에. glb 는 Assets/Kenney/<model>
-        string[] who = { "boss", "dev-guide", "design-guide" }; int i = 0;
-        foreach (var key in who)
-        {
-            var ch = parts["characters"][key]; if (ch == null) continue;
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Kenney/" + (string)ch["model"]);
-            var pos = ToUnity(24 + i * 2.2f, 0, 17);
-            if (prefab == null) { missing++; var ph = GameObject.CreatePrimitive(PrimitiveType.Capsule); ph.transform.position = pos + Vector3.up * 0.5f; ph.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f); }
-            else { var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab); go.transform.position = pos; go.transform.localScale = Vector3.one * K; placed++; }
-            i++;
-        }
+        // ④ 인형 둘 — 댄·세라, 색표 입혀서 회사 앞 통로에
+        Doll(parts, "boss", "boss.png", ToUnity(26.2f, 0, 9.5f), "gat");
+        Doll(parts, "hq-secretary", "hq-secretary.png", ToUnity(28.8f, 0, 9.5f), "ribbon");
 
-        // 랜드마크 — Three 판은 코드로 짓는다. 여기선 같은 자리·크기의 도형으로만(회사 = 기와 상자 둘, 남산 = 언덕 구 + 탑 기둥 + 전망대 원반).
-        foreach (var l in village["landmarks"] ?? new JArray())
-        {
-            var kind = (string)l["kind"];
-            if (kind == "hanok")
-            {
-                var x0 = (float)l["x"][0]; var x1 = (float)l["x"][1]; var z0 = (float)l["z"][0]; var z1 = (float)l["z"][1]; var wallH = (float)l["wallH"];
-                var body = GameObject.CreatePrimitive(PrimitiveType.Cube); body.name = "hanok:" + l["id"];
-                body.transform.position = ToUnity((x0 + x1) / 2, wallH / 2, (z0 + z1) / 2); body.transform.localScale = new Vector3(x1 - x0, wallH, z1 - z0);
-                body.GetComponent<Renderer>().sharedMaterial = Mat(Hex((string)colors["wall"]));
-                var roof = GameObject.CreatePrimitive(PrimitiveType.Cube); roof.name = "roof:" + l["id"];
-                roof.transform.position = ToUnity((x0 + x1) / 2, wallH + 0.5f, (z0 + z1) / 2); roof.transform.localScale = new Vector3(x1 - x0 + 1.2f, 1, z1 - z0 + 1.2f);
-                roof.GetComponent<Renderer>().sharedMaterial = Mat(Hex((string)colors["roof"]));
-            }
-            else if (kind == "namsan-tower")
-            {
-                var at = l["at"]; var hillR = (float)l["hillR"]; var hillH = (float)l["hillH"]; var towerH = (float)l["towerH"]; var deckR = (float)l["deckR"];
-                var hill = GameObject.CreatePrimitive(PrimitiveType.Sphere); hill.transform.position = ToUnity((float)at[0], 0, (float)at[1]); hill.transform.localScale = new Vector3(hillR * 2, hillH * 2, hillR * 2);
-                hill.GetComponent<Renderer>().sharedMaterial = Mat(Hex((string)colors["hill"]));
-                var tower = GameObject.CreatePrimitive(PrimitiveType.Cylinder); tower.transform.position = ToUnity((float)at[0], hillH + towerH / 2, (float)at[1]); tower.transform.localScale = new Vector3(0.5f, towerH / 2, 0.5f);
-                tower.GetComponent<Renderer>().sharedMaterial = Mat(Hex((string)colors["tower"]));
-                var deck = GameObject.CreatePrimitive(PrimitiveType.Cylinder); deck.transform.position = ToUnity((float)at[0], hillH + towerH * 0.75f, (float)at[1]); deck.transform.localScale = new Vector3(deckR * 2, 0.25f, deckR * 2);
-                deck.GetComponent<Renderer>().sharedMaterial = Mat(Hex((string)colors["tower"]));
-            }
-        }
-
-        // 빛 — parts.json light (키 #ffe1bf 왼쪽 위, 환경광 하늘/땅)
+        // ⑤ 빛 — 키 #ffe1bf 왼쪽 위, 환경광 하늘/땅, 부드러운 그림자
         var light = parts["light"];
-        var sun = new GameObject("sun").AddComponent<Light>(); sun.type = LightType.Directional; sun.color = Hex((string)light["sun"]["color"]); sun.intensity = 1.6f; sun.shadows = LightShadows.Soft;
+        var sun = new GameObject("sun").AddComponent<Light>(); sun.type = LightType.Directional; sun.color = Hex((string)light["sun"]["color"]); sun.intensity = 1.5f;
+        sun.shadows = LightShadows.Soft; sun.shadowStrength = 0.55f; sun.shadowBias = 0.02f;
         var from = light["sun"]["from"]; sun.transform.rotation = Quaternion.LookRotation(-ToUnityDir((float)from[0], (float)from[1], (float)from[2]));
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
         RenderSettings.ambientSkyColor = Hex((string)light["sky"]); RenderSettings.ambientEquatorColor = Hex((string)light["ground"]); RenderSettings.ambientGroundColor = Hex((string)light["ground"]);
+        RenderSettings.ambientIntensity = 1.0f;
 
-        // 카메라 — draw3d.js 와 같은 식: fov 25, azimuth 45, elevation 35, 짧은 변에 fit["1"]=60 칸
+        // ⑤ 카메라 — draw3d.js 와 같은 식: fov 25, azimuth 45, elevation 35, 짧은 변에 fit["1"]=60 칸
         var cam = new GameObject("cam").AddComponent<Camera>();
         cam.fieldOfView = (float)(city["camera"]["fov"] ?? 25); cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = Hex((string)light["background"]);
         float units = (float)city["camera"]["fit"]["1"]; float fov = cam.fieldOfView * Mathf.Deg2Rad; float aspect = (float)W / H;
@@ -122,8 +87,7 @@ public static class PpanamShot
         var target = ToUnity(w / 2, 0, h / 2);
         cam.transform.position = target + dir * dist; cam.transform.LookAt(target); cam.nearClipPlane = 0.1f; cam.farClipPlane = 800f; cam.aspect = aspect;
 
-        // 찍기 — RenderTexture → PNG
-        var rt = new RenderTexture(W, H, 24); cam.targetTexture = rt; cam.Render();
+        var rt = new RenderTexture(W, H, 24); rt.antiAliasing = 4; cam.targetTexture = rt; cam.Render();
         RenderTexture.active = rt; var tex = new Texture2D(W, H, TextureFormat.RGB24, false); tex.ReadPixels(new Rect(0, 0, W, H), 0, 0); tex.Apply(); RenderTexture.active = null;
         var outPath = Path.GetFullPath(Path.Combine(Root, "teams/dev/out/shots/r25-unity-village-412.png"));
         Directory.CreateDirectory(Path.GetDirectoryName(outPath));
@@ -132,8 +96,81 @@ public static class PpanamShot
         if (placed == 0) throw new Exception("부품을 하나도 못 세웠다 — Assets/Kenney/ 에 glb 가 없거나 glTFast 가 import 를 못 했다");
     }
 
+    /* ── buildings.json 부품 하나 (village-file-contract 2판 + direction.md 10절 shape) ── */
+    static void Part(JToken p, string owner)
+    {
+        var shape = (string)p["shape"];
+        switch (shape)
+        {
+            case "rounded": { // x·y·z 범위 상자 (모서리 반지름은 유니티 기본 Cube 로 대신 — 첫 비교엔 충분)
+                var x = Range(p["x"]); var y = Range(p["y"]); var z = Range(p["z"]);
+                var go = GameObject.CreatePrimitive(PrimitiveType.Cube); go.name = owner + ":" + (p["note"] ?? shape);
+                go.transform.position = ToUnity((x.a + x.b) / 2, (y.a + y.b) / 2, (z.a + z.b) / 2); go.transform.localScale = new Vector3(x.b - x.a, y.b - y.a, z.b - z.a);
+                go.GetComponent<Renderer>().sharedMaterial = Mat(Col((string)p["color"])); placed++; break; }
+            case "column": case "cylinder": {
+                var at = p["at"]; var y = Range(p["y"]); float r = (float)p["r"];
+                var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder); go.name = owner + ":" + shape;
+                go.transform.position = ToUnity((float)at[0], (y.a + y.b) / 2, (float)at[1]); go.transform.localScale = new Vector3(r * 2, (y.b - y.a) / 2, r * 2);
+                go.GetComponent<Renderer>().sharedMaterial = Mat(Col((string)p["color"])); placed++; break; }
+            case "cone": { // 유니티엔 원뿔 기본형이 없다 — 가는 원기둥으로 대신(안테나)
+                var at = p["at"]; var y = Range(p["y"]); float r = (float)p["r"];
+                var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder); go.name = owner + ":cone";
+                go.transform.position = ToUnity((float)at[0], (y.a + y.b) / 2, (float)at[1]); go.transform.localScale = new Vector3(r, (y.b - y.a) / 2, r);
+                go.GetComponent<Renderer>().sharedMaterial = Mat(Col((string)p["color"])); placed++; break; }
+            case "dome": {
+                var at = p["at"]; float r = (float)p["r"]; float y0 = (float)(p["y"] ?? 0);
+                var go = GameObject.CreatePrimitive(PrimitiveType.Sphere); go.name = owner + ":dome";
+                go.transform.position = ToUnity((float)at[0], y0, (float)at[1]); go.transform.localScale = Vector3.one * r * 2;
+                go.GetComponent<Renderer>().sharedMaterial = Mat(Col((string)p["color"])); placed++; break; }
+            case "floor": {
+                var x = Range(p["x"]); var z = Range(p["z"]); float y0 = (float)(p["y"] ?? 0.01);
+                var go = GameObject.CreatePrimitive(PrimitiveType.Cube); go.name = owner + ":floor";
+                go.transform.position = ToUnity((x.a + x.b) / 2, y0, (z.a + z.b) / 2); go.transform.localScale = new Vector3(x.b - x.a, 0.02f, z.b - z.a);
+                go.GetComponent<Renderer>().sharedMaterial = Mat(Col((string)p["color"])); placed++; break; }
+            case "model": { // Kenney glb — Assets/Kenney/<파일이름> (tools/unity-prep.mjs 가 복사). 색표는 Kenney 원본(우리 건물 색표는 아직, 헨리)
+                var file = Path.GetFileName((string)p["file"]); var at = (JArray)p["at"];
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Kenney/" + file);
+                float ay = at.Count > 2 ? (float)at[1] : 0f, az = at.Count > 2 ? (float)at[2] : (float)at[1];   // at 은 [x, y, z] 셋(계약 2판) — 옛 둘짜리도 읽는다
+                var pos = ToUnity((float)at[0], ay, az);
+                if (prefab == null) { missing++; var ph = GameObject.CreatePrimitive(PrimitiveType.Cube); ph.name = "missing:" + file; ph.transform.position = pos + Vector3.up * 1.5f; ph.transform.localScale = new Vector3(1.5f, 3, 1.5f); ph.GetComponent<Renderer>().sharedMaterial = Mat(Hex("#e6dccb")); break; }
+                var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab); go.name = owner + ":" + file;
+                go.transform.position = pos; go.transform.localScale = Vector3.one * (float)(p["scale"] ?? K); go.transform.rotation = Quaternion.Euler(0, -(float)(p["rotY"] ?? 0), 0);
+                Matte(go); placed++; break; }
+            default: break;   // plane(간판) 은 글이 마케팅 몫이라 이번엔 안 그린다
+        }
+    }
+
+    /* ── 인형 — glb + 디자인 색표 + 부착물 (갓·리본은 characters.json note 대로) ── */
+    static void Doll(JObject parts, string key, string colormapFile, Vector3 pos, string prop)
+    {
+        var ch = parts["characters"][key]; if (ch == null) { missing++; return; }
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Kenney/" + (string)ch["model"]);
+        if (prefab == null) { missing++; var ph = GameObject.CreatePrimitive(PrimitiveType.Capsule); ph.name = "missing:" + key; ph.transform.position = pos + Vector3.up * 0.5f; ph.transform.localScale = Vector3.one * 0.5f; return; }
+        var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab); go.name = "doll:" + key;
+        go.transform.position = pos; go.transform.localScale = Vector3.one * K; go.transform.rotation = Quaternion.Euler(0, 180, 0);   // 남쪽(카메라 쪽)을 본다
+        Matte(go);
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Kenney/people/" + colormapFile);
+        if (tex != null) foreach (var r in go.GetComponentsInChildren<Renderer>()) foreach (var m in r.sharedMaterials) if (m != null && m.HasProperty("_MainTex")) { var mm = new Material(m); mm.mainTexture = tex; r.sharedMaterial = mm; }
+        placed++;
+        float hgt = (float)ch["sourceHeight"] * K;
+        if (prop == "gat")
+        {   // 통 r0.175 h0.25 + 챙 r0.375 h0.03, 검정, 머리 위 (0,0.78,0.02)
+            var g = new GameObject("gat"); g.transform.SetParent(go.transform, false); g.transform.localPosition = new Vector3(0, 0.78f, -0.02f);
+            var tube = GameObject.CreatePrimitive(PrimitiveType.Cylinder); tube.transform.SetParent(g.transform, false); tube.transform.localPosition = new Vector3(0, 0.125f, 0); tube.transform.localScale = new Vector3(0.35f, 0.125f, 0.35f); tube.GetComponent<Renderer>().sharedMaterial = Mat(Hex("#1b1a1f"));
+            var brim = GameObject.CreatePrimitive(PrimitiveType.Cylinder); brim.transform.SetParent(g.transform, false); brim.transform.localPosition = new Vector3(0, 0.015f, 0); brim.transform.localScale = new Vector3(0.75f, 0.015f, 0.75f); brim.GetComponent<Renderer>().sharedMaterial = Mat(Hex("#1b1a1f"));
+        }
+        else if (prop == "ribbon")
+        {   // 작은 상자 둘 V 로, #c94a3a, (0.12,0.62,0.05)
+            var g = new GameObject("ribbon"); g.transform.SetParent(go.transform, false); g.transform.localPosition = new Vector3(0.12f, 0.62f, -0.05f);
+            for (int i = 0; i < 2; i++) { var b = GameObject.CreatePrimitive(PrimitiveType.Cube); b.transform.SetParent(g.transform, false); b.transform.localPosition = new Vector3(i == 0 ? -0.055f : 0.055f, 0, 0); b.transform.localRotation = Quaternion.Euler(0, 0, i == 0 ? 25 : -25); b.transform.localScale = new Vector3(0.12f, 0.06f, 0.04f); b.GetComponent<Renderer>().sharedMaterial = Mat(Hex("#c94a3a")); }
+        }
+    }
+
+    static void Matte(GameObject go) { foreach (var r in go.GetComponentsInChildren<Renderer>()) foreach (var m in r.sharedMaterials) if (m != null) { if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", 0.1f); if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0f); } }
+    static (float a, float b) Range(JToken t) => ((float)t[0], (float)t[1]);
     static Vector3 ToUnity(float x, float y, float z) => new Vector3(x, y, -z);
     static Vector3 ToUnityDir(float x, float y, float z) => new Vector3(x, y, -z).normalized;
+    static Color Col(string name) => Hex((string)colors?[name ?? ""] ?? "#ff00ff");
     static Color Hex(string s) { ColorUtility.TryParseHtmlString(s ?? "#ff00ff", out var c); return c; }
-    static Material Mat(Color c) { var m = new Material(Shader.Find("Standard")); m.color = c; m.SetFloat("_Glossiness", 0.1f); return m; }
+    static Material Mat(Color c) { var m = new Material(Shader.Find("Standard")); m.color = c; m.SetFloat("_Glossiness", 0.1f); m.SetFloat("_Metallic", 0f); return m; }
 }
