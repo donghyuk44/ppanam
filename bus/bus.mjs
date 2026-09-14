@@ -794,6 +794,24 @@ export function codexArgs({ model, effort = null, resume = null, outPath = null 
 }
 
 /**
+ * Antigravity CLI(agy) 인자 — 순수, bus/outside.mjs 가 쓰고 round.mjs check 가 돌려본다. 문서(antigravity.google/docs/cli/headless): `-p` 한 번 돌고 종료,
+ * `--output-format json` 이면 stdout 에 { conversation_id, status, response, … } 한 덩어리, `--conversation <id>` 로 이어붙임, `--model`·`--effort`·`--print-timeout`.
+ * 헤드리스는 승인이 필요한 도구를 기본 거부한다(soft-deny) — 감사역은 파일을 읽되 고치지 않으니 그 기본을 그대로 쓴다. `--dangerously-skip-permissions` 는 안 붙인다.
+ */
+export function agyArgs({ prompt, model, effort = null, resume = null, timeout = '5m' }) {
+  // agy 는 --effort 가 필수(실측 09-14: "--model gemini-3.6-flash requires --effort (available: low, medium, high)"). 자리에 없으면 medium, 우리 xhigh 는 high 로.
+  const eff = effort === 'xhigh' ? 'high' : (effort || 'medium');
+  return ['-p', prompt, '--output-format', 'json', '--model', model, '--print-timeout', timeout, '--effort', eff,
+    ...(resume ? ['--conversation', resume] : [])];
+}
+/** agy 의 json 봉투에서 답과 대화 id. 순수 — 잘못된 JSON 이나 status 가 SUCCESS 가 아니면 throw. */
+export function parseAgy(stdout) {
+  let j; try { j = JSON.parse(String(stdout ?? '').trim()); } catch { throw new Error(`agy 출력이 JSON 이 아님 — ${String(stdout ?? '').replace(/\s+/g, ' ').slice(0, 160)}`); }
+  if (j.status && j.status !== 'SUCCESS') throw new Error(`agy status ${j.status}${j.error ? ' — ' + String(j.error).slice(0, 160) : ''}`);
+  return { answer: String(j.response ?? '').trim(), sessionId: j.conversation_id ?? null };
+}
+
+/**
  * 고쳐도 되는 값인가 — 못 고치면 이유, 되면 null. 순수 — round.mjs check 가 돌려본다.
  * @param actorId 자리 이름 · @param agent cast.json 의 그 자리(없으면 null) · @param patch { model?, llm?, codexModel?, effort? }
  */

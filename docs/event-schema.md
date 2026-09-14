@@ -89,7 +89,11 @@ teams/<방>/
 
 **"다른 회사 엔진"** 은 `gpt`·`gemini` 둘 — 코드는 `'gpt'` 를 직접 비교하지 않고 `bus.isForeign(model)` 하나를 쓴다(흩어진 비교가 하나 빠지면 그 자리가 조용히 죽는다 — 결정 77).
 `engineName(model)` 이 사람 말(`codex` · `gemini` · `claude`)이고 판정문 `meta.engine` 에는 부른 이름이 아니라 **답한 것**을 적는다(결정 78) — "gemini · gemini-3.6-flash".
-**gemini 는 임시다**(대표 결정 09-14 — codex 계정 한도가 9/20 까지). Antigravity 앱은 명령줄이 없어 **파일로 주고받는다**: `outside.mjs runGemini` 가
+**gemini 자리의 길은 셋, 위에서부터 되는 것**(`outside.mjs runGemini`): ① **Antigravity CLI `agy`** — 진짜 길(09-14 실측 통과: `agy -p "<프롬프트>" --output-format json --model <slug> --effort <low|medium|high> --print-timeout 5m [--conversation <id>]`
+→ stdout 에 `{ conversation_id, status, response, … }`, `--conversation` 으로 이어붙임. 인자는 `bus.agyArgs`(순수), 봉투는 `bus.parseAgy`. `--effort` 는 필수라 자리에 없으면 `medium`, 우리 `xhigh` 는 `high`.
+헤드리스 기본이 승인 필요한 도구를 거부해 읽기만 한다 — `--dangerously-skip-permissions` 는 안 붙인다. 설치 `curl -fsSL https://antigravity.google/cli/install.sh | bash`(→ `~/.local/bin/agy`), 첫 실행에 Google 로그인(대표 계정, Google AI Pro).
+연기 시험 `node bus/outside.mjs --check --engine agy "…"`(기록 안 남김) ② HTTP 다리 `PPANAM_GEMINI_URL`(`tools/antigravity-bridge`, 가설 — agy 가 되니 안 쓴다) ③ 파일 왕복(아래 — agy 가 없을 때만).
+**파일 왕복**(하네스가 창을 몰던 임시 길): `outside.mjs runGemini` 가
 `state/gemini/ask/<id>.json { id, team, actor, model, prompt, resume, ts }` 를 쓰고(임시 파일 → rename), 하네스가 창을 몰아 `state/gemini/answer/<id>.json { id, answer, sessionId, ts }`
 (또는 `{ error }`)를 쓰면 2초마다 보던 outside.mjs 가 읽고 **둘 다 지운다**. `PPANAM_OUTSIDE_TIMEOUT`(기본 5분) 안에 답이 없으면 codex 실패와 같은 길(방에 note, exit 1) — 세션은 안 버린다.
 느리다(30초~1분, 하네스 세션이 돌 때만) — 판정 같은 큰 것에만. codex 계정 한도 쿨다운(`state/outside-cooldown.json`)은 gpt 자리에만 걸린다.

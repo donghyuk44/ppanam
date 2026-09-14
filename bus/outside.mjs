@@ -27,7 +27,7 @@ import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readLog, readCast, readState, appendJournal,
   defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, headSha, codexModelOf, codexArgs,
-  markOutsideRunning, clearOutsideRunning, outsideCooldown, setOutsideCooldown, parseUsageLimit, geminiModelOf, isForeign, fallbackOf, engineName,
+  markOutsideRunning, clearOutsideRunning, outsideCooldown, setOutsideCooldown, parseUsageLimit, geminiModelOf, isForeign, fallbackOf, engineName, agyArgs, parseAgy,
 } from './bus.mjs';
 // 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
 import { assemblePrompt, personaOf as seatPersonaOf } from '../server/session.mjs';
@@ -164,7 +164,40 @@ async function runGeminiHttp(input, { resume = null, model = geminiModelOf(null)
     return { answer: String(j.answer ?? '').trim(), sessionId: j.sessionId ?? resume ?? null };
   } finally { clearTimeout(t); }
 }
-function runGemini(input, opts = {}) {
+/* ── Antigravity CLI (agy) — 진짜 길 (09-14, 대표: "외부감사 gpt 대체로 gemini(antigravity cli 연동) — 권한 승인") ──
+ * 문서(antigravity.google/docs/cli/headless): `agy -p "<프롬프트>" --output-format json` 이 한 번 돌고 stdout 에 { conversation_id, status, response, … } 를 낸다.
+ * `--conversation <id>` 로 이어붙인다 — codex 의 exec resume 과 같은 뜻. 설치 `curl -fsSL https://antigravity.google/cli/install.sh | bash` → ~/.local/bin/agy,
+ * 로그인은 첫 실행에 브라우저(대표 Google 계정 — Google AI Pro). 인자는 bus.agyArgs 하나(check 가 돌려본다). 헤드리스 기본이 승인 필요한 도구를 거부해 읽기만 한다.
+ * 프롬프트는 인자로 넘긴다(macOS ARG_MAX 1MB, 판정 첫 턴 16k자).
+ */
+const AGY = process.env.PPANAM_AGY || 'agy';
+async function hasAgy() {
+  try { await run('which', [AGY]); return true; } catch { return false; }
+}
+function runAgy(input, { resume = null, model = geminiModelOf(null), effort = null } = {}) {
+  const args = agyArgs({ prompt: input, model, effort, resume, timeout: `${Math.max(1, Math.round(TIMEOUT / 60_000))}m` });
+  return new Promise((resolve, reject) => {
+    const child = spawn(AGY, args, { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, PATH: `${process.env.HOME}/.local/bin:${process.env.PATH ?? ''}` } });
+    let stdout = '', stderr = '', done = false;
+    const finish = (fn, arg) => { if (!done) { done = true; clearTimeout(timer); fn(arg); } };
+    const timer = setTimeout(() => { child.kill('SIGKILL'); finish(reject, new Error(`agy 응답 없음 (${Math.round(TIMEOUT / 1000)}초 초과)`)); }, TIMEOUT + 15_000);
+    child.stdout.on('data', (d) => { stdout += d; });
+    child.stderr.on('data', (d) => { stderr = (stderr + d).slice(-2000); });
+    child.on('error', (e) => finish(reject, e));
+    child.on('close', (code) => {
+      if (DEBUG) console.error(`[debug] agy exit ${code} · stdout ${stdout.length}자 · stderr:\n${stderr.slice(0, 800)}`);
+      try { const r = parseAgy(stdout); if (code !== 0 && !r.answer) throw new Error(`agy exit ${code}`); return finish(resolve, r); }
+      catch (e) {
+        const why = stderr.replace(/\x1b\[[0-9;]*m/g, '').trim().split('\n').slice(-3).join(' ').slice(0, 300);
+        finish(reject, new Error(`agy exit ${code} — ${e.message}${why ? ' — ' + why : ''}`));
+      }
+    });
+  });
+}
+
+/** gemini 자리의 길 셋 — ① agy CLI(진짜) ② HTTP 다리(PPANAM_GEMINI_URL, 가설) ③ 파일 왕복(하네스 창, 임시). 위에서부터 되는 것. */
+async function runGemini(input, opts = {}) {
+  if (await hasAgy()) return runAgy(input, opts);
   if (GEMINI_URL) return runGeminiHttp(input, opts);
   return runGeminiFiles(input, opts);
 }
@@ -389,7 +422,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   process.once('exit', clear);
   try {
     res = KIND === 'gemini'
-      ? await runGemini(input, { resume: prior, model: geminiModelFor(team), team })
+      ? await runGemini(input, { resume: prior, model: geminiModelFor(team), effort: effortFor(team), team })
       : await runCodex(input, { resume: prior, model: codexModelFor(team), effort: effortFor(team) });
   } catch (e) {
     clear();
@@ -473,6 +506,12 @@ async function viaCodexOnce(prompt) {
   const { answer } = await runCodex(`${DEFAULT_PERSONA}\n\n---\n\n${prompt}`);
   return answer || null;
 }
+/** agy 한 번 — --check 의 연기 시험. 기록 안 남김. */
+async function viaAgyOnce(prompt) {
+  if (!await hasAgy()) return null;
+  const { answer, sessionId } = await runAgy(`${DEFAULT_PERSONA}\n\n---\n\n${prompt}`, { model: geminiModelOf(null) });
+  return answer ? `${answer}\n(conversation ${sessionId ?? '없음'})` : null;
+}
 
 async function viaOpenAI(prompt) {
   const key = process.env.OPENAI_API_KEY;
@@ -507,9 +546,11 @@ async function status() {
   }
   const cd = outsideCooldown();
   if (cd) lines.push(`codex 계정 사용 한도 — ${cd.until} 까지 부르지 않음`);
+  const agy = await hasAgy();
+  lines.push(agy ? `agy(Antigravity CLI) 있음 — gemini 자리는 이걸로 돈다` : `agy 없음 — 설치: curl -fsSL https://antigravity.google/cli/install.sh | bash (→ ~/.local/bin/agy), 첫 실행에 Google 로그인`);
   if (team && engineKindOf(team) === 'gemini') {
     let waiting = 0; try { waiting = fs.readdirSync(path.join(GEMINI_DIR, 'ask')).filter((f) => f.endsWith('.json')).length; } catch { /* 폴더 없음 */ }
-    lines.push(`gemini 자리(${team}/${ACTOR}) · 모델 ${geminiModelFor(team)} · 파일로 주고받음(state/gemini/) · 기다리는 물음 ${waiting}`);
+    lines.push(`gemini 자리(${team}/${ACTOR}) · 모델 ${geminiModelFor(team)} · 길: ${agy ? 'agy CLI' : GEMINI_URL ? `HTTP 다리 ${GEMINI_URL}` : `파일 왕복(state/gemini/) · 기다리는 물음 ${waiting}`}`);
   }
   if (process.env.OPENAI_API_KEY) lines.push(`OpenAI API 있음 (모델 ${API_MODEL}) — 한 번 묻기 전용`);
   return { ok: codex || !!process.env.OPENAI_API_KEY || (!!team && engineKindOf(team) === 'gemini'), lines };
@@ -595,11 +636,14 @@ if (!question) {
 
 if (mode === 'check') {
   const errors = [];
-  for (const [name, fn] of [['codex', viaCodexOnce], ['openai', viaOpenAI]]) {
+  // --check --engine agy 면 agy 만, 아니면 codex → agy → openai 순으로 되는 것 하나
+  const only = argv.includes('--engine') ? argv[argv.indexOf('--engine') + 1] : null;
+  const tries = [['codex', viaCodexOnce], ['agy', viaAgyOnce], ['openai', viaOpenAI]].filter(([n]) => !only || n === only);
+  for (const [name, fn] of tries) {
     try {
       const r = await fn(question);
       if (r) {
-        console.log(`[${name === 'codex' ? `codex · ${codexModelOf(null)}` : `openai · ${API_MODEL}`}] ${r}`);
+        console.log(`[${name === 'codex' ? `codex · ${codexModelOf(null)}` : name === 'agy' ? `agy · ${geminiModelOf(null)}` : `openai · ${API_MODEL}`}] ${r}`);
         process.exit(0);
       }
     } catch (e) { errors.push(`${name}: ${String(e.message).split('\n')[0].slice(0, 200)}`); }

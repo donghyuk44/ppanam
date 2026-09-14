@@ -486,6 +486,18 @@ switch (cmd) {
           && castChangeError('outside', ag.outside, { fallback: 'claude' })?.includes('폴백') && castChangeError('outside', ag.outside, { fallback: 'none' }) === null
           && castChangeText('레오', { fallback: 'gemini' }) === '대표가 레오를 폴백 gemini 로 바꿨습니다 — 다음 턴부터.';
         out.push(['외부 감사 폴백(결정 116 ②)', fWant ? '✓ gpt↔gemini 기본 · none 은 대표께 · 클로드 없음 · claude 폴백 거부 · note' : '✗']);
+        // Antigravity CLI(agy) 인자·봉투 — 순수. -p 프롬프트 · json · 모델 · 상한 · 이어붙임은 --conversation · 봉투에서 response·conversation_id · status 가 SUCCESS 아니면 throw.
+        const { agyArgs, parseAgy } = await import('./bus.mjs');
+        const aa = agyArgs({ prompt: '판정해라', model: 'gemini-3.6-flash', effort: 'high', resume: 'conv_1', timeout: '5m' }).join(' ');
+        const ab = agyArgs({ prompt: 'x', model: 'm' }).join(' ');
+        const ax = agyArgs({ prompt: 'x', model: 'm', effort: 'xhigh' }).join(' ');
+        const pa = parseAgy('{"conversation_id":"conv_9","status":"SUCCESS","response":"PASS\\n됐다","duration_seconds":3}');
+        let pErr = null; try { parseAgy('{"status":"ERROR","error":"quota"}'); } catch (e) { pErr = e.message; }
+        let pBad = null; try { parseAgy('not json'); } catch (e) { pBad = e.message; }
+        const agyWant = aa === '-p 판정해라 --output-format json --model gemini-3.6-flash --print-timeout 5m --effort high --conversation conv_1'
+          && ab === '-p x --output-format json --model m --print-timeout 5m --effort medium' && ax.endsWith('--effort high') && !ab.includes('dangerously')
+          && pa.answer === 'PASS\n됐다' && pa.sessionId === 'conv_9' && pErr?.includes('ERROR') && pErr?.includes('quota') && pBad?.includes('JSON');
+        out.push(['Antigravity CLI(agy) 인자·봉투', agyWant ? '✓ -p·json·모델·상한·effort·--conversation · 승인 건너뛰기 없음 · 봉투 response/conversation_id · ERROR·비JSON throw' : '✗ ' + JSON.stringify({ aa, ab, pa, pErr, pBad })]);
         out.push(['gemini 임시 외부 감사(09-14)', gWant ? '✓ outside→gemini 통과 · geminiModel 목록 · note gemini · isForeign 셋' : '✗ ' + JSON.stringify({ gErrs, to: gsw.to })]);
         const txt = castChangeText('테라', up.to), txt2 = castChangeText('안젤', { effort: 'low' });
         const ca = codexArgs({ model: 'gpt-5.1', effort: 'high', resume: 'sid' }), cb = codexArgs({ model: 'gpt-5.1', outPath: '/tmp/o' });
