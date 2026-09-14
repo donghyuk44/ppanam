@@ -330,7 +330,9 @@ const server = http.createServer((req, res) => {
       const color = readCast(t.id).agents?.[bus.roomRules(t.id).owner]?.color ?? null;
       return { id: t.id, name: t.name, room: t.room, color, ...plan };
     });
-    return json(res, 200, { text, at, now: new Date(now).toISOString(), teams: teamsOut, bossGates });
+    // '팀별 단계' 절은 서버가 roadmap 에서 만들어 끼운다(톰 09-14: "손으로 세는 건 썩는다") — 톰이 쓰는 건 위·아래 두 표뿐. 정본은 표 파일 + roadmap 둘이 한 화면에.
+    const merged = bus.swapSection(text ?? '', '팀별 단계', bus.stageTable(teamsOut, { now }));
+    return json(res, 200, { text: merged, at, now: new Date(now).toISOString(), teams: teamsOut, bossGates });
   }
 
   // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.

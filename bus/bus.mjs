@@ -1649,6 +1649,34 @@ export function plansOf({ roadmap, state, rounds = [], progress = null, now = Da
   return { stages, roundMs };
 }
 
+/**
+ * 예정 작업 표(plan-table.md, 톰)의 '팀별 단계' 절을 서버가 roadmap 에서 만든다(톰 결정 09-14: "손으로 세는 건 썩는다"). 톰이 쓰는 건 위(대표님이 물으신 것)·아래(대표님 손에 있는 것) 둘뿐.
+ * 순수 — check 가 돌린다. 세는 숫자 없음(헨리) — 단계 번호·낱말·시각만. 시각은 우리 시각(서울).
+ */
+const STATUS_WORD = { running: '하는 중', planned: '대기', gated: '대기(대표)', blocked: '막힘' };
+export function stageTable(teamsOut, { now = Date.now() } = {}) {
+  const hm = (iso) => { const t = Date.parse(iso ?? ''); if (!Number.isFinite(t)) return ''; const d = new Date(t + SEOUL_OFFSET_MS); const dd = Math.floor((t + SEOUL_OFFSET_MS) / 86_400_000) - Math.floor((now + SEOUL_OFFSET_MS) / 86_400_000); const clock = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`; return dd <= 0 ? `오늘 ${clock}` : dd === 1 ? `내일 ${clock}` : dd === 2 ? `모레 ${clock}` : `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
+  const rows = ['| 팀 | 지금 단계 | 상태 | 예정 | 다음 |', '| --- | --- | --- | --- | --- |'];
+  for (const t of teamsOut) {
+    const cur = t.stages.find((s) => s.status === 'running' || s.status === 'blocked');
+    const rest = t.stages.filter((s) => s !== cur);
+    const cell = (s) => (s == null ? '' : String(s).replace(/\|/g, '·').replace(/\n/g, ' '));
+    const status = cur ? STATUS_WORD[cur.status] + (cur.blockedWhy ? ` — ${cur.blockedWhy}` : '') + (cur.late ? ` · ${Math.round(cur.late / 60000) < 60 ? Math.round(cur.late / 60000) + '분' : Math.round(cur.late / 3600_000) + '시간'} 늦음` : '') : t.stages.length ? '대기' : '단계 없음';
+    const next = rest.map((s) => `${s.n != null ? s.n + '단계 ' : ''}${s.title}${s.status === 'gated' ? `(${s.gate})` : ''}`).join(' → ') || (t.stages.length ? '' : '계획표 — 대표가 연다');
+    rows.push(`| ${cell(t.room ?? t.name)} | ${cur ? cell(`${cur.n}단계 ${cur.title}`) : cell(t.stages[0] ? `${t.stages[0].n}단계 ${t.stages[0].title}` : '')} | ${cell(status)} | ${cur?.plannedTo ? hm(cur.plannedTo) + '까지' : cur?.gate ?? ''} | ${cell(next)} |`);
+  }
+  return rows.join('\n');
+}
+/** 마크다운의 `## <제목>` 절 본문을 바꿔 끼운다 — 다음 `## ` 앞까지. 절이 없으면 끝에 붙인다. 순수. */
+export function swapSection(md, heading, body) {
+  const lines = String(md ?? '').split('\n');
+  const start = lines.findIndex((l) => new RegExp(`^##\\s+${heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`).test(l.trim()));
+  const block = [`## ${heading}`, '', body.trim(), ''];
+  if (start < 0) return [...lines, '', ...block].join('\n');
+  let end = start + 1; while (end < lines.length && !/^##\s/.test(lines[end])) end += 1;
+  return [...lines.slice(0, start), ...block, ...lines.slice(end)].join('\n');
+}
+
 /** 우리 시각(서울, +09:00 고정 — 서머타임 없음)의 그날 0시를 UTC ms 로. 서버 프로세스의 TZ 와 무관하다 — 결정 101 의 아홉 시간 오류가 집계에서 다시 나지 않게(레오, R25). */
 export const SEOUL_OFFSET_MS = 9 * 3600_000;
 export const dayStartSeoul = (now = Date.now()) => Math.floor((now + SEOUL_OFFSET_MS) / 86_400_000) * 86_400_000 - SEOUL_OFFSET_MS;

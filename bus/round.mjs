@@ -21,7 +21,7 @@ import {
   addressees, callsBoss, asksBoss, bossNotesOf, doneOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
   mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, overdue, setMilestoneStatus,
-  roomRules, allowedIn, plansOf, timeboxRounds, DEFAULT_ROUND_MS,
+  roomRules, allowedIn, plansOf, timeboxRounds, DEFAULT_ROUND_MS, stageTable, swapSection,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -875,6 +875,16 @@ switch (cmd) {
           && s1[2].plannedTo === null && s1[2].gate === '대표 방향 뒤 정함' && s1[3].plannedFrom === '2026-09-14T04:45:00.000Z'
           && p2.stages[0].status === 'blocked' && p2.stages[0].blockedWhy === '디스크 꽉 참' && p2.stages[0].late === 4 * 3600_000
           && p3.stages.length === 0 && p3.roundMs === DEFAULT_ROUND_MS && timeboxRounds('대표가 방식을 고른 뒤 2 라운드') === null;
+        // '팀별 단계' 절 — 서버가 roadmap 에서 만들어 plan-table.md 의 그 절만 바꿔 끼운다(톰 09-14). 위·아래 절은 그대로.
+        const tbl = stageTable([{ id: 'dev', name: '개발', room: '개발 작전실', ...p1 }, { id: 'sera', name: '세라', room: '비서실', ...p3 }], { now: pNow });
+        const md = '# 표\n\n## 대표님이 물으신 것\n\n| a |\n| --- |\n| 1 |\n\n## 팀별 단계\n\n| 옛 | 표 |\n| --- | --- |\n| 손 | 글 |\n\n## 대표님 손에 있는 것\n\n| b |\n| --- |\n| 2 |\n';
+        const swapped = swapSection(md, '팀별 단계', tbl);
+        const swapped2 = swapSection('# 표\n\n## 대표님이 물으신 것\n\n| a |\n', '팀별 단계', tbl);
+        const tblOk = tbl.includes('| 개발 작전실 | 6단계 지금 | 하는 중 | 오늘 13:00까지 | 7단계 다음 → 8단계 대표 뒤(대표 방향 뒤 정함) → 9단계 그 뒤 |')
+          && tbl.includes('| 비서실 |  | 단계 없음 |  | 계획표 — 대표가 연다 |')
+          && !swapped.includes('| 손 | 글 |') && swapped.includes('| 1 |') && swapped.includes('| 2 |') && swapped.indexOf('## 팀별 단계') < swapped.indexOf('## 대표님 손에') && swapped.includes(tbl)
+          && swapped2.endsWith(tbl + '\n') && swapped2.includes('| a |');
+        out.push(['팀별 단계 절(stageTable·swapSection)', tblOk ? '✓ roadmap 에서 표 · 가운데 절만 바꿔 끼움 · 위·아래 그대로 · 절 없으면 끝에' : '✗ ' + JSON.stringify({ tbl, swapped, swapped2 })]);
         out.push(['앞날 띠(plansOf)', plansOk ? '✓ 회차 평균 90분 · 지난 것 없음 · 지금→다음 잇기 · 반 라운드 · 대표 timebox 는 gated · 막힘 blocked+late 4h · 빈 계획표' : '✗ ' + JSON.stringify({ p1, p2, p3 })]);
         // 비서실 규칙(결정 132, 계약 0절) — roomRules·allowedIn 순수. 실제 teams.json 의 sera 가 그 규칙을 갖는지도 본다.
         const sr = roomRules('sera'), hr = roomRules('hq'), dr = roomRules('dev');
