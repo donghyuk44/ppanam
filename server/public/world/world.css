@@ -67,7 +67,8 @@
   animation: wv-pop-soft .18s ease-out;   /* transform 을 건드리는 애니메이션은 안 된다 — CSS2D 가 자리를 transform 으로 준다 */
 }
 /* 기둥 안의 말풍선은 흐름 배치 — 자리는 기둥(CSS2D)이 잡고, 꼬리만 아래 가운데 */
-.wv-tag .wb { position: relative; transform: none; animation: wv-pop-soft .18s ease-out; }
+/* white-space: normal — 기둥(.wv-tag)의 nowrap 이 상속돼 말풍선이 max-width 를 무시하고 한 줄로 뻗어 화면 밖에서 잘렸다(대표 사진, R25) */
+.wv-tag .wb { position: relative; transform: none; animation: wv-pop-soft .18s ease-out; white-space: normal; }
 @keyframes wv-pop-soft { from { opacity: 0; } to { opacity: 1; } }
 
 /* 말풍선. 꼬리는 아래 가운데. */

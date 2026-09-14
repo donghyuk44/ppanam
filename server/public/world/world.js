@@ -325,6 +325,9 @@ function frame(t) {
 function speak(a, text, { kind = 'say', who = a.name, cls = '', ms, id = null, team = a.team } = {}) {
   const full = String(text ?? '').trim();
   if (!full && kind !== 'tool') return null;
+  // 같은 말이 여러 방에 한꺼번에 기록되면(대표 원문 배달 — hq·design·dev 셋) 같은 사람 머리 위에 똑같은 풍선이 셋 쌓였다(대표 사진, R25). 있는 풍선을 늘려 쓴다.
+  const same = kind === 'say' && [...S.bubbles].find((o) => o.a === a && o.kind === 'say' && o.full === full);
+  if (same) { same.until = Math.max(same.until, performance.now() + clamp(3000 + full.length * 70, 4000, 14000)); return same; }
   const el = document.createElement('div'); el.className = `wb ${cls}`;
   if (kind !== 'tool') { const w = document.createElement('span'); w.className = 'wb__who'; w.textContent = who; el.appendChild(w); }
   const short = full.length > 80 ? full.slice(0, 80) + '…' : full;
@@ -334,7 +337,7 @@ function speak(a, text, { kind = 'say', who = a.name, cls = '', ms, id = null, t
     go.addEventListener('click', (ev) => { ev.stopPropagation(); S.jump(team, id); });
     el.appendChild(go);
   }
-  const b = { el, a, kind, until: performance.now() + (ms ?? clamp(3000 + full.length * 70, 4000, 14000)), expanded: false };
+  const b = { el, a, kind, full, until: performance.now() + (ms ?? clamp(3000 + full.length * 70, 4000, 14000)), expanded: false };
   el.addEventListener('click', () => {
     b.expanded = !b.expanded; body.textContent = b.expanded ? full : short; el.classList.toggle('wb--full', b.expanded);
     b.until = performance.now() + (b.expanded ? 20000 : 4000);
