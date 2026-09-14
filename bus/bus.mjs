@@ -416,6 +416,8 @@ export function approvalPreview(r) {
         cutList: Array.isArray(p.cutList) ? p.cutList : [],
       };
     }
+    // request·proxy 는 여기서 안 푼다 — app.js previewNode 가 action 을 그대로 받아 사람 말로 보여준다(a848f88, R25).
+    // 여기서 값을 채우면 화면의 !p 특수 분기가 안 타서 오히려 "행동: request" 로 퇴화한다.
     return null;
   } catch (e) {
     return { error: String(e.message).slice(0, 160) };
@@ -1122,10 +1124,10 @@ export function endRefusal(team, { verdict = null } = {}) {
   return null;
 }
 
-/** 이 라운드에 파일을 고친(Edit·Write) 자리들 — 그 자리의 판정 카드는 "만든 사람이 판정" 이 된다(대표 지시, R25). 순수 함수. */
+/** 이 라운드에 파일을 고친(Edit·Write·NotebookEdit) 자리들 — 그 자리의 판정 카드는 "만든 사람이 판정" 이 된다(대표 지시, R25). 순수 함수. */
 export function buildersOf(events) {
   const s = new Set();
-  for (const e of events) if (e.type === 'tool' && (e.meta?.tool === 'Edit' || e.meta?.tool === 'Write')) s.add(e.actor);
+  for (const e of events) if (e.type === 'tool' && ['Edit', 'Write', 'NotebookEdit'].includes(e.meta?.tool)) s.add(e.actor);
   return s;
 }
 
