@@ -1,0 +1,15 @@
+{
+  "name": "ppanam-antigravity-bridge",
+  "displayName": "ppanam — Antigravity 다리",
+  "description": "에디터 안의 모델(vscode.lm)에 바깥 프로그램이 물을 수 있게 127.0.0.1 에 작은 HTTP 문을 연다. bus/outside.mjs runGemini 가 PPANAM_GEMINI_URL 로 여기 묻는다. 창 몰기 없음.",
+  "version": "0.0.1",
+  "publisher": "ppanam",
+  "engines": { "vscode": "^1.90.0" },
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "ppanam.bridge.models", "title": "ppanam: 다리가 보는 모델 목록" }
+    ]
+  }
+}

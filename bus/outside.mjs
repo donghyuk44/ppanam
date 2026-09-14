@@ -153,7 +153,22 @@ function runCodex(input, { resume = null, model = codexModelOf(null), effort = n
  */
 export const GEMINI_DIR = path.join(ROOT, 'state', 'gemini');
 const GEMINI_POLL_MS = 2000;
-function runGemini(input, { resume = null, model = geminiModelOf(null), team = null } = {}) {
+// 다리(tools/antigravity-bridge — 가설, 09-14): PPANAM_GEMINI_URL 이 있으면 파일 대신 그 HTTP 문에 묻는다. 창 몰기 없음. 없으면 파일 그대로.
+const GEMINI_URL = process.env.PPANAM_GEMINI_URL || null;
+async function runGeminiHttp(input, { resume = null, model = geminiModelOf(null) } = {}) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), TIMEOUT);
+  try {
+    const r = await fetch(`${GEMINI_URL.replace(/\/$/, '')}/ask`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt: input, model, sessionId: resume }), signal: ctl.signal });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error) throw new Error(`다리 ${r.status} — ${String(j.error ?? '').slice(0, 200)}`);
+    return { answer: String(j.answer ?? '').trim(), sessionId: j.sessionId ?? resume ?? null };
+  } finally { clearTimeout(t); }
+}
+function runGemini(input, opts = {}) {
+  if (GEMINI_URL) return runGeminiHttp(input, opts);
+  return runGeminiFiles(input, opts);
+}
+function runGeminiFiles(input, { resume = null, model = geminiModelOf(null), team = null } = {}) {
   const id = `gem_${crypto.randomBytes(4).toString('hex')}`;
   const askDir = path.join(GEMINI_DIR, 'ask'), ansDir = path.join(GEMINI_DIR, 'answer');
   const askPath = path.join(askDir, `${id}.json`), ansPath = path.join(ansDir, `${id}.json`);
