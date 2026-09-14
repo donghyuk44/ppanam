@@ -83,7 +83,7 @@ body {
 }
 .app > .approvals { grid-column: 1 / -1; grid-row: 1; }
 /* 나머지는 둘째 줄에 — 승인 블록이 숨겨져(display:none) 첫 줄이 비어도 자동 배치가 거기로 올라가지 않게. */
-.rail, .room, .tower, .analysis, .world, .side { grid-row: 2; }
+.rail, .room, .tower, .dashboard, .analysis, .world, .side { grid-row: 2; }
 
 /* ══ 왼쪽 · 팀 레일 ══ */
 
