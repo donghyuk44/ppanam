@@ -23,7 +23,7 @@ import { listRequests, requestCounts } from '../bus/requests.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
-import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues } from './conductor.mjs';
+import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues, expireFlows } from './conductor.mjs';
 import * as world from './world.mjs';
 import { startInfra } from './infra.mjs';
 
@@ -231,10 +231,10 @@ const server = http.createServer((req, res) => {
   // 자리의 엔진·모델·추론 강도 (결정 69) — 대표가 관제탑 개인 카드에서 고른다. 이 서버는 이 PC 안에서만 열려 있어 화면 = 대표다.
   // cast.json 은 C 잠금 파일이라 서버가 대신 쓴다. 다음 턴부터 — claude 자리는 턴이 끝난 뒤 세션을 내리고(id 는 남김), codex 는 매 턴 읽는다.
   if (url.pathname === '/api/cast' && req.method === 'POST') {
-    readBody(req, res, ({ team: t, actor, model, llm, codexModel, geminiModel, effort }) => {
+    readBody(req, res, ({ team: t, actor, model, llm, codexModel, geminiModel, effort, fallback, suspended }) => {
       if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
       let r;
-      try { r = bus.updateCastAgent(t, actor, { model, llm, codexModel, geminiModel, effort }); }
+      try { r = bus.updateCastAgent(t, actor, { model, llm, codexModel, geminiModel, effort, fallback, suspended }); }
       catch (e) { return json(res, 400, { error: e.message }); }
       let restart = null;
       if (Object.keys(r.to).length) {
@@ -556,6 +556,8 @@ setInterval(() => {
       try { noticeEvents(t.id, events); } catch (e) { console.error('conductor:', e.message); }
     }
   }
+  // 굳은 판정 흐름을 놓는다(결정 117 곁다리) — 외부감사가 답을 못 내면 waiting 으로 굳어 다음 /verdict 가 거부됐다.
+  try { expireFlows(); } catch (e) { console.error('conductor expire:', e.message); }
   // 통과한 B 푸시를 서버가 대신 민다. 한 번에 하나씩, 겹치지 않게.
   runExecutor();
   // 승인 요청·결말·실행 결과를 귀에 넣는다. 알림은 서버의 일이다.

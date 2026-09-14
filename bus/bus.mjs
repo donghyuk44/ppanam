@@ -756,7 +756,12 @@ export const CODEX_MODELS = ['gpt-5.6-sol', 'gpt-5.1'];
 export const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3.1-pro'];
 export const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
 export const ENGINES = ['claude', 'gpt', 'gemini'];
-export const CAST_FIELDS = ['model', 'llm', 'codexModel', 'geminiModel', 'effort', 'fallback'];
+export const CAST_FIELDS = ['model', 'llm', 'codexModel', 'geminiModel', 'effort', 'fallback', 'suspended'];
+/**
+ * 중단(결정 117 ②) — 외부 감사 자리를 "지금 못 부른다" 로 명시한다. 값은 복귀 예정일 'YYYY-MM-DD'(또는 'none' → 해제). 조용히 빠지는 게 아니라
+ * 상태다: 판정 흐름이 그 걸음을 건너뛰되 방에 note 를 남기고(CLAUDE.md "외부 모델이 연결돼 있지 않으면 작전실에 남긴다"), 라운드 기록에 outsideAudited:false 가 박힌다.
+ */
+export const SUSPEND_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 /**
  * 폴백 — 기본 엔진이 못 돌면 누가 인계받나(결정 116 ② — codex 계정 하나가 끊겨 다섯 팀이 다 섰는데 어디에도 안 적혀 있었다).
  * 자리의 `fallback` 이 먼저(`'none'` 은 "대표께 올림" — 대신 안 부른다), 없으면 다른 회사 엔진 중 나머지 하나. 클로드 자리는 폴백이 없다.
@@ -808,6 +813,10 @@ export function castChangeError(actorId, agent, patch) {
   if (patch.codexModel !== undefined && !CODEX_MODELS.includes(patch.codexModel)) return `codex 모델은 ${CODEX_MODELS.join(' · ')} 중 하나입니다: ${patch.codexModel}`;
   if (patch.geminiModel !== undefined && !GEMINI_MODELS.includes(patch.geminiModel)) return `gemini 모델은 ${GEMINI_MODELS.join(' · ')} 중 하나입니다: ${patch.geminiModel}`;
   if (patch.fallback !== undefined && patch.fallback !== 'none' && !isForeign(patch.fallback)) return `폴백은 다른 회사 엔진(gpt · gemini) 또는 'none'(대표께 올림)입니다: ${patch.fallback}`;
+  if (patch.suspended !== undefined) {
+    if (actorId !== 'outside') return `중단은 외부감사(outside) 자리에만 적습니다: ${actorId}`;
+    if (patch.suspended !== null && patch.suspended !== 'none' && !SUSPEND_DATE_RE.test(String(patch.suspended))) return `중단은 복귀 예정일 'YYYY-MM-DD' 또는 'none'(해제)입니다: ${patch.suspended}`;
+  }
   if (patch.effort !== undefined && !EFFORTS.includes(patch.effort)) return `추론 강도는 ${EFFORTS.join(' · ')} 중 하나입니다: ${patch.effort}`;
   return null;
 }
@@ -820,8 +829,10 @@ export function updateCastAgent(team, actorId, patch) {
   if (err) throw new Error(err);
   const from = {}, to = {};
   for (const k of CAST_FIELDS) {
-    if (patch[k] === undefined || patch[k] === agent[k]) continue;
-    from[k] = agent[k] ?? null; to[k] = patch[k]; agent[k] = patch[k];
+    if (patch[k] === undefined) continue;
+    const val = k === 'suspended' && patch[k] === 'none' ? null : patch[k];   // 중단 해제는 null 로 — 파일에 'none' 을 남기지 않는다
+    if (val === (agent[k] ?? null)) continue;
+    from[k] = agent[k] ?? null; to[k] = val; agent[k] = val;
   }
   if (Object.keys(to).length) writeJSON(paths(team).cast, cast);
   return { from, to, agent };
@@ -898,6 +909,7 @@ export function castChangeText(name, to) {
   if (to.geminiModel) words.push(to.geminiModel);
   if (to.effort) words.push(to.effort);
   if (to.fallback) words.push(to.fallback === 'none' ? '폴백 없음(대표께 올림)' : `폴백 ${engineName(to.fallback)}`);
+  if ('suspended' in to) words.push(to.suspended ? `중단(${to.suspended} 복귀 예정)` : '중단 해제');
   return `대표가 ${eul(name)} ${words.join('·')} 로 바꿨습니다 — 다음 턴부터.`;
 }
 
@@ -1073,6 +1085,12 @@ export function endRefusal(team, { verdict = null } = {}) {
   if (!events.slice(last + 1).some((e) => e.type === 'note' && e.meta?.verdictFlow === 'pass')) {
     return '판정 카드는 PASS 인데 사회자의 판정 완료 note 가 없습니다. 판정은 /verdict 흐름으로 받습니다 (node bus/round.mjs verdict).';
   }
+  // 카드의 actor 를 본다(결정 117 ②) — 전에는 안 봐서 review 자리가 있는 방은 내부감사 클로드 혼자 PASS 로 단계를 넘길 수 있었다.
+  // 외부감사 자리가 다른 회사 엔진이고 중단(suspended)이 아니면 그의 PASS 카드가 있어야 한다. 중단이면 없이 닫히되 기록에 outsideAudited:false 가 박힌다(endRound).
+  const out = readCast(team).agents?.outside ?? null;
+  if (out && isForeign(out.model) && !out.suspended && !auditorsOf(events).outsideAudited) {
+    return `외부감사(${out.name ?? 'outside'})의 PASS 카드가 이 라운드에 없습니다 — 내부감사만으로는 PASS 로 닫지 못합니다 (CLAUDE.md). 외부 감사를 못 부르는 동안이면 그 자리를 중단(suspended)으로 적으세요 (결정 117 ②).`;
+  }
   return null;
 }
 
@@ -1094,6 +1112,22 @@ export function assertEndable(team, opts = {}) {
  * 비워지는 건 AI 컨텍스트뿐이고, 그건 다음 라운드부터 round 번호가
  * 달라지면서 자연히 끊긴다 (readContext 참고).
  */
+/**
+ * 누가 봤나 (결정 117 ①) — 이 라운드의 stale 아닌 판정 카드에서 감사자를 뽑는다. 순수 함수 — round.mjs check 가 돌린다.
+ * 전에는 어디에도 안 남아 개발 1단계가 판정 카드 0장인 라운드에서 pass 가 됐고 파일만 봐서는 레오가 제대로 본 5단계와 구별이 안 됐다.
+ * 20일에 codex 가 돌아오면 `outsideAudited:false` 로 박힌 단계만 다시 본다 — 그래서 이 칸이 있어야 한다.
+ * @returns { auditors: [{ actor, verdict, sha, engine, ts }], outsideAudited } — 같은 자리는 마지막 카드 하나
+ */
+export function auditorsOf(events) {
+  const last = new Map();
+  for (const e of events) {
+    if (e.type !== 'verdict' || e.meta?.stale) continue;
+    last.set(e.actor, { actor: e.actor, verdict: e.meta?.verdict ?? null, sha: e.meta?.sha ?? null, engine: e.meta?.engine ?? null, ts: e.ts });
+  }
+  const auditors = [...last.values()];
+  return { auditors, outsideAudited: auditors.some((a) => a.actor === 'outside' && a.verdict === 'PASS') };
+}
+
 export function endRound(team, { verdict = null, summary = null } = {}) {
   assertEndable(team, { verdict });
   const state = readState(team);
@@ -1105,10 +1139,17 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
     meta: { verdict },
   });
 
+  // 누가 봤나 — 이 라운드의 판정 카드에서(결정 117 ①). 마일스톤 이벤트와 rounds.jsonl 행 둘 다에 박는다.
+  const roundEvents = readLog(team).filter((e) => e.round === state.round);
+  const { auditors, outsideAudited } = auditorsOf(roundEvents);
+  const outsideSeat = readCast(team).agents?.outside ?? null;
+  const outsideWhy = outsideAudited ? null : !outsideSeat ? 'no-seat' : outsideSeat.suspended ? 'suspended' : !isForeign(outsideSeat.model) ? 'not-foreign' : 'no-card';
+
   // PASS 로 닫혔으면 이 마일스톤은 끝났다 — 사실 기록. 다음 것을 now 로 옮기는 것은 B 승인의 일이다.
   if (String(verdict ?? '').toUpperCase() === 'PASS' && state.milestone) {
     if (setMilestoneStatus(team, state.milestone, 'pass')) {
-      emit(team, { type: 'milestone', actor: 'system', text: `마일스톤 ${state.milestone} 통과 — 로드맵에 pass 로 기록`, meta: { index: state.milestone } });
+      emit(team, { type: 'milestone', actor: 'system', text: `마일스톤 ${state.milestone} 통과 — 로드맵에 pass 로 기록${outsideAudited ? '' : ' (외부 감사 없이 — ' + outsideWhy + ')'}`,
+        meta: { index: state.milestone, auditors, outsideAudited, ...(outsideWhy ? { outsideWhy } : {}) } });
       // 닫힌 고리(대표 실측 09-14 — 마케팅이 6단계 통과 뒤 여섯 시간 섰다): now 가 없으면 startRound 가 B 승인을 요구하는데, B 를 올리려면 차례가,
       // 차례는 라운드가 있어야 온다. 닫는 이 순간이 "다음이 뭔지" 아는 유일한 때라 **여기서 B 요청을 자동으로 올린다.** 문(톰·제리)은 그대로다.
       // 통과하면 서버가 now 로 옮기고 라운드까지 연다(autoOpen — notifier.applyAction). 같은 방에 이미 착수 요청이 떠 있으면 또 안 올린다.
@@ -1129,7 +1170,7 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
     }
   }
 
-  const events = readLog(team).filter((e) => e.round === state.round);
+  const events = readLog(team).filter((e) => e.round === state.round);   // round_end·milestone 까지 센다
   const p = paths(team);
   fs.mkdirSync(p.dir, { recursive: true });
   fs.appendFileSync(p.rounds, JSON.stringify({
@@ -1142,6 +1183,8 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
     eventCount: events.length,
     startedAt: state.startedAt,
     endedAt: new Date().toISOString(),
+    // 누가 봤나(결정 117 ①) — 라운드당 한 줄이라 "외부 감사 없이 통과한 단계" 를 한 번에 뽑는다
+    auditors, outsideAudited, ...(outsideWhy ? { outsideWhy } : {}),
   }) + '\n');
 
   // 외부감사도 이 방의 참여자라 자기 세션을 갖는다. 라운드가 끝나면 같이 비운다 —
@@ -1187,10 +1230,12 @@ export function countsAsDispute(prev, { sha, text }) {
   return sameIssue(prev.text, text);
 }
 
-export function recordVerdict(team, { actor, verdict, text, target = 'guide', round = null, sha = undefined }) {
+export function recordVerdict(team, { actor, verdict, text, target = 'guide', round = null, sha = undefined, engine = null }) {
   const v = String(verdict || '').toUpperCase();
   if (!VERDICTS.has(v)) throw new Error(`판정은 ${[...VERDICTS].join(' / ')} 중 하나여야 합니다.`);
   const seen = sha === undefined ? headSha() : sha;
+  // engine — 답한 엔진(결정 78, "codex · gpt-5.1" · "gemini · …"). 안 주면 자리의 엔진 이름. 라운드 기록의 auditors 가 이걸 모은다(결정 117).
+  const eng = engine ?? engineName(readCast(team).agents?.[actor]?.model) ?? null;
 
   const state = readState(team);
 
@@ -1203,7 +1248,7 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
   if ((round != null && round !== state.round) || (state.phase === 'idle' && !isOffice(team))) {
     return emit(team, {
       round: round ?? state.round, type: 'verdict', actor, text,
-      meta: { verdict: v, target, attempt: 0, max: MAX_ATTEMPTS, stale: true },
+      meta: { verdict: v, target, attempt: 0, max: MAX_ATTEMPTS, stale: true, ...(eng ? { engine: eng } : {}) },
     });
   }
   if (state.phase === 'blocked') {
@@ -1237,7 +1282,7 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
   const rec = emit(team, {
     type: 'verdict', actor, text,
     // sha — 감사가 본 커밋(감사 시작 때의 HEAD). B 푸시의 문이 이 값을 대조한다 (결정 63). counted — REVISE 가 반박으로 셌나 (결정 84).
-    meta: { verdict: final, target, attempt, max: MAX_ATTEMPTS, sha: seen, ...(counted === null ? {} : { counted }) },
+    meta: { verdict: final, target, attempt, max: MAX_ATTEMPTS, sha: seen, ...(counted === null ? {} : { counted }), ...(eng ? { engine: eng } : {}) },
   });
 
   if (final === 'FAIL' && !isOffice(team)) {

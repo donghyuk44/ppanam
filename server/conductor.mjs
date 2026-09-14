@@ -108,6 +108,7 @@ function persist(team) {
     pending: [...r.pending].map(([a, p]) => [a, p.kind]),
     inflight: [...r.inflight].map(([a, p]) => [a, p.kind, p.cursor ?? null]),
     carry: r.carry, carryFrom: r.carryFrom ?? null,
+    flow: r.flow ?? null,   // 판정 흐름도 살아남는다(결정 117 곁다리) — 전엔 메모리에만 있어 재시작에 흐름이 사라지고 verdict 차례만 남았다
   };
   try { writeStore(all); }
   catch (e) { note(team, `차례를 저장하지 못했습니다 — ${String(e.message).slice(0, 120)}. 서버가 꺼지면 이 방의 대기 차례가 사라질 수 있습니다.`); }
@@ -137,6 +138,8 @@ export function restoreQueues() {
     for (const [actor, kind] of got.pending) { const cur = r.pending.get(actor); if (!cur || (RANK[kind] ?? 0) > (RANK[cur.kind] ?? 0)) r.pending.set(actor, { kind }); }
     if (got.carry) r.carry = got.carry;
     if (got.carryFrom) r.carryFrom = got.carryFrom;
+    // 판정 흐름 — 같은 라운드면 그대로(기다리던 자리의 verdict 차례도 위에서 되살아났다), 라운드가 바뀌었으면 버린다. 시간 제한은 expireFlows 가 이어서 잰다.
+    if (saved.flow && saved.round === state.round && state.phase === 'running') r.flow = { ...saved.flow, since: saved.flow.since ?? Date.now() };
     const n = got.pending.length + (got.carry?.items.length ?? 0);
     if (n) {
       const names = [...got.pending.map(([a]) => a), ...(got.carry?.items ?? []).map(([a]) => a)].map((a) => nameOf(team, a));
@@ -381,14 +384,21 @@ export function startVerdict(team, target) {
   const state = readState(team);
   if (isOffice(team)) throw new Error('총괄실에는 판정이 없습니다.');
   if (state.phase !== 'running') throw new Error(state.phase === 'blocked' ? '대표 판단 대기 중입니다.' : '라운드를 먼저 여세요.');
-  if (r.flow) throw new Error(`이미 판정이 돌고 있습니다 (${r.flow.step}).`);
+  if (r.flow) throw new Error(`이미 판정이 돌고 있습니다 (${r.flow.waiting ?? r.flow.steps?.[r.flow.i] ?? '?'} 차례).`);
   const cast = readCast(team).agents ?? {};
   // 내부감사는 엔진이 무엇이든(대표가 codex 로 바꿨을 수도, 결정 69 ①) 그 자리가 있으면 한 걸음. 외부감사는 다른 회사 엔진이어야 한다(CLAUDE.md — codex 든 gemini 든).
-  const steps = [cast.review?.model ? 'review' : null, isForeign(cast.outside?.model) ? 'outside' : null].filter(Boolean);
+  // 외부감사 걸음을 건너뛸 때는 **조용히 빠지지 않는다**(결정 117 ②) — 왜 건너뛰는지 flow 에 적고 방에 note. 전에는 경고 한 줄 없이 버렸다.
+  const out = cast.outside ?? null;
+  const outsideWhy = !out ? 'no-seat' : out.suspended ? 'suspended' : !isForeign(out.model) ? 'not-foreign' : null;
+  const steps = [cast.review?.model ? 'review' : null, outsideWhy ? null : 'outside'].filter(Boolean);
   if (!steps.length) throw new Error('이 방에는 감사역이 없습니다.');
   r.round = state.round;
-  r.flow = { target: String(target ?? '').trim() || '이번 라운드 산출물', steps, i: 0, asked: 0 };
-  emit(team, { actor: 'system', type: 'note', text: `판정 시작 — ${r.flow.target}. ${steps.map((s) => nameOf(team, s)).join(' → ')} 순서.`, meta: { verdictFlow: 'start' } });
+  r.flow = { target: String(target ?? '').trim() || '이번 라운드 산출물', steps, i: 0, asked: 0, skipped: outsideWhy && out ? ['outside'] : [], reason: outsideWhy };
+  emit(team, { actor: 'system', type: 'note', text: `판정 시작 — ${r.flow.target}. ${steps.map((s) => nameOf(team, s)).join(' → ')} 순서.`, meta: { verdictFlow: 'start', steps, skipped: r.flow.skipped, reason: outsideWhy } });
+  if (out && outsideWhy) {
+    const why = outsideWhy === 'suspended' ? `중단 중 — ${out.suspended} 복귀 예정` : outsideWhy === 'not-foreign' ? `자리 엔진이 ${out.model ?? '없음'} 이라 외부 감사가 아님` : '자리 없음';
+    emit(team, { actor: 'system', type: 'note', text: `외부 감사 없이 판정합니다 — ${nameOf(team, 'outside')} ${why}. 이 라운드는 기록에 '외부 감사 안 봄' 으로 남고, 돌아오면 다시 봅니다 (결정 117).`, meta: { verdictFlow: 'skip', skipped: ['outside'], reason: outsideWhy } });
+  }
   askStep(team);
   return r.flow;
 }
@@ -398,7 +408,24 @@ function askStep(team) {
   const actor = r.flow.steps[r.flow.i];
   r.flow.asked = 0;
   r.flow.waiting = actor;
+  r.flow.since = Date.now();
+  persist(team);
   enqueue(team, actor, 'verdict');
+}
+
+/**
+ * 판정 흐름 시간 제한(결정 117 곁다리) — 외부감사가 답을 못 내면 flow 가 waiting 으로 굳고 다음 /verdict 가 "이미 돌고 있습니다" 로 거부됐다(오늘 아침 실제로).
+ * codex·gemini 호출 상한(PPANAM_OUTSIDE_TIMEOUT 5분)의 두 배를 넘으면 흐름을 놓고 방에 남긴다. 다시 부르면 된다.
+ */
+export const FLOW_TIMEOUT_MS = 2 * Number(process.env.PPANAM_OUTSIDE_TIMEOUT || 300_000);
+export function expireFlows(now = Date.now()) {
+  for (const [team, r] of rooms) {
+    const f = r.flow;
+    if (!f?.waiting || !f.since || now - f.since < FLOW_TIMEOUT_MS) continue;
+    const who = f.waiting;
+    r.flow = null; r.pending.delete(who); persist(team);
+    emit(team, { actor: 'system', type: 'note', text: `판정 흐름을 멈춥니다 — ${nameOf(team, who)}이 ${Math.round(FLOW_TIMEOUT_MS / 60_000)}분 안에 판정을 내지 않았습니다. 다시 부르세요 (node bus/round.mjs verdict).`, meta: { verdictFlow: 'timeout', waiting: who } });
+  }
 }
 
 /** 판정 흐름 중에 온 이벤트. 기다리던 자리의 판정 카드면 다음 단계로, 판정 없는 말이면 한 번 더 묻는다. */
@@ -413,10 +440,12 @@ function onFlowEvent(team, e) {
     const v = e.meta?.verdict;
     f.waiting = null;
     if (v === 'PASS' && f.i + 1 < f.steps.length) { f.i += 1; askStep(team); return; }
-    r.flow = null;
+    r.flow = null; persist(team);
     if (v === 'PASS') {
-      // 검수 #7 — 이 note 는 대표 화면에 게시된다. CLI 문장은 실무가 안다. 사람 말로.
-      emit(team, { actor: 'system', type: 'note', text: `판정 완료 — ${f.steps.map((s) => nameOf(team, s)).join('·')} 모두 통과. 이제 ${ga(nameOf(team, session.ownerOf(team)))} 이 회의를 통과로 닫을 수 있습니다.`, meta: { verdictFlow: 'pass' } });
+      // 검수 #7 — 이 note 는 대표 화면에 게시된다. CLI 문장은 실무가 안다. 사람 말로. meta 에는 기계가 읽을 걸음(결정 117 ①) — 누가 봤고 누구를 왜 건너뛰었나.
+      const skipNote = f.skipped?.length ? ` (${f.skipped.map((s) => nameOf(team, s)).join('·')} 없이 — ${f.reason})` : '';
+      emit(team, { actor: 'system', type: 'note', text: `판정 완료 — ${f.steps.map((s) => nameOf(team, s)).join('·')} 모두 통과${skipNote}. 이제 ${ga(nameOf(team, session.ownerOf(team)))} 이 회의를 통과로 닫을 수 있습니다.`,
+        meta: { verdictFlow: 'pass', steps: f.steps, skipped: f.skipped ?? [], reason: f.reason ?? null } });
     } else if (v === 'REVISE') {
       enqueue(team, session.ownerOf(team), 'called');   // 판정 카드를 듣고 고친다
     }
@@ -424,8 +453,8 @@ function onFlowEvent(team, e) {
     return;
   }
   if (e.type === 'message' && e.meta?.noVerdict) {
-    if (f.asked < 1) { f.asked += 1; enqueue(team, e.actor, 'verdict'); return; }
-    r.flow = null;
+    if (f.asked < 1) { f.asked += 1; f.since = Date.now(); persist(team); enqueue(team, e.actor, 'verdict'); return; }
+    r.flow = null; persist(team);
     emit(team, { actor: 'system', type: 'note', text: `${nameOf(team, e.actor)}이 두 번 물어도 첫 줄에 판정을 쓰지 않았습니다. 판정 흐름을 멈춥니다.`, meta: { verdictFlow: 'abort' } });
   }
 }

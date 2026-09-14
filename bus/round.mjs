@@ -20,7 +20,7 @@ import {
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
   addressees, callsBoss, asksBoss, bossNotesOf, doneOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
-  mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, overdue,
+  mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, overdue, setMilestoneStatus,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -558,6 +558,39 @@ switch (cmd) {
           && txt === '하는 것: b · c\n막힌 것: 막힘 1\n대표 차례: 골라 주세요\n다음: 다음 1'
           && staleBefore === false && freshNow;
         out.push(['상황판 progress(결정 23)', pWant ? '✓ 옛 모양 읽기 · 준 항목만 바뀜 · clear · 네 줄 글 · 라운드 안 갱신 판별' : '✗ ' + JSON.stringify({ old, m1, m2, txt, staleBefore, freshNow })]);
+      }
+      // 누가 봤나 · 중단(결정 117) — ① auditorsOf 순수 · rounds.jsonl 행에 auditors/outsideAudited ② endRefusal 이 카드 actor 를 본다: review 만 PASS 면 거부, outside 를 중단(suspended)으로 적으면 닫히되 outsideAudited:false·why 가 박힌다.
+      {
+        const { auditorsOf } = await import('./bus.mjs');
+        const av = auditorsOf([
+          { type: 'verdict', actor: 'review', ts: 't1', meta: { verdict: 'REVISE', sha: 'a' } },
+          { type: 'verdict', actor: 'review', ts: 't2', meta: { verdict: 'PASS', sha: 'b', engine: 'claude' } },
+          { type: 'verdict', actor: 'outside', ts: 't3', meta: { verdict: 'PASS', sha: 'b', engine: 'gemini · x', stale: true } },
+          { type: 'message', actor: 'outside', ts: 't4', text: '말' },
+        ]);
+        const avWant = av.auditors.length === 1 && av.auditors[0].actor === 'review' && av.auditors[0].verdict === 'PASS' && av.auditors[0].sha === 'b' && av.outsideAudited === false
+          && auditorsOf([{ type: 'verdict', actor: 'outside', ts: 't', meta: { verdict: 'PASS', sha: 'c', engine: 'codex · gpt-5.1' } }]).outsideAudited === true;
+        // 앞의 정식 흐름(라운드 1, 레오 PASS) 행에 박혔나
+        const r1 = listRounds(T).find((x) => x.round === 1);
+        const rowWant = r1?.outsideAudited === true && r1.auditors?.some((a) => a.actor === 'outside' && a.verdict === 'PASS') && !('outsideWhy' in r1);
+        // review 만 PASS → 거부. 중단 적으면 통과, 행에 outsideAudited:false · why 'suspended'
+        fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, review: { name: '검수', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
+        startRound(T, { milestone: 2, topic: '중단 시험' });
+        recordVerdict(T, { actor: 'review', verdict: 'PASS', text: '내부 됐다' });
+        emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['review'], skipped: [], reason: null } });
+        const refused = refuses(() => endRound(T, { verdict: 'PASS' }), '외부감사');
+        const sus = updateCastAgent(T, 'outside', { suspended: '2026-09-20' });
+        const susText = castChangeText('레오', sus.to);
+        const bad = castChangeError('guide', readCast(T).agents.guide, { suspended: '2026-09-20' }), badDate = castChangeError('outside', readCast(T).agents.outside, { suspended: '내일' });
+        let closed = null; try { endRound(T, { verdict: 'PASS' }); closed = listRounds(T).find((x) => x.round === readState(T).round); } catch (e) { closed = { err: e.message }; }
+        const unsus = updateCastAgent(T, 'outside', { suspended: 'none' });
+        fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
+        setMilestoneStatus(T, 2, 'wait');
+        for (const r of listApprovals({ team: T, status: 'pending' })) voidApproval(r.id, '자가 시험');
+        const sWant = refused === '✓ 거부' && susText === '대표가 레오를 중단(2026-09-20 복귀 예정) 로 바꿨습니다 — 다음 턴부터.' && bad?.includes('outside') && badDate?.includes('YYYY')
+          && closed?.outsideAudited === false && closed?.outsideWhy === 'suspended' && closed?.auditors?.[0]?.actor === 'review' && closed.verdict === 'PASS'
+          && unsus.to.suspended === null && readCast(T).agents.outside?.suspended === undefined;
+        out.push(['누가 봤나 · 중단(결정 117)', avWant && rowWant && sWant ? '✓ auditorsOf(stale 제외·자리당 마지막) · R1 행 outsideAudited:true · review 만 PASS 거부 · 중단이면 닫히고 false·suspended · 해제 null' : '✗ ' + JSON.stringify({ avWant, rowWant, refused, susText, bad, badDate, closed })]);
       }
       // codex 가 도는 중 표시 — outside.mjs 가 두고 지우는 파일. 내 pid 로 두면 참, 지우면 null, 죽은 pid 는 무시(SIGKILL 로 못 지운 표시).
       {
