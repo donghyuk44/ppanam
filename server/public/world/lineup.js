@@ -136,7 +136,7 @@ const tilt = FRONT ? 0.08 : 0.18;   // 정면 요청이면 거의 수평, 아니
 const depthRise = (ROWS - 1) * ROW_GAP * Math.sin(tilt);   // 뒷줄이 화면에서 올라가는 만큼
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
 const aspect = W / H;
-const needH = ONLY ? maxH * 1.15 : Math.max(span / aspect, maxH * 1.25 + depthRise);
+const needH = ONLY ? Math.max(maxH * 1.2, 1.6 / aspect) : Math.max(span / aspect, maxH * 1.25 + depthRise);   // 하나짜리는 팔 벌린 폭(≈1.3)이 들어가게 — 200px 세라 팔이 잘렸다(하네스 R25)
 const halfH = needH / 2, halfW = halfH * aspect;
 camera.left = -halfW; camera.right = halfW; camera.top = halfH * 1.15; camera.bottom = -halfH * 0.85;   // 발밑 조금, 머리 위 여유
 camera.updateProjectionMatrix();

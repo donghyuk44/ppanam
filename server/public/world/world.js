@@ -752,6 +752,9 @@ function initToolbar() {
   group('집', Object.keys(P).filter((n) => n.startsWith('home.') && n !== 'home.boss'));
   $('wvGoBtn').addEventListener('click', () => goTo(go.value));
   go.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); goTo(go.value); } });
+  // 서랍(결정 105) — 다시 보기·속도·배율·따라가기·시험용 시각은 눌러야 열린다. 처음 들어온 사람은 마을만 본다.
+  const more = $('wvMore'), drawer = $('wvDrawer');
+  if (more && drawer) more.addEventListener('click', () => { const open = drawer.hidden; drawer.hidden = !open; more.setAttribute('aria-expanded', String(open)); more.textContent = open ? '접기' : '더 보기'; });
 }
 
 /* ── 바깥에서 부르는 것 ── */

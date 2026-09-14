@@ -136,11 +136,17 @@
   <section class="world" id="world">
     <header class="world__bar">
       <div><h1>마을</h1><span class="world__hint">방향키로 움직이고, 누구 옆에서 Enter 를 누르면 말을 걸어요. 캐릭터를 누르면 그 사람이 누구인지, 말풍선의 ↗ 를 누르면 그 말이 보여요.</span></div>
+      <!-- 조작판 (결정 105 — "처음 들어온 사람이 손잡이를 하나도 안 만지고 마을을 볼 수 있는가"). 늘 보이는 건 "어디로 갈까" 한 줄뿐.
+           다시 보기·속도·배율·따라가기·시험용 시각은 서랍(wvMore) — 눌러야 열린다. 만들면서 쓰던 줄 다섯이 폰에서 마을을 절반 가렸다. -->
       <div class="world__ctl">
         <span class="world__scene" id="wvScene"><button type="button" data-scene="village">마을</button><button type="button" data-scene="castle">회사</button></span>
         <select id="wvGo" aria-label="어디로"></select>
         <button type="button" id="wvGoBtn">가기</button>
-        <span class="world__sep"></span>
+        <span class="world__clock" id="wvClock" title="세상의 시계"></span>
+        <button type="button" class="world__more" id="wvMore" aria-expanded="false" aria-controls="wvDrawer" title="다시 보기·속도·배율">더 보기</button>
+        <span class="world__status" id="wvStatus"></span>
+      </div>
+      <div class="world__drawer" id="wvDrawer" hidden>
         <select id="wvTeam" aria-label="다시 볼 팀"></select>
         <select id="wvRound" aria-label="다시 볼 회차"></select>
         <button type="button" id="wvPlay">재생</button>
@@ -149,9 +155,7 @@
         <select id="wvSpeed" aria-label="재생 속도" title="재생 속도 — 사건을 얼마나 빨리 돌리나"><option value="1">속도 1배</option><option value="2" selected>속도 2배</option><option value="4">속도 4배</option></select>
         <select id="wvZoom" aria-label="화면 배율" title="화면 배율 — 얼마나 크게 보나"><option value="1">화면 작게</option><option value="2" selected>화면 보통</option><option value="3">화면 크게</option></select>
         <label><input type="checkbox" id="wvCam" checked> 말하는 쪽으로 따라가기</label>
-        <span class="world__clock" id="wvClock" title="세상의 시계 — state/world.json"></span>
         <select id="wvHour" aria-label="시험용 시각" title="시험용으로 시각을 고정한다. 실제 시각으로 돌리려면 첫 항목"><option value="">실제 시각</option><option value="9">09시 출근</option><option value="12">12시 점심</option><option value="15">15시 근무</option><option value="19">19시 퇴근</option><option value="23">23시 밤</option></select>
-        <span class="world__status" id="wvStatus"></span>
       </div>
     </header>
     <div class="world__view" id="wvView">

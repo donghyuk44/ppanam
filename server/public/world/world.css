@@ -24,6 +24,13 @@
 .world__scene button { border: 0; border-radius: 0; background: var(--panel-2); }
 .world__scene button[aria-current="true"] { background: var(--seal); color: var(--seal-ink); }
 .world__sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
+/* 서랍(결정 105) — 다시 보기·속도·배율·따라가기·시험용 시각. 늘 보이는 줄은 위 world__ctl 하나뿐. */
+.world__drawer { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; padding: 6px 16px 10px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.world__drawer[hidden] { display: none; }
+.world__drawer select, .world__drawer button { font: inherit; font-size: 12px; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 7px; }
+.world__drawer button { cursor: pointer; }
+.world__drawer label { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); }
+.world__more[aria-expanded="true"] { background: var(--seal); color: var(--seal-ink); }
 
 .world__view { flex: 1; min-height: 0; overflow: hidden; background: #f3e9d8; position: relative; }
 /* 무대 — WebGL 캔버스와 글 층이 같은 네모를 덮는다. 카메라가 움직이지 화면은 안 흐른다(스크롤 없음). */
