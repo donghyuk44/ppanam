@@ -614,6 +614,29 @@ switch (cmd) {
           && unsus.to.suspended === null && readCast(T).agents.outside?.suspended === undefined;
         out.push(['누가 봤나 · 중단(결정 118)', avWant && rowWant && sWant ? '✓ auditorsOf(stale 제외·자리당 마지막) · R1 행 outsideAudited:true · review 만 PASS 거부 · 중단이면 닫히고 false·suspended · 해제 null' : '✗ ' + JSON.stringify({ avWant, rowWant, refused, susText, bad, badDate, closed })]);
       }
+      // 만든 사람이 판정하지 않는다(대표 지시 R25) — 마지막 판정 카드의 자리가 이 라운드에 Edit·Write 를 남겼으면 거부, 다른(안 고친) 자리가 새 PASS 를 내면 스스로 풀린다.
+      {
+        const { buildersOf } = await import('./bus.mjs');
+        const bWant = buildersOf([
+          { type: 'tool', actor: 'review', meta: { tool: 'Edit' } },
+          { type: 'tool', actor: 'guide', meta: { tool: 'Read' } },
+        ]).size === 1;
+        fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, review: { name: '검수', model: 'claude' }, outside: { name: '레오', model: 'claude' }, boss: { name: '댄', model: null } } }));
+        startRound(T, { milestone: 2, topic: '자기 판정 시험' });
+        emit(T, { actor: 'review', type: 'tool', text: '고침', meta: { tool: 'Edit' } });
+        recordVerdict(T, { actor: 'review', verdict: 'PASS', text: '내가 고치고 내가 됐다' });
+        emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['review'], skipped: [], reason: null } });
+        const selfRefused = refuses(() => endRound(T, { verdict: 'PASS' }), '만든 사람');
+        // 회복 — 안 고친 다른 자리(outside)가 새로 PASS 를 내면 그게 마지막 판정이 되어 중단 없이도 닫힌다
+        recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: '내가 봤다' });
+        emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['review', 'outside'], skipped: [], reason: null } });
+        let closed2 = null; try { endRound(T, { verdict: 'PASS' }); closed2 = true; } catch (e) { closed2 = e.message; }
+        fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
+        setMilestoneStatus(T, 2, 'wait');
+        for (const r of listApprovals({ team: T, status: 'pending' })) voidApproval(r.id, '자가 시험');
+        const want = bWant && selfRefused === '✓ 거부' && closed2 === true;
+        out.push(['만든 사람이 판정하지 않는다(R25)', want ? '✓ buildersOf(Edit·Write) · review 가 고치고 PASS → 거부 · 안 고친 outside 가 새 PASS → 회복' : '✗ ' + JSON.stringify({ bWant, selfRefused, closed2 })]);
+      }
       // codex 가 도는 중 표시 — outside.mjs 가 두고 지우는 파일. 내 pid 로 두면 참, 지우면 null, 죽은 pid 는 무시(SIGKILL 로 못 지운 표시).
       {
         markOutsideRunning(T, 'outside');

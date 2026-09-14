@@ -1110,7 +1110,23 @@ export function endRefusal(team, { verdict = null } = {}) {
   if (out && isForeign(out.model) && !out.suspended && !auditorsOf(events).outsideAudited) {
     return `외부감사(${out.name ?? 'outside'})의 PASS 카드가 이 라운드에 없습니다 — 내부감사만으로는 PASS 로 닫지 못합니다 (CLAUDE.md). 외부 감사를 못 부르는 동안이면 그 자리를 중단(suspended)으로 적으세요 (결정 118 ②).`;
   }
+  // 만든 사람이 판정하지 않는다(CLAUDE.md, 대표 지시 R25 "만든 사람이 자기 걸 통과시키는 것 막기") — 마지막 판정 카드를 낸 자리가
+  // 이 라운드에 파일을 직접 고쳤으면(Edit·Write) 그건 자기 것을 통과시킨 것이다. 마지막 카드만 본다 — 다른(안 고친) 자리가
+  // 그 뒤에 새로 PASS 를 내면 그게 새 "마지막 판정" 이 되어 스스로 풀린다(중단 없이도 회복). dev·design 처럼 review 자리가
+  // 아예 없는 팀은 대개 이 자리가 안 걸린다 — "실무 둘이 서로 감사" 로 갈지는 별도 결정할 일(대표 C, 여기서 안 정한다).
+  const lastActor = events[last].actor;
+  if (buildersOf(events).has(lastActor)) {
+    const name = readCast(team).agents?.[lastActor]?.name ?? lastActor;
+    return `${name} 가 이 라운드에 직접 고쳤습니다(Edit·Write) — 만든 사람이 판정하지 않습니다 (CLAUDE.md). 다른 사람이 봐야 닫을 수 있습니다.`;
+  }
   return null;
+}
+
+/** 이 라운드에 파일을 고친(Edit·Write) 자리들 — 그 자리의 판정 카드는 "만든 사람이 판정" 이 된다(대표 지시, R25). 순수 함수. */
+export function buildersOf(events) {
+  const s = new Set();
+  for (const e of events) if (e.type === 'tool' && (e.meta?.tool === 'Edit' || e.meta?.tool === 'Write')) s.add(e.actor);
+  return s;
 }
 
 /** 닫을 수 없으면 사유를 방에 남기고 던진다. 서버(/api/round)는 미루기 전에, endRound 는 닫기 직전에 부른다. */
