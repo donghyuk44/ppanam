@@ -847,6 +847,18 @@ switch (cmd) {
           if (!parts.characters.boss) bad.push('characters: boss 없음');
         } catch (e) { bad.push(`읽기 실패: ${e.message}`); }
         out.push(['마을 파일 형식(M5) — city ↔ parts ↔ glb', bad.length ? `✗ ${bad.slice(0, 4).join(' · ')}${bad.length > 4 ? ` (+${bad.length - 4})` : ''}` : '✓ 부품·수정 표·인형 열여섯·집 자리 전부 맞음']);
+        // 말풍선 쪼개기(대표 원문 R25 "박스를 여러개로") — server/public/world/speech.js 순수 함수. 문장 끝에서 자르고, 짧은 문장은 붙이고, 긴 문장은 띄어쓰기에서, 조각은 PIECES 까지.
+        const { splitSpeech, PIECE, PIECES } = await import('../server/public/world/speech.js');
+        const sp1 = splitSpeech('됩니다. 아니 잠깐, 안 되네요. 5분만요.');                                          // 짧은 문장 셋 → 한 조각
+        const sp2 = splitSpeech('첫 문장입니다.\n둘째 줄은 따로 뜹니다');                                              // 줄바꿈은 항상 자른다
+        const sp3 = splitSpeech('가 '.repeat(70).trim());                                                          // 띄어쓰기만 있는 긴 한 문장 → PIECE 안팎에서 강제로
+        const sp4 = splitSpeech('이 문장은 조각 하나를 거의 다 채우는 길이로 써 둔 것입니다 하나. '.repeat(PIECES * 2).trim());   // 둘이면 PIECE 를 넘는 문장 열둘 → PIECES 개, 마지막에 …
+        const spBoss = splitSpeech('그리고 추가 기능으로 이제 채팅방에서 너네 썸네일에 마우스로 클릭하면 팝업으로 너네의 프로필이 보이는것 (이미지 업로드하고싶은데 업로드가 채팅에 안되네, 이것도 있어야 내가 이미지 공유하는데), 페이스북 카카오톡 프로필 누르면 이제 나오는 정사각형 카드, 인터넷에 검색하면 샘플 많이 나오잖아. 이것도 추가하고 싶어.');
+        const spOk = sp1.length === 1 && sp2.length === 2 && sp2[1] === '둘째 줄은 따로 뜹니다'
+          && sp3.every((p) => p.length <= PIECE) && sp3.join(' ') === '가 '.repeat(70).trim()
+          && sp4.length === PIECES && sp4[PIECES - 1].endsWith(' …')
+          && spBoss.every((p) => p.length <= PIECE + 2) && spBoss.length >= 3 && spBoss.length <= PIECES && splitSpeech('') .length === 0;
+        out.push(['말풍선 쪼개기(speech.js)', spOk ? `✓ 짧은 셋 → 1 · 줄바꿈 2 · 긴 한 문장 ${sp3.length}조각(≤${PIECE}) · 넘치면 ${PIECES}+… · 대표 사진 문장 ${spBoss.length}조각` : '✗ ' + JSON.stringify({ sp1, sp2, sp3: sp3.map((p) => p.length), sp4: sp4.length, spBoss })]);
       }
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });

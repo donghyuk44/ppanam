@@ -791,14 +791,14 @@ LLM 이 좌표나 행동을 정하는 채널은 없다 (Project Sid 의 "말과 
 | 자리 | `places` | `<팀>.desk.<자리>` · `<팀>.seat.n` · `<팀>.table` · `<팀>.door` · `hq.board` · `hq.bossdoor` · `boss.desk` · `castle.entrance` · `village.gate` · `plaza` · `cafe.seat.n` · `home.<팀>.<자리>` · `home.boss`. 각각 `{scene, x, y, dir}` |
 | 포탈 | `scenes.*.portals` | `{x, y, to}` — 댄이 그 칸에 서면 `to` 자리로 옮겨지고 장면이 바뀐다. 성문 ↔ 회사 정문 |
 | 그림 | `server/public/world/assets/` | 출처·라이선스는 `assets/LICENSES.md`. 여기 없는 그림은 화면에 없다 |
-| 화면 | `server/public/world/world.js` · `world.css` | 캔버스가 그림, DOM 이 글(말풍선·이름표·띠) |
+| 화면 | `server/public/world/world.js` · `world.css` | 캔버스가 그림, DOM 이 글(말풍선·이름표·띠). 말 → 조각은 `speech.js`(순수, `round.mjs check` 가 돌린다) |
 
 **사건 → 연출** (W1 + W3)
 
 | 사건 | 연출 |
 | --- | --- |
-| `message` (자리) | 화자 위 말풍선. 80자까지, 누르면 전문. 한 사람에 최대 셋. 첫머리에 이름을 불렀으면 그 사람을 바라본다 |
-| `message` (boss) | 댄이 그 방 문(총괄실은 대표실 문)에 나타나 말한다. 댄이 직접 움직이는 중이면 그 자리에서 |
+| `message` (자리) | 화자 위 말풍선 — 만화처럼 **조각으로**(대표 원문 R25 "박스를 여러개로"): `speech.js splitSpeech` 가 줄바꿈·문장 끝에서 자르고 짧은 문장은 60자 안에서 붙여, 2.4초마다 하나씩 띄운다. 한 사람에 최대 셋(오래된 것부터 진다), 조각은 여섯까지 — 넘치면 마지막에 `…`, 전문은 ↗ 작전실. 누르면 좀 더 머문다. 같은 말이 1분 안에 또 오면(원문 배달로 세 방에 같이 기록) 한 번만. 첫머리에 이름을 불렀으면 그 사람을 바라본다 |
+| `message` (boss) | 댄이 그 방 문(총괄실은 대표실 문)에 나타나 말한다. 댄이 직접 움직이는 중이면 그 자리에서. 조각 규칙은 같다 |
 | `message` (마을에서 댄이 Enter 로 말 건 사람의 답) | 그 사람이 댄 옆까지 걸어와 마주 보고 말한다 |
 | `message` (system) · `note` | 방 위에 띠 |
 | `note` 승인 요청 (`meta.approval`) | 띠 + 요청자가 총괄실 게시판(`hq.board`)까지 걸어가 두루마리를 붙인다(말풍선) |

@@ -6,8 +6,10 @@
 // 대표(댄)만 사람이라 방향키로 움직이고, 옆 사람에게 Enter 로 말을 건다 — 그 말은 작전실과 같은 /api/say 로 간다.
 // 장면은 둘이다: 마을(village) 과 회사(castle, 성 안). 포탈(성문·정문)로 오가고, "어디로" 목록으로 바로 간다.
 
+import { splitSpeech } from './speech.js';        // 말 → 말풍선 조각 (순수, check 가 같은 것을 돌린다)
+
 const $ = (id) => document.getElementById(id);
-const TP = 32;                                     // 칸 한 변(px) — 걷기 코드는 px/py 로 셈하고, 그림은 px/TP 를 칸 좌표로 받는다
+const TP = 32;                                   // 칸 한 변(px) — 걷기 코드는 px/py 로 셈하고, 그림은 px/TP 를 칸 좌표로 받는다
 const DIR = { down: 0, left: 1, up: 2, right: 3 }; // 방향 번호
 const WALK = 4;                                    // 초당 걷는 칸 수
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -17,7 +19,7 @@ const S = {
   open: false, ready: null, map: null, gl: null,     // gl: draw3d.js 의 그림 — CDN 이 안 오면 null 이고 마을은 "못 불러왔습니다"
   z: 2, teams: [], casts: {}, actors: new Map(), boss: null,
   scene: 'castle',                                   // 보고 있는 장면
-  bubbles: new Set(), cam: true, raf: 0, last: 0,
+  bubbles: new Set(), speaking: new Set(), cam: true, raf: 0, last: 0,   // speaking — 쪼갠 말의 다음 조각이 남은 사람
   world: null,                                       // 세상의 시계 — 서버가 준 { hour, mode, actors } (W2)
 };
 const MODE_LABEL = { work: '근무', lunch: '점심', evening: '퇴근', night: '밤', rest: '휴식' };
@@ -320,28 +322,45 @@ function frame(t) {
   tick(dt); expireBubbles(); render();
 }
 
-/* ── 말풍선 — 사람 머리 위 기둥(a.tag, CSS2D)에 쌓인다. 자리는 3D 가 옮기고 여기는 만들고 지우기만. ── */
+/* ── 말풍선 — 사람 머리 위 기둥(a.tag, CSS2D)에 쌓인다. 자리는 3D 가 옮기고 여기는 만들고 지우기만. ──
+   긴 말은 풍선 하나로 키우지 않고 만화처럼 쪼갠다(대표 원문 R25 "줄바꿈, 한 박스에 표현할 내용이 너무 많으면 박스를 여러개로") —
+   문장 단위로 PIECE 자 안팎씩 묶어 PACE 마다 하나씩 띄운다. 기둥에는 셋까지, 넘치면 오래된 것부터 진다.
+   조각은 PIECES 까지 — 그 뒤는 '…' 로 접고 ↗ 로 작전실에서 읽는다. 쪼개는 규칙은 speech.js(순수 — check 가 돌린다). */
+const PACE = 2400;
 
 function speak(a, text, { kind = 'say', who = a.name, cls = '', ms, id = null, team = a.team } = {}) {
   const full = String(text ?? '').trim();
   if (!full && kind !== 'tool') return null;
-  // 같은 말이 여러 방에 한꺼번에 기록되면(대표 원문 배달 — hq·design·dev 셋) 같은 사람 머리 위에 똑같은 풍선이 셋 쌓였다(대표 사진, R25). 있는 풍선을 늘려 쓴다.
-  const same = kind === 'say' && [...S.bubbles].find((o) => o.a === a && o.kind === 'say' && o.full === full);
-  if (same) { same.until = Math.max(same.until, performance.now() + clamp(3000 + full.length * 70, 4000, 14000)); return same; }
+  if (kind !== 'say') return bubble(a, full, { kind, who, cls, ms, id, team });
+  // 같은 말이 여러 방에 한꺼번에 기록되면(대표 원문 배달 — hq·design·dev 셋) 같은 사람 머리 위에 똑같은 풍선이 셋 쌓였다(대표 사진, R25). 1분 안 같은 말은 한 번만.
+  const now = performance.now();
+  if (a.lastFull === full && now - (a.lastFullAt ?? -1e9) < 60000) return null;
+  a.lastFull = full; a.lastFullAt = now;
+  a.queue = splitSpeech(full).map((p) => ({ text: p, who, cls, id, team }));   // 앞 말이 남아 있어도 새 말이 이긴다 — 한 사람의 큐는 하나
+  a.nextAt = now;
+  drainSpeech(a);
+  return null;
+}
+/** 큐에서 조각 하나 — 프레임마다(expireBubbles) 불려 PACE 마다 하나씩 띄운다 */
+function drainSpeech(a) {
+  if (!a.queue?.length || performance.now() < a.nextAt) return;
+  const p = a.queue.shift();
+  bubble(a, p.text, { kind: 'say', who: p.who, cls: p.cls, id: p.id, team: p.team });
+  a.nextAt = performance.now() + PACE;
+  if (a.queue.length) S.speaking.add(a); else a.queue = null;
+}
+
+function bubble(a, text, { kind = 'say', who = a.name, cls = '', ms, id = null, team = a.team } = {}) {
   const el = document.createElement('div'); el.className = `wb ${cls}`;
   if (kind !== 'tool') { const w = document.createElement('span'); w.className = 'wb__who'; w.textContent = who; el.appendChild(w); }
-  const short = full.length > 80 ? full.slice(0, 80) + '…' : full;
-  const body = document.createElement('span'); body.textContent = kind === 'tool' ? '⌨ 작업 중' : short; el.appendChild(body);
+  const body = document.createElement('span'); body.textContent = kind === 'tool' ? '⌨ 작업 중' : text; el.appendChild(body);
   if (id && team && S.jump) {                       // 기록된 발언이면 작전실의 그 자리로 건너갈 수 있다 (W3)
     const go = document.createElement('button'); go.type = 'button'; go.className = 'wb__go'; go.textContent = '↗'; go.title = '작전실에서 보기';
     go.addEventListener('click', (ev) => { ev.stopPropagation(); S.jump(team, id); });
     el.appendChild(go);
   }
-  const b = { el, a, kind, full, until: performance.now() + (ms ?? clamp(3000 + full.length * 70, 4000, 14000)), expanded: false };
-  el.addEventListener('click', () => {
-    b.expanded = !b.expanded; body.textContent = b.expanded ? full : short; el.classList.toggle('wb--full', b.expanded);
-    b.until = performance.now() + (b.expanded ? 20000 : 4000);
-  });
+  const b = { el, a, kind, until: performance.now() + (ms ?? clamp(3000 + text.length * 70, 4000, 14000)) };
+  el.addEventListener('click', () => { b.until = performance.now() + 12000; });   // 누르면 좀 더 머문다
   const mine = [...S.bubbles].filter((o) => o.a === a && o.kind !== 'tool');
   while (mine.length >= 3) removeBubble(mine.shift());          // 한 사람에 최대 셋
   S.bubbles.add(b);
@@ -356,9 +375,11 @@ function removeBubble(b) {
 function expireBubbles() {
   const now = performance.now();
   for (const b of S.bubbles) if (now > b.until) removeBubble(b);
+  for (const a of S.speaking) { drainSpeech(a); if (!a.queue) S.speaking.delete(a); }
 }
 function clearBubbles(team) {
   for (const b of [...S.bubbles]) if (!team || b.a.team === team) removeBubble(b);
+  for (const a of S.speaking) if (!team || a.team === team) { a.queue = null; S.speaking.delete(a); }
 }
 
 /** 방 위에 띄우는 띠 — round_start/end·note·system 발언 */
