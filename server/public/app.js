@@ -91,6 +91,13 @@ function bubble(text, team = active) {
   let body = src.replace(/```[^\n]*\n([\s\S]*?)```/g, (_, code) => { blocks.push(['코드', code]); return `\u0000${blocks.length - 1}\u0000`; });
   // 표는 머리줄 + 구분선(|---|) 이 있어야 표다. '|' 로 시작하는 줄 둘만으로 판정하면 일반 문장을 잡아먹는다 (레오 감사, 2026-09-12).
   body = body.replace(/(?:^|\n)([ \t]*\|[^\n]*\n[ \t]*\|?[ \t]*:?-{3,}[ \t|:-]*(?:\n(?:[ \t]*\|[^\n]*(?:\n|$))*)?)/g, (m, tbl) => { blocks.push(['표', tbl.trim()]); return `\n\u0000${blocks.length - 1}\u0000`; });
+  // 호명 표시(결정 128) — 첫머리 "@이름" 또는 "이름," 을 그 사람 색으로 굵게. 낱말 규칙은 하영 몫이라 이 둘로 임시.
+  let mentionHtml = '';
+  const mm = /^(@?)([가-힣]{1,6})(,|\s|$)/.exec(body);
+  if (mm) {
+    const hit = Object.values(cast.agents ?? {}).find((p) => p.name === mm[2]);
+    if (hit) { mentionHtml = `<b class="mention" style="color:${hit.color ?? FALLBACK.color}">${escapeHtml(mm[1] + mm[2])}</b>${escapeHtml(mm[3])}`; body = body.slice(mm[0].length); }
+  }
   let html = escapeHtml(body)
     .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
     .replace(/`([^`\n]+)`/g, '<code>$1</code>')
@@ -102,7 +109,7 @@ function bubble(text, team = active) {
     const [kind, content] = blocks[Number(i)];
     return `<details class="bub__fold"><summary>${kind} 보기</summary><pre>${escapeHtml(content)}</pre></details>`;
   });
-  n.innerHTML = html.trim();
+  n.innerHTML = mentionHtml + html.trim();
   // 그림은 말풍선 안에, md·글은 눌러 펼쳐 읽게. 여섯 개까지 — 나머지는 링크로 족하다.
   for (const f of findOutPaths(body, team).filter((f) => f.kind !== 'file').slice(0, 6)) n.appendChild(outFileNode(f));
   return n;
@@ -765,7 +772,7 @@ function connect() {
     $('liveDot').dataset.on = '1';
     if (active) renderWork();
     // 끊겼다 붙었다. 그 사이 발언은 소켓으로 안 왔다 — 보던 방을 다시 불러온다. 안 그러면 화면이 조용히 빠진다.
-    if (everOpened && active) selectTeam(active).then(() => { if (view === 'tower') renderTower(); if (view === 'analysis') loadAnalysis(); });
+    if (everOpened && active) selectTeam(active).then(() => { if (view === 'tower') renderTower(); if (view === 'dashboard') loadDashboard(); if (view === 'analysis') loadAnalysis(); });
     everOpened = true;
   };
   ws.onclose = () => {
@@ -789,6 +796,8 @@ function connect() {
         pendingMark = pend;
         fetch('/api/approvals').then((r) => r.json()).then((a) => { approvals = a.pending ?? []; told = a.told ?? told; renderApprovals(); renderBossBadge(); if (view === 'tower') renderTower(); }).catch(() => {});
       } else if (view === 'tower') renderTower();
+      // 대시보드는 summaries 랑 안 엮여 있어 매번 재 보되(파일 하나, 가볍다), 안 바뀌었으면 loadDashboard 안에서 다시 안 그린다.
+      if (view === 'dashboard') loadDashboard();
       // 분석은 값이 실제로 움직였을 때만 다시 불러온다. 250ms 마다 받아올 이유가 없다.
       if (view === 'analysis') {
         const s = summaries[active] ?? {};
@@ -982,7 +991,7 @@ $('scrim').addEventListener('click', () => openSide(false));
 /* ══ 화면 전환 ══ */
 
 let view = 'room';
-const VIEWS = new Set(['room', 'tower', 'analysis', 'world']);
+const VIEWS = new Set(['room', 'tower', 'dashboard', 'analysis', 'world']);
 
 // 주소에 팀과 화면을 함께 남긴다 (#marketing/tower). 새로고침해도, 뒤로 가도 보던 곳으로 돌아온다.
 // 우리가 쓴 해시는 되읽지 않는다 — 안 그러면 화면을 바꿀 때마다 한 번 더 바꾸려 든다.
@@ -1012,6 +1021,7 @@ function setView(v) {
     b.setAttribute('aria-current', String(b.dataset.view === v));
   }
   if (v === 'tower') renderTower();
+  if (v === 'dashboard') loadDashboard();
   if (v === 'analysis') loadAnalysis();
   // 마을은 열려 있을 때만 그린다. 닫히면 rAF 를 멈춘다 — 관람은 공짜여야 한다.
   if (v === 'world') World.open({ teams, jump: jumpTo }).catch(() => {}); else World.close();
@@ -1740,6 +1750,47 @@ function renderTowerTeams(grid) {
     const back = grid.querySelector(`.tcard__in[data-team="${keep.team}"]`);
     if (back) { back.focus(); try { back.setSelectionRange(keep.pos, keep.pos); } catch { /* 무시 */ } }
   }
+}
+
+/* ══ 대시보드 (결정 128) ══ */
+
+let dashMark = '';
+
+/** teams/hq/out/plan-table.md 를 그대로 — 톰이 파일로 관리한다. 읽기만, 여기서 안 고친다.
+ * 표 문법만 안다(머리·구분줄·데이터줄) — 이 파일이 쓰는 것 이상은 필요 없다. */
+function mdToDom(text) {
+  const box = el('div');
+  const lines = String(text ?? '').split('\n');
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const h = /^(#{1,2})\s+(.*)$/.exec(line);
+    if (h) { box.appendChild(el(h[1].length === 1 ? 'h1' : 'h2', null, h[2])); i++; continue; }
+    if (line.startsWith('|') && /^\|[\s:-]+\|/.test(lines[i + 1] ?? '')) {
+      const cells = (row) => row.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+      const head = cells(line);
+      const table = el('table');
+      const thead = el('tr'); for (const c of head) thead.appendChild(el('th', null, c)); table.appendChild(thead);
+      i += 2;
+      while (i < lines.length && lines[i].startsWith('|')) {
+        const tr = el('tr'); for (const c of cells(lines[i])) tr.appendChild(el('td', null, c)); table.appendChild(tr); i++;
+      }
+      box.appendChild(table); continue;
+    }
+    if (line.trim()) box.appendChild(el('p', null, line.trim()));
+    i++;
+  }
+  return box;
+}
+
+async function loadDashboard() {
+  const r = await fetch('/api/dashboard').then((r) => r.json()).catch(() => null);
+  const body = $('dashBody');
+  if (dashMark === r?.at) return;   // 안 바뀌었으면 다시 안 그린다(입력 중이면 커서 튐 방지 — 다른 탭과 같은 습관)
+  dashMark = r?.at ?? '';
+  body.replaceChildren();
+  if (!r?.text) { body.appendChild(el('p', 'tcard__quiet', '아직 예정 작업 표가 없어요 — teams/hq/out/plan-table.md 가 오면 여기 뜹니다.')); return; }
+  body.appendChild(mdToDom(r.text));
 }
 
 /* ══ 분석 ══ */

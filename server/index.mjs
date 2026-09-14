@@ -300,6 +300,13 @@ const server = http.createServer((req, res) => {
     }));
   }
 
+  // 예정 작업 표(결정 128) — teams/hq/out/plan-table.md 를 그대로 읽어 대시보드 맨 위에 띄운다. 읽기만, 톰이 파일로 관리한다.
+  if (url.pathname === '/api/dashboard') {
+    const file = path.join(paths('hq').out, 'plan-table.md');
+    try { return json(res, 200, { text: fs.readFileSync(file, 'utf8'), at: fs.statSync(file).mtime.toISOString() }); }
+    catch { return json(res, 200, { text: null }); }
+  }
+
   // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.
   if (url.pathname === '/api/analysis') {
     if (!teamExists(team)) return json(res, 404, { error: '그런 팀이 없습니다.' });

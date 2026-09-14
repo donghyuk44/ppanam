@@ -544,12 +544,22 @@ body {
   font-weight: 500;
 }
 
-.tower, .analysis { display: none; flex-direction: column; min-height: 0; background: var(--ground); }
+.tower, .analysis, .dashboard { display: none; flex-direction: column; min-height: 0; background: var(--ground); }
 .app[data-view="tower"] .tower,
-.app[data-view="analysis"] .analysis { display: flex; }
+.app[data-view="analysis"] .analysis,
+.app[data-view="dashboard"] .dashboard { display: flex; }
 .app[data-view="tower"] .room, .app[data-view="tower"] .side,
-.app[data-view="analysis"] .room, .app[data-view="analysis"] .side { display: none; }
-.app[data-view="tower"], .app[data-view="analysis"] { grid-template-columns: 224px minmax(0, 1fr); }
+.app[data-view="analysis"] .room, .app[data-view="analysis"] .side,
+.app[data-view="dashboard"] .room, .app[data-view="dashboard"] .side { display: none; }
+.app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"] { grid-template-columns: 224px minmax(0, 1fr); }
+
+.dash__body { padding: 16px 22px; overflow: auto; }
+.dash__body table { border-collapse: collapse; width: 100%; margin-bottom: 18px; font-size: 13px; }
+.dash__body th, .dash__body td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top; }
+.dash__body th { background: var(--panel); font-weight: 600; }
+.dash__body h1, .dash__body h2 { font-family: 'Gowun Batang', serif; font-weight: 400; margin: 14px 0 8px; }
+.dash__body h1:first-child, .dash__body h2:first-child { margin-top: 0; }
+.dash__body p { margin-bottom: 10px; color: var(--ink-4); font-size: 13px; }
 
 .tower__head { padding: 20px 22px 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .tower__head h1 { font-family: 'Gowun Batang', serif; font-size: 19px; font-weight: 400; }

@@ -42,6 +42,7 @@
     <nav class="views" id="views" aria-label="화면">
       <button type="button" data-view="room">작전실</button>
       <button type="button" data-view="tower">관제탑</button>
+      <button type="button" data-view="dashboard">대시보드</button>
       <button type="button" data-view="analysis">분석</button>
       <button type="button" data-view="world">마을</button>
     </nav>
@@ -121,6 +122,15 @@
       <button type="button" data-tab="asks">요청</button>
     </nav>
     <div class="tower__grid" id="towerGrid"></div>
+  </section>
+
+  <!-- 대시보드(결정 81·92·128) — 1판: 톰이 쓰는 예정 작업 표(teams/hq/out/plan-table.md)를 그대로. 화면·집계는 M6 안에서 계속 붙는다 -->
+  <section class="dashboard" id="dashboard">
+    <header class="tower__head">
+      <h1>대시보드</h1>
+      <p>예정 작업 표 — 톰이 파일로 관리해요. 파일이 바뀌면 여기도 바뀝니다.</p>
+    </header>
+    <div class="dash__body" id="dashBody"></div>
   </section>
 
   <!-- 분석: 팀 하나를 깊게 -->
