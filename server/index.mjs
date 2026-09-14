@@ -348,6 +348,24 @@ const server = http.createServer((req, res) => {
     return json(res, 200, { since: new Date(win.since != null ? new Date(win.since).getTime() : bus.dayStartSeoul(now)).toISOString(), until: new Date(win.until != null ? new Date(win.until).getTime() : now).toISOString(), items });
   }
 
+  // 보고서 = "어제 하루가 어땠나"(나리 정본 · 결정 80) 의 아래층 — 기계가 모으는 것만: 창 안의 doneOf 팀별 · 각 방 '다음' · 창 안 mtime 의 out/ 그림 · 대리 결정 · 사람 글(teams/hq/out/daily/<날짜>.md, 있으면).
+  // 틀(다섯 절·글)은 경영팀 몫이라 여기서 안 짠다. 창은 since·until(ISO/ms), 기본 "어젯밤" = 어제 18시 ~ 오늘 9시(우리 시각). 계약 3절 "화면 넷 + 카드".
+  if (url.pathname === '/api/report') {
+    const now = Date.now();
+    const day0 = bus.dayStartSeoul(now);
+    const num = (v) => (v == null ? null : Number.isFinite(Number(v)) ? Number(v) : Date.parse(v));
+    const since = num(url.searchParams.get('since')) ?? day0 - 6 * 3600_000, until = num(url.searchParams.get('until')) ?? Math.min(now, day0 + 9 * 3600_000);
+    const rooms = listTeams().filter((t) => !bus.roomRules(t.id).speakers);
+    const doneBy = rooms.map((t) => ({ team: t.id, name: t.name, items: bus.doneOf(readLog(t.id), readCast(t.id).agents ?? {}, { team: t.id, approvals: listApprovals({ team: t.id }), since, until, now })
+      .map((it) => ({ ...it, name: it.by ? (readCast(t.id).agents?.[it.by]?.name ?? readCast('hq').agents?.[it.by]?.name ?? it.by) : null })) }));
+    const next = Object.fromEntries(rooms.map((t) => [t.id, bus.readProgress(t.id)?.next ?? []]));
+    const images = rooms.flatMap((t) => listOut(t.id).filter((f) => /\.(png|jpe?g|gif|webp)$/i.test(f.name) && Date.parse(f.at) >= since && Date.parse(f.at) < until).map((f) => ({ team: t.id, name: f.name, at: f.at, url: `/out/${t.id}/${f.name.split('/').map(encodeURIComponent).join('/')}` })));
+    const proxy = rooms.flatMap((t) => readLog(t.id).filter((e) => e.type === 'note' && e.meta?.proxy && Date.parse(e.ts) >= since && Date.parse(e.ts) < until).map((e) => ({ team: t.id, id: e.id, ts: e.ts, text: e.text, approval: e.meta.approval ?? null })));
+    const dayKey = new Date(until - 1 + 9 * 3600_000).toISOString().slice(0, 10);   // 창의 끝 날(우리 시각) — 아침 보고서 파일 이름
+    let chief = null; try { chief = fs.readFileSync(path.join(paths('hq').out, 'daily', `${dayKey}.md`), 'utf8'); } catch { /* 그날 글이 없다 */ }
+    return json(res, 200, { since: new Date(since).toISOString(), until: new Date(until).toISOString(), done: doneBy, next, images, proxy, chief, chiefFile: chief ? `hq/out/daily/${dayKey}.md` : null });
+  }
+
   // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.
   if (url.pathname === '/api/analysis') {
     if (!teamExists(team)) return json(res, 404, { error: '그런 팀이 없습니다.' });
