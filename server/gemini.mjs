@@ -43,10 +43,13 @@ function textOf(j) {
 
 function onLine(s, line) {
   s.raw.push(line.slice(0, 400)); if (s.raw.length > 24) s.raw.shift();   // 모양을 모를 때 보는 마지막 줄들 — 빈 답이면 같이 돌려준다
-  let j; try { j = JSON.parse(line); } catch { return; }
-  if (j.event === 'init' || j.type === 'init') { s.conversationId = j.conversation_id ?? j.session_id ?? s.conversationId; return; }
+  let raw; try { raw = JSON.parse(line); } catch { return; }
+  // 실측(나리 R25): 알맹이가 사건 이름 밑에 한 겹 더 들어 있다 — {"event":"result","result":{"status":"SUCCESS","response":"4입니다.\n",…}}.
+  // 그래서 첫 실측이 "빈 답" 이었다. 그 겹을 벗기고, 안 그런 모양(평평한 것)도 그대로 받는다.
+  const ev = raw.event ?? raw.type;
+  const j = ev && raw[ev] && typeof raw[ev] === 'object' && !Array.isArray(raw[ev]) ? { ...raw[ev], event: ev } : raw;
+  if (ev === 'init') { s.conversationId = j.conversation_id ?? j.session_id ?? s.conversationId; return; }
   const p = s.pending; if (!p) return;
-  const ev = j.event ?? j.type;
   if (ev === 'result') {
     clearTimeout(p.timer); s.pending = null; s.turns += 1;
     if (j.conversation_id) s.conversationId = j.conversation_id;
@@ -99,6 +102,19 @@ export function ask({ team, actor, prompt, model, effort = null, resume = null, 
 /** 상태 — 관제탑·상황판이 본다. */
 export function status() {
   return [...pool.entries()].map(([key, s]) => ({ key, model: s.model, effort: s.effort, conversationId: s.conversationId, busy: !!s.pending, queued: s.queue.length, turns: s.turns, since: new Date(s.since).toISOString(), pid: s.child.pid }));
+}
+
+/**
+ * 시험용(round.mjs check) — 프로세스 없이 줄만 넣어 본다. 실측 줄(나리 R25)이 그대로 check 에 있다.
+ * @returns Promise<{answer, sessionId, firstMs, totalMs}> — lines 를 차례로 먹인 결과
+ */
+export function parseLines(lines) {
+  return new Promise((resolve, reject) => {
+    const s = { raw: [], conversationId: null, turns: 0, queue: [], pending: null, child: { stdin: { write() {} } } };
+    s.pending = { text: '', first: null, at: Date.now(), timer: setTimeout(() => {}, 0), resolve, reject, onDelta: null };
+    for (const l of lines) onLine(s, l);
+    if (s.pending) { clearTimeout(s.pending.timer); reject(new Error('result 줄이 없다')); }
+  });
 }
 
 /** 서버가 내려갈 때 — stdin 을 닫아 곱게 끝낸다. */

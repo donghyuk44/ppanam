@@ -865,6 +865,20 @@ switch (cmd) {
           && allowedIn(sr, { actor: 'boss', type: 'message' }) && allowedIn(sr, { actor: 'secretary', type: 'message' })
           && !allowedIn(sr, { actor: 'secretary', type: 'tool' }) && !allowedIn(sr, { actor: 'system', type: 'note' }) && !allowedIn(sr, { actor: 'chief', type: 'message' })
           && allowedIn(hr, { actor: 'system', type: 'note' }) && allowedIn(dr, { actor: 'guide', type: 'tool' });
+        // 상주 gemini 스트림 파서(결정 122) — 실측 줄(나리 R25): 알맹이가 사건 이름 밑에 한 겹(result.result.response). 첫 실측이 그래서 빈 답이었다. 평평한 모양도 같이.
+        const { parseLines } = await import('../server/gemini.mjs');
+        const nested = await parseLines([
+          '{"event":"init","init":{"conversation_id":"dd6f16b7-0000"}}',
+          '{"event":"step_update","step_update":{"state":"RUNNING","text_delta":"4입니다."}}',
+          '{"event":"step_update","step_update":{"state":"DONE","text_delta":"\\n"}}',
+          '{"event":"result","result":{"conversation_id":"dd6f16b7-0000","status":"SUCCESS","response":"4입니다.\\n","duration_seconds":2.09,"num_turns":1}}',
+        ]);
+        const flat = await parseLines(['{"event":"init","conversation_id":"c-flat"}', '{"event":"step_update","text_delta":"5"}', '{"event":"result","status":"SUCCESS","response":"5"}']);
+        const noResp = await parseLines(['{"event":"step_update","step_update":{"text_delta":"여섯"}}', '{"event":"result","result":{"status":"SUCCESS"}}']);
+        const gmErr = await parseLines(['{"event":"result","result":{"status":"ERROR","error":"quota"}}']).then(() => null, (e) => e.message);
+        const gmOk = nested.answer === '4입니다.' && nested.sessionId === 'dd6f16b7-0000' && nested.firstMs != null
+          && flat.answer === '5' && flat.sessionId === 'c-flat' && noResp.answer === '여섯' && /ERROR.*quota/.test(gmErr ?? '');
+        out.push(['상주 gemini 파서(server/gemini.mjs)', gmOk ? '✓ 한 겹 안 result.response · 평평한 모양 · response 없으면 조각 합 · 첫 낱말 시각 · ERROR 는 거부' : '✗ ' + JSON.stringify({ nested, flat, noResp, gmErr })]);
         out.push(['비서실 규칙(결정 132)', rulesOk ? '✓ 주인 세라 · 대표·세라 message 만 · 도구·안내·톰 버림 · 총괄실·작전실은 열린 방' : '✗ ' + JSON.stringify({ sr, hr, dr })]);
         // 세라 재료(결정 98) — briefOf('sera', 'secretary') 가 안 죽고 다섯 팀·승인·요청 세 절을 담는지. 지금 있는 값 그대로(고정 값 안 만듦).
         {
