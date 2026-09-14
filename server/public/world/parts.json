@@ -28,15 +28,17 @@
     "sign":      { "kind": "front", "w": 1.3, "h": 0.42, "y": 2.0, "color": "sign", "text": "@sign" }
   },
   "colors": {
-    "base": "#efe4d2", "plaza": "#e9dfcf", "road": "#d9d2c5", "grass": "#a7c97f", "yard": "#e3d6bd",
+    "base": "#d9d1bf", "plaza": "#d9d1bf", "road": "#b7ab92", "grass": "#a9c86a", "yard": "#e9dccb",
     "water": "#a9d3e6", "roof": "#7a8797", "wall": "#f4efe4", "wood": "#9c3b2f", "stone": "#cfc6b4",
     "sign": "#fdfbf7", "ink": "#1c1a17", "hill": "#8fb56f", "tower": "#e9e4da", "antenna": "#c94a3a",
     "floor": "#f1e7d6", "floorWall": "#d9cdb7", "desk": "#b98a5a", "chair": "#4b5f9e"
   },
   "light": {
-    "background": "#f3e9d8",
-    "sky": "#fff1d6", "ground": "#cdbb9c", "hemi": 0.9,
-    "sun": { "color": "#ffdcb0", "intensity": 2.7, "from": [-1, 1.8, 1.2] },
+    "_note": "헨리 out/review/first-scene.md '고칠 것' 표(09-14) — 스튜디오 바탕 #e9dccb 하늘 없음 · 환경광 하늘 #dfe9f3 땅 #e9dccb · 키 #ffe1bf 서·위·남(화면 왼쪽 위) · 재질 roughness 0.9 무광 · 창 emissive #ffd27a 0.6",
+    "background": "#e9dccb",
+    "sky": "#dfe9f3", "ground": "#e9dccb", "hemi": 1.0,
+    "sun": { "color": "#ffe1bf", "intensity": 2.4, "from": [-1, 1.6, 1.0] },
+    "material": { "roughness": 0.9, "metalness": 0, "glassRoughness": 0.6, "windowEmissive": "#ffd27a", "windowEmissiveIntensity": 0.6 },
     "night": { "background": "#3b4166", "sky": "#94a0e0", "ground": "#3a3a4e", "hemi": 0.85, "sun": 0.75 },
     "evening": { "background": "#efd3b8", "sky": "#ffd2a8", "ground": "#c9a88a", "hemi": 0.9, "sun": 1.6 }
   },

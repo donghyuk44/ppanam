@@ -27,7 +27,19 @@ const D = {
 };
 
 const color = (name) => D.parts.colors[name] ?? name;          // 이름이면 표에서, 아니면 그대로(#hex)
-const mat = (c, extra = {}) => new THREE.MeshStandardMaterial({ color: color(c), roughness: 1, metalness: 0, ...extra });   // 매트 — 장난감 재질
+const MATERIAL = () => D.parts?.material ?? { roughness: 0.9, metalness: 0, glassRoughness: 0.6, windowEmissive: '#ffd27a', windowEmissiveIntensity: 0.6 };   // 헨리 first-scene.md 표 — 무광 점토
+const mat = (c, extra = {}) => new THREE.MeshStandardMaterial({ color: color(c), roughness: MATERIAL().roughness, metalness: MATERIAL().metalness, ...extra });   // 매트 — 장난감 재질
+/** Kenney glb 재질을 시안대로 — 전부 무광(roughness 0.9), 유리창(재질 이름에 glass/window)은 0.6 + 낮에도 켜진 노란 창(emissive). 헨리 8줄 1·6번. */
+function toyMaterial(o) {
+  if (!o.isMesh || !o.material) return;
+  const M = MATERIAL();
+  const list = Array.isArray(o.material) ? o.material : [o.material];
+  for (const m of list) {
+    const glass = /glass|window/i.test(m.name ?? '');
+    m.roughness = glass ? M.glassRoughness : M.roughness; m.metalness = M.metalness;
+    if (glass && m.emissive) { m.emissive.set(M.windowEmissive); m.emissiveIntensity = M.windowEmissiveIntensity; }
+  }
+}
 const box = (w, h, d, c, r = 0.06) => { const m = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 3, h / 3, d / 3)), mat(c)); m.castShadow = m.receiveShadow = true; return m; };
 const cyl = (rt, rb, h, c, seg = 20) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat(c)); m.castShadow = m.receiveShadow = true; return m; };
 const range = (r) => ({ min: r[0], max: r[1], mid: (r[0] + r[1]) / 2, len: r[1] - r[0] });
@@ -54,15 +66,16 @@ export async function init({ stage, onClick }) {
   D.scene.background = new THREE.Color(parts.light.background);
   const hemi = new THREE.HemisphereLight(parts.light.sky, parts.light.ground, parts.light.hemi ?? 1);
   const sun = new THREE.DirectionalLight(parts.light.sun.color, parts.light.sun.intensity);
-  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
+  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; sun.shadow.radius = 6;   // 부드러운 그림자 — 검은 그림자 없음(헨리 8줄 2번)
   D.scene.add(hemi, sun, sun.target);
   D.lights = { hemi, sun };
 
-  D.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
+  // 원근 카메라 — 헨리 8줄 3번(시안: 좁은 시야 fov 25°, 남동 45° 에서, 멀리 35°·가까이 45° 내려봄). 직교였던 M5 는 미니어처 느낌이 안 났다. 각·fov 는 city.json camera.
+  D.camera = new THREE.PerspectiveCamera(city.camera.fov ?? 25, 1, 0.1, 600);
   D.controls = new MapControls(D.camera, renderer.domElement);
-  D.controls.enableRotate = false;                     // 아이소메트릭 — 각도는 city.json 의 camera 가 정한다 (헨리와)
+  D.controls.enableRotate = false;                     // 각도는 city.json 의 camera 가 정한다 (헨리와)
   D.controls.enableDamping = true; D.controls.dampingFactor = 0.12;
-  D.controls.zoomToCursor = true; D.controls.minZoom = 0.4; D.controls.maxZoom = 6;
+  D.controls.zoomToCursor = true; D.controls.minDistance = 8; D.controls.maxDistance = 400;
   D.controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
   D.controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
   D.controls.addEventListener('start', () => { D.goal = null; });   // 손으로 끌면 따라가기를 끊는다
@@ -82,23 +95,34 @@ function resize() {
   D.renderer.setSize(w, h, false); D.labels.setSize(w, h);
   fit();
 }
-/** 화면 배율 — 짧은 변에 몇 칸이 들어가나 (city.json camera.fit). MapControls 의 휠·핀치는 camera.zoom 으로 그 위에 얹힌다. */
-function fit() {
+/** 화면 배율 — 짧은 변에 몇 칸이 들어가나 (city.json camera.fit). 원근이라 거리로 맞춘다. MapControls 의 휠·핀치는 그 거리를 바꾼다. */
+function fitDistance() {
   const units = D.city.camera.fit[String(D.fitZ)] ?? 30;
-  const ppu = Math.min(D.w, D.h) / units;
-  const c = D.camera;
-  c.left = -D.w / 2 / ppu; c.right = D.w / 2 / ppu; c.top = D.h / 2 / ppu; c.bottom = -D.h / 2 / ppu;
-  c.updateProjectionMatrix();
+  const half = Math.tan((D.camera.fov * DEG) / 2);
+  const aspect = D.w / D.h;
+  return D.h <= D.w ? (units / 2) / half : (units / 2) / (half * aspect);   // 짧은 변 기준
+}
+/** 내려보는 각 — 멀리(작게) 35°, 가까이(크게) 45° (헨리). city.json elevation 이 멀리 값. */
+function elevationFor() { return (D.city.camera.elevation ?? 35) + (D.fitZ - 1) * 5; }
+function viewDir() {
+  const el = elevationFor() * DEG, az = (D.city.camera.azimuth ?? 45) * DEG;
+  return new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
+}
+function fit() {
+  D.camera.aspect = D.w / D.h; D.camera.updateProjectionMatrix();
+  D.camera.position.copy(D.controls.target).addScaledVector(viewDir(), fitDistance());
+  D.camera.lookAt(D.controls.target);
+  D.controls.update();
+}
+/** 화면 픽셀 / 칸 — 지금 카메라 거리에서(원근). 이름표 숨김·컷어웨이·클릭 반경이 쓴다. */
+function ppuNow() {
+  const dist = D.camera.position.distanceTo(D.controls.target) || 1;
+  return D.h / (2 * dist * Math.tan((D.camera.fov * DEG) / 2));
 }
 /** 카메라를 목표 자리 위에 둔다 — 남쪽에서 azimuth 만큼 돌아 elevation 으로 내려본다. */
 function placeCamera(tx, tz) {
-  const { elevation, azimuth } = D.city.camera;
-  const el = elevation * DEG, az = azimuth * DEG, dist = 120;
-  const dir = new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
   D.controls.target.set(tx, 0, tz);
-  D.camera.position.copy(D.controls.target).addScaledVector(dir, dist);
-  D.camera.lookAt(D.controls.target);
-  D.controls.update();
+  fit();
 }
 
 /* ── 장면 ── */
@@ -120,8 +144,8 @@ function buildScene(name) {
 
 function buildVillage(g, name, spec, w, h) {
   const pad = spec.base?.pad ?? 2;
-  const base = box(w + pad * 2, 0.8, h + pad * 2, spec.base?.color ?? 'base', 0.5);   // 디오라마 받침 — 참고 그림의 둥근 판
-  base.position.set(w / 2, -0.4, h / 2); base.castShadow = false; g.add(base);
+  const base = box(w + pad * 2, 1, h + pad * 2, spec.base?.color ?? 'base', 0.3);   // 디오라마 받침 — 60×34×1, 반지름 0.3, #d9d1bf (헨리 first-scene.md). 받침 밖은 스튜디오 바탕
+  base.position.set(w / 2, -0.5, h / 2); base.castShadow = false; g.add(base);
   for (const p of spec.ground ?? []) {
     const x = range(p.x), z = range(p.z);
     const y = p.kind === 'water' ? 0.012 : 0.03;   // 받침 윗면이 y=0 — 물을 그 아래 두면 안 보인다(R25 첫 낮 그림에서 한강이 베이지였다)
@@ -148,7 +172,7 @@ function placePart(entry, teamColor) {
   const ph = box(sw, sh, sd, '#e6dccb'); ph.position.y = sh / 2; g.add(ph); D.placeholders += 1;
   loadGlb(D.parts.kits[part.kit] + part.file).then((src) => {
     const m = src.clone(); m.scale.setScalar(k);
-    m.traverse((o) => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; if (o.material) { o.material.roughness = 1; o.material.metalness = 0; } } });
+    m.traverse((o) => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; toyMaterial(o); } });
     g.remove(ph); g.add(m); D.placeholders -= 1;
     if (cut) cut.apply(m);
   }).catch(() => { /* 없으면 상자 그대로 */ });
@@ -442,7 +466,7 @@ function showScene(name) {
 function project(a) {
   if (!a.obj) return null;
   const p = (y) => { const v = new THREE.Vector3(a.px / TP + 0.5, y, a.py / TP + 0.5).project(D.camera); return { x: (v.x + 1) / 2 * D.w, y: (1 - v.y) / 2 * D.h }; };
-  return { foot: p(0), head: p(a.height ?? 1), ppu: D.w / (D.camera.right - D.camera.left) * D.camera.zoom };
+  return { foot: p(0), head: p(a.height ?? 1), ppu: ppuNow() };
 }
 /** 화면이 그 자리로 간다. force 가 아니면 이미 보이는 자리는 놔둔다. */
 function lookAt(a, force) {
@@ -457,7 +481,7 @@ function lookAtXZ(x, z, force = false) {
   if (force) { const d = goal.clone().sub(D.controls.target); D.controls.target.copy(goal); D.camera.position.add(d); D.goal = null; }
   else D.goal = goal;
 }
-function setZoom(z) { D.fitZ = z; D.camera.zoom = 1; fit(); }
+function setZoom(z) { D.fitZ = z; fit(); }
 
 /** 띠 — 방 위에 잠깐 뜨는 글(라운드 시작·끝). world.js 가 만든 요소를 받아 자리에 붙인다. */
 function banner(sceneName, x, z, el, ms = 5000) {
@@ -482,7 +506,7 @@ function render(mode) {
   }
   D.controls.update();
   // 멀리서 보면 이름표·말풍선이 마을을 덮는다(폰 폭 "화면 작게" 에서 열여섯 이름표가 한 줄로 겹침, R24 첫 그림). 칸 하나가 10px 아래면 방 이름만 남긴다.
-  const ppu = D.w / (D.camera.right - D.camera.left) * D.camera.zoom;
+  const ppu = ppuNow();
   D.labels.domElement.classList.toggle('world__labels--far', ppu < 10);
   setCut(ppu >= 22);                                                  // 확대하면 집 안이 보인다 — "화면 크게" 나 핀치로 당겼을 때
   D.renderer.render(D.scene, D.camera);
@@ -491,7 +515,7 @@ function render(mode) {
 
 /** 시험용 — 화면을 안 보고도 무엇이 섰는지. */
 function stats() {
-  return { engine: 'three', scene: D.current, glbLoaded: D.loaded, glbFailed: D.failed, placeholders: D.placeholders, shirts: D.shirts, cutaway: D.cut, scenes: Object.keys(D.groups), zoom: D.camera?.zoom ?? null, fit: D.fitZ };
+  return { engine: 'three', scene: D.current, glbLoaded: D.loaded, glbFailed: D.failed, placeholders: D.placeholders, shirts: D.shirts, cutaway: D.cut, scenes: Object.keys(D.groups), camera: 'perspective', fov: D.camera?.fov ?? null, ppu: D.camera ? Math.round(ppuNow() * 10) / 10 : null, fit: D.fitZ };
 }
 
 const api = { showScene, addActor, updateActor, project, lookAt, lookAtXZ, setZoom, banner, render, stats, get roomEls() { return D.roomEls; }, get current() { return D.current; } };

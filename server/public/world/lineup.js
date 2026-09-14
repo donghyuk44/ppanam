@@ -107,7 +107,7 @@ const jobs = chars.map(async ([key, spec], i) => {
     g.userData.body = m;
     // 부착물 — 머리 위. Kenney 것은 glb, 우리 것은 위 customProp.
     // 소품 자리 — 헨리(R25, 모델 원본 단위, 배율 전): 갓 = 머리 꼭대기 (0, 0.78, 0.02) · 안경/선글라스 = 눈높이 얼굴 앞 (0, 0.46, 0.18) · 세라 리본 = 땋은 머리 끝 등 뒤 (0, 0.36, −0.20)
-    const PROP_AT = { gat: [0, 0.78, 0.02], ribbon: [0, 0.36, -0.20], kenney: [0, 0.46, 0.18] };
+    const PROP_AT = { gat: [0, 0.78, 0.02], ribbon: [0.12, 0.62, 0.05], kenney: [0, 0.46, 0.18] };   // 리본은 헨리 두 번째 값(09-14, first-scene.md 뒤)
     const prop = spec.prop ?? design?.characters?.[key]?.prop ?? null;
     if (prop?.kind === 'kenney' && prop.file) {
       try {

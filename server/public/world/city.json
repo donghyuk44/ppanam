@@ -1,7 +1,7 @@
 {
   "_note": "무엇이 어디에 — 서울. 좌표는 map.json 칸 그대로(x 동, z 남). 자리(places)·방(rooms)은 map.json 이 정본이고 여기는 그 위에 얹는 그림만. 형식은 teams/dev/out/village-file-contract.md 2판. 다른 도시는 이 파일만 새로 쓴다(결정 57).",
   "city": "seoul",
-  "camera": { "elevation": 35, "azimuth": 30, "fit": { "1": 60, "2": 30, "3": 16 } },
+  "camera": { "fov": 25, "elevation": 35, "azimuth": 45, "fit": { "1": 60, "2": 30, "3": 16 }, "_note": "원근 fov 25° · 남동 45° 에서 · 멀리 35°(작게) → 가까이 45°(크게)는 draw3d 가 +5° 씩 — 헨리 first-scene.md" },
   "scenes": {
     "village": {
       "base": { "color": "base", "pad": 2 },

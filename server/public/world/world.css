@@ -32,6 +32,11 @@
 .world__stage .world__gl:active { cursor: grabbing; }
 .world__stage .world__labels { position: absolute; left: 0; top: 0; pointer-events: none; overflow: hidden; }
 .world__labels--far .wv-tag { display: none; }   /* 멀리서는 방 이름만 — draw3d.js 가 칸 크기로 켜고 끈다 */
+/* 틸트시프트 — 위아래 흐림 띠, 선명한 띠는 화면 높이 40% (헨리 8줄 3번). BokehPass 대신 CSS backdrop-filter — 사람은 늘 가운데 띠 안. 라벨·클릭은 안 막는다. */
+.world__stage::before, .world__stage::after { content: ''; position: absolute; left: 0; right: 0; height: 30%; pointer-events: none; z-index: 1; }
+.world__stage::before { top: 0; backdrop-filter: blur(2.5px); -webkit-backdrop-filter: blur(2.5px); mask-image: linear-gradient(to bottom, #000 30%, transparent); -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent); }
+.world__stage::after { bottom: 0; backdrop-filter: blur(2.5px); -webkit-backdrop-filter: blur(2.5px); mask-image: linear-gradient(to top, #000 30%, transparent); -webkit-mask-image: linear-gradient(to top, #000 30%, transparent); }
+.world__stage .world__labels { z-index: 2; }
 
 /* 사람 머리 위 기둥 — 말풍선(위)과 이름표(아래). 자리는 CSS2D 가 transform 으로 옮긴다. */
 .wv-tag { display: flex; flex-direction: column; align-items: center; gap: 7px; pointer-events: none; white-space: nowrap; }
