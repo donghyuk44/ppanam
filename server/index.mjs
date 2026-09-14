@@ -356,12 +356,11 @@ const server = http.createServer((req, res) => {
       const say = String(text ?? '').trim();
       if (!say) return json(res, 400, { error: '빈 지시입니다.' });
 
-      // 작전실은 라운드 밖에서 훅이 기록하지 않는다. 지시해도 화면에 아무것도
-      // 안 뜨니, 고장으로 보이기 전에 여기서 막는다. 총괄실은 라운드가 없다.
+      // 방이 닫혀 있어도 채팅은 된다(결정 127 ② — 대표가 직접 겪은 불편, 오늘 첫째).
+      // 전엔 여기서 막았다 — 훅이 idle 이면 안 적어서 막지 않으면 말이 화면에서 그냥 사라졌다.
+      // 이제 서버가 훅에 "이번 턴은 적어라" 표시를 켜고 그대로 실무를 깨운다. 총괄실은 라운드가 없다.
       const phase = isOffice(t) ? 'running' : readState(t).phase;
-      if (phase === 'idle') {
-        return json(res, 409, { error: '라운드를 먼저 여세요.', needsRound: true });
-      }
+      if (phase === 'idle' && !q) bus.allowIdleChat(t);
       // FAIL 로 막힌 방이다. 입력창은 대표의 것이므로 대표가 말한 것이고, 그 말이 곧 판단이다 — 푼다.
       // 들려주기(quiet)는 다른 세션이 옮기는 말이라 풀지 않는다.
       if (phase === 'blocked' && !q) resumeRound(t, { text: say });

@@ -921,6 +921,22 @@ export function clearOutsideCooldown() {
   try { fs.rmSync(cooldownPath, { force: true }); } catch { /* 이미 없음 */ }
 }
 
+/* ── 방이 닫혀 있어도 채팅 (결정 127 ②, 대표가 직접 겪은 불편) ──
+ * /api/say 는 라운드가 idle 이어도 이제 막지 않는다 — 하지만 훅(.claude/hooks/to-bus.mjs)은 그대로면 idle 일 때
+ * 기록을 안 해서(잡담이 새어들지 않게 하려던 것) 대표 말도 실무 답도 대화록에서 사라진다. 서버가 깨우기 직전에
+ * 이 표시를 켜면, 그 세션이 이번 턴 동안 훅을 통과한다. 잠깐(기본 10분)이면 스스로 꺼진다 — 계속 켜 두는
+ * 스위치가 아니다. 방마다 하나 — 한 팀 안에서 idle 채팅이 동시에 여럿 열릴 일은 없다.
+ */
+const idleChatPath = (team) => path.join(ROOT, 'state', 'idle-chat', `${team}.json`);
+export function allowIdleChat(team) {
+  fs.mkdirSync(path.dirname(idleChatPath(team)), { recursive: true });
+  fs.writeFileSync(idleChatPath(team), JSON.stringify({ at: Date.now() }));
+}
+export function idleChatAllowed(team, { maxAgeMs = 10 * 60_000 } = {}) {
+  let at; try { at = JSON.parse(fs.readFileSync(idleChatPath(team), 'utf8'))?.at; } catch { return false; }
+  return Number.isFinite(at) && Date.now() - at < maxAgeMs;
+}
+
 /** note 한 줄 — "대표가 테라를 opus·high 로 바꿨습니다". 바뀐 값만, 엔진은 이름으로. */
 export function castChangeText(name, to) {
   const words = [];
