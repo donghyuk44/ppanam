@@ -222,9 +222,17 @@ async function runGeminiPool(input, { resume = null, model = geminiModelOf(null)
 
 /** gemini 자리의 길 넷 — ① 서버 상주(결정 122) ② agy -p(매번 새로) ③ HTTP 다리(PPANAM_GEMINI_URL, 가설) ④ 파일 왕복(하네스 창, 임시). 위에서부터 되는 것. */
 async function runGemini(input, opts = {}) {
-  const pooled = await runGeminiPool(input, opts);
-  if (pooled) return pooled;
-  if (await hasAgy()) return runAgy(input, opts);
+  let pooled = null;
+  try { pooled = await runGeminiPool(input, opts); }
+  catch (e) { process.stderr.write(`상주 gemini 실패 — agy -p 로: ${String(e.message).split('\n')[0].slice(0, 160)}\n`); }
+  // 빈 답은 답이 아니다 — 재시작 직후 상주 프로세스가 빈 답을 돌려줬고(R25 실측) 그대로 쓰면 감사역이 다시 죽는다. agy -p 로 넘어간다.
+  if (pooled?.answer) return pooled;
+  if (pooled) process.stderr.write(`상주 gemini 빈 답(${pooled.totalMs != null ? (pooled.totalMs / 1000).toFixed(1) + '초' : '?'}) — agy -p 로\n`);
+  if (await hasAgy()) {
+    // 상주 프로세스의 대화 id 를 agy -p 가 못 이어받을 수 있다 — 그러면 한 번은 새 대화로(인격·방 대화는 매 턴 다시 실리므로 답은 나온다)
+    try { return await runAgy(input, opts); }
+    catch (e) { if (!opts.resume) throw e; process.stderr.write(`agy -p 이어받기 실패(${String(e.message).split('\n')[0].slice(0, 120)}) — 새 대화로\n`); return runAgy(input, { ...opts, resume: null }); }
+  }
   if (GEMINI_URL) return runGeminiHttp(input, opts);
   return runGeminiFiles(input, opts);
 }
