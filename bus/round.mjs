@@ -866,6 +866,16 @@ switch (cmd) {
           && !allowedIn(sr, { actor: 'secretary', type: 'tool' }) && !allowedIn(sr, { actor: 'system', type: 'note' }) && !allowedIn(sr, { actor: 'chief', type: 'message' })
           && allowedIn(hr, { actor: 'system', type: 'note' }) && allowedIn(dr, { actor: 'guide', type: 'tool' });
         out.push(['비서실 규칙(결정 132)', rulesOk ? '✓ 주인 세라 · 대표·세라 message 만 · 도구·안내·톰 버림 · 총괄실·작전실은 열린 방' : '✗ ' + JSON.stringify({ sr, hr, dr })]);
+        // 세라 재료(결정 98) — briefOf('sera', 'secretary') 가 안 죽고 다섯 팀·승인·요청 세 절을 담는지. 지금 있는 값 그대로(고정 값 안 만듦).
+        {
+          const { briefOf } = await import('../server/session.mjs');
+          let brief = null, err = null;
+          try { brief = briefOf('sera', 'secretary'); } catch (e) { err = e.message; }
+          const braceOk = !err && typeof brief === 'string'
+            && brief.includes('## 다섯 팀 상황') && brief.includes('### 대기 승인') && brief.includes('### 열린 요청 블록')
+            && !briefOf('hq', 'chief').includes('## 다섯 팀 상황');   // 총괄실은 안 붙는다 — 세라 방만
+          out.push(['세라 재료(결정 98)', braceOk ? '✓ briefOf(sera) 에 다섯 팀·대기 승인·열린 요청 셋 다 · 총괄실엔 안 붙음' : '✗ ' + JSON.stringify({ err, head: brief?.slice(0, 200) })]);
+        }
         out.push(['말풍선 쪼개기(speech.js)', spOk ? `✓ 짧은 셋 → 1 · 줄바꿈 2 · 긴 한 문장 ${sp3.length}조각(≤${PIECE}) · 넘치면 ${PIECES}+… · 대표 사진 문장 ${spBoss.length}조각` : '✗ ' + JSON.stringify({ sp1, sp2, sp3: sp3.map((p) => p.length), sp4: sp4.length, spBoss })]);
       }
     } finally {

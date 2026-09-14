@@ -18,8 +18,9 @@ import { spawn as spawnProc } from 'node:child_process';
 import {
   ROOT, emit, listTeams, isOffice, paths, endRound, startRound, readCast, readState, readRoadmap, listRounds,
   readLog, quiet, RELAY_QUIET, appendJournal, journalPrompt, collectJournals, writeTurn, readProgress, progressFresh, progressText,
-  isForeign, engineName, roomRules,
+  isForeign, engineName, roomRules, listApprovals,
 } from '../bus/bus.mjs';
+import { listRequests } from '../bus/requests.mjs';
 import { toolPhrase } from './public/toollabel.js';
 
 const STORE = path.join(ROOT, 'state', 'sessions.json');
@@ -182,7 +183,7 @@ export function personaCard(team, actor) {
  * 지금 이 방 — 라운드 브리프. 라운드마다 세션이 새로 뜨므로 여기 붙는다. 인격 파일은 대표만 고치는 것(C)이라
  * 장치가 바뀐 것(자리 = 프로세스, 호명으로 부른다)은 여기서 말한다.
  */
-function briefOf(team, actor) {
+export function briefOf(team, actor) {
   const cast = readCast(team).agents ?? {};
   const me = cast[actor]?.name ?? actor;
   const people = Object.entries(cast)
@@ -190,7 +191,10 @@ function briefOf(team, actor) {
     .map(([id, a]) => `${a.name}(${id}${isForeign(a.model) ? ', 다른 회사 모델' : ''})`).join(' · ');
   const lines = ['## 지금 이 방', `너는 ${me}(${actor})다. 이 방 사람: ${people}. 대표: ${cast.boss?.name ?? '대표'}.`];
   if (isOffice(team)) {
-    lines.push('총괄실은 라운드가 없다 — 늘 열려 있다.');
+    const roomName = listTeams().find((t) => t.id === team)?.room ?? '이 방';
+    lines.push(`${roomName}은 라운드가 없다 — 늘 열려 있다.`);
+    // 비서실(결정 98·132) — 세라의 재료는 다섯 팀 상황 파일·승인 목록·요청 블록. 대표에게 요약해 보고하는 게 이 방의 전부다.
+    if (team === 'sera') lines.push('', ...secretaryBriefLines());
   } else {
     const st = readState(team);
     const rm = readRoadmap(team);
@@ -206,6 +210,27 @@ function briefOf(team, actor) {
   }
   lines.push('방의 모든 자리는 각자 살아 있는 세션이다. Agent 툴(서브에이전트)로 동료를 부르지 마라 — 첫머리에 이름을 부르면 그가 답한다("안젤, …"). 외부감사도 같다. 너에게 온 말은 ⟦들려주기⟧ 로 들어오며 이미 대화록에 있다. 방에 남길 말이 없으면 (패스) 한 마디만.');
   return lines.join('\n');
+}
+
+/**
+ * 세라의 재료 (결정 98·132) — 다섯 팀 상황 파일(progress)·대기 승인·열린 요청 블록을 그대로 늘어놓는다.
+ * 추리고 사람 말로 옮기는 건 세라(대표에게 쓸 때) 몫이다 — 여기서는 자르거나 다듬지 않는다.
+ */
+function secretaryBriefLines() {
+  const lines = ['## 다섯 팀 상황 (결정 98 재료 — 요약해 보고하는 것 말고는 이 방에 안 씀)'];
+  for (const t of listTeams().filter((x) => x.kind !== 'office')) {
+    const p = readProgress(t.id);
+    lines.push(`### ${t.room ?? t.name} (${t.id})`, p ? progressText(p) : '아직 상황판이 없다.');
+  }
+  const approvals = listApprovals({ status: 'pending' });
+  lines.push('', `### 대기 승인 ${approvals.length}건`);
+  for (const a of approvals) lines.push(`- [${a.grade}] ${a.team} — ${a.what}`);
+  if (!approvals.length) lines.push('- 없음');
+  const requests = listRequests().filter((r) => r.status !== 'closed');
+  lines.push('', `### 열린 요청 블록 ${requests.length}건`);
+  for (const r of requests) lines.push(`- ${r.from.team} → ${r.to.team}: ${r.what}${r.goal ? ' — ' + r.goal : ''} (${r.status})`);
+  if (!requests.length) lines.push('- 없음');
+  return lines;
 }
 
 /**
