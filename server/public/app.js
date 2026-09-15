@@ -1340,17 +1340,28 @@ function renderTowerAll(grid) {
     grid.appendChild(sec);
   }
 
-  // ② 누가 뭘 했나 · 오늘 — 숲: 사람마다 시간 띠 한 줄(한 것 = 점, 우리 시각 0시 → 지금). 나무: 여섯 줄, "더 보기 — 어제까지"(numbers.md 시간 띠)
+  // ② 누가 뭘 했나 · 오늘 — 숲: **사람마다 한 줄, 한 번씩**(톰 req_0964bae9 — 톰이 방마다 한 줄씩 두 번 섰고, 라운드 닫힘·마일스톤처럼 사람이 없는 것이 '개발·마케팅' 줄로
+  // 섰다. 그건 팀 것이라 ④ 팀 칸 몫). 막대 길이 = 오늘 한 것 수(가장 많이 한 사람이 끝까지), 옆에 그 수 — 시간 띠는 배경이 꽉 차 보여 아무 말도 안 했다.
+  // 나무: 여섯 줄, "더 보기 — 어제까지"
   const sec2 = el('section', 'dash__card'); sec2.dataset.block = 'done';
   sec2.appendChild(el('div', 'dash__k', `누가 뭘 했나 · ${done.more ? '어제부터' : '오늘'}`));
   const byPerson = new Map();
-  for (const it of today) { const k = `${it.team}:${it.by ?? '팀'}`; if (!byPerson.has(k)) byPerson.set(k, { team: it.team, by: it.by, name: it.name ?? it.teamName, items: [] }); byPerson.get(k).items.push(it); }
+  for (const it of today) {
+    if (!it.by) continue;   // 사람이 없는 한 것(라운드 닫힘·마일스톤·부탁 닫힘) — 아래 여섯 줄엔 남는다
+    if (!byPerson.has(it.by)) byPerson.set(it.by, { team: it.team, by: it.by, name: it.name ?? it.by, items: [] });
+    byPerson.get(it.by).items.push(it);
+  }
   if (byPerson.size) {
     const bands = el('div', 'bands');
-    for (const p of [...byPerson.values()].sort((a, b) => b.items.length - a.items.length).slice(0, 8)) {
+    const people = [...byPerson.values()].sort((a, b) => b.items.length - a.items.length).slice(0, 8);
+    const max = people[0].items.length;
+    for (const p of people) {
       const line = el('div', 'bands__row');
-      const lab = el('span', 'bands__who'); const d = el('span', 'dot'); d.style.background = p.by ? seatColor(p.team, p.by) : teamColor(p.team); lab.appendChild(d); lab.append(p.name); line.appendChild(lab);
-      line.appendChild(timeBand(day0, now, p.items.map((it) => ({ at: new Date(it.ts).getTime(), color: p.by ? seatColor(p.team, p.by) : teamColor(p.team), title: `${p.name} · ${it.text} · ${hhmm(it.ts)}` }))));
+      const lab = el('span', 'bands__who'); const d = el('span', 'dot'); d.style.background = seatColor(p.team, p.by); lab.appendChild(d); lab.append(p.name); line.appendChild(lab);
+      const cell = el('span', 'bands__bar');
+      const bar = progressBar(p.items.length, max, seatColor(p.team, p.by)); bar.title = `${p.name} · 오늘 ${p.items.length}건`; bar.style.width = 'min(100%, 160px)';
+      cell.appendChild(bar); cell.appendChild(el('span', 'bands__n', String(p.items.length)));
+      line.appendChild(cell);
       bands.appendChild(line);
     }
     sec2.appendChild(bands);
@@ -1550,11 +1561,6 @@ function personCard(t, id, a, p) {
     c.textContent = `대표님께 물어봤어요 · ${ago(p.bossCall.ts)} · "${p.bossCall.text.slice(0, 40)}${p.bossCall.text.length > 40 ? '…' : ''}"`;
     c.addEventListener('click', () => jumpTo(t.id, p.bossCall.id));
     card.appendChild(c);
-  }
-  // 호명(결정 128) — 방에서 최근에 이 사람을 불렀으면 카드에도. 오래된 건 굳이 안 지운다 — 다음 턴에 새 호명이 오면 덮인다.
-  if (p.mention) {
-    const byName = summaries[t.id]?.cast?.[p.mention.by]?.name ?? p.mention.by;
-    card.appendChild(el('div', 'pcard__mention', `${byName} 가 불렀어요 · ${ago(p.mention.ts)}`));
   }
   // 엔진 · 모델 · 추론 강도 (결정 69) — 대표가 카드 안에서 고른다. 바꾸면 서버가 cast.json 에 쓰고 다음 턴부터.
   card.appendChild(castRow(t, id, a));
