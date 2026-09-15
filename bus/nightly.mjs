@@ -3,7 +3,7 @@
 // 여기는 **순수 함수**만 — 파일을 안 읽고 세션을 모른다. round.mjs check 가 돌린다. 파일을 읽고 쓰고 톰을 깨우는 것은 server/nightly.mjs.
 // doneOf·blockedOf 와 같은 경계: 평평한 재료(대화록·rounds·승인·상황판·round.json)를 받아 글 한 장과 "대표 손이 필요한 것" 목록을 낸다.
 
-import { SEOUL_OFFSET_MS, MAX_ATTEMPTS, APPROVAL_GRADES, TURN_JOURNAL, bossCallOf, callsBoss } from './bus.mjs';
+import { SEOUL_OFFSET_MS, MAX_ATTEMPTS, APPROVAL_GRADES, TURN_JOURNAL, bossCallOf, bossParagraph } from './bus.mjs';
 
 /** 우리 시각 'YYYY-MM-DD'. */
 export const dayKeySeoul = (ms = Date.now()) => new Date(ms + SEOUL_OFFSET_MS).toISOString().slice(0, 10);
@@ -16,8 +16,6 @@ const whenSeoul = (ts, day) => { const t = ms(ts); if (!Number.isFinite(t)) retu
 const oneLine = (t, n) => String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 const APPROVAL_WORD = { passed: '통과', revised: '반려', void: '무효', pending: '대기' };
 const JUDGE_NAME = { chief: '톰', outside: '제리', boss: '대표' };
-/** 대표를 부른 그 문단 — 인용은 첫 줄이 아니라 대표에게 한 말이어야 한다("헨리, 셌어…" 로 시작하는 말의 넷째 문단이 대표 호출이었다, 디자인 09-14). */
-const bossParagraph = (text, cast) => String(text ?? '').split(/\n\s*\n/).find((p) => callsBoss(p, cast)) ?? String(text ?? '');
 
 /**
  * 한 팀의 하루 한 장.

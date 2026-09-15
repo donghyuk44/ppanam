@@ -18,7 +18,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import {
   startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound,
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
-  addressees, callsBoss, asksBoss, bossNotesOf, doneOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
+  addressees, callsBoss, asksBoss, bossParagraph, bossNotesOf, doneOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
   mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, overdue, setMilestoneStatus,
   roomRules, allowedIn, plansOf, timeboxRounds, DEFAULT_ROUND_MS, stageTable, swapSection, pausedMs, roundLengthMs,
@@ -360,6 +360,25 @@ switch (cmd) {
         { id: 'k2', ts: '2026-09-13T15:30:00Z', actor: 'guide', type: 'message', text: '대표님, 오늘 새벽 보고입니다.' },
       ], pcast, { team: 'dev', now: kNow });
       out.push(['한 것 — 오늘은 서울 0시(결정 101)', kn.length === 1 && kn[0].id === 'report:k2' && dayStartSeoul(kNow) === Date.parse('2026-09-13T15:00:00Z') ? '✓ 00:30 KST 는 오늘 · 23:30 KST 는 어제 · 0시 = 15:00Z' : '✗ ' + JSON.stringify(kn.map((x) => x.id))]);
+      // 만든 것도 한 것(나리 09-15 — 승인·판정만 세니 감사 셋만 일한 사람으로 섰다): 커밋(Bash 도구 줄의 git commit, -m 뒤 글자 — 안의 다른 따옴표는 글자) · 산출물(Write/Edit 가 out/ 을 가리킴, 같은 파일은 마지막 한 번) · Read 와 out/ 밖은 안 셈
+      const mk = doneOf([
+        { id: 'm1', ts: at(1), actor: 'guide', type: 'tool', text: 'cd /x && git add a && git commit -q -m "관제탑 ② \'더 보기\' 는 오늘 안에서만 — 어제는 보고서" && git log', meta: { tool: 'Bash' } },
+        { id: 'm2', ts: at(2), actor: 'ops', type: 'tool', text: '/x/teams/dev/out/shots/a.png', meta: { tool: 'Read' } },
+        { id: 'm3', ts: at(3), actor: 'ops', type: 'tool', text: '/x/teams/dev/out/m7.md', meta: { tool: 'Write' } },
+        { id: 'm4', ts: at(4), actor: 'ops', type: 'tool', text: '/x/teams/dev/out/m7.md', meta: { tool: 'Edit' } },
+        { id: 'm5', ts: at(5), actor: 'guide', type: 'tool', text: '/x/server/index.mjs', meta: { tool: 'Edit' } },
+        { id: 'm6', ts: at(6), actor: 'guide', type: 'tool', text: 'git status', meta: { tool: 'Bash' } },
+      ], pcast, { team: 'dev', now: d0.getTime() + 20 * 60_000 });
+      const mkOk = mk.length === 2 && mk[0].id === 'file:ops:teams/dev/out/m7.md' && mk[0].ts === at(4) && mk[0].text === '산출물 — dev/out/m7.md' && mk[0].by === 'ops'
+        && mk[1].kind === 'commit' && mk[1].by === 'guide' && mk[1].text === "커밋 — 관제탑 ② '더 보기' 는 오늘 안에서만 — 어제는 보고서";
+      out.push(['한 것 — 커밋·산출물(나리 09-15)', mkOk ? '✓ 커밋 -m 글자(안의 따옴표 글자) · 산출물 같은 파일 마지막 한 번 · Read·out 밖·git status 안 셈' : '✗ ' + JSON.stringify(mk)]);
+      // 대표에게 한 그 문단(bossParagraph) — "헨리, 셌어…" 넷째 문단이 "대표님, 한 줄요 — …?" 였는데 첫 줄이 대표 차례로 섰다(나리 09-15)
+      const bp = bossParagraph('헨리, 셌어. 낱말 사전 밖 말 0.\n\n걸리는 거 하나 — 메모야?\n\n대표님, 한 줄요 — 유진 색이 겹쳐요. 계속 쓸까요?\n\n클레멘타인 끝.', pcast);
+      const bp2 = bossParagraph('솔라, 됐어.\n\n대표님, 올렸습니다.', pcast);
+      const bp3 = bossParagraph('솔라, 이거 왜 이래?', pcast);
+      const bpPeople = peopleOf([{ id: 'b1', ts: at(1), actor: 'guide', type: 'message', text: '헨리, 셌어.\n\n대표님, 한 줄요 — 계속 쓸까요?' }], pcast, { now: d0.getTime() + 10 * 60_000 });
+      const bpOk = bp === '대표님, 한 줄요 — 유진 색이 겹쳐요. 계속 쓸까요?' && bp2 === '대표님, 올렸습니다.' && bp3 === '솔라, 이거 왜 이래?' && bpPeople.guide.bossCall?.text === '대표님, 한 줄요 — 계속 쓸까요?';
+      out.push(['대표에게 한 그 문단(bossParagraph)', bpOk ? '✓ 물은 문단 · 부르기만 한 문단 · 없으면 원문 · 사람 카드 bossCall 인용도 그 문단' : '✗ ' + JSON.stringify({ bp, bp2, bp3, call: bpPeople.guide?.bossCall })]);
       // 일 상태 (결정 58 ①) — 마을 시계가 아니라 busy·bossCall·phase·alive·신호 5분으로. 일요일 저녁에 열넷이 "잠" 이던 버그.
       const wnow = d0.getTime() + 10 * 60_000;
       const ws = (p, phase) => workStateOf({ busy: false, alive: null, lastSignal: null, bossCall: null, ...p }, phase, wnow);

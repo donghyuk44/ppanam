@@ -270,6 +270,21 @@ export function asksBoss(text, cast) {
   }
   return false;
 }
+/**
+ * 대표에게 한 그 문단 — 인용은 첫 줄이 아니라 대표에게 한 말이어야 한다. "헨리, 셌어. …" 로 시작하는 말의 넷째 문단이 "대표님, 한 줄요 — …" 였는데
+ * 관제탑 내 차례·종·자정 마감이 첫 줄을 보여 줘 "클레멘타인이 헨리한테 한 말이 대표 차례로 선다" 로 읽혔다(나리 09-15). asksBoss 와 같은 걸음으로
+ * 대표에게 물은 문단을 찾고, 없으면(부르기만 했으면) 대표를 부른 문단, 그것도 없으면 원문.
+ */
+export function bossParagraph(text, cast) {
+  const paras = String(text ?? '').split(/\n\s*\n/);
+  let toBoss = false, called = null;
+  for (const p of paras) {
+    if (callsBoss(p, cast)) { toBoss = true; called ??= p; }
+    else if (addressees(p, cast).length) toBoss = false;
+    if (toBoss && ASK_RE.test(p)) return p;
+  }
+  return called ?? String(text ?? '');
+}
 export const quiet = (text) => `${RELAY_QUIET}\n${text}`;
 
 /**
@@ -555,7 +570,7 @@ export function proxyCandidates({ now = Date.now(), wait = PROXY_WAIT_MS, withEx
     if (s.bossCall) {
       const call = log.find((e) => e.id === s.bossCall.id);
       // 물음도 같은 선(④) — "유료 결제를 허용해 주세요" 를 질문 경로로 대리하면 금지선을 우회한다 (레오 REVISE R23). 그건 대표만.
-      const it = { key: `answer:${s.bossCall.id}`, kind: 'answer', team: t.id, ref: s.bossCall.id, what: `${readCast(t.id).agents?.[s.bossCall.by]?.name ?? s.bossCall.by}: ${String(call?.text ?? '').replace(/\s+/g, ' ').slice(0, 120)}`, since: s.bossCall.ts };
+      const it = { key: `answer:${s.bossCall.id}`, kind: 'answer', team: t.id, ref: s.bossCall.id, what: `${readCast(t.id).agents?.[s.bossCall.by]?.name ?? s.bossCall.by}: ${bossParagraph(call?.text, readCast(t.id).agents ?? {}).replace(/\s+/g, ' ').slice(0, 120)}`, since: s.bossCall.ts };
       (proxyForbidden(call?.text) ? excluded : items).push(it);
     }
   }
@@ -1553,7 +1568,7 @@ export function peopleOf(log, cast, { now = Date.now() } = {}) {
     }
     // 이 라운드에서 대표에게 결정을 청했는데 그 뒤 대표가 말하지 않았다 — teamSummary.bossCall 과 같은 판별(결정 52), 인용문만 더한다.
     if (inRound && !bossAnswered && !p.bossCall && e.type === 'message' && asksBoss(e.text, agents)) {
-      p.bossCall = { id: e.id, ts, text: String(e.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 80) };
+      p.bossCall = { id: e.id, ts, text: bossParagraph(e.text, agents).replace(/\s+/g, ' ').trim().slice(0, 80) };   // 인용은 대표에게 한 그 문단(나리 09-15)
     }
   }
   return { ...people, boss };
@@ -1608,7 +1623,9 @@ export function bossNotesOf(log, cast, { now = Date.now(), limit = 30 } = {}) {
  * @param team       팀 id — 항목에 그대로
  * @returns 항목 [{ id, kind, team, by, ts, text, ref }] — ts 내림차순(최근 것이 위)
  *   kind: report(대표에게 보고 — 결정 안 청한 말) · verdict(판정 카드, ref=sha) · decision(승인 판정, ref=승인 id) · proxy(대리 결정) ·
- *         request(요청 블록 닫힘, ref=요청 id) · milestone(통과) · round(닫힘, ref=판정)
+ *         request(요청 블록 닫힘, ref=요청 id) · milestone(통과) · round(닫힘, ref=판정) ·
+ *         commit(커밋 — Bash 도구 줄에 git commit, ref=없음) · file(산출물 파일 갱신 — Write/Edit 도구 줄이 teams/<팀>/out/ 을 가리킴, 같은 파일은 창 안 마지막 한 번만, ref=경로)
+ *   커밋·산출물은 나리 결정(09-15, 위임 136) — "지금 세는 게 승인·판정 카드뿐이라 만든 사람은 안 보이고 감사만 보인다. 만든 게 한 것이다."
  */
 /**
  * 앞날 띠 (대시보드 = "앞으로 언제 뭐가 되나", 헨리 시안 1판 dashboard.svg · 결정 128) — 한 팀의 단계들을 시간 위에 놓는다. 순수 — check 가 돌린다.
@@ -1736,6 +1753,22 @@ export function doneOf(log, cast, { team = null, since = null, until = null, app
       out.push({ id: `proxy:${e.id}`, kind: 'proxy', team, by: 'chief', ts: e.ts, text: one(e.text, 160), ref: m.approval ?? m.proxyAnswer ?? null });
     } else if (e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && agents[e.actor] && callsBoss(e.text, agents) && !asksBoss(e.text, agents)) {
       out.push({ id: `report:${e.id}`, kind: 'report', team, by: e.actor, ts: e.ts, text: one(e.text, 160), ref: null });
+    } else if (e.type === 'tool' && agents[e.actor]) {
+      // 만든 것도 한 것이다(나리 09-15) — 커밋 한 줄(도구 줄엔 명령 첫 줄 160자뿐이라 -m 뒤 글자를 뽑는다), 산출물 파일 갱신(Write/Edit 가 out/ 을 가리킴)
+      const tool = String(m.tool ?? ''), text = String(e.text ?? '');
+      if (tool === 'Bash' && /\bgit commit\b/.test(text)) {
+        const mm = /-m\s+(["'])(.*)$/.exec(text);
+        let msg = mm ? mm[2] : null;
+        if (msg) { const j = msg.indexOf(mm[1]); if (j >= 0) msg = msg.slice(0, j); }   // 여는 따옴표와 같은 것이 닫는 것 — 안에 든 다른 따옴표는 글자
+        if (msg != null) msg = msg.replace(/[\s\\]+$/, '') || null;
+        out.push({ id: `commit:${e.id}`, kind: 'commit', team, by: e.actor, ts: e.ts, text: `커밋 — ${msg ? one(msg, 120) : '(메시지 못 읽음)'}`, ref: null });
+      } else if ((tool === 'Write' || tool === 'Edit' || tool === 'NotebookEdit') && /\/teams\/[^/]+\/out\//.test(text)) {
+        const rel = text.slice(text.indexOf('/teams/') + 1);   // teams/<팀>/out/… 부터
+        const key = `file:${e.actor}:${rel}`;
+        const i = out.findIndex((it) => it.id === key);
+        const it = { id: key, kind: 'file', team, by: e.actor, ts: e.ts, text: `산출물 — ${one(rel.replace(/^teams\//, ''), 120)}`, ref: rel };
+        if (i >= 0) out[i] = it; else out.push(it);   // 같은 파일을 여러 번 고쳐도 창 안 마지막 한 번
+      }
     }
   }
   for (const r of approvals) {
