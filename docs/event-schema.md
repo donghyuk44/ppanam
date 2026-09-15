@@ -256,20 +256,22 @@ M3 데이터 전까지 빈 상태 문구). 마지막에 본 탭은 브라우저�
 셋(대표 차례 → 승인 대기 → 막힘, 같은 순서)과 각 방 상황판 `progress.boss[]` 줄. 보고는 여기 안 오고 "오늘 보고" 줄로. 누르면 그 말풍선·승인 블록·방으로.
 
 **알림 패널** (결정 68 — "배지만 있고 내용이 없으면 대충 구현") — 종을 누르면 패널이 열리고 **목록**이 보인다. 새 저장소는 없다:
-순수 함수 `server/public/notify.js notificationsOf({ teams, summaries, approvals }, { now, read })` 가 부팅·방송으로 이미 온 값에서
-목록을 만든다(화면과 `round.mjs check` 가 같은 것을 쓴다). 항목 `{ id, kind, team, by, text, ts, thumb, unread, target }`:
+순수 함수 `server/public/notify.js notificationsOf({ teams, summaries, approvals }, { now, read, delegation })` 가 부팅·방송으로 이미 온 값에서
+목록을 만든다(화면과 `round.mjs check` 가 같은 것을 쓴다). 항목 `{ id, kind, team, by, text, ts, thumb, unread, mine, target }`:
 
-| `kind` | 어디서 | `text` | `target` |
-| --- | --- | --- | --- |
-| `boss` 대표 차례(빨강) | 팀 요약 `bossCall`(결정을 청했는데 답 없음) + `people[by].bossCall.text` | 그 말 앞머리 80자 | 그 방, 그 말풍선 |
-| `approval` 승인 대기 | `approvals` 대기 중 C(대표 판단) | `what` | 관제탑 요청·승인 카드 |
-| `blocked` 막힘 | 팀 요약 `needsBoss`(`blocked`·`attempts`·`silent`) | 이유 한 줄(`BOSS_WHY`) | 그 방 |
-| `report` 보고 | `bossNotes[]` 중 `ask` 아닌 것(오늘) | 그 말 앞머리 160자 | 그 방, 그 말풍선 |
+| `kind` | 어디서 | `text` | `mine` (대표 손이 필요한가) | `target` |
+| --- | --- | --- | --- | --- |
+| `boss` 대표 차례(빨강) | 팀 요약 `bossCall`(결정을 청했는데 답 없음, 8절) + `people[by].bossCall.text` | 그 말 앞머리 80자 | 예. 위임 중엔 돈·바깥 물음(`bossCall.forbidden` = `proxyForbidden`)만 | 그 방, 그 말풍선 |
+| `approval` 승인 대기 | `approvals` 대기 중 C(대표 판단)·B(톰·제리) | `승인 [C] what` · `승인 [B] what — 톰·제리 차례` | C 만. 위임 중엔 대리 못 하는 C(`proxyable:false` — 서버가 `proxyEligible` 로 잰 것)만. B 는 아니오 | 관제탑 요청·승인 카드 |
+| `blocked` 막힘 | 팀 요약 `needsBoss`(`blocked`·`attempts`·`silent`) | 이유 한 줄(`BOSS_WHY`) | 예. 위임 중엔 아니오(톰·제리가 푼다) | 그 방 |
+| `report` 보고 | `bossNotes[]` 중 `ask` 아닌 것(오늘) | 그 말 앞머리 160자 | 아니오 — 읽을 것이지 누를 것이 아니다 | 그 방, 그 말풍선 |
 
 순서는 종류 순(대표 차례 → 승인 대기 → 막힘 → 보고), 같은 종류 안은 최근 것부터. `id` 는 `<kind>:<이벤트 id 또는 승인 id 또는 팀>` —
 같은 일은 한 항목. `thumb` 은 그 말에 `out/` 그림 경로가 있으면 첫 장의 `/out/` url, 없으면 null(화면은 방 아이콘). `unread` 는
-브라우저가 기억하는 읽음 목록(`localStorage`, id 집합)에 없는 것 — 항목을 누르거나 "모두 읽음" 이면 읽음. 종 배지 숫자는 **안 읽은 수**,
-빨강은 대표 차례·승인·막힘 중 안 읽은 것이 있을 때. 항목 한 줄 = 팀 색 아바타(`by` 의 색, 없으면 팀) + 이름 · 한 줄 · "N분 전" · 오른쪽
+브라우저가 기억하는 읽음 목록(`localStorage`, id 집합)에 없는 것 — 항목을 누르거나 "모두 읽음" 이면 읽음. 종 배지 숫자는 **안 읽은 것 중 `mine` 인 수**,
+빨강은 그중 대표 차례·승인·막힘이 있을 때 — 보고·B 카드·위임 중 대리될 것은 패널에 남되 숫자엔 안 든다(나리 결정 ②, 09-15 — "배지 숫자는 대표님이 눌러야 하는 것만",
+대표 물음 "결재 알림 왜 안 없어지냐": 넷이 서 있었는데 대표가 할 것은 0 이었다). `delegation` 은 boot 의 `state/delegation.json`(6절) — `until` 은 화면이 본다.
+항목 한 줄 = 팀 색 아바타(`by` 의 색, 없으면 팀) + 이름 · 한 줄 · "N분 전" · 오른쪽
 썸네일 또는 방 아이콘 · 안 읽음 점. 패널 머리는 "알림" + ⚙(설정 — 지금은 자리만) + "모두 읽음". 폰 412 에서 전체 폭.
 
 **막힌 것 — 한 목록** (결정 92 "뭐가 막혔나", M6 준비 — 화면은 도면(결정 100) 뒤, 낱말은 하영 몫이라 여기 이름은 임시).
@@ -684,7 +686,7 @@ codex 를 부르기 전에 `note` 로 거부된다.
 | `answer` | 대표에게 결정을 청한 말(`bossCall`)이 10분 넘게 답 없음 | 그 방에 note "대리 결정 — 톰·제리: <톰의 이유>"(`meta.proxyAnswer: <그 말 id>`) — 요약·개인 카드의 `bossCall` 은 이 note 로 답한 것으로 본다 |
 
 10분은 **둘 다** 여야 한다 — 그 일이 10분 넘게 기다렸고, 대표가 어느 방에서도 10분 넘게 말이 없었다(`bossQuietFor`).
-**위임 스위치**(결정 136 — 대표 09-15 "12시간 맡긴다" · "다음부턴 너가 처리해"): `state/delegation.json` `{ to, until, decision }` 이 있고 지금이 `until` 안이면 **C 카드는 기다리지 않는다** — 10분·대표 조용 조건 없이 바로 총괄실 B "대리 결정 — …" 으로(`proxyCandidates` 의 `immediate`, 순수 판별은 `delegationActive`). 대리 요청 detail 과 판정 note·이유에 " — 대리, 나리 위임 136" 이 붙는다(`delegationTag`). 돈·바깥(`proxyForbidden`)은 위임 중에도 대표만. `until` 이 지나면 파일이 있어도 평소대로. 방의 물음(`answer`)·FAIL 풀기(`unblock`)는 위임 중에도 10분 규칙 그대로(나리가 정한 건 C 카드뿐). 같은 일에 대리 요청은 한 번(`state/notifier.json`
+**위임 스위치**(결정 136 — 대표 09-15 "12시간 맡긴다" · "다음부턴 너가 처리해"): `state/delegation.json` `{ to, until, decision }` 이 있고 지금이 `until` 안이면 **C 카드는 기다리지 않는다** — 10분·대표 조용 조건 없이 바로 총괄실 B "대리 결정 — …" 으로(`proxyCandidates` 의 `immediate`, 순수 판별은 `delegationActive`). 대리 요청 detail 과 판정 note·이유에 " — 대리, 나리 위임 136" 이 붙는다(`delegationTag`). 돈·바깥(`proxyForbidden`)은 위임 중에도 대표만. `until` 이 지나면 파일이 있어도 평소대로. 방의 물음(`answer`)·FAIL 풀기(`unblock`)는 위임 중에도 10분 규칙 그대로(나리가 정한 건 C 카드뿐). 화면은 `boot.delegation` 으로 받아 종 배지가 위임 중엔 돈·바깥만 센다(3절 알림 패널 `mine`, 나리 결정 ②). 같은 일에 대리 요청은 한 번(`state/notifier.json`
 `proxied[열쇠]`). ② 방에는 늘 "대리 결정" 이라는 말이 남는다. ③ `teams/hq/out/proxy-decisions.md` 맨 위에 그날 대리 결정을 한 줄씩 적는다 —
 자정 보고서(M7)가 "대표님 대신 정한 것" 절로 맨 위에 싣는다, 대표가 아침에 보고 뒤집을 수 있게. ④ **돈이 나가는 것과 바깥으로 나가는 것은 대리 대상이
 아니다** — `proxyForbidden(text)`: 비용·상한·결제·돈·유료·외부·발송·메일·공개·병합 이 있으면 안 올린다. C 승인은 **`what` 만**(`proxyEligible` — `detail` 은 요청자의 설명 글이라 안 훑는다: "돈·바깥이 아니라 대리 대상" 이라 적은 로드맵 카드가 '돈' 에 걸려 빠졌다, 톰 09-15 apr_1bf1b266. 설명에 숨긴 부탁은 톰·제리가 대리 판정하며 읽는다. `action.type` 이 `cost`·`send`·`merge` 도 제외),

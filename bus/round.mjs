@@ -733,25 +733,35 @@ switch (cmd) {
         clearOutsideRunning(T, 'outside');
         out.push(['codex 도는 중 표시', on?.pid === process.pid && on.since && off === null && dead === null ? '✓ 내 pid 참 · 지우면 null · 죽은 pid 무시' : '✗ ' + JSON.stringify({ on, off, dead })]);
       }
-      // 알림 목록 (결정 68) — 요약·승인에서 종류 순(대표 차례→승인→막힘→보고), 같은 종류는 최근 것부터, 보고는 ask 아닌 것만, C 승인만,
-      // out/ 그림이 있으면 썸네일, 읽음 집합에 있으면 unread:false, 급한 것이 안 읽혔을 때만 urgent.
+      // 알림 목록 (결정 68) — 요약·승인에서 종류 순(대표 차례→승인→막힘→보고), 같은 종류는 최근 것부터, 보고는 ask 아닌 것만, C·B 승인(B 는 톰·제리 차례),
+      // out/ 그림이 있으면 썸네일, 읽음 집합에 있으면 unread:false. 숫자·빨강은 대표 손이 필요한 것(mine)만 — 보고·B 는 패널에만(나리 결정 ② 09-15).
       {
         const { notificationsOf } = await import('../server/public/notify.js');
         const nTeams = [{ id: 'dev', name: '개발', room: '개발실' }, { id: 'design', name: '디자인', room: '디자인실' }];
         const nSum = {
-          dev: { cast: { guide: { name: '테라' } }, bossCall: { id: 'e1', ts: '2026-09-13T10:00:00Z', by: 'guide' }, people: { guide: { bossCall: { id: 'e1', ts: '2026-09-13T10:00:00Z', text: '대표님, A 와 B 중 골라 주세요.' } } },
+          dev: { cast: { guide: { name: '테라' } }, bossCall: { id: 'e1', ts: '2026-09-13T10:00:00Z', by: 'guide', forbidden: false }, people: { guide: { bossCall: { id: 'e1', ts: '2026-09-13T10:00:00Z', text: '대표님, A 와 B 중 골라 주세요.' } } },
             bossNotes: [{ id: 'e1', ts: '2026-09-13T10:00:00Z', by: 'guide', text: '대표님, A 와 B 중 골라 주세요.', ask: true }, { id: 'e0', ts: '2026-09-13T09:00:00Z', by: 'guide', text: '대표님, 그림 올렸습니다 out/shots/a.png.', ask: false }] },
           design: { cast: { guide: { name: '헨리' } }, needsBoss: true, needsBossWhy: 'blocked', lastSpokeAt: '2026-09-13T08:00:00Z',
             bossNotes: [{ id: 'e5', ts: '2026-09-13T09:30:00Z', by: 'guide', text: '대표님, 시안 냈습니다.', ask: false }] },
         };
-        const nApr = [{ id: 'apr_1', grade: 'C', team: 'design', by: 'guide', what: '로드맵 교체', ts: '2026-09-13T07:00:00Z' }, { id: 'apr_2', grade: 'B', team: 'dev', by: 'guide', what: '푸시', ts: '2026-09-13T07:30:00Z' }];
+        const nApr = [{ id: 'apr_1', grade: 'C', team: 'design', by: 'guide', what: '로드맵 교체', ts: '2026-09-13T07:00:00Z', proxyable: true }, { id: 'apr_2', grade: 'B', team: 'dev', by: 'guide', what: '푸시', ts: '2026-09-13T07:30:00Z', proxyable: false }];
         const n1 = notificationsOf({ teams: nTeams, summaries: nSum, approvals: nApr });
         const order = n1.items.map((it) => it.id).join(',');
         const n2 = notificationsOf({ teams: nTeams, summaries: nSum, approvals: nApr }, { read: new Set(['boss:e1', 'approval:apr_1', 'blocked:design']) });
-        const nWant = order === 'boss:e1,approval:apr_1,blocked:design,report:e5,report:e0' && n1.unread === 5 && n1.urgent
-          && n1.items[4].thumb === '/out/dev/shots/a.png' && n1.items[3].thumb === null && n1.items[0].name === '테라' && n1.items[2].text.includes('멈춤')
-          && n2.unread === 2 && !n2.urgent;
-        out.push(['알림 목록(결정 68)', nWant ? '✓ 종류 순 5건 · B 승인·ask 제외 · 썸네일 · 읽음 뒤 unread 2 · urgent 꺼짐' : '✗ ' + JSON.stringify({ order, unread: n1.unread, urgent: n1.urgent, thumb: n1.items.map((i) => i.thumb), n2: [n2.unread, n2.urgent] })]);
+        const nWant = order === 'boss:e1,approval:apr_2,approval:apr_1,blocked:design,report:e5,report:e0' && n1.unread === 3 && n1.urgent
+          && n1.items[5].thumb === '/out/dev/shots/a.png' && n1.items[4].thumb === null && n1.items[0].name === '테라' && n1.items[3].text.includes('멈춤')
+          && n1.items[1].text.endsWith('톰·제리 차례') && n1.items.map((i) => +i.mine).join('') === '101100'
+          && n2.unread === 0 && !n2.urgent && n2.items.filter((i) => i.unread).length === 3;
+        out.push(['알림 목록(결정 68 · 나리 ②)', nWant ? '✓ 종류 순 6건 · B 는 패널만(톰·제리 차례) · ask 제외 · 썸네일 · 숫자는 mine 셋 · 읽음 뒤 0·urgent 꺼짐(안 읽은 보고·B 셋은 숫자 밖)' : '✗ ' + JSON.stringify({ order, unread: n1.unread, urgent: n1.urgent, mine: n1.items.map((i) => i.mine), n2: [n2.unread, n2.urgent] })]);
+        // 위임 중(결정 136)엔 돈·바깥만 대표 손 — 대리 가능한 C·물음·FAIL 은 숫자 밖. until 지나면 평소대로. 돈 C(proxyable:false)·돈 물음(forbidden) 은 위임 중에도 센다.
+        const dgOn = { to: 'system', until: '2026-09-16T01:00:00Z', decision: 136 }, dgNow = Date.parse('2026-09-15T14:00:00Z');
+        const dApr = [...nApr, { id: 'apr_3', grade: 'C', team: 'dev', by: 'guide', what: '유료 결제 허용', ts: '2026-09-13T08:00:00Z', proxyable: false }];
+        const dSum = { ...nSum, design: { ...nSum.design, bossCall: { id: 'e9', ts: '2026-09-13T10:30:00Z', by: 'guide', forbidden: true }, people: { guide: { bossCall: { id: 'e9', ts: '2026-09-13T10:30:00Z', text: '대표님, 크레딧 사도 될까요?' } } } } };
+        const d1 = notificationsOf({ teams: nTeams, summaries: dSum, approvals: dApr }, { delegation: dgOn, now: dgNow });
+        const d2 = notificationsOf({ teams: nTeams, summaries: dSum, approvals: dApr }, { delegation: dgOn, now: Date.parse('2026-09-16T02:00:00Z') });
+        const d3 = notificationsOf({ teams: nTeams, summaries: dSum, approvals: dApr }, { delegation: null, now: dgNow });
+        const dMine = d1.items.filter((i) => i.mine).map((i) => i.id).join(',');
+        out.push(['위임 중 종은 돈·바깥만(나리 ②)', dMine === 'boss:e9,approval:apr_3' && d1.unread === 2 && d1.urgent && d2.unread === 5 && d3.unread === 5 ? '✓ 위임 중 mine = 돈 물음·돈 C 둘 · until 지나면 다섯 · 위임 없으면 다섯' : '✗ ' + JSON.stringify({ dMine, d1: d1.unread, d2: d2.unread, d3: d3.unread })]);
         // 총괄실에서 부른 말이 그 방에도 남아(crossPost) 같은 알림이 둘로 뜨던 것(하네스 실측 R23 ①) — 같은 사람의 같은 글은 한 줄, 방은 "개발·총괄".
         const xTeams = [...nTeams, { id: 'hq', name: '총괄', room: '총괄실' }];
         const xSum = { ...nSum, hq: { cast: { chief: { name: '톰' } }, bossNotes: [{ id: 'h1', ts: '2026-09-13T09:40:00Z', by: 'chief', text: '대표님, 블록 한 바퀴 돌았습니다.', ask: false }] },

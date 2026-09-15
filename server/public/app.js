@@ -27,6 +27,7 @@ let told = {};               // 승인 id → { requested, decided, executed } �
 let grades = {};
 let infra = null;             // 밑바닥 넷 — 서버가 2분마다 재서 준다(boot.infra · ws infra). blockedOf 의 입력
 let pauses = [];              // 멈춘 구간(state/pauses.json, boot.pauses) — 기다린 시간·늦음에서 뺀다
+let delegation = null;        // 위임(state/delegation.json, boot.delegation, 결정 136) — 종 배지가 위임 중엔 돈·바깥만 센다(나리 결정 ②)
 let done = { since: null, items: [], fetchedAt: 0, more: false };   // 누가 뭘 했나(/api/done) — 관제탑 ②. more = "더 보기" 펼침(오늘 안에서만 — 어제는 보고서)
 let openTeamRows = new Set();  // 관제탑 ④ 팀 줄 — 펼쳐 둔 팀(상황판 네 칸)
 let requestsAll = [];         // 요청 블록 접은 목록 (6-1절) — 관제탑 요청 탭·전체 탭 타일
@@ -237,12 +238,13 @@ function bossWhyOf(t) {
 /**
  * 종 — 모든 탭 오른쪽 위 (네이버 폰 화면 기준, 결정 34). 누르면 **알림 패널** (결정 68 — "배지만 있고 내용이 없으면 대충 구현").
  * 목록은 notify.js notificationsOf 가 요약·승인에서 만든다(계약 event-schema 3절 "알림 패널"): 대표 차례 → 승인 대기 → 막힘 → 보고.
- * 배지 숫자는 안 읽은 수, 빨강은 급한 것(대표 차례·승인·막힘)이 안 읽혔을 때. 읽음은 브라우저가 기억한다(localStorage) — 새 저장소 없음.
+ * 배지 숫자는 안 읽은 것 중 **대표 손이 필요한 것**(mine — 보고·B·위임 중 대리될 것은 패널에만, 나리 결정 ② 09-15), 빨강은 그중 급한 것(대표 차례·승인·막힘).
+ * 읽음은 브라우저가 기억한다(localStorage) — 새 저장소 없음.
  */
 const READ_KEY = 'ppanam.notify.read';
 const readIds = () => { try { return new Set(JSON.parse(localStorage.getItem(READ_KEY) ?? '[]')); } catch { return new Set(); } };
 const saveRead = (set) => { try { localStorage.setItem(READ_KEY, JSON.stringify([...set].slice(-500))); } catch { /* 저장소 없음 */ } };
-const notifications = () => notificationsOf({ teams, summaries, approvals }, { read: readIds() });
+const notifications = () => notificationsOf({ teams, summaries, approvals }, { read: readIds(), delegation });
 function markRead(ids) { const r = readIds(); for (const id of ids) r.add(id); saveRead(r); renderBossBadge(); }
 
 function renderBossBadge() {
@@ -253,7 +255,7 @@ function renderBossBadge() {
   const num = $('bellN');
   num.hidden = n === 0;
   num.textContent = n ? (n > 99 ? '99+' : String(n)) : '';
-  $('bossBadge').title = n ? `안 읽은 알림 ${n}` : (items.length ? `알림 ${items.length} · 다 읽음` : '보실 것 없어요');
+  $('bossBadge').title = n ? `안 읽은 알림 ${n}` : (items.length ? `알림 ${items.length} · 정하실 것 없어요` : '보실 것 없어요');
   if (!$('bellMenu').hidden) renderBellMenu();
 }
 // 화면 글자는 하영 사전(teams/marketing/out/opsroom-words.md 3절 확정본, 결정 43 ⑥·100) 그대로 — 여기서 새로 짓지 않는다. 회차·단계·계획표·결재·낸 것·검토 결과.
@@ -2438,6 +2440,7 @@ told = boot.told ?? {};
 grades = boot.grades ?? {};
 infra = boot.infra ?? null;
 pauses = boot.pauses ?? [];
+delegation = boot.delegation ?? null;
 castOptions = boot.castOptions ?? {};
 for (const t of teams) unread[t.id] = 0;
 pendingMark = Object.values(summaries).reduce((n, s) => n + (s.approvals?.pending ?? 0), 0);

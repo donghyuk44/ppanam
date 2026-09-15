@@ -14,46 +14,54 @@ export const BOSS_WHY = { blocked: '대표님 답을 기다려요 — 검토에�
 const oneLine = (s, n) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 const firstImage = (text, team) => findOutPaths(text, team).find((f) => f.kind === 'image')?.url ?? null;
 
+/** 위임(state/delegation.json, 결정 136)이 지금 살아 있나 — bus.delegationActive 와 같은 식(브라우저 파일). until 이 지나면 파일이 있어도 아니다. */
+export const delegated = (d, now = Date.now()) => !!d && Number.isFinite(Date.parse(d.until ?? '')) && now < Date.parse(d.until);
+
 /**
  * @param teams      [{ id, name, room }]
- * @param summaries  { [팀]: 팀 요약 } — bossCall { id, ts, by } · needsBoss · needsBossWhy · people[자리].bossCall { id, ts, text } · bossNotes[] · cast
- * @param approvals  대기 중인 승인 [{ id, grade, team, by, what, ts }]
+ * @param summaries  { [팀]: 팀 요약 } — bossCall { id, ts, by, forbidden } · needsBoss · needsBossWhy · people[자리].bossCall { id, ts, text } · bossNotes[] · cast
+ * @param approvals  대기 중인 승인 [{ id, grade, team, by, what, ts, proxyable }] — proxyable 은 서버가 bus.proxyEligible 로 잰 것(돈·바깥이 아니라 대리 가능)
  * @param read       읽은 항목 id 집합 (브라우저 localStorage)
- * @returns { items, unread, urgent } — items 는 종류 순, 같은 종류 안은 최근 것부터
+ * @param delegation boot 의 위임 { to, until, decision } 또는 null
+ * @returns { items, unread, urgent } — items 는 종류 순, 같은 종류 안은 최근 것부터. 항목마다 `mine` = 대표 손이 필요한 것.
+ *   배지 숫자(unread)와 빨강(urgent)은 **mine 인 것만 센다**(나리 결정 ②, 09-15 — "배지 숫자는 대표님이 눌러야 하는 것만"): 보고·B 카드는 패널에 두되
+ *   숫자에서 빼고, 위임 중이면 돈·바깥(대리 못 하는 C·물음)만 남는다 — 나머지 C·물음·FAIL 은 톰·제리가 대리한다(결정 85·136).
  */
-export function notificationsOf({ teams = [], summaries = {}, approvals = [] } = {}, { read = new Set() } = {}) {
+export function notificationsOf({ teams = [], summaries = {}, approvals = [] } = {}, { read = new Set(), delegation = null, now = Date.now() } = {}) {
   const items = [];
   const byTeam = new Map(teams.map((t) => [t.id, t]));
   const nameOf = (team, actor) => summaries[team]?.cast?.[actor]?.name ?? actor;
+  const dg = delegated(delegation, now);
 
   for (const t of teams) {
     const s = summaries[t.id];
     if (!s) continue;
-    // 대표 차례 — 결정을 청했는데 대표가 아직 답하지 않은 말 (결정 52·66). 인용문은 people 쪽에 있다.
+    // 대표 차례 — 결정을 청했는데 대표가 아직 답하지 않은 말 (결정 52·66). 인용문은 people 쪽에 있다. 위임 중엔 돈·바깥(forbidden)만 대표 손.
     if (s.bossCall) {
       const quote = s.people?.[s.bossCall.by]?.bossCall?.text ?? '';
-      items.push({ id: `boss:${s.bossCall.id}`, kind: 'boss', team: t.id, by: s.bossCall.by, name: nameOf(t.id, s.bossCall.by),
+      items.push({ id: `boss:${s.bossCall.id}`, kind: 'boss', team: t.id, by: s.bossCall.by, name: nameOf(t.id, s.bossCall.by), mine: !dg || !!s.bossCall.forbidden,
         text: oneLine(quote, 80) || `${nameOf(t.id, s.bossCall.by)} 불렀습니다`, ts: s.bossCall.ts, thumb: firstImage(quote, t.id),
         target: { view: 'room', team: t.id, event: s.bossCall.id } });
     }
-    // 막힘 — 상태라 이벤트 id 가 없다. 팀당 하나, 시각은 마지막 발언.
+    // 막힘 — 상태라 이벤트 id 가 없다. 팀당 하나, 시각은 마지막 발언. 위임 중엔 톰·제리가 푼다(FAIL 풀기 10분 규칙).
     if (s.needsBoss) {
-      items.push({ id: `blocked:${t.id}`, kind: 'blocked', team: t.id, by: null, name: t.room ?? t.name,
+      items.push({ id: `blocked:${t.id}`, kind: 'blocked', team: t.id, by: null, name: t.room ?? t.name, mine: !dg,
         text: BOSS_WHY[s.needsBossWhy] ?? '대표님 답을 기다려요', ts: s.lastSpokeAt ?? s.lastAt ?? null, thumb: null,
         target: { view: 'room', team: t.id, event: null } });
     }
-    // 보고 — 오늘 대표를 불렀지만 결정을 청한 건 아닌 말.
+    // 보고 — 오늘 대표를 불렀지만 결정을 청한 건 아닌 말. 읽을 것이지 누를 것이 아니다 — 숫자엔 안 든다.
     for (const n of s.bossNotes ?? []) {
       if (n.ask) continue;
-      items.push({ id: `report:${n.id}`, kind: 'report', team: t.id, by: n.by, name: nameOf(t.id, n.by),
+      items.push({ id: `report:${n.id}`, kind: 'report', team: t.id, by: n.by, name: nameOf(t.id, n.by), mine: false,
         text: oneLine(n.text, 160), ts: n.ts, thumb: firstImage(n.text, t.id), target: { view: 'room', team: t.id, event: n.id } });
     }
   }
-  // 승인 대기 — 대표가 판정할 C 만. B 는 톰·제리 몫이라 관제탑 요청 탭에 있다.
+  // 승인 대기 — C 는 대표(위임 중엔 대리 못 하는 돈·바깥만), B 는 톰·제리 몫이라 패널엔 두되 숫자엔 안 든다.
   for (const r of approvals) {
-    if (r.grade !== 'C') continue;
-    items.push({ id: `approval:${r.id}`, kind: 'approval', team: r.team, by: r.by, name: nameOf(r.team, r.by),
-      text: `승인 [C] ${oneLine(r.what, 120)}`, ts: r.ts, thumb: firstImage(r.what, r.team), target: { view: 'tower', team: r.team, approval: r.id } });
+    if (r.grade !== 'C' && r.grade !== 'B') continue;
+    const c = r.grade === 'C';
+    items.push({ id: `approval:${r.id}`, kind: 'approval', team: r.team, by: r.by, name: nameOf(r.team, r.by), mine: c && (!dg || r.proxyable === false),
+      text: `승인 [${r.grade}] ${oneLine(r.what, 120)}${c ? '' : ' — 톰·제리 차례'}`, ts: r.ts, thumb: firstImage(r.what, r.team), target: { view: 'tower', team: r.team, approval: r.id } });
   }
 
   const rank = (k) => { const i = KIND_ORDER.indexOf(k); return i < 0 ? KIND_ORDER.length : i; };
@@ -71,8 +79,9 @@ export function notificationsOf({ teams = [], summaries = {}, approvals = [] } =
     merged.push(it);
   }
   items.length = 0; items.push(...merged);
-  const unread = items.filter((it) => it.unread).length;
-  const urgent = items.some((it) => it.unread && URGENT.has(it.kind));
+  // 숫자·빨강은 대표 손이 필요한 것(mine)만 — 보고·B·대리될 것은 패널에만(나리 결정 ②)
+  const unread = items.filter((it) => it.unread && it.mine).length;
+  const urgent = items.some((it) => it.unread && it.mine && URGENT.has(it.kind));
   return { items, unread, urgent };
 }
 

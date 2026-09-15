@@ -1467,7 +1467,8 @@ export function bossCallOf(log, cast, { progress = null } = {}) {
     if (e.type === 'message' && e.actor === 'boss') answered = true;
     if (e.type === 'note' && e.meta?.proxyAnswer) answered = true;   // 톰·제리의 대리 답(결정 85)도 답이다
     if (answered || e.type !== 'message' || e.actor === 'boss' || e.actor === 'system') continue;
-    if (!spokeAgain.has(e.actor) && asksBoss(e.text, cast)) return { id: e.id, ts: e.ts, by: e.actor };
+    // forbidden: 돈·바깥 물음이라 대리 못 함(proxyCandidates 와 같은 선 ④) — 위임 중 종 배지는 이것만 센다(나리 결정 ②)
+    if (!spokeAgain.has(e.actor) && asksBoss(e.text, cast)) return { id: e.id, ts: e.ts, by: e.actor, forbidden: proxyForbidden(e.text) };
     if (!isPassLine(e.text)) spokeAgain.add(e.actor);
   }
   return null;

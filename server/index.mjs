@@ -156,7 +156,8 @@ function peopleOf(team, sessions, conductor, phase) {
 const summaries = () => Object.fromEntries(listTeams().map((t) => [t.id, summaryOf(t.id)]));
 
 /** 대기 중인 승인 카드 — 행동(action)을 지금 상태로 푼 preview 와 산출물 목록(결정 36)을 붙여서 (결정 20-2). 대기 건수가 바뀔 때만 받아 가므로 git·파일을 읽어도 된다. */
-const pendingCards = () => listApprovals({ status: 'pending' }).map((r) => ({ ...r, preview: approvalPreview(r), artifacts: approvalArtifacts(r) }));
+// proxyable: 톰·제리가 대리할 수 있는 C 인가(bus.proxyEligible — 돈·바깥이면 false). 종 배지가 위임 중 대표 손이 필요한 것만 세는 데 쓴다(나리 결정 ②).
+const pendingCards = () => listApprovals({ status: 'pending' }).map((r) => ({ ...r, preview: approvalPreview(r), artifacts: approvalArtifacts(r), proxyable: bus.proxyEligible(r) }));
 
 /**
  * teams/<팀>/progress.json — 지금 어디까지 왔나 (결정 23). 로드맵이 목적지라면 이건 현재 위치다. 실무가 bus/progress.mjs 로 턴 끝·닫기마다 쓴다.
@@ -237,6 +238,7 @@ const server = http.createServer((req, res) => {
       grades: APPROVAL_GRADES,
       infra: infra.latest(),   // 밑바닥 넷 — blockedOf 의 infra 입력. 바뀌면 ws `infra` 로 온다
       pauses: bus.readPauses(),   // 멈춘 구간(state/pauses.json) — 화면이 기다린 시간에서 뺀다(blockedOf). 자주 안 바뀌어 boot 로만
+      delegation: bus.readDelegation(),   // 위임(결정 136) { to, until, decision } 또는 null — 종 배지가 위임 중 돈·바깥만 센다(나리 결정 ②). until 은 화면이 본다
 
       // 개인 카드의 엔진·모델·강도 고르기 (결정 69) — 목록은 bus.mjs 하나.
       castOptions: { engines: bus.ENGINES, claude: bus.CLAUDE_MODELS, codex: bus.CODEX_MODELS, gemini: bus.GEMINI_MODELS, efforts: bus.EFFORTS },
