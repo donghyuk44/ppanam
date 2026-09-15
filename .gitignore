@@ -4,7 +4,9 @@ node_modules/
 # 대화록과 라운드 기록은 각자의 것이다 — 저장소에 넣지 않는다.
 teams/*/log.jsonl
 teams/*/rounds.jsonl
-teams/*/out/
+# 산출물(teams/*/out/)은 저장소에 넣는다 — 나리 09-16(위임 136, 점검-0916 4절: 이 PC 하나에만 있던 196커밋·60파일).
+# 단 화면 사진 폴더와 100KB 넘는 그림은 뺀다 — 큰 그림 목록은 tools/out-ignore.mjs 가 아래 표시 블록에 만든다.
+teams/dev/out/shots/
 
 # /design 이 조립한 캔버스 결과물. .dc.html 원본에서 다시 만들 수 있다 (2MB).
 design/*.html
@@ -28,3 +30,36 @@ teams/*/journal/
 
 # 화풍 참고용 외부 그림 — 저작권이 남의 것이라 저장소에 넣지 않는다
 teams/*/ref/
+
+# >>> out/ 의 100KB 넘는 그림 — tools/out-ignore.mjs 가 만든다. 손으로 고치지 말 것
+teams/design/out/gpt/boss-gpt-walk-2048.png
+teams/design/out/gpt/dev-guide-1024.png
+teams/design/out/gpt/dev-outside-1024.png
+teams/design/out/gpt/finance-review-1024.png
+teams/design/out/gpt/hq-chief-1024.png
+teams/design/out/gpt/marketing-review-1024.png
+teams/design/out/gpt64/design-outside-512.png
+teams/design/out/gpt64/design-outside-src.png
+teams/design/out/gpt64/dev-guide-512.png
+teams/design/out/gpt64/dev-guide-src.png
+teams/design/out/gpt64/dev-ops-src.png
+teams/design/out/gpt64/finance-outside-src.png
+teams/design/out/gpt64/hq-chief-src.png
+teams/design/out/gpt64/hq-outside-src.png
+teams/design/out/gpt64/marketing-guide-src.png
+teams/design/out/gpt64/marketing-review-src.png
+teams/design/out/kit/concept.png
+teams/design/out/screens/blueprint-1.png
+teams/design/out/screens/dolls-lineup-render.png
+teams/design/out/screens/dolls-lineup.png
+teams/design/out/screens/seoul-toy-concept.png
+teams/design/out/screens/tower-tabs.png
+teams/design/out/screens/ui/png/analysis.png
+teams/design/out/screens/ui/png/approval.png
+teams/design/out/screens/ui/png/dashboard.png
+teams/design/out/screens/ui/png/numbers.png
+teams/design/out/screens/ui/png/person.png
+teams/design/out/screens/ui/png/report.png
+teams/design/out/screens/ui/png/team-person.png
+teams/design/out/screens/ui/png/tower.png
+# <<< out/ 그림 끝

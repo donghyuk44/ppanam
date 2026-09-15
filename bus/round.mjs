@@ -684,6 +684,13 @@ switch (cmd) {
         const psWant = /정형문/.test(ps[0]) && /0개/.test(ps[1]) && /반박이 2개/.test(ps[2]) && ps[3] === null
           && vi.startsWith('⟦판정 요청⟧ out/x.md') && vi.includes('만든 사람: 테라') && vi.includes('떨어뜨릴 이유 1:') && vi.includes('못 열었다 — 판정 아님');
         out.push(['PASS 모양(점검 3-9 — 떨어뜨릴 이유 셋)', psWant ? '✓ 정형문 되돌림 · 이유 0개 · 반박 2개 되돌림 · 셋+반박이면 통과 · 지시문에 모양·만든 사람·못 열면 판정 아님' : '✗ ' + JSON.stringify({ ps, vi: vi.slice(0, 120) })]);
+        // out/ 산출물 커밋(나리 09-16) — 100KB 넘는 그림만 .gitignore 표시 블록에(tools/out-ignore.mjs). dev/out/shots 는 안 세고, 그림 아닌 큰 파일은 안 뺀다. 블록은 갈아 끼우고 없으면 끝에.
+        const { largeImages, spliceBlock } = await import('../tools/out-ignore.mjs');
+        const fakeWalk = function* () { yield ['teams/design/out/a.png', 200_000]; yield ['teams/design/out/b.png', 1_000]; yield ['teams/dev/out/shots/x.png', 900_000]; yield ['teams/dev/out/big.md', 900_000]; yield ['teams/dev/out/c.JPG', 150_000]; };
+        const li = largeImages('/x', 100 * 1024, fakeWalk);
+        const s1 = spliceBlock('a\nb\n', ['p1']), s2 = spliceBlock(s1, ['p2', 'p3']);
+        const liWant = li.join(',') === 'teams/design/out/a.png,teams/dev/out/c.JPG' && s1.includes('\np1\n') && !s2.includes('p1') && s2.includes('p2\np3') && s2.split('>>>').length === 2 && s2.startsWith('a\nb\n');
+        out.push(['out/ 큰 그림만 빼기(out-ignore)', liWant ? '✓ 100KB 넘는 그림만 · shots 안 셈 · md 안 뺌 · 대문자 확장자 · 블록 갈아 끼움' : '✗ ' + JSON.stringify({ li, s1, s2 })]);
         out.push(['작은 B(점검 3-9 감사 무게)', smallWant ? '✓ 작은 B = 톰 혼자 · 보통 B = 톰+제리 · C 는 대표 · C·실행 대상에 --small 거부 · 레코드 small:true' : '✗ ' + JSON.stringify({ nd, smallC, smallPush, smallOk })]);
       }
       // 자리의 엔진·모델·추론 강도 (결정 69) — 순수 castChangeError 가 거르고, updateCastAgent 가 임시 방 cast.json 에 쓴다. 엔진 바꾸기는 아직 거부(같은 값은 통과).
