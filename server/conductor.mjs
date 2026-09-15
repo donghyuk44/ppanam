@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed, readRoadmap, listApprovals } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { ga, eul } from './public/toollabel.js';
 
@@ -229,6 +229,9 @@ const INSTRUCTION = {
   third: '두 사람 사이에서 같은 얘기가 세 번 오갔다. 너는 제3자다. 정리하거나 다른 각도를 하나만, 네 말투로 한두 문장. 없으면 (패스).',
   lunch: '점심시간이다. 일 얘기는 잠시 두고 네 말투로 한마디 툭 — 한 문장. 없으면 (패스).',
   carried: '지난 라운드가 닫히면서 못 받은 차례다 — 위 말 끝에 누가 너에게 한 말이 있다. 새 라운드가 열렸으니 그 말에 지금 답해라. 상대 이름으로 시작해 네 말투로 한두 문장. 판정이 아니다 — 첫 줄에 PASS·REVISE 를 쓰지 마라. 남길 말이 없으면 (패스) 한 마디만.',
+  // 멈춤 감시(㉡~㉣, checkStalls) 가 주는 차례 둘 — 사람이 부른 게 아니라 서버가 조용함을 보고 불렀다.
+  roadmap: '이 방의 로드맵 마일스톤이 모두 pass 다. 다음 단계를 제안해라 — 제안 파일을 teams/<이 팀>/out/ 에 쓰고, node bus/approve.mjs --request C --roadmap out/<파일명> "무엇" 으로 카드를 올려라. 판정이 아니다 — 첫 줄에 PASS·REVISE 를 쓰지 마라.',
+  status: '방이 한동안 조용하다(20분 동안 사건 없음). 지금 뭐 하고 있는지 한 줄만 남겨라 — 막힌 게 있으면 그것도 같이. 판정이 아니다 — 첫 줄에 PASS·REVISE 를 쓰지 마라.',
 };
 
 /* ── 턴 보내기 ── */
@@ -276,7 +279,8 @@ function giveTurn(team, actor, kind, tries = 1) {
   const body = (lines.length ? `그동안 이 방에서 오간 말:\n\n${lines.join('\n')}\n\n---\n` : '') + anchor + instruction;
   const before = cursorOf(team, actor);               // 서버가 이 턴 중에 죽으면 여기로 되돌린다 (결정 104)
   if (last) setCursor(team, actor, last);
-  r.inflight.set(actor, { kind, cursor: before }); persist(team);
+  // since — 이 턴을 준 시각(메모리에만, persist 는 안 한다). checkStalls(㉣) 가 이 값으로 "세션이 꺼진 채 답이 없다" 를 잰다.
+  r.inflight.set(actor, { kind, cursor: before, since: Date.now() }); persist(team);
   const sent = session.send(team, quiet(body), actor, kind === 'verdict' ? { kind: 'verdict', extra: target.slice(0, 200) } : {});
   if (sent?.refused) { r.inflight.delete(actor); persist(team); note(team, `${nameOf(team, actor)}의 차례를 주지 못했습니다 — ${sent.reason}`); }
 }
@@ -318,7 +322,7 @@ function armRetry(team, at) {
 }
 
 /** 차례를 예약한다. 같은 자리에 쌓이면 더 센 종류로 합친다. */
-const RANK = { verdict: 4, third: 3, called: 2, carried: 2, lull: 1, lunch: 1 };
+const RANK = { verdict: 4, third: 3, called: 2, carried: 2, roadmap: 2, status: 2, lull: 1, lunch: 1 };
 function enqueue(team, actor, kind) {
   const r = room(team);
   const cur = r.pending.get(actor);
@@ -503,6 +507,97 @@ export function autoVerdicts(now = Date.now()) {
       note(team, `말로 부른 판정을 흐름으로 돌리지 못했습니다 — ${String(e.message).slice(0, 120)}`);
     }
   }
+}
+
+/* ── 멈춤 감시 (나리 지시, 전체-작업표-0916 #12 — 대표 "라운드 안 켜져서 다 아무 말도 안 하는 거 왜 아무도 해결 안 함?") ──
+ * 멈춤 넷 중 ㉠(회차가 닫힌 뒤 5분 — 같은 단계로 다시 열기)은 이미 됨(커밋 9840773, bus.endRound). 여기는 나머지 셋:
+ *   ㉡ 로드맵 마일스톤이 전부 pass — 실무를 불러 다음 단계 제안 카드(--roadmap)를 올리게 하고, 10분 안에 카드가 없으면 표에 올린다.
+ *   ㉢ 회차가 running 인데 20분 동안 사건이 0 — 실무를 불러 "지금 뭐 하나" 한 줄을 묻는다.
+ *   ㉣ 자리 세션이 꺼진 채로 차례가 나갔는데 응답이 없다(giveTurn 의 inflight.since 로 잰다) — 세션을 다시 띄우고 note.
+ * expireFlows·autoVerdicts 와 같은 자리 — index.mjs 틱이 순수 함수처럼 now 를 넣어 부른다(round.mjs check 가 가짜 now 로 시험할 수 있게).
+ * Date.now() 를 직접 부르지 않는다 — 인자로 받은 now 를 쓴다. 부작용은 enqueue/giveTurn(차례)·note/emit(안내) 뿐이다.
+ * 팀마다 room(team).stall 에 "이미 불렀다·이미 알렸다" 표시를 남겨 매 틱(250ms) 마다 다시 부르거나 다시 알리지 않는다 — 조건이 풀리면 비운다.
+ * 걸린 게 하나도 없으면 hq 에 아무것도 안 보낸다(토큰 0) — 걸린 게 있을 때만, 그 팀·그 종류로 한 번만 표에 올린다.
+ */
+export const ROADMAP_PROPOSAL_MS = Number(process.env.PPANAM_ROADMAP_PROPOSAL_MS || 10 * 60_000);
+export const ROUND_SILENT_MS = Number(process.env.PPANAM_ROUND_SILENT_MS || 20 * 60_000);
+export const DEAD_SEAT_MS = Number(process.env.PPANAM_DEAD_SEAT_MS || 5 * 60_000);
+
+const stallState = (team) => (room(team).stall ??= { roadmap: null, silent: null });
+/** 순수 — 로드맵 마일스톤이 있고 전부 pass 인가. round.mjs check 가 돌려본다. */
+export function roadmapAllPass(roadmap) {
+  const ms = roadmap?.milestones ?? [];
+  return ms.length > 0 && ms.every((m) => m.status === 'pass');
+}
+const minAgo = (now, ts) => Math.max(0, Math.round((now - ts) / 60_000));
+
+export function checkStalls(now = Date.now()) {
+  const rows = [];
+  for (const t of listTeams()) {
+    const team = t.id;
+    if (isOffice(team)) continue;
+    let state; try { state = readState(team); } catch { continue; }
+    const r = room(team);
+    const s = stallState(team);
+    const owner = session.ownerOf(team);
+
+    // ㉡ — 로드맵이 전부 pass 인 건 보통 라운드가 닫힌(idle) 뒤다. running 중이면(다음 마일스톤이 이미 now) 걸 게 없다.
+    let roadmap; try { roadmap = readRoadmap(team); } catch { roadmap = null; }
+    if (state.phase === 'idle' && roadmapAllPass(roadmap)) {
+      if (!s.roadmap) {
+        s.roadmap = { askedAt: now, notified: false };
+        note(team, `${nameOf(team, owner)}, 로드맵 마일스톤이 모두 pass 입니다 — 다음 단계 제안 카드(--roadmap)를 올려 주세요.`);
+        enqueue(team, owner, 'roadmap');
+      } else if (!s.roadmap.notified && now - s.roadmap.askedAt >= ROADMAP_PROPOSAL_MS) {
+        s.roadmap.notified = true;   // 카드가 왔든 안 왔든 이 청함은 여기서 끝 — 다시 걸리려면 로드맵이 바뀌어야
+        const proposed = listApprovals({ team }).some((a) => a.action?.type === 'roadmap' && new Date(a.ts).getTime() >= s.roadmap.askedAt);
+        if (!proposed) rows.push([team, state.round, minAgo(now, s.roadmap.askedAt), `계획표 전부 pass — ${nameOf(team, owner)}에게 제안 카드를 청했는데 아직 없음`]);
+      }
+    } else {
+      s.roadmap = null;
+    }
+
+    // ㉢ — 회차가 running 인데 20분 동안 이 라운드의 사건(message·verdict)이 없다.
+    if (state.phase === 'running') {
+      const log = readLog(team).filter((e) => e.round === state.round && (e.type === 'message' || e.type === 'verdict'));
+      const lastTs = log.length ? new Date(log[log.length - 1].ts).getTime() : (state.startedAt ? new Date(state.startedAt).getTime() : now);
+      if (now - lastTs >= ROUND_SILENT_MS) {
+        if (!s.silent || s.silent.since !== lastTs) {
+          s.silent = { since: lastTs, notified: false };
+          note(team, `방이 ${Math.round(ROUND_SILENT_MS / 60_000)}분째 조용합니다 — ${nameOf(team, owner)}에게 지금 하는 일을 묻습니다.`);
+          enqueue(team, owner, 'status');
+        }
+        if (!s.silent.notified) {
+          s.silent.notified = true;
+          rows.push([team, state.round, minAgo(now, lastTs), `${Math.round(ROUND_SILENT_MS / 60_000)}분째 사건 없음 — ${nameOf(team, owner)}을 불렀음`]);
+        }
+      } else {
+        s.silent = null;
+      }
+    } else {
+      s.silent = null;
+    }
+
+    // ㉣ — 차례가 나갔는데(inflight) 그 자리 세션이 꺼져 있고, 그 상태로 DEAD_SEAT_MS 를 넘겼다. 외부 자리(codex·gemini)는
+    // outsideFailed 가 이미 재시도·버림을 한다 — 여기서는 claude 자리만 본다. 다시 띄우면(giveTurn) inflight.since 가 새로 찍혀
+    // 다음 판정까지 또 DEAD_SEAT_MS 가 걸린다 — 매 틱 다시 띄우지 않는다.
+    for (const [actor, inf] of [...r.inflight]) {
+      if (isOutside(team, actor)) continue;
+      if (session.status(team, actor).alive) continue;
+      const since = inf.since ?? now;
+      if (now - since < DEAD_SEAT_MS) continue;
+      r.inflight.delete(actor); persist(team);
+      note(team, `${nameOf(team, actor)}의 세션이 꺼진 채 ${minAgo(now, since)}분째 답이 없습니다 — 다시 띄웁니다.`);
+      giveTurn(team, actor, inf.kind, 1);
+      rows.push([team, state.round, minAgo(now, since), `${nameOf(team, actor)} 세션 꺼짐 — 다시 띄움`]);
+    }
+  }
+
+  if (rows.length) {
+    const body = rows.slice(0, 10).map(([team, round, min, what]) => `${team} · R${round} · ${min}분 전 · ${what}`).join('\n');
+    emit('hq', { actor: 'system', type: 'note', text: `톰, 멈춤 감시 — 팀 · 회차 · 마지막 사건(분 전) · 무엇이 멈췄나\n${body}`, meta: { stallPatrol: rows.map(([team, round, min, what]) => ({ team, round, min, what })) } });
+  }
+  return rows;
 }
 
 /** 판정 흐름 중에 온 이벤트. 기다리던 자리의 판정 카드면 다음 단계로, 판정 없는 말이면 한 번 더 묻는다. */
