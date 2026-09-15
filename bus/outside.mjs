@@ -31,6 +31,7 @@ import {
 } from './bus.mjs';
 // 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
 import { assemblePrompt, personaOf as seatPersonaOf } from '../server/session.mjs';
+import { eul } from '../server/public/toollabel.js';   // 을/를 — "레오을 부르지 못했습니다" (R28 실측)
 
 const run = promisify(execFile);
 const TIMEOUT = Number(process.env.PPANAM_OUTSIDE_TIMEOUT || 300_000);
@@ -485,7 +486,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
       onRetry: (e, attempt) => {
         // 이어붙이기가 깨졌으면 세션을 버리고 새로 연다. (codex 만 — gemini 의 sessionId 는 하네스 창의 대화라 답이 늦은 것뿐이다)
         if (prior && KIND === 'gpt') { forget(team); prior = null; input = buildInput(false); }
-        emit(team, { actor: ACTOR, type: 'note', text: `${name}을 부르지 못했습니다 — ${why1(e)}. 한 번 더 부릅니다 (${attempt}/${OUTSIDE_TRIES}).`, meta: { retry: { actor: ACTOR, attempt, of: OUTSIDE_TRIES, why: why1(e) } } });
+        emit(team, { actor: ACTOR, type: 'note', text: `${eul(name)} 부르지 못했습니다 — ${why1(e)}. 한 번 더 부릅니다 (${attempt}/${OUTSIDE_TRIES}).`, meta: { retry: { actor: ACTOR, attempt, of: OUTSIDE_TRIES, why: why1(e) } } });
         console.error(`실패(${attempt}/${OUTSIDE_TRIES}) — 다시: ${why1(e)}`);
       },
     });
@@ -500,7 +501,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
       return 1;
     }
     if (prior && KIND === 'gpt') forget(team);
-    emit(team, { actor: ACTOR, type: 'note', text: `${name}을 ${e.attempts ?? OUTSIDE_TRIES}번 불러도 답이 없습니다 — ${why1(e)}. 이 차례는 못 냈습니다.`, meta: { retry: { actor: ACTOR, attempt: e.attempts ?? OUTSIDE_TRIES, of: OUTSIDE_TRIES, why: why1(e), gaveUp: true } } });
+    emit(team, { actor: ACTOR, type: 'note', text: `${eul(name)} ${e.attempts ?? OUTSIDE_TRIES}번 불러도 답이 없습니다 — ${why1(e)}. 이 차례는 못 냈습니다.`, meta: { retry: { actor: ACTOR, attempt: e.attempts ?? OUTSIDE_TRIES, of: OUTSIDE_TRIES, why: why1(e), gaveUp: true } } });
     console.error('실패: ' + e.message);
     return 1;
   }

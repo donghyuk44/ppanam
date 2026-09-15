@@ -33,6 +33,13 @@ export function ga(name) {
   const hangul = c >= 0xac00 && c <= 0xd7a3;
   return s + (hangul && (c - 0xac00) % 28 !== 0 ? '이' : '가');
 }
+/** 목적격 조사 — 받침이 있으면 "을", 없으면 "를". "레오을 부르지 못했습니다" 가 R28 실측에 떴다. */
+export function eul(name) {
+  const s = String(name ?? '');
+  const c = s.charCodeAt(s.length - 1);
+  const hangul = c >= 0xac00 && c <= 0xd7a3;
+  return s + (hangul && (c - 0xac00) % 28 !== 0 ? '을' : '를');
+}
 
 /** 도구 줄 하나를 사람 말로 — "app.js 고치는 중". 관제탑 카드의 "지금" 줄과 생존 알림이 쓴다 (결정 31). */
 export function toolPhrase(item, live = true) {

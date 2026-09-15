@@ -26,7 +26,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed } from '../bus/bus.mjs';
 import * as session from './session.mjs';
-import { ga } from './public/toollabel.js';
+import { ga, eul } from './public/toollabel.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUTSIDE = path.join(REPO, 'bus', 'outside.mjs');
@@ -296,13 +296,13 @@ function outsideFailed(team, actor, kind, tries, why) {
   if (plan.action === 'queue') {
     r.pending.set(actor, { kind, tries: tries + 1, notBefore: plan.notBefore });   // 있던 예약보다 우선 — 못 낸 차례가 그 자리의 가장 급한 것
     persist(team);
-    emit(team, { actor: 'system', type: 'note', text: `${who}이 답을 못 냈습니다 — ${why}. 이 차례(${kind})를 큐에 남기고 ${Math.round(OUTSIDE_RETRY_MS / 60_000)}분 뒤 다시 줍니다 (${tries}/${OUTSIDE_MAX_TRIES}).`, meta: { outsideRetry: { actor, kind, tries, of: OUTSIDE_MAX_TRIES, notBefore: new Date(plan.notBefore).toISOString(), why } } });
+    emit(team, { actor: 'system', type: 'note', text: `${ga(who)} 답을 못 냈습니다 — ${why}. 이 차례(${kind})를 큐에 남기고 ${Math.round(OUTSIDE_RETRY_MS / 60_000)}분 뒤 다시 줍니다 (${tries}/${OUTSIDE_MAX_TRIES}).`, meta: { outsideRetry: { actor, kind, tries, of: OUTSIDE_MAX_TRIES, notBefore: new Date(plan.notBefore).toISOString(), why } } });
     armRetry(team, plan.notBefore);
     return;
   }
   const waiting = r.flow?.waiting === actor;
   if (waiting) { r.flow = null; persist(team); }
-  emit(team, { actor: 'system', type: 'note', text: `${who}을 ${OUTSIDE_MAX_TRIES}번 띄워도 답이 없습니다 — ${why}. 이 차례(${kind})를 버립니다.${waiting ? ' 판정 흐름도 멈춥니다 — 다시 부르세요 (node bus/round.mjs verdict).' : ''}`, meta: { outsideRetry: { actor, kind, tries, of: OUTSIDE_MAX_TRIES, gaveUp: true, why }, ...(waiting ? { verdictFlow: 'abort', waiting: actor } : {}) } });
+  emit(team, { actor: 'system', type: 'note', text: `${eul(who)} ${OUTSIDE_MAX_TRIES}번 띄워도 답이 없습니다 — ${why}. 이 차례(${kind})를 버립니다.${waiting ? ' 판정 흐름도 멈춥니다 — 다시 부르세요 (node bus/round.mjs verdict).' : ''}`, meta: { outsideRetry: { actor, kind, tries, of: OUTSIDE_MAX_TRIES, gaveUp: true, why }, ...(waiting ? { verdictFlow: 'abort', waiting: actor } : {}) } });
 }
 /** 큐에 남긴 차례의 시각이 되면 dispatch — 방마다 타이머 하나, 더 이른 시각이 오면 당긴다. */
 function armRetry(team, at) {

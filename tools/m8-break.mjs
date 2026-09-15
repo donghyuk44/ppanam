@@ -44,11 +44,11 @@ if (spec.test === 'A1' || spec.test === 'A2') {
   if (!child) process.exit(1);
   say(`outside.mjs 떴다 pid ${child.pid} — ${child.head.slice(0, 90)}`);
   if (spec.test === 'A1') {
-    // 상주 agy 는 서버의 자식(pool) — 이 방 것을 고르려면 서버 /api 가 없으니 outside.mjs 가 물음을 넣은 뒤(첫 낱말 전) 죽여야 한다. 2초 뒤 가장 최근에 바쁜 상주 하나를 죽인다.
-    await sleep(2500);
-    const agys = kidsOf(sp).filter((r) => /^agy /.test(r.head));
-    say(`상주 agy ${agys.length}개 — 전부 SIGKILL (어느 것이 이 방 것인지 밖에서는 모른다; 다른 방은 다음 물음에 다시 뜬다)`);
-    for (const a of agys) { process.kill(a.pid, 'SIGKILL'); say(`  SIGKILL → agy pid ${a.pid} (${a.etime})`); }
+    // 상주 agy 는 서버의 자식(pool) — /api/gemini/status 의 key "<방>:outside" 로 이 방 것만 고른다(다른 방의 감사 중인 프로세스는 안 건드린다). 물음이 들어가 busy 가 된 뒤 죽인다.
+    const mine = await waitFor('이 방의 상주 gemini busy', async () => { const s = await (await fetch(`${URL}/api/gemini/status`)).json(); return s.pool?.find((p) => p.key === `${team}:outside` && p.busy) ?? null; }, { timeout: 60_000, every: 300 });
+    if (!mine) process.exit(1);
+    await sleep(1000);
+    process.kill(mine.pid, 'SIGKILL'); say(`SIGKILL → 상주 agy pid ${mine.pid} (${mine.key} · 대화 ${String(mine.conversationId ?? '').slice(0, 8)} · 턴 ${mine.turns})`);
   } else {
     await sleep(1500);
     process.kill(child.pid, 'SIGKILL'); say(`SIGKILL → outside.mjs pid ${child.pid}`);
