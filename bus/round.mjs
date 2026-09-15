@@ -575,6 +575,8 @@ switch (cmd) {
           proxyEligible(C('로드맵', { action: { type: 'send' } })),        // 행동 종류 — 안 올림
           proxyEligible(C('로드맵', { grade: 'B' })),                       // B 는 대리 대상이 아니다(이미 톰·제리)
           proxyEligible(C('로드맵', { status: 'passed' })),                 // 끝난 것
+          proxyEligible(C('로드맵 7단계 교체', { detail: '로드맵은 돈·바깥이 아니라 대리 대상 — 비용 상한 아님' })),   // 설명 글(detail)은 안 훑는다 — 올림 (톰 09-15, apr_1bf1b266)
+          proxyEligible(C('결제 허용', { detail: '' })),                    // what 에 든 돈 — 안 올림
         ];
         const t0 = Date.parse('2026-09-13T10:00:00Z');
         const od = overdue([{ key: 'a', since: new Date(t0 - 11 * 60_000).toISOString() }, { key: 'b', since: new Date(t0 - 9 * 60_000).toISOString() }, { key: 'c', since: null }], { now: t0 }).map((x) => x.key);
@@ -593,7 +595,7 @@ switch (cmd) {
         // 자리 이름 "외부 감사" 와 "서버가 돈다" 는 금지어가 아니다 — 헨리 도면 승인(외부 감사 후보 목록)이 밤새 대리에서 빠졌다(하네스 R24).
         const fb = [proxyForbidden('대표님, 유료 결제를 허용해 주세요.'), proxyForbidden('대표님, A 와 B 중 골라 주세요.'), proxyForbidden('대표님, 외부에 보내도 될까요?'),
           proxyForbidden('괄호 후보(비서실 · 팀장/감사/외부 감사/운영 담당) 중 고르실 것'), proxyForbidden('외부감사가 실제로 돌려본다'), proxyForbidden('서버가 돈다, 세션은 산다')];
-        const xWant = el.join(',') === 'true,false,false,false,false,false,false' && od.join(',') === 'a' && un?.phase === 'running' && unNote?.text?.startsWith('대리 결정(톰·제리)으로 재개')
+        const xWant = el.join(',') === 'true,false,false,false,false,false,false,true,false' && od.join(',') === 'a' && un?.phase === 'running' && unNote?.text?.startsWith('대리 결정(톰·제리)으로 재개')
           && unNote?.meta?.proxy?.length === 2 && before?.id === 'q2' && after === null && fb.join(',') === 'true,false,true,false,false,false';
         out.push(['대리 결정(결정 85)', xWant ? '✓ 돈·바깥·병합·B·끝난 것 안 올림 · 물음도 같은 선(유료 결제·외부 발송 제외) · "외부 감사"·"돈다" 는 안 걸림 · 10분 넘은 것만 · FAIL 대리 풀기 note · 대리 답이면 부름 사라짐' : '✗ ' + JSON.stringify({ el, od, un: un?.phase, note: unNote?.text, before, after, fb })]);
       }

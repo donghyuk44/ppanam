@@ -525,10 +525,15 @@ export const PROXY_WAIT_MS = Number(process.env.PPANAM_PROXY_WAIT_MS || 10 * 60_
 // 낱말 하나로 거르면 같이 걸리는 말이 있다 — "외부" 는 우리 자리 이름 "외부 감사"(다섯) 에 걸려 헨리의 도면 승인이 밤새 대리 후보에서 빠졌다(하네스 R24).
 // "돈" 은 "서버가 돈다" 에 걸린다. 그래서 외부 는 뒤에 감사 가 안 올 때만, 돈 은 뒤에 다·되·된·돌 이 안 올 때만.
 export const proxyForbidden = (text) => /비용|상한|결제|돈(?![다되된돌])|유료|과금|외부(?!\s?감사)|발송|메일|공개|병합/.test(String(text ?? ''));
+/**
+ * C 카드가 대리 대상인가 — 낱말 검사는 **what(무엇)** 과 action 에만. detail(요청자의 설명 글)은 안 훑는다 — 설명에 "돈·바깥이 아니라 대리 대상" 이라 적은 로드맵 카드가
+ * '돈' 에 걸려 후보에서 빠졌다(톰 09-15, apr_1bf1b266 — 결정 111 때 '외부 감사' 로 겪은 그 병). 부정어("아니라") 뒤를 빼는 식은 또 다른 낱말에 걸린다.
+ * 돈·바깥 부탁은 what 에 있어야 부탁이고(설명에 숨긴 것은 톰·제리가 대리 판정하며 읽는다), 구조 있는 것은 action.type(cost·send·merge)이 거른다. 방의 물음(answer)은 그 말 전체 그대로.
+ */
 export function proxyEligible(r) {
   if (!r || r.grade !== 'C' || r.status !== 'pending') return false;
   if (['cost', 'send', 'merge'].includes(r.action?.type)) return false;
-  return !proxyForbidden(`${r.what ?? ''} ${r.detail ?? ''}`);
+  return !proxyForbidden(r.what ?? '');
 }
 /** 대표가 마지막으로 말한 지 얼마나 됐나(ms) — 어느 방이든. 대표가 방금 말했으면 대리는 안 한다. 말한 적 없으면 Infinity. */
 export function bossQuietFor(now = Date.now()) {
