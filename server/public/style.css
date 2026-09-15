@@ -668,6 +668,8 @@ body {
 .apr__act button[data-d="PASS"] { border-color: var(--good-line); background: var(--good-bg); color: var(--good); }
 .apr__act button[data-d="REVISE"] { border-color: var(--bad-line); background: var(--bad-bg); color: var(--bad); }
 .apr__wait { font-size: 11px; color: var(--ink-4); white-space: normal; }
+/* 위임 중(결정 136) 대표 단추 자리의 한 줄 — 단추와 같은 높이·둥글기, 누를 수 없는 회색 (R31 ②, 나리) */
+.apr__proxy { font-size: 12px; min-height: 36px; padding: 6px 14px; border-radius: 6px; display: flex; align-items: center; background: var(--sunk); color: var(--ink-3); }
 .apr__arts { font-size: 12px; background: var(--sunk); border-radius: 8px; padding: 8px 10px; }
 .apr__artsk { font-size: 10.5px; color: var(--ink-4); font-family: 'IBM Plex Mono', monospace; }
 .apr__arts .outf { margin-top: 6px; }

@@ -9,7 +9,7 @@
 import * as World from '/world/world.js';
 import { toolLabel, toolPhrase, baseName, ga } from '/toollabel.js';
 import { findOutPaths, linkOutPaths } from '/outlink.js';
-import { notificationsOf, blockedOf, pausedMs } from '/notify.js';
+import { notificationsOf, blockedOf, pausedMs, delegated } from '/notify.js';
 import { dayWord, timeWord, clockWord, spanWord } from '/when.js';
 import { parseMention } from '/mention.js';
 
@@ -1249,7 +1249,11 @@ function approvalCard(r) {
     for (const f of r.artifacts) arts.appendChild(outFileNode(f));
     card.appendChild(arts);
   }
-  if (r.grade === 'C') {
+  if (r.grade === 'C' && delegated(delegation) && r.proxyable) {
+    // 위임 중(결정 136)이고 톰·제리가 대리할 수 있는 카드 — 대표 단추 자리에 한 줄(R31 ②, 나리). 돈·바깥(proxyable false)은 아래 그대로 대표 단추.
+    card.appendChild(el('div', 'apr__proxy', '지금은 톰·제리가 정해요'));
+    card.appendChild(el('div', 'apr__hint', '되돌리시려면 방에 한마디.'));
+  } else if (r.grade === 'C') {
     const act = el('div', 'apr__act');
     const err = el('div', 'apr__err'); err.hidden = true;
     const reasonBox = el('input', 'apr__reason'); reasonBox.type = 'text'; reasonBox.placeholder = '왜 — 한 마디'; reasonBox.hidden = true;
