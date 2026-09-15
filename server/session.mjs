@@ -180,6 +180,18 @@ export function personaCard(team, actor) {
 }
 
 /**
+ * 책장 (결정 116 ① — teams/hq/out/점검-0916.md 3-2 "배선 0" 지적). teams/<팀>/shelf.md — "읽을 것 3~5개(경로)
+ * + 안 읽을 것" 목록. 대화록을 통째로 붓는 대신 이 절이 경로를 손가락으로 가리킨다. 팀마다 다르고, 없는 팀도 있다
+ * (없으면 그냥 건너뛴다 — 에러 내지 않는다). 안 변하는 것(인격 다음)이라 앞쪽, 캐시 순서(결정 116 ③)를 따른다.
+ */
+export function shelfOf(team) {
+  try {
+    const s = fs.readFileSync(path.join(paths(team).dir, 'shelf.md'), 'utf8').trim();
+    return s || null;
+  } catch { return null; }   // 이 팀엔 책장이 없다 — 정상
+}
+
+/**
  * 지금 이 방 — 라운드 브리프. 라운드마다 세션이 새로 뜨므로 여기 붙는다. 인격 파일은 대표만 고치는 것(C)이라
  * 장치가 바뀐 것(자리 = 프로세스, 호명으로 부른다)은 여기서 말한다.
  */
@@ -249,26 +261,35 @@ function progressLines(team, owner) {
 }
 
 /**
- * 시스템 프롬프트 = 인격 + 확정 조항(해석) + 일지(최근) + 라운드 브리프. 조립 함수는 이것 하나다 —
+ * 시스템 프롬프트 = 인격 + 책장 + 확정 조항(해석) + 일지(최근) + 라운드 브리프. 조립 함수는 이것 하나다 —
  * 층을 더 쌓지 않는다(순순빌리지는 메타데이터+시스템+기억+상호작용이 쌓여 꼬였다, docs/cases.md 6).
- * 상한을 넘으면 일지 문단부터 줄인다.
+ * 책장은 인격 바로 뒤 — 안 변하는 것을 앞에 두는 캐시 순서(결정 116 ③). 상한을 넘으면 일지 문단부터
+ * 줄이고, 그래도 넘으면 책장을 잘라낸다(책장은 보통 짧아 여기까지 오는 일은 드물다).
  */
 export function assemblePrompt(team, actor) {
   const persona = personaOf(team, actor);
+  const shelfFull = shelfOf(team);
   const decisions = decisionsOf(team);
   const brief = briefOf(team, actor);
   let paras = JOURNAL_PARAS;
+  let shelfLen = shelfFull ? shelfFull.length : 0;
   for (;;) {
     const j = paras > 0 ? journalOf(team, actor, paras) : null;
+    const shelf = shelfFull && shelfLen > 0
+      ? (shelfLen < shelfFull.length ? shelfFull.slice(0, shelfLen).trim() + `\n…(길어서 잘림, 전문은 teams/${team}/shelf.md)` : shelfFull)
+      : null;
     const parts = [
       persona,
+      shelf ? `## 책장 (teams/${team}/shelf.md — 읽을 것 경로 + 안 읽을 것. 여기 없는 건 \`node tools/library.mjs find <낱말>\`로 찾는다)\n${shelf}` : null,
       decisions ? `## 확정 조항 (대표 원문의 해석 — 원문은 teams/${team}/decisions.md)\n${decisions}` : null,
       j ? `## 네 일지 (최근 ${Math.min(paras, j.total)}문단 / 전체 ${j.total} — teams/${team}/journal/${actor}.md)\n${j.text}` : null,
       brief,
     ].filter(Boolean);
     const text = parts.join('\n\n---\n\n');
-    if (text.length <= PROMPT_CAP || paras === 0) return text;
-    paras -= 1;
+    if (text.length <= PROMPT_CAP) return text;
+    if (paras > 0) { paras -= 1; continue; }
+    if (shelfLen > 0) { shelfLen = Math.max(0, shelfLen - 500); continue; }
+    return text;   // 일지도 0, 책장도 0 — 더 줄일 게 없다. 있는 그대로 낸다
   }
 }
 
