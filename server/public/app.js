@@ -2065,8 +2065,8 @@ function loadDashboardBand(r) {
     row.appendChild(label);
     const lane = el('div', 'band__lane'); lane.style.setProperty('--team', t.color ?? 'var(--ink-4)');
     lane.style.setProperty('--seg', `${seg}%`);   // 칸 선 — 눈금 수에 맞춰(폰 넷·컴퓨터 다섯 + 뒤 한 칸)
-    if (!t.stages.length) {   // 계획표가 없다 — 대표가 열어야 한다(헨리 시안: 비서실·경영)
-      const g = el('button', 'band__box band__box--gated', '계획표 — 대표가 연다'); g.type = 'button'; g.style.left = '0'; g.style.width = '48%'; lane.appendChild(g);
+    if (!t.stages.length) {   // 계획표가 없다 — 대표가 열어야 한다(헨리 시안: 비서실·경영). 글자는 하영 5판 3-5-3 ⑧ — 대표가 읽는 화면에서 "대표가" 는 3인칭
+      const g = el('button', 'band__box band__box--gated', '계획표 — 대표님이 여시면'); g.type = 'button'; g.style.left = '0'; g.style.width = '48%'; lane.appendChild(g);
     }
     let cursorPct = 0;
     for (const s of t.stages) {
@@ -2077,7 +2077,8 @@ function loadDashboardBand(r) {
       if (width < 6) { left = Math.max(0, 100 - 6); width = 6; }
       cursorPct = left + width + 1;
       const b = el('button', `band__box band__box--${s.status}`); b.type = 'button';
-      const text = s.status === 'gated' ? `${s.n != null ? s.n + '단계' : s.title} — ${s.gate}` : s.status === 'blocked' ? `${s.n}단계 — 막힘${s.blockedWhy ? '(' + s.blockedWhy + ')' : ''}` : `${s.n}단계${to ? ' · ' + fmtTo(s.plannedTo) + '까지' : ''}`;
+      // 칸 글자는 하영 5판 3-5-1: 점선 칸 "미정 · 대표님이 정한 뒤"(계획표의 timebox 원문은 누르면 한 줄에) · 빨간 칸 "N단계 — 언제까지 못 끝남 (이유)"(3-5-3 ⑨ — '막힘·닫음' 은 우리 말)
+      const text = s.status === 'gated' ? `${s.n != null ? s.n + '단계' : s.title} — 미정 · 대표님이 정한 뒤` : s.status === 'blocked' ? `${s.n}단계 — ${to ? fmtTo(s.plannedTo) + '까지 ' : ''}못 끝남${s.blockedWhy ? ' (' + s.blockedWhy + ')' : ''}` : `${s.n}단계${to ? ' · ' + fmtTo(s.plannedTo) + '까지' : ''}`;
       b.textContent = text; b.title = `${s.n != null ? s.n + '단계 ' : ''}${s.title}`;
       b.style.left = `${left}%`; b.style.width = `${width}%`;
       b.addEventListener('click', () => { const why = row.querySelector('.band__why'); if (why) { why.remove(); return; } const w = el('div', 'band__why'); w.textContent = `${s.n != null ? s.n + '단계 ' : ''}${s.title}${s.plannedFrom ? ` · ${fmtTo(s.plannedFrom)} → ${fmtTo(s.plannedTo)}` : ''}${s.gate ? ` · ${s.gate}` : ''}${s.blockedWhy ? ` · ${s.blockedWhy}` : ''}${s.late ? ` · ${fmtLate(s.late)}` : ''} — 계획표는 현황 팀 카드에`; row.appendChild(w); });
