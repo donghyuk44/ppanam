@@ -134,7 +134,7 @@ const summaryOf = (team) => {
  */
 function peopleOf(team, sessions, conductor, phase) {
   const cast = readCast(team).agents ?? {};
-  const people = bus.peopleOf(readLog(team), cast);
+  const people = bus.peopleOf(readLog(team), cast, { progress: bus.readProgress(team) });   // 상황판 boss 칸이 비면 bossCall 없음(나리 결정 ③)
   const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
   for (const [id, p] of Object.entries(people)) {
     if (id === 'boss') {

@@ -1453,8 +1453,12 @@ export const isPassLine = (text) => /^\(패스\)/.test(String(text ?? '').trim()
  * 순수 — teamSummary·peopleOf·자정 마감(nightlyOf)이 같은 함수로 센다(한 군데는 전부가 아니다). 대표 말·대리 답(결정 85)이 뒤에 있으면 답한 것.
  * 물은 사람이 그 뒤 다시 말했으면 그 물음은 지나간 것 — 답이 다른 길로 왔든 넘어갔든, 마지막 호명 발언이 답 끝난 뒤에도 서 있었다(나리 결정 ①, 09-15).
  * (패스) 는 말한 것이 아니다.
+ * 상황판(progress.json)의 대표 차례 칸 `boss[]` 이 **비어 있으면 그 팀 대표 차례는 없다**(나리 결정 ③) — 실무가 답 끝났다고 칸을 비웠는데 방 발언이 살아남았다.
+ * 상황판이 없는 방(null)은 대화록만 본다. 칸을 채우는 건 실무의 일(bus/progress.mjs --boss).
+ * @param progress  readProgress(team) — { boss: [] } 면 null. 안 넘기면 대화록만
  */
-export function bossCallOf(log, cast) {
+export function bossCallOf(log, cast, { progress = null } = {}) {
+  if (Array.isArray(progress?.boss) && progress.boss.length === 0) return null;
   let answered = false;
   const spokeAgain = new Set();   // 그 뒤에 다시 말한 사람
   for (let i = log.length - 1; i >= 0; i--) {
@@ -1495,7 +1499,7 @@ export function teamSummary(team) {
     if (e.type === 'verdict' && lastVerdict == null) lastVerdict = e.meta?.verdict ?? null;
     if ((e.type === 'message' || e.type === 'verdict') && !lastSpokeAt) lastSpokeAt = e.ts;
   }
-  const bossCall = bossCallOf(log, cast);
+  const bossCall = bossCallOf(log, cast, { progress: readProgress(team) });   // 상황판 boss 칸이 비면 null(나리 결정 ③)
   const running = state.phase === 'running';
   const silentDay = running && lastSpokeAt != null && Date.now() - new Date(lastSpokeAt).getTime() > 24 * 3600_000;
 
@@ -1545,9 +1549,11 @@ const JUDGES = new Set(['review', 'outside']);
  * @param log  대화록(시간순)
  * @param cast cast.json 의 agents
  * @param now  "오늘" 의 기준 시각(ms) — 서버 프로세스의 현지 날짜
+ * @param progress  상황판 — boss[] 이 비어 있으면 누구도 bossCall 이 아니다(bossCallOf 와 같은 선, 나리 결정 ③). 안 넘기면 대화록만
  */
-export function peopleOf(log, cast, { now = Date.now() } = {}) {
+export function peopleOf(log, cast, { now = Date.now(), progress = null } = {}) {
   const agents = cast ?? {};
+  const boardEmpty = Array.isArray(progress?.boss) && progress.boss.length === 0;
   const ids = Object.keys(agents).filter((a) => a !== 'system' && a !== 'boss');
   const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
   const isToday = (ts) => new Date(ts).getTime() >= dayStart.getTime();
@@ -1598,7 +1604,7 @@ export function peopleOf(log, cast, { now = Date.now() } = {}) {
     }
     // 이 라운드에서 대표에게 결정을 청했는데 그 뒤 대표가 말하지 않았다 — teamSummary.bossCall(bossCallOf)과 같은 판별(결정 52), 인용문만 더한다.
     // 그 사람이 그 뒤 다시 말했으면 지나간 물음(나리 결정 ①) — 마지막 말만 물음일 수 있다.
-    if (inRound && !bossAnswered && !p.bossCall && e.type === 'message' && !spokeAgain.has(e.actor) && asksBoss(e.text, agents)) {
+    if (inRound && !bossAnswered && !boardEmpty && !p.bossCall && e.type === 'message' && !spokeAgain.has(e.actor) && asksBoss(e.text, agents)) {
       p.bossCall = { id: e.id, ts, text: bossParagraph(e.text, agents).replace(/\s+/g, ' ').trim().slice(0, 80) };   // 인용은 대표에게 한 그 문단(나리 09-15)
     }
     if (inRound && e.type === 'message') spokeAgain.add(e.actor);

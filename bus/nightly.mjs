@@ -63,7 +63,7 @@ export function nightlyOf({ team, name = team, day, log = [], rounds = [], appro
   if (state?.phase === 'blocked') add(`FAIL 로 막힘 — 라운드 ${state.round} 대표 판단 대기`, 'blocked');
   else if (state?.phase === 'running' && (state.attempt ?? 0) >= MAX_ATTEMPTS) add(`반박 ${MAX_ATTEMPTS}회 — 라운드 ${state.round} 대표 판단 대기`, 'attempts');
   for (const r of approvals) if (r.status === 'pending' && r.grade === 'C') add(`승인 [C] ${r.id} ${oneLine(r.what, 60)} — 대표 차례`, 'approval', r.id);
-  const call = bossCallOf(log, cast);
+  const call = bossCallOf(log, cast, { progress });   // 상황판 boss 칸이 비면 없음(나리 결정 ③) — teamSummary 와 같은 셈
   if (call && ms(call.ts) < u) { const e = log.find((x) => x.id === call.id); add(`${nameOf(call.by)}이 ${whenSeoul(call.ts, day)} 에 대표를 불렀는데 답이 없음 — "${oneLine(bossParagraph(e?.text, cast), 80)}"`, 'bossCall', call.id); }
   for (const r of approvals) if (r.status === 'pending' && r.grade === 'B') add(`승인 [B] ${r.id} ${oneLine(r.what, 60)} — 톰·제리 차례`);
   for (const l of progress?.blocked ?? []) add(`상황판 — ${oneLine(l, 120)}`);

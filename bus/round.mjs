@@ -330,6 +330,11 @@ switch (cmd) {
       const agGot = [bossCallOf(agLog, pcast)?.id ?? null, bossCallOf(agPass, pcast)?.id ?? null, bossCallOf(agOther, pcast)?.id ?? null, bossCallOf(agNew, pcast)?.id ?? null,
         peopleOf(agLog, pcast, { now: d0.getTime() + 10 * 60_000 }).guide.bossCall?.id ?? null, peopleOf(agPass, pcast, { now: d0.getTime() + 10 * 60_000 }).guide.bossCall?.id ?? null,
         blockedSpansOf(agNew, pcast, { team: 'dev', since: at(0), until: at(10), now: Date.parse(at(10)) }).map((s) => `${s.ref}:${s.to == null ? 'open' : 'closed'}`).join(',')];
+      // 상황판 boss 칸이 비면 그 팀 대표 차례는 없다(나리 ③) — 실무가 답 끝났다고 칸을 비웠는데 방 발언이 살아남았다. 칸이 있거나 상황판이 없으면 대화록대로.
+      const bdLog = [plog[1], agLog[1]];
+      const bdGot = [bossCallOf(bdLog, pcast, { progress: { boss: [] } })?.id ?? null, bossCallOf(bdLog, pcast, { progress: { boss: ['색 하나'] } })?.id ?? null, bossCallOf(bdLog, pcast, { progress: null })?.id ?? null,
+        peopleOf(bdLog, pcast, { now: d0.getTime() + 10 * 60_000, progress: { boss: [] } }).guide.bossCall?.id ?? null, peopleOf(bdLog, pcast, { now: d0.getTime() + 10 * 60_000, progress: { boss: ['색 하나'] } }).guide.bossCall?.id ?? null];
+      out.push(['상황판 boss 칸 비면 대표 차례 없음(나리 ③)', bdGot.map(String).join('|') === 'null|g1|g1|null|g1' ? '✓ 빈 칸 → 없음 · 칸 있음·상황판 없음 → 대화록대로 · 사람 카드 같음' : '✗ ' + JSON.stringify(bdGot)]);
       out.push(['물은 사람이 다시 말하면 지움(나리 ①)', agGot.map(String).join('|') === 'null|g1|g1|g5|null|g1|g1:closed,g5:open' ? '✓ 다음 말이 있으면 없음 · (패스)·남의 말은 그대로 · 새 물음이면 그것 · 사람 카드 같음 · 보고서 물음 구간도 그 말에서 닫힘' : '✗ ' + JSON.stringify(agGot)]);
       // 대표에게 해 달라는 부탁도 종이다 (결정 66) — 헨리 "zip 받아 풀어 주시면" 이 보고로 빠지면 대표가 못 본다. 단순 보고(올렸습니다·됐습니다)는 그대로.
       const favors = ['대표님, 손 하나 더 빌립니다 — 세 zip 을 받아 ref/kenney/ 에 풀어 주시면 클레멘타인이 목록을 적습니다.', '대표님, 확인 부탁드립니다.',
