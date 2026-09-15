@@ -1249,11 +1249,10 @@ function approvalCard(r) {
     for (const f of r.artifacts) arts.appendChild(outFileNode(f));
     card.appendChild(arts);
   }
-  if (r.grade === 'C' && delegated(delegation) && r.proxyable) {
-    // 위임 중(결정 136)이고 톰·제리가 대리할 수 있는 카드 — 대표 단추 자리에 한 줄(R31 ②, 나리). 돈·바깥(proxyable false)은 아래 그대로 대표 단추.
-    card.appendChild(el('div', 'apr__proxy', '지금은 톰·제리가 정해요'));
-    card.appendChild(el('div', 'apr__hint', '되돌리시려면 방에 한마디.'));
-  } else if (r.grade === 'C') {
+  if (r.grade === 'C') {
+    // 위임 중(결정 136)이고 톰·제리가 대리할 수 있는 카드 — 단추 위에 한 줄, 단추는 그대로(R31 ②, 나리 · 톰 apr_e3e08ac8 반려: 대표가 누르는 길은 안 닫는다). 돈·바깥(proxyable false)은 단추만.
+    const proxied = delegated(delegation) && !!r.proxyable;
+    if (proxied) card.appendChild(el('div', 'apr__proxy', '지금은 톰·제리가 정해요 · 직접 누르셔도 돼요'));
     const act = el('div', 'apr__act');
     const err = el('div', 'apr__err'); err.hidden = true;
     const reasonBox = el('input', 'apr__reason'); reasonBox.type = 'text'; reasonBox.placeholder = '왜 — 한 마디'; reasonBox.hidden = true;
@@ -1276,7 +1275,9 @@ function approvalCard(r) {
     card.appendChild(act);
     card.appendChild(reasonBox);
     card.appendChild(err);
-    card.appendChild(el('div', 'apr__hint', '돌려보냄을 누르면 한 줄 칸이 열려요 — "왜" 한 마디.\n10분 안 누르시면 톰·제리가 대신 정해요 — 돈이 나가거나 밖으로 가는 일은 빼고. 되돌리시려면 방에 한마디.'));
+    card.appendChild(el('div', 'apr__hint', proxied
+      ? '돌려보냄을 누르면 한 줄 칸이 열려요 — "왜" 한 마디.\n되돌리시려면 방에 한마디.'   // 위임 중엔 10분이 아니라 바로 대리된다 — 그 줄만 뺀다(하영 331행 꼬리)
+      : '돌려보냄을 누르면 한 줄 칸이 열려요 — "왜" 한 마디.\n10분 안 누르시면 톰·제리가 대신 정해요 — 돈이 나가거나 밖으로 가는 일은 빼고. 되돌리시려면 방에 한마디.'));
   } else {
     // 누가 판정했고 누가 남았나 — 이름으로. 그리고 총괄실이 이 요청을 들었는가.
     const hq = summaries.hq?.cast ?? {};
