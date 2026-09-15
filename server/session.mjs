@@ -318,24 +318,33 @@ function spawnFor(team, actor) {
   child.stderr.on('data', (d) => { s.stderr = (s.stderr + d).slice(-4000); });
 
   child.on('error', (e) => die(s, `${name(s)} 세션을 띄우지 못했습니다 — ${e.message}`));
-  child.on('close', (code) => {
+  child.on('close', (code, signal) => {
     if (s.closing) { onClosed(s); return; }
     if (sessions.get(keyOf(team, actor)) !== s) return;
     sessions.delete(keyOf(team, actor));
     clearTimeout(s.timer);
-    if (code !== 0) {
-      const why = s.stderr.trim().split('\n').slice(-2).join(' ').slice(0, 200);
-      // 저장된 id 로 이어붙이려다 첫 턴도 못 끝내고 죽었다 — 그 id 가 썩은 것이다. 버리고 새 세션으로
-      // 같은 턴을 한 번 다시 보낸다. 안 그러면 id 가 영영 남아 그 뒤 모든 턴이 같은 이유로 죽는다.
-      if (s.resumed && !s.firstOk && s.inflight) {
-        forgetId(team, actor);
-        note(team, `${name(s)}의 저장된 세션을 이어붙이지 못했습니다 (code ${code})${why ? ' — ' + why : ''}. 새 세션으로 다시 보냅니다.`);
-        const fresh = spawnFor(team, actor);
-        fresh.queue.push(...s.queue);
-        write(fresh, s.inflight);
-        return;
-      }
-      note(team, `${name(s)} 세션이 끊겼습니다 (code ${code})${why ? ' — ' + why : ''}. 다음 차례에 다시 붙습니다.`);
+    const why = s.stderr.trim().split('\n').slice(-2).join(' ').slice(0, 200);
+    const how = (signal ? `${signal} 로 죽음` : `code ${code}`) + (why ? ' — ' + why : '');
+    // 턴 도중에 죽었다(result 없이 끝남 — kill -9·크래시·code 0 으로 조용히). 8단계 ② "세션이 죽으면 자동 재개": 같은 턴을 새 세션으로 **한 번** 다시 보낸다 —
+    // 줄 선 턴도 같이 옮긴다. 전엔 "다음 차례에 다시 붙습니다" 한 줄 남기고 그 턴을 버렸다(R26: 재시작이 첫 턴을 죽여 방에 한 말이 통째로 사라짐).
+    // 저장된 id 로 이어붙이려다 첫 턴도 못 끝냈으면 그 id 가 썩은 것 — 버리고 새 세션으로(안 그러면 id 가 영영 남아 그 뒤 모든 턴이 같은 이유로 죽는다).
+    // 두 번째도 죽으면 그때 버린다(조용히가 아니라 note 로). 판단은 순수 함수 deathPlan — round.mjs check 가 돌려본다.
+    const plan = deathPlan({ inflight: !!s.inflight, retried: !!s.inflight?.retried, resumed: s.resumed, firstOk: s.firstOk });
+    if (plan.rotten) forgetId(team, actor);
+    if (plan.action === 'retry') {
+      const turn = s.inflight;
+      turn.retried = true;
+      note(team, `${name(s)} 세션이 끊겼습니다 (${how}). ${plan.rotten ? '저장된 세션을 버리고 ' : ''}새 세션으로 같은 차례를 한 번 다시 보냅니다.`, { sessionRetry: { actor, kind: turn.kind ?? null, rotten: plan.rotten, why: how.slice(0, 160) } });
+      const fresh = spawnFor(team, actor);
+      fresh.queue.push(...s.queue);
+      s.queue = []; s.inflight = null;   // 옮겼다 — settle 이 버리지 않게
+      write(fresh, turn);
+      return;
+    }
+    if (plan.action === 'drop') {
+      note(team, `${name(s)} 세션이 두 번 끊겼습니다 (${how}) — 이 차례(${s.inflight.kind ?? '말'})를 버립니다. 다음 지시로 이어집니다.`, { sessionRetry: { actor, kind: s.inflight.kind ?? null, gaveUp: true, why: how.slice(0, 160) } });
+    } else if (code !== 0 || signal) {
+      note(team, `${name(s)} 세션이 끊겼습니다 (${how}). 다음 차례에 다시 붙습니다.`);
     }
     // 종료 코드와 무관하게 — result 없이 조용히 끝나도(code 0) 기다리던 답과 줄 선 턴을 정리한다.
     // 안 그러면 sendAndWait 가 영원히 기다린다 (레오 감사, 2026-09-12).
@@ -351,6 +360,18 @@ function spawnFor(team, actor) {
 
 const name = (s) => readCast(s.team).agents?.[s.actor]?.name ?? s.actor;
 
+/**
+ * 세션이 끝났을 때 무엇을 하나(8단계 ②) — 순수. 턴 도중이었고 아직 한 번도 다시 안 보냈으면 'retry', 이미 한 번 다시 보낸 턴이면 'drop',
+ * 턴 도중이 아니었으면 'none'. rotten 은 저장된 id 로 이어붙이려다 첫 턴도 못 끝낸 경우 — 그 id 를 버려야 한다.
+ * @param { inflight, retried, resumed, firstOk }
+ * @returns { action: 'retry'|'drop'|'none', rotten }
+ */
+export function deathPlan({ inflight, retried, resumed, firstOk }) {
+  const rotten = !!(inflight && resumed && !firstOk);
+  if (!inflight) return { action: 'none', rotten: false };
+  return { action: retried ? 'drop' : 'retry', rotten };
+}
+
 function die(s, message) {
   if (sessions.get(keyOf(s.team, s.actor)) === s) sessions.delete(keyOf(s.team, s.actor));
   clearTimeout(s.timer);
@@ -360,13 +381,18 @@ function die(s, message) {
   maybeFinishClose(s.team);
 }
 
-/** 프로세스가 어떤 식으로든 끝났다. 기다리던 답은 null 로 풀고, 줄 선 턴은 버린다(말하고 버린다). */
+/**
+ * 프로세스가 어떤 식으로든 끝났다. 기다리던 답은 null 로 풀고, 줄 선 턴은 버린다(말하고 버린다).
+ * 턴 도중이었으면 사회자에게도 "턴 끝" 을 알린다(8단계 ②) — 전엔 result 때만 알려서 죽은 턴이 사회자의 inflight 에 남아
+ * 다음 재시작 때 옛 차례로 되살아났다. 버린 것은 버린 것으로 남아야 한다.
+ */
 function settle(s) {
   const done = s.inflight;
   s.inflight = null;
   s.busy = false;
   done?.resolve?.(null);
   dropped(s);
+  if (done) for (const fn of turnEndListeners) { try { fn(s.team, s.actor); } catch { /* 듣는 쪽 사정 */ } }
 }
 
 /** 닫히던 프로세스가 끝났다. 이제야 맵에서 뺀다. 닫히는 동안 온 턴이 있으면 그제야 새 프로세스를 띄운다. */
@@ -389,9 +415,9 @@ function dropped(s) {
   s.queue = [];
 }
 
-/** 시스템 안내. 화면에서 가장 약하게 표시되는 줄이다 (event-schema 3절). */
-function note(team, text) {
-  try { emit(team, { actor: 'system', type: 'note', text }); } catch { /* 기록 실패는 삼킨다 */ }
+/** 시스템 안내. 화면에서 가장 약하게 표시되는 줄이다 (event-schema 3절). meta 는 기계가 읽는 칸(sessionRetry 등). */
+function note(team, text, meta = null) {
+  try { emit(team, { actor: 'system', type: 'note', text, ...(meta ? { meta } : {}) }); } catch { /* 기록 실패는 삼킨다 */ }
 }
 
 /* ── stdout 읽기 ── */

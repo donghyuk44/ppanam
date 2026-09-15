@@ -568,6 +568,16 @@ switch (cmd) {
           const want = flaky === '됨 2' && retried.join(',') === '1:codex SIGKILL 로 죽음,x1' && dead?.gaveUp === true && dead.attempts === 2 && fatal?.message === 'usage limit' && !fatal.gaveUp && fatalRetries.length === 0
             && p1.action === 'queue' && p1.notBefore === t0 + OUTSIDE_RETRY_MS && p2.action === 'drop' && p0.action === 'drop' && OUTSIDE_MAX_TRIES === 2;
           out.push(['codex 죽여도 1회 재시도 후 note+큐(8단계 ①)', want ? `✓ withRetry: 한 번 죽고 두 번째 됨 · 둘 다 죽으면 gaveUp(2) · 한도는 재시도 없이 · retryPlan: 1번째 실패 → ${Math.round(OUTSIDE_RETRY_MS / 60_000)}분 뒤 큐 · 2번째 → 버림` : '✗ ' + JSON.stringify({ flaky, retried, dead: dead && { m: dead.message, g: dead.gaveUp, a: dead.attempts }, fatal: fatal && { m: fatal.message, g: fatal.gaveUp }, fatalRetries, p1, p2, p0 })]);
+          // 8단계 ② — 세션이 죽으면 자동 재개(session.deathPlan): 턴 도중 첫 죽음 → 같은 턴 새 세션으로(retry) · 이어붙인 첫 턴이면 id 썩음(rotten) · 이미 한 번 다시 보낸 턴 → 버림(drop) · 턴 밖 → none.
+          const { deathPlan } = await import('../server/session.mjs');
+          const dp = [
+            deathPlan({ inflight: true, retried: false, resumed: false, firstOk: false }),
+            deathPlan({ inflight: true, retried: false, resumed: true, firstOk: false }),
+            deathPlan({ inflight: true, retried: false, resumed: true, firstOk: true }),
+            deathPlan({ inflight: true, retried: true, resumed: false, firstOk: true }),
+            deathPlan({ inflight: false, retried: false, resumed: true, firstOk: false }),
+          ].map((p) => `${p.action}${p.rotten ? '!' : ''}`);
+          out.push(['세션 죽으면 자동 재개(8단계 ②)', dp.join(',') === 'retry,retry!,retry,drop,none' ? '✓ 첫 죽음 retry · 이어붙인 첫 턴은 id 버림 · 이어붙여 잘 돌다 죽으면 id 유지 · 두 번째 죽음 drop · 턴 밖 none' : '✗ ' + dp.join(',')]);
         }
         // 잡담 브레이크(결정 121) — 침묵 차례 발언자 줄이 같은 둘로 3회씩이면 참. 셋이 섞이거나 짧으면 거짓. (호명은 이 줄에 안 들어가니 여기서 못 걸린다.)
         const { chatLoop } = await import('../server/conductor.mjs');
