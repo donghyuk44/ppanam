@@ -218,9 +218,11 @@ switch (cmd) {
         emit(T, { actor: 'system', type: 'note', text: '판정 시작 — out/없는것.md', meta: { verdictFlow: 'start', steps: ['outside'], target: 'out/없는것.md 를 봐라' } });
         const missing = refuses(() => endRound(T, { verdict: 'PASS' }), '없는것.md(없음)');
         fs.writeFileSync(path.join(dir, 'out', '없는것.md'), '있다\n');
+        // 작업 사본(`_` 로 시작)은 산출물이 아니다 — 썼다 지워도 '없음' 으로 안 센다(R29: 지운 _build-roadmap-proposal.mjs 가 닫기를 막았다). 판정 대상 글에 적으면 그건 물건
+        fs.rmSync(artifact('_사본.mjs', 'x\n'));
         const seen = artifactsOf(T, readLog(T).filter((e) => e.round === readState(T).round)).paths;
-        const seenWant = seen.length === 2 && seen.every((a) => a.bytes > 0) && ['out/빈것.md', 'out/없는것.md'].every((p) => seen.some((a) => a.path === p));
-        out.push(['부분 성공은 통과 아님(8단계)', ppWant && none === '✓ 거부' && zero === '✓ 거부' && missing === '✓ 거부' && seenWant ? '✓ 경로 뽑기 셋(확장자 없는 것 제외) · 물건 없음 거부 · 0바이트 거부 · 판정 대상의 없는 경로 거부 · 채우면 둘 다 크기 있음' : '✗ ' + JSON.stringify({ pp, none, zero, missing, seen })]);
+        const seenWant = seen.length === 2 && seen.every((a) => a.bytes > 0) && ['out/빈것.md', 'out/없는것.md'].every((p) => seen.some((a) => a.path === p)) && !seen.some((a) => a.path.includes('_사본'));
+        out.push(['부분 성공은 통과 아님(8단계)', ppWant && none === '✓ 거부' && zero === '✓ 거부' && missing === '✓ 거부' && seenWant ? '✓ 경로 뽑기 셋(확장자 없는 것 제외) · 물건 없음 거부 · 0바이트 거부 · 판정 대상의 없는 경로 거부 · 채우면 둘 다 크기 있음 · _작업 사본은 안 셈' : '✗ ' + JSON.stringify({ pp, none, zero, missing, seen })]);
       }
       let ok = false; try { endRound(T, { verdict: 'PASS' }); ok = true; } catch (e) { out.push(['정식 흐름', `✗ ${e.message}`]); }
       if (ok) {

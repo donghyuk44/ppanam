@@ -1303,6 +1303,8 @@ export function endRefusal(team, { verdict = null } = {}) {
  * 경로마다 크기를 잰다(없으면 null). 순수한 부분(글에서 경로 뽑기)은 artifactPathsIn — round.mjs check 가 돌려본다.
  * @returns { paths: [{ path, bytes }] } — path 는 방 기준(out/…), 다른 방 것이면 teams/<팀>/out/…
  */
+/** out/ 안의 작업 사본 — 파일 이름이 `_` 로 시작하면 산출물이 아니다(_app-next.mjs · _build-roadmap-proposal.mjs). 판정 대상 글에 적힌 경로는 이 규칙 밖(적었으면 물건이다). 순수. */
+export const isScratchOut = (rel) => path.basename(String(rel ?? '')).startsWith('_');
 export function artifactsOf(team, events) {
   const outDir = path.join(paths(team).dir, 'out');
   const found = new Map();   // 절대 경로 → 표시 경로
@@ -1317,7 +1319,11 @@ export function artifactsOf(team, events) {
     if (e.type === 'tool' && ['Edit', 'Write', 'NotebookEdit'].includes(e.meta?.tool)) {
       // 훅이 남긴 절대 경로 — 서버가 다른 체크아웃(worktree)에서 돌아도 맞게 `/teams/<팀>/out/` 뒤만 쓴다
       const i = String(e.text ?? '').indexOf(`/teams/${team}/out/`);
-      if (i >= 0) { const abs = path.join(outDir, String(e.text).slice(i + `/teams/${team}/out/`.length)); found.set(abs, show(abs)); }
+      if (i >= 0) {
+        const rel = String(e.text).slice(i + `/teams/${team}/out/`.length);
+        if (isScratchOut(rel)) continue;   // 작업 사본(_app-next.mjs 같은 것)은 산출물이 아니다 — 지워도 '비었다' 가 아니다(R29: 지운 _build-roadmap-proposal.mjs 가 닫기를 막았다)
+        const abs = path.join(outDir, rel); found.set(abs, show(abs));
+      }
     }
   }
   const out = [];
