@@ -964,6 +964,14 @@ switch (cmd) {
             && brief.includes('## 다섯 팀 상황') && brief.includes('### 대기 승인') && brief.includes('### 열린 요청 블록')
             && !briefOf('hq', 'chief').includes('## 다섯 팀 상황');   // 총괄실은 안 붙는다 — 세라 방만
           out.push(['세라 재료(결정 98)', braceOk ? '✓ briefOf(sera) 에 다섯 팀·대기 승인·열린 요청 셋 다 · 총괄실엔 안 붙음' : '✗ ' + JSON.stringify({ err, head: brief?.slice(0, 200) })]);
+          // 기억 3층(M7) — 세션이 죽었다 살아나도 어제를 잇는 길은 프롬프트 조립 하나(assemblePrompt = 인격 + 확정 조항 + 일지 + 브리프(상황판)).
+          // 새 프로세스가 뜰 때마다(spawnFor) 이걸 붙이니, 일지 맨 위 문단의 첫 문장과 상황판 절이 실제로 들어 있는지 지금 있는 개발 실무 값으로 본다.
+          const { assemblePrompt, journalOf, journalFirstSentence } = await import('../server/session.mjs');
+          let ap = null, apErr = null; try { ap = assemblePrompt('dev', 'guide'); } catch (e) { apErr = e.message; }
+          const jf = journalFirstSentence('dev', 'guide'), jt = journalOf('dev', 'guide', 1);
+          const memOk = !apErr && typeof ap === 'string' && ap.includes('## 네 일지') && !!jf && ap.includes(jf) && ap.includes('## 상황판 (teams/dev/progress.json')
+            && ap.indexOf('## 네 일지') < ap.indexOf('## 상황판') && (jt?.total ?? 0) >= 1;
+          out.push(['기억 3층 조립(assemblePrompt)', memOk ? `✓ 새 세션마다 인격 → 확정 조항 → 일지(맨 위 문단 첫 문장 포함, 전체 ${jt?.total}) → 상황판 순으로 붙음 · ${ap.length}자` : '✗ ' + JSON.stringify({ apErr, jf, hasJ: ap?.includes('## 네 일지'), hasP: ap?.includes('## 상황판') })]);
         }
         out.push(['말풍선 쪼개기(speech.js)', spOk ? `✓ 짧은 셋 → 1 · 줄바꿈 2 · 긴 한 문장 ${sp3.length}조각(≤${PIECE}) · 넘치면 ${PIECES}+… · 대표 사진 문장 ${spBoss.length}조각` : '✗ ' + JSON.stringify({ sp1, sp2, sp3: sp3.map((p) => p.length), sp4: sp4.length, spBoss })]);
         // 자정 마감(M7 · 결정 45 ③) — bus/nightly.mjs 순수 셋. 창은 우리 시각 그날(09-15 = UTC 09-14 15:00 ~ 09-15 15:00). 문제는 대표 손이 필요한 것만.
