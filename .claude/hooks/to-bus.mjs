@@ -85,7 +85,7 @@ const office = bus.isOffice(team);
 const state = bus.readState(team);
 
 // 막힌 방(FAIL, 대표 판단 대기)도 열린 라운드다 — FAIL 직후 실무의 "무엇이 막혔는지" 보고가 남아야 한다.
-if (!office && state.phase === 'idle' && process.env.PPANAM_ALWAYS !== '1') bail('라운드 대기 중');
+if (!office && state.phase === 'idle' && !bus.idleChatAllowed(team) && process.env.PPANAM_ALWAYS !== '1') bail('라운드 대기 중');
 
 /* 화자 결정.
    자리 = 프로세스. 서버가 세션을 띄우며 PPANAM_ACTOR 를 넣는다 (server/session.mjs) — 이 세션이 곧 그 자리다.
