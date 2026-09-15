@@ -7,6 +7,7 @@ import * as World from '/world/world.js';
 import { toolLabel, toolPhrase, baseName, ga } from '/toollabel.js';
 import { findOutPaths, linkOutPaths } from '/outlink.js';
 import { notificationsOf, blockedOf } from '/notify.js';
+import { parseMention } from '/mention.js';
 
 const $ = (id) => document.getElementById(id);
 const app = $('app'), feed = $('feed'), stream = $('stream');
@@ -94,12 +95,12 @@ function bubble(text, team = active) {
   let body = src.replace(/```[^\n]*\n([\s\S]*?)```/g, (_, code) => { blocks.push(['코드', code]); return `\u0000${blocks.length - 1}\u0000`; });
   // 표는 머리줄 + 구분선(|---|) 이 있어야 표다. '|' 로 시작하는 줄 둘만으로 판정하면 일반 문장을 잡아먹는다 (레오 감사, 2026-09-12).
   body = body.replace(/(?:^|\n)([ \t]*\|[^\n]*\n[ \t]*\|?[ \t]*:?-{3,}[ \t|:-]*(?:\n(?:[ \t]*\|[^\n]*(?:\n|$))*)?)/g, (m, tbl) => { blocks.push(['표', tbl.trim()]); return `\n\u0000${blocks.length - 1}\u0000`; });
-  // 호명 표시(결정 128) — 첫머리 "@이름" 또는 "이름," 을 그 사람 색으로 굵게. 낱말 규칙은 하영 몫이라 이 둘로 임시.
+  // 호명 표시(결정 128) — 첫머리 "@이름" 또는 "이름," 을 그 사람 색으로 굵게. 판별은 mention.js — 관제탑 카드 표시(bus.peopleOf)와 같은 것을 본다.
   let mentionHtml = '';
-  const mm = /^(@?)([가-힣]{1,6})(,|\s|$)/.exec(body);
+  const mm = parseMention(body);
   if (mm) {
-    const hit = Object.values(cast.agents ?? {}).find((p) => p.name === mm[2]);
-    if (hit) { mentionHtml = `<b class="mention" style="color:${hit.color ?? FALLBACK.color}">${escapeHtml(mm[1] + mm[2])}</b>${escapeHtml(mm[3])}`; body = body.slice(mm[0].length); }
+    const hit = Object.values(cast.agents ?? {}).find((p) => p.name === mm.name);
+    if (hit) { mentionHtml = `<b class="mention" style="color:${hit.color ?? FALLBACK.color}">${escapeHtml(mm.marker + mm.name)}</b>${escapeHtml(mm.sep)}`; body = body.slice(mm.full.length); }
   }
   let html = escapeHtml(body)
     .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
@@ -1291,8 +1292,8 @@ function loadDone() {
 const teamColor = (id) => summaries[id]?.cast?.[id === 'hq' ? 'chief' : 'guide']?.color ?? 'var(--ink-4)';
 const seatColor = (team, by) => summaries[team]?.cast?.[by]?.color ?? summaries.hq?.cast?.[by]?.color ?? 'var(--ink-4)';
 function progressBar(doneN, total, color) {
-  const w = el('span', 'bar'); w.title = `${doneN}/${total} 단계`;
-  const f = el('span', 'bar__fill'); f.style.width = `${total ? Math.round((doneN / total) * 100) : 0}%`; f.style.background = color; w.appendChild(f);
+  const w = el('span', 'pbar'); w.title = `${doneN}/${total} 단계`;   // .bar 가 아니다 — 그건 방 머리(index.html header.bar)
+  const f = el('span', 'pbar__fill'); f.style.width = `${total ? Math.round((doneN / total) * 100) : 0}%`; f.style.background = color; w.appendChild(f);
   return w;
 }
 /** 시간 띠 — start~end 를 가로 100% 로. marks [{ at, color, kind:'done'|'bad', title }], spans [{ from, to }](빨간 띠). 점은 8px, 손 올리면 한 줄. */
@@ -1553,6 +1554,11 @@ function personCard(t, id, a, p) {
     c.textContent = `대표님께 물어봤어요 · ${ago(p.bossCall.ts)} · "${p.bossCall.text.slice(0, 40)}${p.bossCall.text.length > 40 ? '…' : ''}"`;
     c.addEventListener('click', () => jumpTo(t.id, p.bossCall.id));
     card.appendChild(c);
+  }
+  // 호명(결정 128) — 방에서 최근에 이 사람을 불렀으면 카드에도. 오래된 건 굳이 안 지운다 — 다음 턴에 새 호명이 오면 덮인다.
+  if (p.mention) {
+    const byName = summaries[t.id]?.cast?.[p.mention.by]?.name ?? p.mention.by;
+    card.appendChild(el('div', 'pcard__mention', `${byName} 가 불렀어요 · ${ago(p.mention.ts)}`));
   }
   // 엔진 · 모델 · 추론 강도 (결정 69) — 대표가 카드 안에서 고른다. 바꾸면 서버가 cast.json 에 쓰고 다음 턴부터.
   card.appendChild(castRow(t, id, a));
