@@ -954,6 +954,13 @@ export function updateCastAgent(team, actorId, patch) {
   return { from, to, agent };
 }
 
+/** 주격 조사 — 받침이 있으면 "이", 없으면 "가" (toollabel.js ga 와 같은 규칙). "솔라이 봅니다" 가 R30 감사 자리 note 에 떴다. */
+const ga = (name) => {
+  const s = String(name ?? '');
+  const c = s.charCodeAt(s.length - 1);
+  const hangul = c >= 0xac00 && c <= 0xd7a3;
+  return s + (hangul && (c - 0xac00) % 28 !== 0 ? '이' : '가');
+};
 /** 목적격 조사 — 받침이 있으면 "을", 없으면 "를" (toollabel.js 의 ga 와 같은 규칙). "안젤를" 이 뜨지 않게. */
 const eul = (name) => {
   const s = String(name ?? '');
@@ -1248,7 +1255,7 @@ export function setAuditor(team, actor) {
   if (bad) throw new Error(bad);
   const name = readCast(team).agents?.[actor]?.name ?? actor;
   writeState(team, { auditor: actor });
-  return emit(team, { type: 'note', actor: 'system', text: `감사 자리 — 이 회차는 ${name}이 봅니다 (결정 125). 자기가 고친 파일은 못 봅니다.`, meta: { auditor: actor } });
+  return emit(team, { type: 'note', actor: 'system', text: `감사 자리 — 이 회차는 ${ga(name)} 봅니다 (결정 125). 자기가 고친 파일은 못 봅니다.`, meta: { auditor: actor } });
 }
 
 export function startRound(team, { topic = null, milestone = null, auditor = null } = {}) {
