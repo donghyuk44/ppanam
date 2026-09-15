@@ -1147,75 +1147,126 @@ function previewNode(r) {
   return box;
 }
 
-/* 승인 대기. 대표가 돌아왔을 때 200발언을 읽지 않고 이것부터 본다.
- * 카드 하나 = 누가·언제 → 주제 → 왜·바뀌는 것 → 행동 → 버튼 (레딧 글 카드 순서, 결정 34). 버튼만 있는 카드는 없다 (결정 20-2). */
+/* 결재 — 대표가 돌아왔을 때 200발언을 읽지 않고 이것부터 본다.
+ * 맨 위 띠는 **한 줄씩**(헨리 approval 시안 1판-b · 현황 3판-b ③ — 나리 실측 r26-tower-all-412: 카드 하나가 원문까지 펼쳐져 첫 화면을 통째로 먹었다).
+ * 줄 = 누가 · 어디 · 결재 기다림 · N분 전 → 주제 → [읽고 답하기]. 누르면 카드가 팝업으로(approvalCard) — 왜 → 바뀌는 것 → N이 쓴 원문 → 낸 것 → 확인 / 돌려보냄.
+ * 누른 뒤엔 카드가 사라지지 않고 그 줄이 "됐어요 — 확인, 개발에 전해졌어요 · 밤 10:50" 로 남는다(evt_f054428919 "전송이 안 된 거야?" 의 답, 5판 3-5-1). 낱말은 하영 5판. */
+const decidedLines = [];   // 이 화면에서 누른 것 — [{ id, text }] 새로 고침 전까지
+const GRADE_WORD = { A: '혼자 해도 됨', B: '총괄이 봄', C: '대표님이 정함' };   // 하영 1절 — 대표가 B·C 를 외울 이유가 없다
+/** 시각을 때와 같이 — "아침 8:41 · 낮 12:13 · 새벽 3시 · 저녁 6시 · 밤 10:50"(하영 5판 3-5-1, 결정 101 우리 시각). :00 이면 "N시". */
+function whenKo(ts) {
+  const d = new Date(ts); if (Number.isNaN(d.getTime())) return '';
+  const h = d.getHours(), m = d.getMinutes();
+  const part = h < 5 ? '새벽' : h < 10 ? '아침' : h < 14 ? '낮' : h < 18 ? '오후' : h < 21 ? '저녁' : '밤';
+  const hh = h % 12 === 0 ? 12 : h % 12;
+  return `${part} ${hh}${m ? ':' + String(m).padStart(2, '0') : '시'}`;
+}
+function approvalHead(r) {
+  const t = teams.find((x) => x.id === r.team);
+  const who = (summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by;
+  return `${who} · ${t?.name ?? r.team} · 결재 기다림 · ${ago(r.ts)}`;
+}
 function renderApprovals() {
   const box = $('approvals');
   box.replaceChildren();
-  if (!approvals.length) { box.hidden = true; return; }
+  if (!approvals.length && !decidedLines.length) { box.hidden = true; return; }
   box.hidden = false;
-  box.appendChild(el('div', 'approvals__k', `결재 ${approvals.length}건`));
-  const GRADE_WORD = { A: '혼자 해도 됨', B: '총괄이 봄', C: '대표님이 정함' };   // 하영 1절 — 대표가 B·C 를 외울 이유가 없다
+  box.appendChild(el('div', 'approvals__k', approvals.length ? `결재 ${approvals.length}건` : '결재'));
   for (const r of approvals) {
-    const row = el('div', 'apr');
-    const head = el('div', 'apr__head');
+    const row = el('button', 'apr apr--line'); row.type = 'button';
+    const head = el('span', 'apr__head');
     const g = el('span', 'apr__g', GRADE_WORD[r.grade] ?? r.grade); g.dataset.g = r.grade; g.title = grades[r.grade]?.desc ?? '';
     head.appendChild(g);
-    const t = teams.find((x) => x.id === r.team);
-    head.appendChild(el('span', 'apr__team', `${t?.name ?? r.team} · ${(summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by} · ${ago(r.ts)}`));
-    if (r.note) {
-      const link = el('button', 'apr__link', '방에서 보기'); link.type = 'button';
-      link.addEventListener('click', () => jumpTo(r.team, r.note));
-      head.appendChild(link);
-    }
+    head.appendChild(el('span', 'apr__team', approvalHead(r)));
     row.appendChild(head);
-    // 주제·왜 에 적힌 out/… 경로는 링크 (결정 36). 이스케이프 뒤에 잇는다 — 말풍선과 같은 순서.
-    const linked = (cls, text) => { const d = el('div', cls); d.innerHTML = linkOutPaths(escapeHtml(text), r.team, outAnchor); return d; };
-    row.appendChild(linked('apr__what', r.what));
-    // 왜·바뀌는 것 — 요청자가 --detail 에 적은 것. 한 줄로 자르지 않는다 ("옛 M4~M6 픽셀 타일은 컷" 이 … 뒤에 숨었다, 독립검수 #2).
-    row.appendChild(linked('apr__detail', r.detail || '왜 하는지가 안 적혔어요 — 올린 사람에게 물어보세요'));
-    const pv = previewNode(r);
-    if (pv) row.appendChild(pv);
-    // 산출물 — 그림이 있어야 "가" 를 누를 수 있다 (대표 결정 36). 서버가 stat 한 목록: 없는 파일은 없다고 뜬다.
-    if (r.artifacts?.length) {
-      const arts = el('div', 'apr__arts');
-      arts.appendChild(el('div', 'apr__artsk', `낸 것 ${r.artifacts.length}`));
-      for (const f of r.artifacts) arts.appendChild(outFileNode(f));
-      row.appendChild(arts);
-    }
-    if (r.grade === 'C') {
-      const act = el('div', 'apr__act');
-      const err = el('div', 'apr__err'); err.hidden = true;
-      const reasonBox = el('input', 'apr__reason'); reasonBox.type = 'text'; reasonBox.placeholder = '돌려보내는 이유'; reasonBox.hidden = true;
-      const decide = async (d) => {
-        const reason = d === 'REVISE' ? reasonBox.value.trim() : '';
-        if (d === 'REVISE' && !reason) { reasonBox.hidden = false; reasonBox.focus(); return; }
-        const res = await post('/api/approvals', { id: r.id, decision: d, reason });
-        if (!res.ok) { err.textContent = res.data.error ?? '안 눌렸어요. 한 번 더 눌러 보세요.'; err.hidden = false; }
-        else { approvals = approvals.filter((x) => x.id !== r.id); renderApprovals(); renderBossBadge(); }
-      };
-      for (const d of ['PASS', 'REVISE']) {
-        const b = el('button', null, d === 'PASS' ? '승인' : '반려'); b.type = 'button'; b.dataset.d = d;
-        b.addEventListener('click', () => decide(d));
-        act.appendChild(b);
-      }
-      reasonBox.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); decide('REVISE'); } });
-      row.appendChild(act);
-      row.appendChild(reasonBox);
-      row.appendChild(err);
-    } else {
-      // 누가 판정했고 누가 남았나 — 이름으로. 그리고 총괄실이 이 요청을 들었는가.
-      const hq = summaries.hq?.cast ?? {};
-      const nameOf = (id) => hq[id]?.name ?? id;
-      const need = (grades[r.grade]?.needs ?? []);
-      const VERDICT_WORD = { PASS: '통과', REVISE: '다시', FAIL: '멈춤' };   // 하영 1절
-      const done = r.decisions.map((x) => `${nameOf(x.by)} ${VERDICT_WORD[x.decision] ?? x.decision}`).join(' · ');
-      const left = need.filter((w) => !r.decisions.some((x) => x.by === w)).map(nameOf).join('·');
-      const heard = told[r.id]?.requested ? '총괄실에 알렸어요' : '총괄실에 곧 알려요';
-      row.appendChild(el('span', 'apr__wait', `${done ? done + ' · ' : ''}${left ? left + ' 답 기다림' : ''} · ${heard}`));
-    }
+    row.appendChild(el('span', 'apr__what', r.what));
+    row.appendChild(el('span', 'apr__go', r.grade === 'C' ? '읽고 답하기' : '읽기'));
+    row.addEventListener('click', () => openApprovalPop(r));
     box.appendChild(row);
   }
+  for (const d of decidedLines) box.appendChild(el('div', 'apr apr--done', d.text));
+}
+function openApprovalPop(r) {
+  closePop();
+  const scrim = el('div', 'scrim pop__scrim'); scrim.addEventListener('click', closePop);
+  const pop = el('div', 'pop pop--apr'); pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', '결재 카드');
+  const x = el('button', 'pop__x', '×'); x.type = 'button'; x.title = '닫기'; x.addEventListener('click', closePop);
+  pop.appendChild(x);
+  pop.appendChild(approvalCard(r));
+  document.body.append(scrim, pop);
+  x.focus();
+}
+/** 결재 카드 — approval 시안 1판-b 순서: 머리(누가·어디·결재 기다림·N분 전) → 주제 → 왜 → 바뀌는 것 → N이 쓴 원문 → 낸 것 → 확인 / 돌려보냄 → 안내 두 줄. */
+function approvalCard(r) {
+  const card = el('div', 'apr apr--card');
+  const head = el('div', 'apr__head');
+  const g = el('span', 'apr__g', GRADE_WORD[r.grade] ?? r.grade); g.dataset.g = r.grade; g.title = grades[r.grade]?.desc ?? '';
+  head.appendChild(g);
+  head.appendChild(el('span', 'apr__team', approvalHead(r)));
+  if (r.note) {
+    const link = el('button', 'apr__link', '방에서 보기 →'); link.type = 'button';
+    link.addEventListener('click', () => { closePop(); jumpTo(r.team, r.note); });
+    head.appendChild(link);
+  }
+  card.appendChild(head);
+  // 주제·왜 에 적힌 out/… 경로는 링크 (결정 36). 이스케이프 뒤에 잇는다 — 말풍선과 같은 순서.
+  const linked = (cls, text) => { const d = el('div', cls); d.innerHTML = linkOutPaths(escapeHtml(text), r.team, outAnchor); return d; };
+  card.appendChild(linked('apr__what', r.what));
+  // 왜 — 대표 원문이 있으면 그 말부터(세라 자리, 결정 98 — 아직 세라가 안 바꾼 카드는 요청자 글 첫 두 줄). 원문 칸은 그대로, 줄이지 않는다(5판 3-5-1 "N이 쓴 원문").
+  const detail = r.detail || '';
+  const why = detail ? detail.split(/\n/).filter(Boolean).slice(0, 2).join('\n') : '왜 하는지가 안 적혔어요 — 올린 사람에게 물어보세요';
+  card.appendChild(el('div', 'apr__k', '왜'));
+  card.appendChild(linked('apr__why', why));
+  const pv = previewNode(r);
+  if (pv) { card.appendChild(el('div', 'apr__k', '바뀌는 것')); card.appendChild(pv); }
+  if (detail) {
+    const who = (summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by;
+    card.appendChild(el('div', 'apr__k', `${who}이 쓴 원문`));
+    card.appendChild(linked('apr__detail', detail));
+  }
+  // 산출물 — 그림이 있어야 "가" 를 누를 수 있다 (대표 결정 36). 서버가 stat 한 목록: 없는 파일은 없다고 뜬다.
+  if (r.artifacts?.length) {
+    const arts = el('div', 'apr__arts');
+    arts.appendChild(el('div', 'apr__artsk', `낸 것 ${r.artifacts.length}`));
+    for (const f of r.artifacts) arts.appendChild(outFileNode(f));
+    card.appendChild(arts);
+  }
+  if (r.grade === 'C') {
+    const act = el('div', 'apr__act');
+    const err = el('div', 'apr__err'); err.hidden = true;
+    const reasonBox = el('input', 'apr__reason'); reasonBox.type = 'text'; reasonBox.placeholder = '왜 — 한 마디'; reasonBox.hidden = true;
+    const decide = async (d) => {
+      const reason = d === 'REVISE' ? reasonBox.value.trim() : '';
+      if (d === 'REVISE' && !reason) { reasonBox.hidden = false; reasonBox.focus(); return; }
+      const res = await post('/api/approvals', { id: r.id, decision: d, reason });
+      if (!res.ok) { err.textContent = res.data.error ?? '안 눌렸어요. 한 번 더 눌러 보세요.'; err.hidden = false; return; }
+      const t = teams.find((x) => x.id === r.team);
+      decidedLines.unshift({ id: r.id, text: `됐어요 — ${d === 'PASS' ? '확인' : '돌려보냄'}, ${t?.name ?? r.team}에 전해졌어요 · ${whenKo(Date.now())}` });
+      approvals = approvals.filter((x) => x.id !== r.id);
+      closePop(); renderApprovals(); renderBossBadge();
+    };
+    for (const d of ['PASS', 'REVISE']) {
+      const b = el('button', null, d === 'PASS' ? '확인' : '돌려보냄'); b.type = 'button'; b.dataset.d = d;   // 하영 79행 — 승인/반려 가 아니라 확인/돌려보냄
+      b.addEventListener('click', () => decide(d));
+      act.appendChild(b);
+    }
+    reasonBox.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); decide('REVISE'); } });
+    card.appendChild(act);
+    card.appendChild(reasonBox);
+    card.appendChild(err);
+    card.appendChild(el('div', 'apr__hint', '돌려보냄을 누르면 한 줄 칸이 열려요 — "왜" 한 마디.\n10분 안 누르시면 톰·제리가 대신 정해요 — 돈이 나가거나 밖으로 가는 일은 빼고. 되돌리시려면 방에 한마디.'));
+  } else {
+    // 누가 판정했고 누가 남았나 — 이름으로. 그리고 총괄실이 이 요청을 들었는가.
+    const hq = summaries.hq?.cast ?? {};
+    const nameOf = (id) => hq[id]?.name ?? id;
+    const need = (grades[r.grade]?.needs ?? []);
+    const VERDICT_WORD = { PASS: '통과', REVISE: '다시', FAIL: '멈춤' };   // 하영 1절
+    const done = r.decisions.map((x) => `${nameOf(x.by)} ${VERDICT_WORD[x.decision] ?? x.decision}`).join(' · ');
+    const left = need.filter((w) => !r.decisions.some((x) => x.by === w)).map(nameOf).join('·');
+    const heard = told[r.id]?.requested ? '총괄실에 알렸어요' : '총괄실에 곧 알려요';
+    card.appendChild(el('span', 'apr__wait', `${done ? done + ' · ' : ''}${left ? left + ' 답 기다림' : ''} · ${heard}`));
+  }
+  return card;
 }
 
 /* 서브 탭 넷 (결정 40·50) — 전체(첫 화면) · 팀(카드 다섯) · 개인(열넷 + 대표) · 요청(M3). 마지막에 본 탭을 기억한다. */
@@ -1392,13 +1443,15 @@ function renderTowerAll(grid) {
   // ③ 내 차례 — 대표가 답할 것: 결재(C)·물어봄(bossCall)·막힘(FAIL 대표 판단) + 각 방 상황판의 '대표 차례' 줄. 알림 종과 같은 목록(notify.js). 노랑(numbers.md 상태 색).
   if (mine.length || fromBoard.length) {
     const sec3 = el('section', 'dash__card'); sec3.dataset.block = 'mine'; sec3.dataset.alert = '1';
-    sec3.appendChild(el('div', 'dash__k', `내 차례 ${mine.length + fromBoard.length}`));
+    // 머리는 '대표님이 보실 것'(하영 77행 · 현황 시안 tower 51 — '내 차례' 는 사전 밖, 5판 3-5-2 어긋남 ⑴) · 줄의 '물어봄' 은 '대표님께 물어봄'(3-5-3 ③ — 누가 누구를 이 보여야)
+    sec3.appendChild(el('div', 'dash__k', `대표님이 보실 것 ${mine.length + fromBoard.length}`));
     for (const it of mine) {
       const row = el('button', 'dash__row'); row.type = 'button';
-      row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '결재' : it.kind === 'boss' ? '물어봄' : '멈춤'}`));
+      row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '결재 기다림' : it.kind === 'boss' ? '대표님께 물어봄' : '멈춤'}`));
       row.appendChild(el('span', 'dash__sub', it.text));
       row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '읽고 답하기' : '방으로'));
-      row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (it.kind === 'approval') { setTowerTab('all'); document.querySelector('.approvals')?.scrollIntoView({ block: 'start' }); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
+      // 결재는 그 자리에서 카드가 팝업으로(approval 시안 — "읽고 답하기 를 누르면"). 맨 위 띠로 스크롤하던 것을 그만둔다
+      row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (it.kind === 'approval') { const r = approvals.find((a) => a.id === (tg.approval ?? String(it.id).split(':')[1])); if (r) openApprovalPop(r); else { setTowerTab('all'); document.querySelector('.approvals')?.scrollIntoView({ block: 'start' }); } } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
       sec3.appendChild(row);
     }
     for (const b of fromBoard) {
