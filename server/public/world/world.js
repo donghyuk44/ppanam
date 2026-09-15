@@ -82,11 +82,14 @@ async function load() {
   // 비교판(결정 123, 톰 09-15) — ?only=… 이면 유니티 판과 같은 조건: 인형은 댄·세라 둘만 회사 앞 통로(26.2·28.8, 9.5 — PpanamShot.cs 와 같은 자리), 표찰·말풍선 없음, 루틴 이동 없음.
   if (new URLSearchParams(location.search).get('only')) {
     S.compare = true; S.cam = false;
-    for (const a of S.actors.values()) if (a.key !== 'hq:secretary') a.hidden = true;
-    const sec = S.actors.get('hq:secretary');
+    for (const a of S.actors.values()) a.hidden = true;
+    // 세라는 지도에 책상이 아직 없어(hq.desk.secretary 없음, 결정 86 자리 미정) 평소엔 인형이 안 선다 — 비교판에서만 세운다(첫 판엔 인형 하나뿐이었다, 나리 09-15)
+    const sec = S.actors.get('hq:secretary') ?? (S.casts.hq?.secretary ? makeActor('hq', 'secretary', S.casts.hq.secretary, { scene: 'village', x: 28.8, y: 9.5, dir: 'down' }) : null);
     if (sec) teleport(sec, { scene: 'village', x: 28.8, y: 9.5, dir: 'down' });
     teleport(S.boss, { scene: 'village', x: 26.2, y: 9.5, dir: 'down' });
     setScene('village');
+    S.gl.setZoom(S.z = 1);   // '작게'(60칸) — 유니티 판과 같은 크기. 조작판이 서랍 안이라 찍는 도구가 못 고른다
+    const zs = $('wvZoom'); if (zs) zs.value = '1';
     $('wvStage').classList.add('world--compare');
   }
 }
