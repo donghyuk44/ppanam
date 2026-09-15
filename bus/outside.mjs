@@ -302,6 +302,16 @@ function personaOf(team) {
 }
 
 /**
+ * 이어지는 세션(prior 있음)에 매 턴 주는 짧은 닻 — 인격 전문 대신 이름·자리·지금 차례 한 줄.
+ * codex/gemini 세션은 이미 앞 턴에서 인격 전문을 받아 기억하고 있다 — 그걸 또 통째로 보내는 게
+ * 낭비라는 지적(대표·나리, 2026-09-16). 전문은 personaOf 가 세션이 새로 뜰 때만 맡는다.
+ */
+function personaAnchor(team, stateLabel) {
+  const name = readCast(team).agents?.[ACTOR]?.name ?? readCast(team).agents?.outside?.name ?? '외부감사';
+  return `너는 ${name}, 이 팀의 외부감사다(다른 회사 모델). 앞서 받은 인격·원칙 그대로 — 지금은 ${stateLabel}.`;
+}
+
+/**
  * 이 방에서 오간 말. 외부감사도 대화를 따라와야 참여자다.
  *
  * 작전실은 이번 라운드만 본다(라운드마다 컨텍스트를 비운다는 규칙).
@@ -431,14 +441,15 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   // 감사 도중 들어온 커밋이 안 본 채로 PASS 로 찍혀 푸시 문이 열린다 (레오 REVISE, R22).
   const sha = headSha();
 
-  // 인격은 턴마다. 대화는 첫 턴에 지금까지 전부, 이어지는 턴에는 지난번 이후 새로 온 말만 —
-  // 자기 세션이 앞의 대화는 이미 기억하고 있으니, 못 들은 부분만 채워주면 된다. 인격은 다르다: 세션이 라운드를
-  // 넘기며 길어지면 압축되고, 첫 턴에 한 번 준 인격이 제일 먼저 밀려난다. 그래서 클로드 자리처럼 매 턴 앞에 둔다.
+  // 대화는 첫 턴에 지금까지 전부, 이어지는 턴에는 지난번 이후 새로 온 말만 —
+  // 자기 세션이 앞의 대화는 이미 기억하고 있으니, 못 들은 부분만 채워주면 된다.
   // 이 턴이 들은 마지막 말. 커서를 여기 둔다 — 자기 발언 id 로 두면 생각하는 동안(최대 5분)
   // 도착한 말이 since 밖으로 떨어져 영영 못 듣는다 (Fable 감사, 2026-09-02).
   const seenId = lastEventId(team);
-  // 인격은 턴마다(결정 15 — 상주 프로세스라도 첫 턴만 인격이면 안 된다, 톰 결정 122 배분). 116 ② 나) 의 "gemini 는 대화마다 한 번" 은 이것으로 접는다 —
-  // 크기는 116 ① 책장(대화록 대신 읽을 것 3~5개)으로 줄인다. 상주라 시작 비용은 없고, 인격 3천 자는 답 시간에 거의 안 실린다(실측은 firstMs 로).
+  // 인격 전문은 세션이 진짜 새로 뜰 때만(prior 없음 — 첫 턴이거나 프로세스가 죽어 이어붙일 게 없을 때).
+  // 예전엔 매 턴 다시 실었다 — "세션이 라운드를 넘기며 압축되면 첫 턴 인격이 먼저 밀려난다"는 이유였는데,
+  // 실측해 보니 인격 몇천 자를 이미 기억하는 세션에 또 보내는 게 낭비라는 지적(대표·나리, 2026-09-16 — 점검-0916 3-1 ④).
+  // 이어지는 세션에는 짧은 닻 한 줄만 준다(personaAnchor) — 인격을 잊었다는 신호(빗나간 말투 등)가 보이면 --reset 으로 새 세션을 열어 전문을 다시 태운다.
   const persona = personaOf(team);
   const instruction = turn === 'verdict'
     ? VERDICT_TURN(text || question)
@@ -451,12 +462,18 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
           : talk
             ? `방에서 누가 너에게 한 말이다. 판정이 아니라 대화로 답해라 — 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라. 상대 이름으로 시작해 네 말투로 한두 문장, 사람에게 말하듯. 모르면 모른다고, 돌려봐야 알면 돌려보겠다고 해라.\n\n${question}`
             : question;
-  // 입력 조립 — 이어지는 세션이면 지난번 이후 새 말만, 새 세션이면 전부. 재시도가 세션을 버리면 다시 조립한다(8단계 ①).
+  // 지금 이 턴이 무엇인가 — 닻 한 줄에 넣을 상태 표시. 판정 대기(--ask·--turn verdict)·일지·대화 셋뿐이다.
+  const stateLabel = turn === 'journal' ? '일지 차례'
+    : turn === 'verdict' || (!turn && !talk && !lull) ? '판정 대기 — 첫 줄에 PASS·REVISE·FAIL'
+      : '대화 중 — 판정 아님';
+  // 입력 조립 — 이어지는 세션이면 지난번 이후 새 말만 + 인격은 닻 한 줄, 새 세션이면 대화 전부 + 인격 전문.
+  // 재시도가 세션을 버리면(withPrior=false 로 다시 조립) 전문이 다시 실린다 — 새로 뜬 세션이니 맞다.
   const buildInput = (withPrior) => {
     const ctx = contextOf(team, { since: withPrior ? slot.lastSeen : null, fromRound });
     const turnBody = (ctx ? `그동안 이 방에서 오간 말:\n\n${ctx}\n\n---\n` : '') + instruction;
+    const p = withPrior ? personaAnchor(team, stateLabel) : persona;
     // gemini 는 차례를 머리말로 갈라 준다(withTurn — 인격만 읽고 "대상을 주십시오" 로 답하던 실측). codex 는 검증된 옛 조립 그대로.
-    return KIND === 'gemini' ? withTurn(persona, turnBody) : [persona, persona ? '\n---\n' : null, turnBody].filter(Boolean).join('\n');
+    return KIND === 'gemini' ? withTurn(p, turnBody) : [p, p ? '\n---\n' : null, turnBody].filter(Boolean).join('\n');
   };
   let input = buildInput(!!prior);
 
