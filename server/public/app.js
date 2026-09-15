@@ -1341,7 +1341,7 @@ function loadDone() {
   const since = dayStartSeoulMs(Date.now());
   if (done.since === since && Date.now() - done.fetchedAt < 30_000) return;
   done.since = since; done.fetchedAt = Date.now();
-  fetch(`/api/done?since=${since}`).then((r) => r.json()).then((r) => { done.items = r.items ?? []; if (view === 'tower' && towerTab === 'all') renderTower(); }).catch(() => {});
+  fetch(`/api/done?since=${since}`).then((r) => r.json()).then((r) => { done.items = r.items ?? []; if (view === 'tower' && towerTab === 'all') renderTower(); else if (view === 'analysis') loadAnalysis(); }).catch(() => {});   // 분석 첫 층 그림도 같은 점을 쓴다
 }
 
 /* ── 그림 부품 — 헨리 '숫자를 어떻게 보여 주나 — 한 벌'(numbers.md). 이 문서 밖 모양은 안 쓴다.
@@ -2315,10 +2315,49 @@ function panel(title) {
   return p;
 }
 
+/* 분석 첫 층 — 다섯 팀을 같은 자로(하영 화면 글 틀 3-1 "어디서 자꾸 막히나" · 헨리 numbers.md 1절 ⑤ 작은 그림 다섯: 팀마다 진행 막대 + 시간 띠 한 줄, 같은 자·같은 크기).
+ * 나리 정본 조건(화면이-답하는-질문.md): 첫 층에 그림이 최소 하나 — 글자만이면 통과가 아니다(9단계 ③). 강조는 numbers ⑥ — 막힌 팀만 빨간 띠, 나머지 회색·팀 색.
+ * 문장 틀·칸 셋(3-2)은 헨리 분석 시안(H4) 뒤 — 여기는 그림 한 층만 먼저 세운다. 밑의 옛 표는 그때 빠진다. */
+function analysisPicture() {
+  const sec = el('section', 'an__pic');
+  sec.appendChild(el('div', 'dash__k', '어디서 자꾸 막히나 — 다섯 팀 같은 자'));
+  const now = Date.now(), day0 = dayStartSeoulMs(now);
+  loadDone();
+  const today = done.items.filter((it) => new Date(it.ts).getTime() >= day0 && it.by !== 'boss');
+  for (const t of teams.filter((x) => x.id !== 'sera')) {
+    const s = summaries[t.id] ?? {};
+    const office = t.kind === 'office';
+    const row = el('div', 'an__team'); row.dataset.team = t.id;
+    const head = el('span', 'an__teamhead');
+    const dot = el('span', 'dot'); dot.style.background = teamColor(t.id); head.appendChild(dot);
+    head.appendChild(el('b', null, roomWord(t)));
+    if (!office) {
+      const total = s.milestonesTotal ?? 0;
+      head.appendChild(progressBar(s.milestonesDone ?? 0, total, teamColor(t.id)));
+      head.appendChild(el('span', 'dash__stage', total ? `${s.milestonesDone ?? 0}/${total}` : '단계 없음'));
+    }
+    row.appendChild(head);
+    // 시간 띠 — 오늘 한 것 = 사람 색 점, 대표님께 물어봄 = 빨간 점, 멈춘 구간(검토에서 멈춤) = 빨간 띠. 현황 ④ 와 같은 자
+    const marks = today.filter((it) => it.team === t.id).map((it) => ({ at: new Date(it.ts).getTime(), color: it.by ? seatColor(t.id, it.by) : teamColor(t.id), title: `${it.name ?? t.name} · ${it.text} · ${hhmm(it.ts)}` }));
+    if (s.bossCall?.ts) marks.push({ at: new Date(s.bossCall.ts).getTime(), kind: 'bad', title: `대표님께 물어봄 · ${hhmm(s.bossCall.ts)}` });
+    const spans = s.phase === 'blocked' ? [{ from: Math.max(day0, new Date(s.lastAt ?? now).getTime()), to: now }] : [];
+    row.appendChild(timeBand(day0, now, marks, spans));
+    const said = [`오늘 한 것 ${marks.filter((m) => m.kind !== 'bad').length}`, s.phase === 'blocked' ? `검토에서 멈춤 ${forShort(now - new Date(s.lastAt ?? now).getTime())}` : null].filter(Boolean).join(' · ');
+    const note = el('span', 'an__teamnote', said); if (s.phase === 'blocked') note.dataset.k = 'bad';
+    row.appendChild(note);
+    sec.appendChild(row);
+  }
+  sec.appendChild(el('div', 'panel__note', '막대 = 끝난 단계 / 전체 · 띠 = 오늘(우리 시각) · 점 = 한 것 · 빨간 띠 = 검토에서 멈춤'));
+  return sec;
+}
+
 function renderAnalysis(r) {
   const body = $('anBody');
   body.replaceChildren();
   const st = r.stats, agents = r.cast?.agents ?? {};
+
+  // 첫 층 — 그림(다섯 팀 같은 자). 이 밑은 옛 표(5판 3-4 타일·회차 기록) — 분석 시안(헨리 H4)이 오면 문장 틀 셋으로 바뀐다
+  body.appendChild(analysisPicture());
 
   // 한눈에
   const tiles = el('div', 'tiles');

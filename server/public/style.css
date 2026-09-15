@@ -922,6 +922,14 @@ button.dash__row:hover b { text-decoration: underline; }
 /* ── 분석 ── */
 
 .an__body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+/* 분석 첫 층 — 다섯 팀 같은 자(numbers.md ⑤ 작은 그림 다섯: 진행 막대 + 시간 띠). 9단계 ③ */
+.an__pic { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.an__team { display: flex; flex-direction: column; gap: 2px; padding: 6px 0; border-top: 1px dashed var(--line-2); }
+.an__team:first-of-type { border-top: 0; }
+.an__teamhead { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.an__teamhead b { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.an__teamnote { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-4); }
+.an__teamnote[data-k="bad"] { color: var(--bad); }
 
 .tiles { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 .tile {
