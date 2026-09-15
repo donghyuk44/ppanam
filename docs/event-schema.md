@@ -187,6 +187,10 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 - **도구 줄은 발언이 아니다.** 요약(`teamSummary`)의 `lastText·lastActor·lastAt` 는 마지막 `message`·`verdict` 다 — 관제탑
   카드가 "/Users/…/world.mjs" 를 마지막 말로 보여 줬다 (독립검수 #10). 그 뒤에 온 도구 줄은 `lastTool { actor, tool, text, ts }`
   로 따로 실려 "테라 · app.js 고치는 중 · 2분 전" 한 줄이 된다.
+- **단계 목록** — 요약의 `milestones: [{ n, title, status, timebox }]`(계획표 그대로, `pass`·`now`·`wait`) 와 `roundsInMilestone`(지금 단계에서 닫힌 회차 수).
+  헨리 팀 카드 2판-b(`team.svg`, 9단계 ①)의 "단계 N/M" 목록 — 끝난 것 채움 · 지금 굵은 테두리 + 회차 네모(채움 = 닫힌 회차 · 초록 테두리 = 지금 · 회색 = 남은 것, timebox 회차 수만큼) · 남은 것 점선.
+  팀 카드는 그 밑에 "이 회차"(상황판 네 칸 글자 그대로) · "다른 팀에 부탁한 일 N"(이 팀이 연 요청 블록 중 열린 것) · "사람"(칩 · 이름 직책 · 하는 일 · N분 전에 움직임 · 알약).
+  옛 카드의 마지막 발언·진행 막대·접힌 상황판은 시안에 없어 뺐다. 맨 밑 말하기·회차 시작/마무리 줄은 대표 손잡이라 그대로.
 
 ### 생존 표시 — 누가 지금 일하는가 (대표 결정 28 ①·31 ①)
 요약의 `sessions[자리] = { alive, busy, queued, lastSignal }`. `lastSignal` 은 서버가 그 세션의 스트림 이벤트(도구 호출·출력)를
@@ -227,7 +231,8 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 | `todaySay` | 오늘 발언 수 | 서버의 오늘(현지 날짜) `message` 수. `(패스)` 제외 |
 | `todayVerdict` | 오늘 판정 수 또는 null | `verdict` 수. 판정을 내는 자리(`review`·`outside`)만 숫자, 나머지는 **null** — 화면은 null 이면 항목을 안 그린다 |
 | `bossCall` | `{ id, ts, text }` 또는 null | 이 라운드에서 대표에게 **결정이나 손을 청했는데**(`asksBoss` — 대표를 부른 그 문단에 물음표·"정해 주세요·골라·답해" 나 부탁(주세요·주시면·부탁·허용·실행)이 있다, 결정 52·66) 그 뒤 대표가 말하지 않았고 **그 사람도 다시 말하지 않았다**(나리 결정 ①, 8절). 부르기만 한 보고("대표님, 정리했습니다.")는 여기 안 실리고 `bossNotes` 에만. `text` 는 대표에게 한 그 문단 첫 80자 — 카드의 `"손 하나 빌려도 될까…"`. 대표가 답하거나 그 사람이 다음 말을 하면 null. 팀 요약의 `bossCall` 과 같은 판별에 `text` 만 더한 것 |
-| `journalFirst` | 일지 맨 위 문단의 첫 문장 또는 null | `session.journalFirstSentence` — 마을 카드의 "어제 한 줄" 과 같은 값 |
+| `bossAsk` | `{ id, ts, text, replied }` 또는 null | **◂ 대표님이 부르셨어요 → 받았나**(헨리 사람 카드 2판 · 하영 2판 7절 ⑤, 9단계 ①) — 이 라운드에서 대표가 **직접**(`meta.via` 아님) 그 사람 이름을 첫머리에 부른(`addressees`) 마지막 말. `replied` 는 그 뒤 그 사람의 첫 발언 시각, 아직이면 null. 화면: 답했으면 "답했어요 · N분 전", 아니면 지금 상태로 — 일하는 중 = "받았어요, 답 쓰는 중" · 자리 비움 · 멈춤 = "못 와요 · 왜" |
+| `journalFirst` | 일지 맨 위 문단의 첫 문장 또는 null | `session.journalFirstSentence` — 마을 카드의 "어제 한 줄" 과 같은 값. 사람 카드(관제탑)는 2판에서 이 줄을 안 그린다 — 마을 카드만 |
 
 `people.boss` = `{ lastSaidAt, lastText, todaySay, todayDecisions }` — 이 방에서 대표가 마지막으로 한 지시(첫 200자)와 시각, 오늘 이 방에
 한 지시 수, 오늘 이 방의 승인 요청에 대표(`by: 'boss'`)가 내린 판정 수. 대표가 **직접 친 말만** — 총괄이 옮겨온 것(`meta.via`, 4절)은

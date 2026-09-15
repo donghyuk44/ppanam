@@ -1662,6 +1662,9 @@ export function teamSummary(team) {
     logCount: log.length,
     milestonesDone: done,
     milestonesTotal: roadmap.milestones?.length ?? 0,
+    // 단계 목록(헨리 팀 카드 2판-b — 끝난 것 채움 · 지금 굵은 테두리 · 남은 것 점선) + 지금 단계에 쓴 회차 수(회차 네모: 채움 = 닫힌 회차, 테두리 = 지금)
+    milestones: (roadmap.milestones ?? []).map((m) => ({ n: m.n, title: m.title, status: m.status ?? 'wait', timebox: m.timebox ?? null })),
+    roundsInMilestone: state.milestone != null ? listRounds(team).filter((r) => r.milestone === state.milestone && r.endedAt).length : 0,
     needsBoss: needsBossWhy != null,
     needsBossWhy,
     // 이 라운드에서 누가 대표를 불렀는데 그 뒤 대표가 말하지 않았다 — 화면의 호명 배지.
@@ -1702,7 +1705,7 @@ export function peopleOf(log, cast, { now = Date.now(), progress = null } = {}) 
 
   const people = Object.fromEntries(ids.map((a) => [a, {
     busy: false, alive: null, lastSignal: null, state: null, lastSaidAt: null, doing: null,
-    todaySay: 0, todayVerdict: JUDGES.has(a) ? 0 : null, bossCall: null, journalFirst: null,
+    todaySay: 0, todayVerdict: JUDGES.has(a) ? 0 : null, bossCall: null, bossAsk: null, journalFirst: null,
   }]));
   const boss = { lastSaidAt: null, lastText: null, todaySay: 0, todayDecisions: 0 };
   const unsaid = new Set([...ids, 'boss']);   // 마지막 발언을 아직 못 찾은 자리
@@ -1724,6 +1727,12 @@ export function peopleOf(log, cast, { now = Date.now(), progress = null } = {}) 
       // 총괄이 옮겨온 것(meta.via)은 대표가 이 방에서 친 말이 아니다 — 결정 파일 원문이 대표 카드의 "하는 일" 로 떴다 (R21).
       // dispatch.mjs lastBossSay 와 같은 규칙.
       if (e.meta?.via) continue;
+      // ◂ 대표님이 부르셨어요 → 받았나(헨리 사람 카드 2판 · 하영 2판 7절 ⑤) — 이 라운드에서 대표가 이름을 부른 마지막 말. 뒤에서 훑으니
+      // 그 사람의 lastSaidAt 이 이미 있으면 부름 뒤에 답한 것(replied), 없으면 아직. 사람마다 마지막 부름 하나만.
+      if (inRound) for (const who of addressees(e.text, agents)) {
+        const q = people[who];
+        if (q && !q.bossAsk) q.bossAsk = { id: e.id, ts, text: String(e.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 80), replied: q.lastSaidAt };
+      }
       if (boss.lastSaidAt == null) { boss.lastSaidAt = ts; boss.lastText = String(e.text ?? '').slice(0, 200); unsaid.delete('boss'); }
       if (isToday(ts)) boss.todaySay += 1;
       continue;

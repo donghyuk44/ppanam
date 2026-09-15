@@ -1319,9 +1319,9 @@ function renderTower() {
     n.hidden = !v; n.textContent = v ? String(v) : '';
   }
   grid.dataset.tab = towerTab;
+  // 요청 블록은 승인 큐와 달리 요약 방송을 안 탄다(6-1절 — 대화록엔 시작·완료 한 줄뿐). 전체·요청·팀 탭(카드의 "다른 팀에 부탁한 일")에 있을 때만 받아 온다.
+  if (towerTab !== 'people') loadRequests().then((changed) => { if (changed && view === 'tower') renderTower(); });
   if (towerTab === 'teams') return renderTowerTeams(grid);
-  // 요청 블록은 승인 큐와 달리 요약 방송을 안 탄다(6-1절 — 대화록엔 시작·완료 한 줄뿐). 전체·요청 탭에 있을 때만 받아 온다.
-  if (towerTab === 'all' || towerTab === 'asks') loadRequests().then((changed) => { if (changed && view === 'tower') renderTower(); });
   grid.replaceChildren();
   if (towerTab === 'all') return renderTowerAll(grid);
   if (towerTab === 'people') return renderTowerPeople(grid);
@@ -1523,8 +1523,7 @@ function renderTowerAll(grid) {
   grid.appendChild(tl);
 }
 
-/* ── 개인 — 열넷 + 대표. 헨리 설계 3절 (1판, 가설). 데이터는 요약의 people ── */
-const openJournal = new Set();   // "팀:자리" — 일지 문단을 펼쳐 둔 카드
+/* ── 개인 — 열넷 + 대표. 헨리 사람 카드 2판(person.svg). 데이터는 요약의 people ── */
 function renderTowerPeople(grid) {
   const groupKey = (t) => `ppanam.towerGroup.${t}`;
 
@@ -1607,42 +1606,44 @@ function openPersonPop(teamId, id) {
 function closePop() { for (const n of document.querySelectorAll('.pop, .pop__scrim')) n.remove(); }
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closePop(); });
 
+/* 사람 카드 — 헨리 시안 2판(person.svg, 9단계 ①): 줄 셋(이름·직책·알약 / 지금 하는 일 / N분 전에 움직임) + 있을 때만 붙는 줄 둘 —
+ * ▸ 대표님께 물어봄(결정을 청한 것만, bossCall) · ◂ 대표님이 부르셨어요 → 받았나(bossAsk, 하영 2판 7절 ⑤). 쉬는 중·자리 비움은 짧게(왜 · 움직임 한 줄).
+ * 발언 수·검토 결과 수·일지 줄은 없다(시안 메모). 엔진·모델 줄(결정 69)은 대표 손잡이라 맨 밑에 그대로. */
 function personCard(t, id, a, p) {
   const card = el('div', 'pcard'); card.dataset.actor = `${t.id}:${id}`;
   const st = WORK_PILL[p.state] ?? WORK_PILL.waiting;
   if (p.bossCall) card.dataset.alert = '1';
   card.appendChild(pcardTop(a, pill(st[0], st[1])));
-  // 2줄 지금 하는 일 — 마지막 발언 뒤 도구 줄이면 "app.js 고치는 중", 아니면 마지막 발언 첫 문장.
-  // 일하는 중이 아니면 언제 것인지 붙인다 — 옛 발언을 지금 일로 읽지 않게.
-  const working = p.state === 'working';
-  const doing = p.doing ? (p.doing.tool ? toolPhrase(p.doing, p.busy) : firstLine(p.doing.text)) + (!working && p.doing.ts ? ` · ${ago(p.doing.ts)}` : '') : '아직 한 일 없음';
-  card.appendChild(el('div', 'pcard__doing', doing));
-  // 3줄 — "N분 전에 움직임"(결정 31 안죽었어요). 오늘 발언·판정 수는 뺐다(하영 3-1: opsroom-content.md 2절 ⚠ — 말이 많다고 일한 게 아니다). 계약의 todaySay·todayVerdict 는 그대로.
-  card.appendChild(el('div', 'pcard__nums', moved(p.lastSignal)));
-  // "왜 멈췄나" 한 줄 — 하영 사전 3-1 그대로(대표 "왜 모두 멈춰있니? 대답해봐").
-  const why = whyStopped(t, p);
-  if (why) card.appendChild(el('div', 'pcard__why', why));
-  // 4줄 대표님께 물어봄 — 물었는데 대표가 아직 답 안 했을 때만(결정 52 — 결정이 필요한 부름만).
+  const why = whyStopped(t, p);   // "왜 멈췄나" — 하영 사전 3-1 그대로(대표 "왜 모두 멈춰있니? 대답해봐")
+  const idle = p.state === 'waiting' || p.state === 'resting';
+  if (idle) {
+    // 쉬는 중 · 자리 비움 — 짧게 한 줄: 왜 · N분 전에 움직임(시안 노라·레오 줄)
+    card.appendChild(el('div', 'pcard__why', [why, moved(p.lastSignal)].filter(Boolean).join(' · ')));
+  } else {
+    // 2줄 지금 하는 일 — 마지막 발언 뒤 도구 줄이면 "app.js 고치는 중", 아니면 마지막 발언 첫 문장. 3줄 "N분 전에 움직임"(결정 31 안죽었어요).
+    const doing = p.doing ? (p.doing.tool ? toolPhrase(p.doing, p.busy) : firstLine(p.doing.text)) : '아직 한 일 없음';
+    card.appendChild(el('div', 'pcard__doing', doing));
+    card.appendChild(el('div', 'pcard__nums', moved(p.lastSignal)));
+    if (why) card.appendChild(el('div', 'pcard__why', why));
+  }
+  // ▸ 대표님께 물어봄 — 물었는데 대표가 아직 답 안 했을 때만(결정 52 — 결정이 필요한 부름만). 누르면 그 말
   if (p.bossCall) {
     const c = el('button', 'pcard__call'); c.type = 'button';
-    c.textContent = `대표님께 물어봤어요 · ${ago(p.bossCall.ts)} · "${p.bossCall.text.slice(0, 40)}${p.bossCall.text.length > 40 ? '…' : ''}"`;
+    c.textContent = `▸ "${p.bossCall.text.slice(0, 48)}${p.bossCall.text.length > 48 ? '…' : ''}" · ${ago(p.bossCall.ts)}`;
     c.addEventListener('click', () => jumpTo(t.id, p.bossCall.id));
+    card.appendChild(c);
+  }
+  // ◂ 대표님이 부르셨어요 → 받았나 — 이 라운드에서 대표가 이름을 부른 마지막 말(bossAsk). 답했으면 "답했어요 · N분 전", 아니면 지금 상태로: 일하는 중 = 받았어요, 답 쓰는 중 · 자리 비움 · 멈춤 = 못 와요 · 왜. 누르면 그 부름
+  if (p.bossAsk) {
+    const q = p.bossAsk;
+    const got = q.replied ? `답했어요 · ${ago(q.replied)}` : p.busy || p.state === 'working' ? '받았어요, 답 쓰는 중' : p.state === 'resting' || p.alive === false ? '자리 비움' : p.state === 'blocked' ? `못 와요${why ? ' · ' + why : ''}` : '받았어요';
+    const c = el('button', 'pcard__ask'); c.type = 'button'; c.dataset.k = q.replied || p.busy || p.state === 'working' ? 'ok' : 'bad';
+    c.textContent = `◂ 대표님이 부르셨어요 · ${ago(q.ts)} → ${got}`;
+    c.addEventListener('click', () => jumpTo(t.id, q.id));
     card.appendChild(c);
   }
   // 엔진 · 모델 · 추론 강도 (결정 69) — 대표가 카드 안에서 고른다. 바꾸면 서버가 cast.json 에 쓰고 다음 턴부터.
   card.appendChild(castRow(t, id, a));
-  // 5줄 일지 첫 문장 — 누르면 문단 전체(/api/actor 의 journal.latest). 일지가 없으면 줄 없음.
-  if (p.journalFirst) {
-    const key = `${t.id}:${id}`;
-    const j = el('button', 'pcard__journal'); j.type = 'button';
-    j.textContent = `「${p.journalFirst}」`;
-    j.title = '누르면 일지 문단 전체';
-    const full = el('div', 'pcard__jfull'); full.hidden = true;
-    const show = async () => { full.hidden = false; full.textContent = journalFull[key + '|' + p.journalFirst] ?? '읽는 중…'; full.textContent = await loadJournal(key, p.journalFirst, t.id, id); };
-    if (openJournal.has(key)) show();
-    j.addEventListener('click', () => { if (openJournal.has(key)) { openJournal.delete(key); full.hidden = true; } else { openJournal.add(key); show(); } });
-    card.appendChild(j); card.appendChild(full);
-  }
   return card;
 }
 /**
@@ -1702,18 +1703,7 @@ function select(values, current, blank) {
   return s;
 }
 let castOptions = {};
-
-/** 일지 문단 전체 — 한 번 읽으면 둔다. 첫 문장이 바뀌면(새 일지) 다시 읽는다. 카드는 요약이 바뀔 때마다 다시 그려진다. */
-const journalFull = {};
-async function loadJournal(key, first, team, actor) {
-  const k = key + '|' + first;
-  if (journalFull[k] !== undefined) return journalFull[k];
-  try {
-    const r = await fetch(`/api/actor?team=${encodeURIComponent(team)}&actor=${encodeURIComponent(actor)}`).then((x) => x.json());
-    journalFull[k] = r.journal?.latest ?? '(일지 없음)';
-  } catch { return '(읽지 못했습니다)'; }
-  return journalFull[k];
-}
+// 일지 첫 문장·문단 펼치기(옛 사람 카드 5줄)는 헨리 2판에서 빠졌다 — 일지는 마을 카드(결정 13)와 /api/actor 에 그대로.
 
 /* ── 요청 — 팀 사이 요청 블록 (결정 45 ①·49·51, 계약 6-1절). 대표가 누를 버튼은 없다(결정 46 — 방향 안의 일). ── */
 const REQ_PILL = { open: ['진행 중', 'live'], done: ['끝냄', 'idle'], acked: ['받음', 'idle'] };   // 하영 3-1 요청 탭 표
@@ -1802,7 +1792,12 @@ function renderTowerAsks(grid) {
   grid.appendChild(box);
 }
 
-/* ── 팀 — 팀 카드 다섯. 지금 그대로 (결정 40: 2판 설계가 오면 줄 순서를 고친다) ── */
+/* ── 팀 — 팀 카드 다섯, 헨리 시안 2판-b(team.svg, 9단계 ①). 현황 ④ 팀 줄 → 펼친 줄(상황판 네 칸) → 이것(두 번 = 카드).
+ * 위에서 아래로: 머리(팀 · 알약) · 단계 N/M 목록(끝난 것 채움 · 지금 굵은 테두리 + 회차 네모 · 남은 것 점선) · 이 회차(상황판 네 칸 글자 그대로)
+ * · 다른 팀에 부탁한 일 N(있을 때만) · 사람(칩 · 이름 직책 · 하는 일 · N분 전에 움직임 · 알약). 카드 안에서 누르면 옆으로만 — 단계 → 계획표 카드 · 부탁한 일 → 요청 탭 · 사람 → 사람 카드.
+ * 마지막 발언·진행 막대·상황 접기는 뺐다(시안에 없다). 맨 밑 말하기·회차 시작/마무리 줄은 대표 손잡이라 그대로 둔다. ── */
+const ROOM_WORD = { hq: '총괄실', marketing: '마케팅팀', dev: '개발팀', design: '디자인팀', finance: '경영팀' };   // 하영 0-1 확정 방 이름
+const roomWord = (t) => ROOM_WORD[t.id] ?? t.room ?? t.name;
 function renderTowerTeams(grid) {
   const focus = document.activeElement;
   const keep = focus?.classList?.contains('tcard__in')
@@ -1819,7 +1814,8 @@ function renderTowerTeams(grid) {
     if (s.phase === 'running' || s.phase === 'blocked') return 2;
     return 3;
   };
-  const ordered = [...teams].sort((a, b) => rank(a) - rank(b));
+  const ordered = [...teams].filter((t) => t.id !== 'sera').sort((a, b) => rank(a) - rank(b));   // 비서실은 팀이 아니다(계획표·회차 없음)
+  const stageWord = (m) => `${m.n}단계 ${String(m.title ?? '').split(/\s*(?:—|∥|\()\s*/)[0].trim()}`;   // 폰 폭 — 첫 구분 기호 앞까지(하영 1-1)
 
   for (const t of ordered) {
     const s = summaries[t.id] ?? {};
@@ -1828,107 +1824,97 @@ function renderTowerTeams(grid) {
     const running = office || s.phase === 'running' || s.phase === 'blocked';
 
     const card = el('div', 'tcard');
-    // 대표 차례인 카드 — 막힌 방(needsBoss)과 대표를 불렀는데 답이 없는 방(bossCall) 둘 다. 후자는 배지만 알고
-    // 카드는 '진행 중' 이라 누가 기다리는지 못 찾았다 (독립검수 #9).
-    const call = s.bossCall ? `${agents[s.bossCall.by]?.name ?? s.bossCall.by}이 대표님께 물어봤어요 · ${ago(s.bossCall.ts)}` : null;
-    card.dataset.alert = s.needsBoss || call ? '1' : '0';
+    card.dataset.alert = s.needsBoss || s.bossCall ? '1' : '0';
 
-    // 이름과 상태 — 글자는 하영 사전 3-1 팀 카드 표. 플래그 "대표님 답 기다림" 의 이유는 카드 안 상황 줄로.
+    // 머리 — 팀 이름(0-1 확정) · 알약. 글자는 현황 ④ 팀 줄과 같은 넷(하영 사전 3-1)
     const top = el('div', 'tcard__top');
-    const name = el('span', 'tcard__name', t.room ?? t.name);
+    const name = el('span', 'tcard__name', roomWord(t));
     name.title = '이 방 열기';
     name.addEventListener('click', async () => { await selectTeam(t.id); setView('room'); });
     top.appendChild(name);
-    const flag = el('span', 'tcard__flag',
-      s.needsBoss ? '대표님 답 기다림' : call ? call : office ? '대표님과 톰' : running ? '일하는 중' : '쉬는 중');
-    flag.dataset.k = s.needsBoss || call ? 'boss' : running ? 'run' : 'idle';
-    top.appendChild(flag);
+    top.appendChild(pill(
+      s.needsBoss ? '대표님 답 기다림' : s.bossCall ? '대표님께 물어봄' : office ? '대표님과 톰' : s.phase === 'blocked' ? '멈춤' : running ? '일하는 중' : '쉬는 중',
+      s.needsBoss || s.bossCall ? 'boss' : s.phase === 'blocked' ? 'bad' : running ? 'live' : 'idle'));
     card.appendChild(top);
-    if (s.needsBoss) card.appendChild(el('div', 'tcard__quiet', BOSS_WHY[s.needsBossWhy] ?? '대표님 답을 기다려요'));
+    // 부제 — "N단계 제목 · N회차" (+ 왜 대표 차례인가). 총괄실은 회차가 없다
+    const sub = office ? '대표님과 톰. 여기서 한 말을 톰이 팀에 나눠요'
+      : [s.round && s.milestone ? `${s.milestone}단계 ${s.milestoneTitle ?? ''}`.trim() : '지금 하는 회차 없음', s.round ? `${s.round}회차` : null, s.needsBoss ? (BOSS_WHY[s.needsBossWhy] ?? '대표님 답을 기다려요') : s.bossCall ? `${agents[s.bossCall.by]?.name ?? s.bossCall.by} · ${ago(s.bossCall.ts)}` : null].filter(Boolean).join(' · ');
+    card.appendChild(el('div', 'tcard__sub', sub));
 
-    // 회차와 단계
-    const ms = el('div', 'tcard__ms');
-    ms.appendChild(el('b', null, office ? '' : s.round ? `${s.round}회차` : ''));
-    ms.append(' ');
-    ms.append(office
-      ? '대표님과 톰. 여기서 한 말을 톰이 팀에 나눠요'
-      : s.round
-        ? `${s.milestone}단계${s.milestoneTitle ? ' · ' + s.milestoneTitle : ''}`
-        : '지금 하는 회차 없음');
-    card.appendChild(ms);
-
-    const total = s.milestonesTotal ?? 0;
-    const done = s.milestonesDone ?? 0;
-    const bar = el('div', 'bar2');
-    const fill = el('i');
-    fill.style.width = total ? `${Math.round((done / total) * 100)}%` : '0%';
-    bar.appendChild(fill);
-    card.appendChild(bar);
-
-    // 반박 게이지 점 셋·대화록 N건은 뺐다 — 대표가 묻는 질문 어느 것에도 답 안 함(하영 표 opsroom-content.md 3절, 결정 47 ①). 3회 다 쓰면 종에 뜬다.
-    const meta = el('div', 'tcard__meta');
-    meta.append(total ? `${done} / ${total} 단계` : '계획표 없음');
-    if (s.approvals?.pending) meta.appendChild(el('span', 'rwork', `결재 ${s.approvals.pending}`));
-    // 일하는 자리 이름으로 — "일하는 중" 만으로는 누가인지 모른다. 시각은 방 헤더와 같은 값 (결정 31 ①).
-    const busy = Object.entries(s.sessions ?? {}).filter(([, x]) => x.busy);
-    if (busy.length) {
-      const sig = busy.map(([, x]) => x.lastSignal).filter(Boolean).map((ts) => new Date(ts).getTime());
-      meta.appendChild(el('span', 'rwork', `${busy.map(([id]) => agents[id]?.name ?? id).join('·')} 일하는 중${sig.length ? ` · ${moved(Math.max(...sig))}` : ''}`));
-    }
-    card.appendChild(meta);
-
-    // 중간 상황 — teams/<팀>/progress.json. 로드맵이 목적지라면 이건 지금 위치다.
-    // 대표가 돌아와 30초 안에 "어디까지 왔고 무엇이 막혔나"를 보는 자리 (M5 의 조각).
-    // 검수 #11: 숫자만 접혀 있으면 이슈가 내 몫인지 모른다 — 막힌 것·대표 차례가 있으면 펼쳐 두고, 요약 줄에 하는 것 첫 항목을 글로. 파일 없는 팀은 한 줄로 말한다.
-    if (!s.progress && !office) {
-      card.appendChild(el('div', 'tcard__quiet', '상황판이 아직 비어 있어요.'));
-    }
-    if (s.progress) {
-      const p = s.progress;
-      const prog = el('details', 'tcard__prog');
-      const n = (k) => (p[k]?.length ?? 0);
-      prog.open = n('blocked') > 0 || n('boss') > 0;
-      const first = p.doing?.[0] ? ` — ${String(p.doing[0]).slice(0, 60)}${p.doing[0].length > 60 ? '…' : ''}` : '';
-      prog.appendChild(el('summary', null,
-        `상황${first} · 막힌 것 ${n('blocked')} · 대표님이 보실 것 ${n('boss')}` + (p.fresh === false ? ' · 낡았어요' : '')));
-      for (const [k, label] of [['doing', '하는 것'], ['blocked', '막힌 것'], ['boss', '대표님이 보실 것'], ['next', '다음'], ['done', '한 것']]) {
-        const items = p[k] ?? [];
-        if (!items.length) continue;
-        const h = el('div', 'tcard__progk', label); h.dataset.k = k;
-        prog.appendChild(h);
-        const ul = el('ul');
-        for (const it of items) ul.appendChild(el('li', null, it));
-        prog.appendChild(ul);
+    // 단계 N/M — 계획표 그대로(도면 2겹). 지금 단계 오른쪽에 회차 네모(채움 = 닫힌 회차 · 초록 테두리 = 지금 · 회색 테두리 = 남은 것, timebox 회차 수만큼). 누르면 계획표 카드(방 오른쪽)
+    if (!office) {
+      const list = s.milestones ?? [];
+      const total = s.milestonesTotal ?? list.length, done = s.milestonesDone ?? list.filter((m) => m.status === 'pass').length;
+      card.appendChild(el('div', 'tcard__k', total ? `단계 ${done}/${total}` : '단계'));
+      if (s.milestones && !list.length) card.appendChild(el('div', 'tcard__quiet', '계획표 아직 없어요'));   // milestones 자체가 없으면 옛 서버(재시작 전) — 목록만 비워 둔다
+      const ul = el('div', 'tcard__stages');
+      for (const m of list) {
+        const st = m.status === 'pass' ? 'pass' : m.status === 'now' || m.n === s.milestone ? 'now' : 'wait';
+        const row = el('button', 'tcard__stage'); row.type = 'button'; row.dataset.st = st; row.title = `${m.n}단계 ${m.title}`;
+        row.appendChild(el('span', null, st === 'now' ? `${stageWord(m)} · 지금` : stageWord(m)));
+        if (st === 'now') {
+          const boxes = el('span', 'tcard__rounds');
+          const n = Math.max(1, Math.ceil(Number(/(\d+(?:\.\d+)?)\s*라운드/.exec(String(m.timebox ?? ''))?.[1] ?? 1))), used = Math.min(n, s.roundsInMilestone ?? 0);
+          for (let i = 0; i < Math.max(n, used + (running ? 1 : 0)); i++) { const b = el('i'); b.dataset.k = i < used ? 'done' : i === used && running ? 'now' : 'rest'; boxes.appendChild(b); }
+          boxes.title = `이 단계에 쓴 회차 ${used}${m.timebox ? ` · 계획표 ${m.timebox}` : ''}`;
+          row.appendChild(boxes);
+        }
+        row.addEventListener('click', async () => { await selectTeam(t.id); setView('room'); document.getElementById('cardRoadmap')?.scrollIntoView({ block: 'start' }); });
+        ul.appendChild(row);
       }
-      if (p.at) prog.appendChild(el('div', 'tcard__quiet', `${ago(p.at)}${p.by ? ' · ' + p.by : ''}`));
-      card.appendChild(prog);
+      card.appendChild(ul);
     }
 
-    // 지금 만지는 것 — 마지막 발언 뒤에 온 도구 줄. "테라 · app.js 고치는 중 · 2분 전" (독립검수 #10).
-    if (s.lastTool) {
-      const tl = el('div', 'tcard__tool');
-      tl.appendChild(el('b', null, agents[s.lastTool.actor]?.name ?? s.lastTool.actor));
-      tl.append(` · ${toolPhrase(s.lastTool, !!s.sessions?.[s.lastTool.actor]?.busy)} · ${ago(s.lastTool.ts)}`);
-      card.appendChild(tl);
+    // 이 회차 — 상황판 네 칸 글자 그대로(progress.json: 하는 것 · 막힌 것 · 대표님이 보실 것 · 다음). 현황 ④ 펼친 줄과 같은 넷. 없으면 "없어요"
+    card.appendChild(el('div', 'tcard__k', '이 회차'));
+    const p = s.progress;
+    if (!p) card.appendChild(el('div', 'tcard__quiet', office ? '총괄실은 상황판이 없어요 — 승인·부탁·보고서가 일이에요.' : '아직 상황판을 안 썼어요.'));
+    else {
+      for (const [k, label] of [['doing', '하는 것'], ['blocked', '막힌 것'], ['boss', '대표님이 보실 것'], ['next', '다음']]) {
+        const lines = p[k] ?? [];
+        const kv = el('div', 'tcard__kv'); kv.dataset.k = k;
+        kv.appendChild(el('b', null, label));
+        kv.appendChild(el('span', null, lines.length ? lines.join(' / ') : '없어요'));
+        card.appendChild(kv);
+      }
+      if (p.at) card.appendChild(el('div', 'tcard__quiet', `갱신 ${agoShort(p.at)}${p.by ? ' · ' + (agents[p.by]?.name ?? p.by) : ''}${p.fresh === false ? ' · 낡음' : ''}`));
     }
 
-    // 마지막 발언 — 발언(message·verdict)만. 도구 경로·note 는 서버(teamSummary)가 이미 거른다.
-    const last = el('div', 'tcard__last');
-    if (s.lastText) {
-      const a = agents[s.lastActor] ?? FALLBACK;
-      const av = el('div', 'chip', a.initial ?? '?');
-      av.style.background = a.color ?? FALLBACK.color;
-      av.title = a.name ?? s.lastActor;
-      last.appendChild(av);
-      const body = el('div', 'tcard__lastt');
-      // 굵게·기호는 방의 말풍선과 같은 규칙으로 — "**apr_… 는**" 별표가 그대로 보였다. 길이는 CSS 가 세 줄로 자른다.
-      body.appendChild(bubble(s.lastText.slice(0, 600), t.id));
-      body.appendChild(el('div', 'tcard__quiet', ago(s.lastAt)));
-      last.appendChild(body);
-    } else {
-      last.appendChild(el('div', 'tcard__quiet', '아직 한 말이 없어요.'));
+    // 다른 팀에 부탁한 일 N — 이 팀이 연 요청 블록 중 열린 것(요청 탭과 같은 목록). 누르면 요청 탭의 그 블록
+    const asks = requestsAll.filter((r) => r.from?.team === t.id && r.status !== 'closed');
+    if (asks.length) {
+      card.appendChild(el('div', 'tcard__k', `다른 팀에 부탁한 일 ${asks.length}`));
+      for (const r of asks) {
+        const row = el('button', 'tcard__ask'); row.type = 'button';
+        const toName = teams.find((x) => x.id === r.to?.team);
+        row.appendChild(el('b', null, `${roomWord(t)} → ${toName ? roomWord(toName) : r.to?.team} · ${r.what}`));
+        const lastLine = r.thread?.[r.thread.length - 1];
+        row.appendChild(el('span', null, `${requestPill(r)[0]}${lastLine?.text ? ' · ' + String(lastLine.text).replace(/\s+/g, ' ').slice(0, 60) : ''}`));
+        row.addEventListener('click', () => { openAsks.add(r.id); setTowerTab('asks'); });
+        card.appendChild(row);
+      }
     }
-    card.appendChild(last);
+
+    // 사람 — 그 방의 자리(대표·안내 빼고). 칩 · 이름 직책 · 지금 하는 일 · N분 전에 움직임 · 알약(사람 카드와 같은 글자). 누르면 사람 카드
+    const people = Object.entries(s.people ?? {}).filter(([id]) => id !== 'boss' && agents[id] && !agents[id].from);
+    if (people.length) {
+      card.appendChild(el('div', 'tcard__k', '사람'));
+      for (const [id, pp] of people) {
+        const a = agents[id];
+        const row = el('button', 'tcard__person'); row.type = 'button'; row.dataset.actor = `${t.id}:${id}`;
+        const chip = el('span', 'chip', a.initial ?? '?'); chip.style.background = a.color ?? FALLBACK.color; row.appendChild(chip);
+        const who = el('span', 'tcard__pwho');
+        const nm = el('b', null, a.name ?? id); if (a.title) nm.appendChild(el('small', null, ` ${a.title}`)); who.appendChild(nm);
+        const working = pp.state === 'working';
+        const doing = pp.doing ? (pp.doing.tool ? toolPhrase(pp.doing, pp.busy) : firstLine(pp.doing.text)) : '아직 한 일 없음';
+        who.appendChild(el('span', null, `${doing.slice(0, 48)}${doing.length > 48 ? '…' : ''} · ${moved(pp.lastSignal)}`));
+        row.appendChild(who);
+        const st = WORK_PILL[pp.state] ?? WORK_PILL.waiting;
+        row.appendChild(pill(st[0], st[1]));
+        row.addEventListener('click', () => openPersonPop(t.id, id));
+        card.appendChild(row);
+      }
+    }
 
     // 지시 · 라운드. 입력창 하나가 두 가지로 쓰인다 —
     // 라운드가 없으면 주제를 받아 열고, 열려 있으면 지시를 받는다.

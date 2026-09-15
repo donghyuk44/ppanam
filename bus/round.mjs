@@ -369,6 +369,14 @@ switch (cmd) {
         '대표님, allow 한 줄 허용해 주세요.', '대표님, 이 명령 실행 한 번만요.', '대표님, 서버 다시 띄워 주세요.'].map((t) => asksBoss(t, pcast));
       const plain = ['대표님, 시안 올렸습니다 — out/screens/seoul.png.', '대표님, 커밋했고 check 46건 됐습니다.', '대표님, 보고드립니다.\n\n클레멘타인, 부품 목록 적어 줘.'].map((t) => asksBoss(t, pcast));
       out.push(['부탁도 종(결정 66)', favors.every(Boolean) && !plain.some(Boolean) ? '✓ 주시면·부탁·허용·실행·주세요 5건 결정 · 올렸습니다·됐습니다·남의 문단 부탁 3건 보고' : '✗ ' + JSON.stringify({ favors, plain })]);
+      // ◂ 대표님이 부르셨어요 → 받았나(헨리 사람 카드 2판, 9단계 ①) — 이 라운드에서 대표가 이름을 부른 마지막 말. 그 뒤 그 사람이 말했으면 replied, 옮겨온 말(via)·지난 라운드는 아님.
+      const bkLog = [plog[1], { id: 'b1', ts: at(1), actor: 'boss', type: 'message', text: '하영, 이거 왜 안 없어지냐' }, { id: 'b2', ts: at(2), actor: 'boss', type: 'message', text: '솔라, 서버 봐 줘', meta: { via: 'hq' } }];
+      const bkReply = [...bkLog, { id: 'b3', ts: at(3), actor: 'guide', type: 'message', text: '대표님, 종 고쳤습니다.' }];
+      const bkOld = [{ id: 'b0', ts: at(-5), actor: 'boss', type: 'message', text: '하영, 어제 것' }, plog[1]];
+      const bk = peopleOf(bkLog, pcast, { now: d0.getTime() + 10 * 60_000 }), bkR = peopleOf(bkReply, pcast, { now: d0.getTime() + 10 * 60_000 }), bkO = peopleOf(bkOld, pcast, { now: d0.getTime() + 10 * 60_000 });
+      const bkOk = bk.guide.bossAsk?.id === 'b1' && bk.guide.bossAsk.replied === null && bk.guide.bossAsk.text === '하영, 이거 왜 안 없어지냐' && bk.ops.bossAsk === null
+        && bkR.guide.bossAsk?.id === 'b1' && bkR.guide.bossAsk.replied === at(3) && bkO.guide.bossAsk === null;
+      out.push(['대표가 부른 사람 → 받았나(bossAsk)', bkOk ? '✓ 부른 말 · 답하면 replied · 옮겨온 말 아님 · 지난 라운드 아님' : '✗ ' + JSON.stringify({ bk: bk.guide.bossAsk, ops: bk.ops.bossAsk, bkR: bkR.guide.bossAsk, bkO: bkO.guide.bossAsk })]);
       // 종이 보고에 울렸다는 실측(out/m6-screen-findings.md 맨 위) — 그 세 말 중 원문을 찾은 둘은 "시스템," 으로 시작하고 대표 문단이 없다. 지금 표로는 부름도 물음도 아니어야 한다.
       const sysTom = '시스템, 됐다 — `state/teams.json` 은 경영·경영 작전실, `teams/finance/cast.json` 은 유진(유)·노라(노)·빅터(빅) 로 결정 4 원문대로. 남은 건 0건이고 상황판에도 "경영" 으로 뜬다.';
       const sysHenry = '시스템, 세라는 `characters.json` 열여섯째로 넣었습니다 — 나이를 말하는 부착물은 없어요. 시안은 올렸으니 dolls-lineup 2차와 함께 뽑아 주세요. 클레멘타인, 세라 옷색은 개발 몫이라 톰한테 한 줄 남겨야겠다.';
