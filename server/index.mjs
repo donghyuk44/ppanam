@@ -429,6 +429,24 @@ const server = http.createServer((req, res) => {
     });
   }
 
+  // 작업 보드 자료(W1) — 대시보드 보드 블록 + 타임라인 탭이 같은 API 를 나눠 쓴다(대표 08:2x "간트 시스템도
+  // 대시보드에서 보여야"). bus.timelineOf() 는 순수 함수라 안 거른다 — 여기서 결정 140 사람 말 검사를 입힌다
+  // (work.json 의 what·bottleneck 은 나리·톰이 손으로 적어 하네스 말이 섞이기 쉽다).
+  if (url.pathname === '/api/work' && req.method === 'GET') {
+    const line = (s) => { const v = String(s ?? '').trim(); return v ? (bossOk(v) ? v : NOT_YET) : null; };
+    const { streams, topBlockers } = bus.timelineOf();
+    const cleanStreams = streams.map((s) => ({
+      ...s,
+      items: s.items.map((it) => ({ ...it, what: line(it.what), bottleneck: it.bottleneck ? line(it.bottleneck) : null })),
+    }));
+    const cleanBlockers = topBlockers.map((b) => ({
+      ...b,
+      bottleneck: line(b.bottleneck),
+      waiting: b.waiting.map((w) => ({ ...w, what: line(w.what) })),
+    }));
+    return json(res, 200, { streams: cleanStreams, topBlockers: cleanBlockers });
+  }
+
   // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.
   // 분석 = "왜 자꾸 이렇게 되나"(헨리 분석 1판 analysis.svg · 하영 화면 글 틀 3절, 9단계 ③) — 다섯 팀을 같은 자로. 값은 approvals·rounds·pauses 에서만(bus.stuckOf·slowedOf·repeatsOf 순수).
   if (url.pathname === '/api/analysis' && url.searchParams.get('all') === '1') {
