@@ -169,6 +169,16 @@ function readProgress(team) {
   return p ? { ...p, fresh: bus.progressFresh(team) } : null;
 }
 
+/**
+ * 한 것(doneOf) 한 줄의 사람 이름. 승인 판정·대리 결정은 총괄실 사람이 한 것 — 개발 카드의 B 판정 'outside' 를 개발 캐스트로 풀면 제리가 "레오" 로 서서
+ * 현황 ② 사람 줄에 레오가 둘(개발 판정·총괄 인용) 섰다(나리 실측 r27-tower-412, 09-15 23:57). 화면의 열쇠(app.js home)와 같은 선: decision·proxy 는 hq, 나머지는 그 방 → hq 순.
+ */
+function doneName(team, it) {
+  if (!it.by) return null;
+  const home = (it.kind === 'decision' || it.kind === 'proxy') ? 'hq' : team;
+  return readCast(home).agents?.[it.by]?.name ?? readCast('hq').agents?.[it.by]?.name ?? readCast(team).agents?.[it.by]?.name ?? it.by;
+}
+
 /** teams/<팀>/journal/<자리>.md 의 맨 위 문단. 상황판의 "어제" 다. */
 function latestJournal(team) {
   const dir = path.join(paths(team).dir, 'journal');
@@ -347,7 +357,7 @@ const server = http.createServer((req, res) => {
     const win = { since: since ? (Number.isFinite(Number(since)) ? Number(since) : since) : null, until: until ? (Number.isFinite(Number(until)) ? Number(until) : until) : null, now };
     const items = listTeams().filter((t) => !bus.roomRules(t.id).speakers)
       .flatMap((t) => bus.doneOf(readLog(t.id), readCast(t.id).agents ?? {}, { team: t.id, approvals: listApprovals({ team: t.id }), ...win })
-        .map((it) => ({ ...it, teamName: t.name, name: it.by ? (readCast(t.id).agents?.[it.by]?.name ?? readCast('hq').agents?.[it.by]?.name ?? it.by) : null })))
+        .map((it) => ({ ...it, teamName: t.name, name: doneName(t.id, it) })))
       .sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
     return json(res, 200, { since: new Date(win.since != null ? new Date(win.since).getTime() : bus.dayStartSeoul(now)).toISOString(), until: new Date(win.until != null ? new Date(win.until).getTime() : now).toISOString(), items });
   }
@@ -361,7 +371,7 @@ const server = http.createServer((req, res) => {
     const since = num(url.searchParams.get('since')) ?? day0 - 6 * 3600_000, until = num(url.searchParams.get('until')) ?? Math.min(now, day0 + 9 * 3600_000);
     const rooms = listTeams().filter((t) => !bus.roomRules(t.id).speakers);
     const doneBy = rooms.map((t) => ({ team: t.id, name: t.name, items: bus.doneOf(readLog(t.id), readCast(t.id).agents ?? {}, { team: t.id, approvals: listApprovals({ team: t.id }), since, until, now })
-      .map((it) => ({ ...it, name: it.by ? (readCast(t.id).agents?.[it.by]?.name ?? readCast('hq').agents?.[it.by]?.name ?? it.by) : null })) }));
+      .map((it) => ({ ...it, name: doneName(t.id, it) })) }));
     const next = Object.fromEntries(rooms.map((t) => [t.id, bus.readProgress(t.id)?.next ?? []]));
     const images = rooms.flatMap((t) => listOut(t.id).filter((f) => /\.(png|jpe?g|gif|webp)$/i.test(f.name) && Date.parse(f.at) >= since && Date.parse(f.at) < until).map((f) => ({ team: t.id, name: f.name, at: f.at, url: `/out/${t.id}/${f.name.split('/').map(encodeURIComponent).join('/')}` })));
     const proxy = rooms.flatMap((t) => readLog(t.id).filter((e) => e.type === 'note' && e.meta?.proxy && Date.parse(e.ts) >= since && Date.parse(e.ts) < until).map((e) => ({ team: t.id, id: e.id, ts: e.ts, text: e.text, approval: e.meta.approval ?? null })));
