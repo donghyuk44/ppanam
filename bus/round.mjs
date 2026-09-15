@@ -433,8 +433,12 @@ switch (cmd) {
       const dn = doneOf(dlog, pcast, { team: 'dev', approvals: dApr, now: d0.getTime() + 20 * 60_000 });
       const dKinds = dn.map((x) => `${x.kind}:${x.by ?? '-'}`).join(',');
       const doneWant = dKinds === 'round:-,milestone:-,decision:outside,decision:chief,proxy:chief,request:-,report:guide,verdict:outside'
-        && dn[0].text.startsWith('라운드') && dn[2].ref === 'apr_p' && dn[7].text.startsWith('PASS — 됐다') && dn.every((x) => x.team === 'dev');
-      out.push(['한 것 한 목록(결정 92)', doneWant ?'✓ 8건 · ts 내림차순 · 늦은 판정·결정 청한 말·대표 말·열린 요청·어제 판정 제외 · 일곱 종류' : '✗ ' + dKinds]);
+        && dn[0].text === '회차를 닫았어요 — 주제' && dn[2].ref === 'apr_p' && dn[2].text === '결재 승인 — 푸시' && dn[7].text === '승인 — 판정을 냈어요' && dn.every((x) => x.team === 'dev');
+      out.push(['한 것 한 목록(결정 92)', doneWant ?'✓ 8건 · ts 내림차순 · 늦은 판정·결정 청한 말·대표 말·열린 요청·어제 판정 제외 · 일곱 종류 · 글은 사람 말(회차를 닫았어요 · 결재 승인 · 승인 — 판정)' : '✗ ' + dKinds + ' ' + JSON.stringify(dn.map((x) => x.text))]);
+      // 결정 140(R32) — 한 것의 글은 전부 자(bosswords.js bossOk)에 맞는다. 경로·번호·해시는 ref 로만. 나리 자(tools/boss-words-check.mjs)가 '누가뭘했나' 39줄을 세던 것.
+      const { bossOk: bossOk140 } = await import('../server/public/bosswords.js');
+      const dnBad = dn.filter((x) => !bossOk140(x.text)).map((x) => x.text);
+      out.push(['한 것 — 글은 사람 말(결정 140)', !dnBad.length ? '✓ 여덟 줄 다 자에 맞음 · 60자 안 · 경로·번호는 ref' : '✗ ' + JSON.stringify(dnBad)]);
       // 창 — since·until 로 자르면 "어젯밤" 보고서(결정 80)가 된다. 어제 말(e0)과 어제 판정(boss) 만.
       const dy = doneOf([...dlog, { id: 'd9', ts: new Date(d0.getTime() - 20 * 3600_000).toISOString(), actor: 'ops', type: 'message', text: '대표님, 어젯밤에 서버 살렸습니다.' }], pcast,
         { team: 'dev', approvals: dApr, since: d0.getTime() - 30 * 3600_000, until: d0.getTime() - 3600_000 });
@@ -455,9 +459,10 @@ switch (cmd) {
         { id: 'm5', ts: at(5), actor: 'guide', type: 'tool', text: '/x/server/index.mjs', meta: { tool: 'Edit' } },
         { id: 'm6', ts: at(6), actor: 'guide', type: 'tool', text: 'git status', meta: { tool: 'Bash' } },
       ], pcast, { team: 'dev', now: d0.getTime() + 20 * 60_000 });
-      const mkOk = mk.length === 2 && mk[0].id === 'file:ops:teams/dev/out/m7.md' && mk[0].ts === at(4) && mk[0].text === '산출물 — dev/out/m7.md' && mk[0].by === 'ops'
-        && mk[1].kind === 'commit' && mk[1].by === 'guide' && mk[1].text === "커밋 — 관제탑 ② '더 보기' 는 오늘 안에서만 — 어제는 보고서";
-      out.push(['한 것 — 커밋·산출물(나리 09-15)', mkOk ? '✓ 커밋 -m 글자(안의 따옴표 글자) · 산출물 같은 파일 마지막 한 번 · Read·out 밖·git status 안 셈' : '✗ ' + JSON.stringify(mk)]);
+      // 글은 사람 말(결정 140, R32): 산출물은 "글 한 장 — 이름"(경로는 ref) · 커밋은 " — "·"(" 앞 머리만("고쳐 올렸어요 — …", 전문은 ref)
+      const mkOk = mk.length === 2 && mk[0].id === 'file:ops:teams/dev/out/m7.md' && mk[0].ts === at(4) && mk[0].text === '글 한 장 — m7' && mk[0].ref === 'teams/dev/out/m7.md' && mk[0].by === 'ops'
+        && mk[1].kind === 'commit' && mk[1].by === 'guide' && mk[1].text === "고쳐 올렸어요 — 관제탑 ② '더 보기' 는 오늘 안에서만" && mk[1].ref === "관제탑 ② '더 보기' 는 오늘 안에서만 — 어제는 보고서";
+      out.push(['한 것 — 커밋·산출물(나리 09-15)', mkOk ? '✓ 커밋 -m 머리 글자(안의 따옴표 글자, 전문은 ref) · 산출물 이름만(경로는 ref) · 같은 파일 마지막 한 번 · Read·out 밖·git status 안 셈' : '✗ ' + JSON.stringify(mk)]);
       // 멈춰 있던 구간(blockedSpansOf — 보고서 띠의 빨간 띠, 헨리 report 1판): FAIL(blocked note → resumed note) · 답 없는 물음(asksBoss → 대표 말/대리 답) · 창과 겹치는 것만 · 안 풀린 건 to null · 라운드가 바뀌면 지난 물음은 닫힘
       const bsLog = [
         { id: 's1', ts: at(1), actor: 'system', type: 'note', text: 'FAIL — 대표 판단', meta: { blocked: true } },

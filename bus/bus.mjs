@@ -16,6 +16,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { findOutPaths, outItem } from '../server/public/outlink.js';
 import { timeWord, spanWord } from '../server/public/when.js';
+import { bossOk } from '../server/public/bosswords.js';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const TEAMS_PATH = path.join(ROOT, 'state', 'teams.json');
@@ -2321,29 +2322,40 @@ export function swapSection(md, heading, body) {
 export const SEOUL_OFFSET_MS = 9 * 3600_000;
 export const dayStartSeoul = (now = Date.now()) => Math.floor((now + SEOUL_OFFSET_MS) / 86_400_000) * 86_400_000 - SEOUL_OFFSET_MS;
 
+/** 판정·결재 낱말 — 하영 card-words.md 2판 머리(대표 09-16 07:4x 표준어): PASS 승인 · REVISE 반려 · FAIL 보류. 화면의 판정 카드(G3)와 같은 글자. */
+export const VERDICT_WORD = { PASS: '승인', REVISE: '반려', FAIL: '보류' };
+
+/**
+ * 누가 뭘 했나 — 한 것 한 목록. **글(text)은 대표가 읽는 사람 말 한 줄(결정 140, 60자 안)**이고 경로·번호·해시는 `ref` 에만 둔다(R32, 나리 자 39줄 → 0).
+ * 전엔 "산출물 — dev/out/m7.md"·"승인 [B] … → PASS"·"라운드 31 닫힘 — …" 처럼 하네스 말이 그대로 나가 화면이 전부 "아직 쉬운 말로 안 적음" 으로 가렸다.
+ */
 export function doneOf(log, cast, { team = null, since = null, until = null, approvals = [], now = Date.now() } = {}) {
   const agents = cast ?? {};
   const s = since != null ? new Date(since).getTime() : dayStartSeoul(now);
   const u = until != null ? new Date(until).getTime() : now;
   const inWin = (ts) => { const t = new Date(ts ?? 0).getTime(); return t >= s && t < u; };
   const one = (t, n) => String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+  // 첫 문장 한 줄 — 자에 맞을 때만, 아니면 null(부르는 쪽이 기본 글을 쓴다). 마침표 없이 긴 글은 첫 " — " 앞까지.
+  const plain = (t, n = 60) => { const f = one(t, 200).split(/(?<=[.!?])\s|\s—\s/)[0] ?? ''; const v = one(f, n); return v && bossOk(v) ? v : null; };
   const out = [];
   for (const e of log) {
     if (!inWin(e.ts)) continue;
     const m = e.meta ?? {};
     if (e.type === 'verdict') {
       if (m.stale) continue;   // 늦게 온 판정은 라운드가 안 받았다 — 한 것이 아니다
-      out.push({ id: `verdict:${e.id}`, kind: 'verdict', team, by: e.actor, ts: e.ts, text: `${m.verdict ?? '판정'} — ${one(e.text, 120)}`, ref: m.sha ?? null });
+      out.push({ id: `verdict:${e.id}`, kind: 'verdict', team, by: e.actor, ts: e.ts, text: `${VERDICT_WORD[m.verdict] ?? '판정'} — 판정을 냈어요`, ref: m.sha ?? null });
     } else if (e.type === 'milestone') {
-      out.push({ id: `milestone:${e.id}`, kind: 'milestone', team, by: null, ts: e.ts, text: one(e.text, 120), ref: m.index ?? null });
+      out.push({ id: `milestone:${e.id}`, kind: 'milestone', team, by: null, ts: e.ts, text: plain(e.text) ?? '단계 하나를 넘었어요', ref: m.index ?? null });
     } else if (e.type === 'round_end') {
-      out.push({ id: `round:${e.id}`, kind: 'round', team, by: null, ts: e.ts, text: `라운드 ${e.round ?? '?'} 닫힘 — ${one(e.text, 100)}`, ref: m.verdict ?? null });
+      const tail = plain(e.text, 48);
+      out.push({ id: `round:${e.id}`, kind: 'round', team, by: null, ts: e.ts, text: `회차를 닫았어요${tail ? ' — ' + tail : ''}`, ref: m.verdict ?? null });
     } else if (e.type === 'note' && m.request && m.status === 'closed') {
-      out.push({ id: `request:${m.request}`, kind: 'request', team, by: null, ts: e.ts, text: one(e.text, 160), ref: m.request });
+      const tail = plain(String(e.text).split(' — ').slice(1).join(' — '), 44);   // "요청 블록 req_x 닫힘 — 톰 확인" 의 뒷말만
+      out.push({ id: `request:${m.request}`, kind: 'request', team, by: null, ts: e.ts, text: `부탁 하나를 닫았어요${tail ? ' — ' + tail : ''}`, ref: m.request });
     } else if (e.type === 'note' && m.proxy) {
-      out.push({ id: `proxy:${e.id}`, kind: 'proxy', team, by: 'chief', ts: e.ts, text: one(e.text, 160), ref: m.approval ?? m.proxyAnswer ?? null });
+      out.push({ id: `proxy:${e.id}`, kind: 'proxy', team, by: 'chief', ts: e.ts, text: plain(e.text) ?? '대표님 대신 정했어요', ref: m.approval ?? m.proxyAnswer ?? null });
     } else if (e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && agents[e.actor] && callsBoss(e.text, agents) && !asksBoss(e.text, agents)) {
-      out.push({ id: `report:${e.id}`, kind: 'report', team, by: e.actor, ts: e.ts, text: one(e.text, 160), ref: null });
+      out.push({ id: `report:${e.id}`, kind: 'report', team, by: e.actor, ts: e.ts, text: plain(e.text) ?? '대표님께 보고했어요', ref: null });
     } else if (e.type === 'tool' && agents[e.actor]) {
       // 만든 것도 한 것이다(나리 09-15) — 커밋 한 줄(도구 줄엔 명령 첫 줄 160자뿐이라 -m 뒤 글자를 뽑는다), 산출물 파일 갱신(Write/Edit 가 out/ 을 가리킴)
       const tool = String(m.tool ?? ''), text = String(e.text ?? '');
@@ -2352,12 +2364,17 @@ export function doneOf(log, cast, { team = null, since = null, until = null, app
         let msg = mm ? mm[2] : null;
         if (msg) { const j = msg.indexOf(mm[1]); if (j >= 0) msg = msg.slice(0, j); }   // 여는 따옴표와 같은 것이 닫는 것 — 안에 든 다른 따옴표는 글자
         if (msg != null) msg = msg.replace(/[\s\\]+$/, '') || null;
-        out.push({ id: `commit:${e.id}`, kind: 'commit', team, by: e.actor, ts: e.ts, text: `커밋 — ${msg ? one(msg, 120) : '(메시지 못 읽음)'}`, ref: null });
+        // 커밋 글은 " — " 나 "(" 앞 머리만 — 뒤는 해시·경로라 대표 말이 아니다. 머리도 자에 안 맞으면 기본 글(화면이 원문을 펼칠 수 있게 ref 에 전문)
+        const head = msg ? one(msg.split(/\s—\s|\(/)[0], 48) : '';
+        out.push({ id: `commit:${e.id}`, kind: 'commit', team, by: e.actor, ts: e.ts, text: `고쳐 올렸어요${head && bossOk(head) ? ' — ' + head : ''}`, ref: msg ? one(msg, 200) : null });
       } else if ((tool === 'Write' || tool === 'Edit' || tool === 'NotebookEdit') && /\/teams\/[^/]+\/out\//.test(text)) {
         const rel = text.slice(text.indexOf('/teams/') + 1);   // teams/<팀>/out/… 부터
         const key = `file:${e.actor}:${rel}`;
         const i = out.findIndex((it) => it.id === key);
-        const it = { id: key, kind: 'file', team, by: e.actor, ts: e.ts, text: `산출물 — ${one(rel.replace(/^teams\//, ''), 120)}`, ref: rel };
+        // 파일은 이름만(확장자 뗀 것) — "그림 한 장 — room" · "글 한 장 — ui-spec". 경로는 ref(화면의 링크)에.
+        const base = rel.split('/').pop() ?? rel, ext = (base.match(/\.([a-z0-9]+)$/i)?.[1] ?? '').toLowerCase();
+        const what = /^(png|jpe?g|gif|webp|svg)$/.test(ext) ? '그림 한 장' : /^(md|txt|html)$/.test(ext) ? '글 한 장' : '파일 하나';
+        const it = { id: key, kind: 'file', team, by: e.actor, ts: e.ts, text: `${what} — ${one(base.replace(/\.[a-z0-9]+$/i, ''), 40)}`, ref: rel };
         if (i >= 0) out[i] = it; else out.push(it);   // 같은 파일을 여러 번 고쳐도 창 안 마지막 한 번
       }
     }
@@ -2365,7 +2382,9 @@ export function doneOf(log, cast, { team = null, since = null, until = null, app
   for (const r of approvals) {
     for (const d of r.decisions ?? []) {
       if (!inWin(d.ts)) continue;
-      out.push({ id: `decision:${r.id}:${d.by}`, kind: 'decision', team: r.team ?? team, by: d.by, ts: d.ts, text: `승인 [${r.grade}] ${one(r.what, 100)} → ${d.decision}`, ref: r.id });
+      // 결재 — 제목은 --boss 한 줄이 자에 맞으면 그것, 아니면 원문 첫 머리(화면 bossTitle 과 같은 규칙) · 판정 낱말은 승인/반려. 등급·번호는 ref 로.
+      const title = bossOk(r.boss) ? r.boss : plain(r.what, 44);
+      out.push({ id: `decision:${r.id}:${d.by}`, kind: 'decision', team: r.team ?? team, by: d.by, ts: d.ts, text: `결재 ${VERDICT_WORD[d.decision] ?? d.decision}${title ? ' — ' + title : ''}`, ref: r.id });
     }
   }
   out.sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
