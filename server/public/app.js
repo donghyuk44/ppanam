@@ -34,6 +34,7 @@ let infra = null;             // 밑바닥 넷 — 서버가 2분마다 재서 �
 let pauses = [];              // 멈춘 구간(state/pauses.json, boot.pauses) — 기다린 시간·늦음에서 뺀다
 let delegation = null;        // 위임(state/delegation.json, boot.delegation, 결정 136) — 종 배지가 위임 중엔 돈·바깥만 센다(나리 결정 ②)
 let done = { since: null, items: [], fetchedAt: 0, more: false };   // 누가 뭘 했나(/api/done) — 관제탑 ②. more = "더 보기" 펼침(오늘 안에서만 — 어제는 보고서)
+let work = { data: null, fetchedAt: 0 };   // 작업 보드(/api/work = bus.timelineOf, state/work.json) — 대시보드 맨 위 보드 블록(카드-체계 1-1) · 타임라인 탭. 404 면 블록이 안 뜬다
 let openTeamRows = new Set();  // 관제탑 ④ 팀 줄 — 펼쳐 둔 팀(상황판 네 칸)
 let requestsAll = [];         // 요청 블록 접은 목록 (6-1절) — 관제탑 요청 탭·전체 탭 타일
 let requestsLoaded = false;
@@ -1506,6 +1507,45 @@ function loadDone() {
   done.since = since; done.fetchedAt = Date.now();
   fetch(`/api/done?since=${since}`).then((r) => r.json()).then((r) => { done.items = r.items ?? []; if (view === 'tower' && towerTab === 'all') renderTower(); else if (view === 'analysis') loadAnalysis(); }).catch(() => {});   // 분석 첫 층 그림도 같은 점을 쓴다
 }
+/** 작업 보드 — 30초마다. /api/work 가 없으면(솔라 배선 전 404) data 는 null 로 두고 블록을 안 그린다. */
+function loadWork() {
+  if (Date.now() - work.fetchedAt < 30_000) return;
+  work.fetchedAt = Date.now();
+  fetch('/api/work').then((r) => (r.ok ? r.json() : null)).then((r) => { const had = !!work.data; work.data = r?.streams ? r : null; if ((had || work.data) && view === 'tower' && towerTab === 'all') renderTower(); }).catch(() => {});
+}
+/**
+ * 대시보드 맨 위 작업 보드 한 블록(카드-체계-0916 1-1, 대표 08:2x "간트 시스템 만든 거 그것도 대시보드에서 보여야 해"). state/work.json 그대로(bus.timelineOf) —
+ * 줄기마다 한 줄: 진행 N · 감사 대기 N · 통과 N · 막힘(있으면 빨강) · 시작 가능 N. 밑에 "누가 누구를 기다리나" 한두 줄(topBlockers). 누르면 타임라인 탭. 비어 있는 줄기는 안 그린다.
+ */
+function workBoardBlock() {
+  const w = work.data;
+  if (!w?.streams?.length) return null;
+  const sec = el('section', 'dash__card'); sec.dataset.block = 'work';
+  sec.appendChild(el('div', 'dash__k', '작업 보드'));
+  const nameOf = (team, seat) => summaries[team]?.cast?.[seat]?.name ?? summaries.hq?.cast?.[seat]?.name ?? seat;
+  const streams = w.streams.filter((s) => s.items?.length && (s.items.length !== (s.counts?.['통과'] ?? 0) + (s.counts?.['안 함'] ?? 0)));   // 다 끝난 줄기는 안 그린다
+  for (const s of streams.slice(0, 7)) {
+    const c = s.counts ?? {};
+    const row = el('button', 'dash__row work__row'); row.type = 'button';
+    const head = el('span', 'dash__head');
+    head.appendChild(el('b', null, s.name));
+    const bits = [];
+    if (c['진행']) bits.push(`진행 ${c['진행']}`);
+    if (c['감사 대기']) bits.push(`감사 대기 ${c['감사 대기']}`);
+    if (c['통과']) bits.push(`통과 ${c['통과']}`);
+    if (c['시작가능']) bits.push(`시작 가능 ${c['시작가능']}`);
+    head.appendChild(el('span', 'dash__stage', bits.join(' · ')));
+    if (c['막힘']) { const b = el('span', 'wait'); b.appendChild(el('i', 'dot dot--bad')); b.append(`막힘 ${c['막힘']}`); head.appendChild(b); }
+    row.appendChild(head);
+    row.addEventListener('click', () => setView('dashboard'));
+    sec.appendChild(row);
+  }
+  for (const b of (w.topBlockers ?? []).slice(0, 2)) {
+    const who = (b.waiting ?? []).map((x) => nameOf(x.team, x.seat)).filter((v, i, a) => a.indexOf(v) === i).join('·');
+    sec.appendChild(el('div', 'dash__empty work__wait', `${b.bottleneck} 뒤에 ${b.count}건${who ? ` — ${who} 기다림` : ''}`));
+  }
+  return sec;
+}
 
 /* ── 그림 부품 — 헨리 '숫자를 어떻게 보여 주나 — 한 벌'(numbers.md). 이 문서 밖 모양은 안 쓴다.
  * 진행 막대(높이 5, 채움 = 끝난 만큼, 옆에 N/M 하나) · 시간 띠(가로가 오늘 우리 시각, 한 것 = 점, 막힌 것 = 빨간 점, 멈춘 구간 = 빨간 띠) · 큰 숫자 셋 · 강조(그것만 색). */
@@ -1535,10 +1575,14 @@ function renderTowerAll(grid) {
   const stuck = blocked.filter((it) => it.waitOn !== 'boss' && it.kind !== 'request');
   const mine = blocked.filter((it) => it.waitOn === 'boss');
   const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
-  loadDone();
+  loadDone(); loadWork();
   // 대표는 '누가 뭘 했나' 에 안 선다(톰 09-15) — 팀원만. 대표의 결정은 결재 카드가 이미 보여 준다.
   const today = done.items.filter((it) => new Date(it.ts).getTime() >= day0 && it.by !== 'boss');
   // 큰 숫자 타일은 뺐다 — 하영 내용 2판 9절 5(큰 숫자 빼기)와 어긋난다(톰 09-15). 수는 칸 제목에만(막힌 것 N · 내 차례 N).
+
+  // ⓪ 작업 보드 — 맨 위 한 블록(카드-체계 1-1, 대표 08:2x). /api/work 가 있을 때만
+  const wb = workBoardBlock();
+  if (wb) grid.appendChild(wb);
 
   // ① 뭐가 막혔나 — 대표가 풀 것이 아닌 막힘(팀·톰·운영·밑바닥). 강조: 그 팀 점만 색, 빨간 점 + N시간째. 대표 몫(waitOn boss)은 ③.
   if (stuck.length) {
