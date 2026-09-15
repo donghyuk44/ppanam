@@ -303,18 +303,6 @@ switch (cmd) {
       out.push(['사람별 집계', pWant ? '✓ 오늘 수 · 도구 줄 doing · (패스) 제외 · 판정 수 감사만 · 대표 호출 인용' : '✗ ' + JSON.stringify(pe)]);
       const pe2 = peopleOf([...plog, { id: 'e7', ts: at(6), actor: 'boss', type: 'message', text: '알겠다.' }], pcast, { now: d0.getTime() + 10 * 60_000 });
       out.push(['대표가 답하면 호출 사라짐', pe2.guide.bossCall === null && pe2.boss.lastText === '알겠다.' && pe2.boss.todaySay === 1 ? '✓' : '✗ ' + JSON.stringify(pe2.boss)]);
-      // 호명 표시(결정 128) — 관제탑 카드의 mention. "이름," ·"@이름" 잡음, 자기 이름 호출은 안 세고, 안 불린 자리는 null.
-      const mlog = [plog[1],
-        { id: 'm1', ts: at(6), actor: 'ops', type: 'message', text: '안젤, 확인해 줘요.' },
-        { id: 'm2', ts: at(7), actor: 'guide', type: 'message', text: '@다니엘 이거 봐줘요' },
-        { id: 'm3', ts: at(8), actor: 'guide', type: 'message', text: '하영, 셀프 호출은 안 세야 함' },
-        { id: 'm4', ts: at(9), actor: 'ops', type: 'message', text: '그냥 문장 이름 아님' },
-      ];
-      const pm = peopleOf(mlog, pcast, { now: d0.getTime() + 10 * 60_000 });
-      const mWant = pm.review.mention?.by === 'ops' && pm.review.mention?.ts === at(6)
-        && pm.outside.mention?.by === 'guide' && pm.outside.mention?.ts === at(7)
-        && pm.guide.mention === null && pm.ops.mention === null;
-      out.push(['호명 표시(결정 128, peopleOf.mention)', mWant ? '✓ 이름,·@이름 잡음 · 자기 호출 제외 · 안 불리면 null' : '✗ ' + JSON.stringify({ review: pm.review.mention, outside: pm.outside.mention, guide: pm.guide.mention, ops: pm.ops.mention })]);
       // 보고와 결정 요청 (결정 52) — "대표님," 으로 시작해도 물음이 없으면 보고라 종(bossCall)이 안 울리고 오늘 보고 줄(bossNotes, ask:false)에만.
       // 하영·헨리 보고가 승인 요청으로 읽힌 09-13 17:28 건. 종 배지 · 개인 카드 · 오늘 보고 줄이 같은 표(ASK_RE)를 쓴다.
       const rlog = [plog[1], { id: 'r1', ts: at(1), actor: 'guide', type: 'message', text: '대표님, 용어 목록 정리했습니다. out/opsroom-content.md 에 있습니다.' }];

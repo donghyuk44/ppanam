@@ -15,7 +15,6 @@ import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { findOutPaths, outItem } from '../server/public/outlink.js';
-import { parseMention } from '../server/public/mention.js';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const TEAMS_PATH = path.join(ROOT, 'state', 'teams.json');
@@ -1512,31 +1511,19 @@ export function peopleOf(log, cast, { now = Date.now() } = {}) {
 
   const people = Object.fromEntries(ids.map((a) => [a, {
     busy: false, alive: null, lastSignal: null, state: null, lastSaidAt: null, doing: null,
-    todaySay: 0, todayVerdict: JUDGES.has(a) ? 0 : null, bossCall: null, journalFirst: null, mention: null,
+    todaySay: 0, todayVerdict: JUDGES.has(a) ? 0 : null, bossCall: null, journalFirst: null,
   }]));
   const boss = { lastSaidAt: null, lastText: null, todaySay: 0, todayDecisions: 0 };
   const unsaid = new Set([...ids, 'boss']);   // 마지막 발언을 아직 못 찾은 자리
-  // 호명(결정 128) — 관제탑 카드에 "○○가 불렀어요" 표시. 이름 → 자리 id, 대표(boss) 도 부를 수 있어 walk 밖에서 본다.
-  const idByName = new Map(Object.entries(agents).map(([id, a]) => [a.name, id]));
-  const notMentioned = new Set(ids);
 
   let inRound = true, bossAnswered = false;
   for (let i = log.length - 1; i >= 0; i--) {
     const e = log[i];
     const ts = e.ts ?? '';
-    if (!isToday(ts) && !inRound && unsaid.size === 0 && notMentioned.size === 0) break;
+    if (!isToday(ts) && !inRound && unsaid.size === 0) break;
     if (e.type === 'round_start') { inRound = false; continue; }
     const spoke = (e.type === 'message' || e.type === 'verdict') && !isPass(e);
     if (inRound && e.type === 'note' && e.meta?.proxyAnswer) bossAnswered = true;   // 톰·제리의 대리 답(결정 85) — teamSummary 와 같은 규칙
-    // 말 첫머리 호명 — 화자가 누구든(대표 포함) 본다. 자기 이름을 부른 것도 그대로 잡지만 흔치 않다.
-    if (e.type === 'message' && notMentioned.size) {
-      const mm = parseMention(e.text);
-      const targetId = mm && idByName.get(mm.name);
-      if (targetId && targetId !== e.actor && notMentioned.has(targetId)) {
-        people[targetId].mention = { ts, by: e.actor };
-        notMentioned.delete(targetId);
-      }
-    }
 
     if (e.actor === 'boss') {
       if (e.type !== 'message') continue;
