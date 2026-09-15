@@ -382,11 +382,16 @@ switch (cmd) {
         { id: 's6', ts: at(8), actor: 'system', type: 'round_start', text: '라운드 2 시작' },
         { id: 's7', ts: at(9), actor: 'guide', type: 'message', text: '대표님, 이건 어느 쪽으로 할까요?' },
       ];
+      const bsAt = (iso) => String(Math.round(((Date.parse(iso) - Date.parse(at(0))) / 60000) * 10) / 10);   // at(n) 의 n 으로 되돌림
       const bs = blockedSpansOf(bsLog, pcast, { team: 'dev', since: at(0), until: at(10), now: Date.parse(at(10)) });
-      const bsKinds = bs.map((s) => `${s.kind}:${s.from === at(1) ? 1 : s.from === at(4) ? 4 : s.from === at(7) ? 7 : s.from === at(9) ? 9 : '?'}:${s.to == null ? 'open' : s.to === at(3) ? 3 : s.to === at(6) ? 6 : '?'}`).join(',');
+      const bsKinds = bs.map((s) => `${s.kind}:${bsAt(s.from)}:${s.to == null ? 'open' : bsAt(s.to)}`).join(',');
       const bsWin = blockedSpansOf(bsLog, pcast, { team: 'dev', since: at(2), until: at(5), now: Date.parse(at(10)) }).map((s) => s.kind + ':' + (s.to == null ? 'open' : 'closed')).join(',');
-      const bsOk = bsKinds === 'fail:1:3,ask:4:6,ask:7:open,ask:9:open' && bs[1].text === '대표님, 유니티로 갈까요?' && bs[1].by === 'guide' && bs[0].by === null && bsWin === 'fail:closed,ask:closed';
-      out.push(['멈춰 있던 구간(blockedSpansOf)', bsOk ? '✓ FAIL 구간 · 물음→대표 답 · 라운드 넘긴 물음은 열린 채 · 창과 겹치는 것만 · 인용은 대표 문단' : '✗ ' + JSON.stringify({ bsKinds, bsWin, bs })]);
+      // 멈춘 구간(pauses)은 잘라낸다 — FAIL 1→3 에 멈춤 2→3 이 겹치면 1→2 만, 물음 4→6 이 멈춤 4→6 에 통째로 들면 사라짐, 열린 물음 9→ 에 멈춤 9.5→ 이면 9→9.5 만
+      const bsPz = blockedSpansOf(bsLog, pcast, { team: 'dev', since: at(0), until: at(10), now: Date.parse(at(10)), pauses: [{ from: at(2), to: at(3) }, { from: at(4), to: at(6) }, { from: at(9.5), to: at(11) }] });
+      const bsPzKinds = bsPz.map((s) => `${s.kind}:${bsAt(s.from)}:${s.to == null ? 'open' : bsAt(s.to)}`).join(',');
+      const bsOk = bsKinds === 'fail:1:3,ask:4:6,ask:7:8,ask:9:open' && bs[1].text === '대표님, 유니티로 갈까요?' && bs[1].by === 'guide' && bs[0].by === null && bsWin === 'fail:closed,ask:closed'
+        && bsPzKinds === 'fail:1:2,ask:7:8,ask:9:9.5';
+      out.push(['멈춰 있던 구간(blockedSpansOf)', bsOk ? '✓ FAIL 구간 · 물음→대표 답 · 라운드 바뀌면 닫힘 · 창과 겹치는 것만 · 멈춘 구간은 잘라냄 · 인용은 대표 문단' : '✗ ' + JSON.stringify({ bsKinds, bsWin, bsPzKinds })]);
       // 대표에게 한 그 문단(bossParagraph) — "헨리, 셌어…" 넷째 문단이 "대표님, 한 줄요 — …?" 였는데 첫 줄이 대표 차례로 섰다(나리 09-15)
       const bp = bossParagraph('헨리, 셌어. 낱말 사전 밖 말 0.\n\n걸리는 거 하나 — 메모야?\n\n대표님, 한 줄요 — 유진 색이 겹쳐요. 계속 쓸까요?\n\n클레멘타인 끝.', pcast);
       const bp2 = bossParagraph('솔라, 됐어.\n\n대표님, 올렸습니다.', pcast);
@@ -943,6 +948,12 @@ switch (cmd) {
           && s1[2].plannedTo === null && s1[2].gate === '대표 방향 뒤 정함' && s1[3].plannedFrom === '2026-09-14T04:45:00.000Z'
           && p2.stages[0].status === 'blocked' && p2.stages[0].blockedWhy === '디스크 꽉 참' && p2.stages[0].late === 4 * 3600_000
           && p3.stages.length === 0 && p3.roundMs === DEFAULT_ROUND_MS && timeboxRounds('대표가 방식을 고른 뒤 2 라운드') === null;
+        // 문은 열렸으면 문이 아니다(나리 실측 09-15 23:10 — 경영 2단계가 착수됐는데 '대표가 정한 뒤'): status now 면 timebox 에 '대표' 가 있어도 running(숫자 있으면 그 수, 없으면 1 라운드) · timebox 없는 wait 는 planned 인데 날짜 없음(지어내지 않음) · '대표' 글자 있는 wait 만 gated
+        const p4 = plansOf({ roadmap: { milestones: [{ n: 2, title: '틀', status: 'now', timebox: '대표가 방식을 고른 뒤 2 라운드' }, { n: 3, title: '매뉴얼', status: 'wait' }, { n: 4, title: '문', status: 'wait', timebox: '대표 방향 뒤' }] }, state: { phase: 'running', round: 3, milestone: 1, startedAt: '2026-09-14T01:00:00Z' }, rounds: pRounds, now: pNow });
+        const p4Ok = p4.stages.map((s) => s.status).join(',') === 'running,planned,gated' && p4.stages[0].plannedTo === '2026-09-14T04:00:00.000Z' && p4.stages[0].gate === null
+          && p4.stages[1].plannedFrom === null && p4.stages[1].gate === null && p4.stages[2].gate === '대표 방향 뒤';
+        const p5 = plansOf({ roadmap: { milestones: [{ n: 2, title: '틀', status: 'now' }] }, state: { phase: 'running', round: 3, milestone: 2, startedAt: '2026-09-14T01:00:00Z' }, rounds: pRounds, now: pNow });
+        const p5Ok = p5.stages[0].status === 'running' && p5.stages[0].plannedTo === '2026-09-14T02:30:00.000Z';   // timebox 없는 지금 단계 = 1 라운드
         // '팀별 단계' 절 — 서버가 roadmap 에서 만들어 plan-table.md 의 그 절만 바꿔 끼운다(톰 09-14). 위·아래 절은 그대로.
         const tbl = stageTable([{ id: 'dev', name: '개발', room: '개발 작전실', ...p1 }, { id: 'sera', name: '세라', room: '비서실', ...p3 }], { now: pNow });
         const md = '# 표\n\n## 대표님이 물으신 것\n\n| a |\n| --- |\n| 1 |\n\n## 팀별 단계\n\n| 옛 | 표 |\n| --- | --- |\n| 손 | 글 |\n\n## 대표님 손에 있는 것\n\n| b |\n| --- |\n| 2 |\n';
@@ -966,7 +977,7 @@ switch (cmd) {
           && roundLengthMs(pRoundsPaused, { pauses: pz }) === 1.5 * 3600_000
           && blockedOf2({ teams: [{ id: 'dev', name: '개발', room: '개발실' }], summaries: { dev: { cast: {}, progress: { at: '2026-09-14T03:00:00Z', blocked: ['진짜'] } } } }, { now: pNow2, pauses: pz })[0].wait === (34 - 32) * 3600_000;
         out.push(['멈춘 시간 빼기(pausedMs)', pauseOk ? '✓ 겹친 만큼만 · 늦음 37h→2h · 회차 33.5h→1.5h · 기다림 34h→2h' : '✗ ' + JSON.stringify({ pmOk, late: pLate.stages[0].late / 3600_000, late0: pLate0.stages[0].late / 3600_000, rl: roundLengthMs(pRoundsPaused, { pauses: pz }) / 3600_000 })]);
-        out.push(['앞날 띠(plansOf)', plansOk ? '✓ 회차 평균 90분 · 지난 것 없음 · 지금→다음 잇기 · 반 라운드 · 대표 timebox 는 gated · 막힘 blocked+late 4h · 빈 계획표' : '✗ ' + JSON.stringify({ p1, p2, p3 })]);
+        out.push(['앞날 띠(plansOf)', plansOk && p4Ok && p5Ok ? '✓ 회차 평균 90분 · 지난 것 없음 · 지금→다음 잇기 · 반 라운드 · 대표 timebox 는 gated · 막힘 blocked+late 4h · 빈 계획표 · 착수된 단계는 문이 아님 · timebox 없으면 날짜 없음' : '✗ ' + JSON.stringify({ plansOk, p4Ok, p5Ok, p4: p4.stages, p5: p5.stages })]);
         // 비서실 규칙(결정 132, 계약 0절) — roomRules·allowedIn 순수. 실제 teams.json 의 sera 가 그 규칙을 갖는지도 본다.
         const sr = roomRules('sera'), hr = roomRules('hq'), dr = roomRules('dev');
         const rulesOk = sr.owner === 'secretary' && hr.owner === 'chief' && dr.owner === 'guide' && !hr.speakers && !dr.only

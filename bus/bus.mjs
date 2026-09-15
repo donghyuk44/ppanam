@@ -1707,9 +1707,12 @@ export function plansOf({ roadmap, state, rounds = [], progress = null, now = Da
   const stages = [];
   let cursor = null;   // 앞 단계가 끝나는 시각 — 다음 단계는 여기서 시작
   for (const m of ms) {
+    // 지금 단계(status now — 착수 카드가 통과됐다)는 timebox 에 "대표" 가 있어도 문이 아니다 — 문은 이미 열렸다(나리 실측 09-15 23:10: 경영 2단계가 착수됐는데 '대표가 정한 뒤' 로 섰다).
+    // timebox 가 아예 없으면 문이 아니라 **잡히지 않은 것** — 날짜 없이 'N단계' 만(지어내지 않는다). 문(gated)은 글자에 "대표" 가 있을 때만.
     const isNow = m.status === 'now' || m.n === state?.milestone;
-    const box = timeboxRounds(m.timebox);
-    const gate = box == null ? (String(m.timebox ?? '').trim() || '대표가 정한 뒤') : null;
+    const tb = String(m.timebox ?? '').trim();
+    const box = timeboxRounds(m.timebox) ?? (m.status === 'now' ? (Number(/(\d+(?:\.\d+)?)\s*라운드/.exec(tb)?.[1]) || 1) : null);
+    const gate = box == null && /대표/.test(tb) ? tb : null;
     let from = null, to = null;
     if (box != null) {
       from = isNow ? (state?.startedAt && phase !== 'idle' ? Date.parse(state.startedAt) : now) : (cursor ?? now);
@@ -1818,7 +1821,7 @@ export function doneOf(log, cast, { team = null, since = null, until = null, app
  * 창(since ≤ … < until)과 겹치는 것만 — 창 앞에서 시작해 창 안에서 풀린 것도 든다. from·to 는 ISO. text 는 왜 멈췄나 한 줄, by 는 사람(FAIL 은 null).
  * @returns [{ team, kind: 'fail'|'ask', from, to, text, by, ref }] — from 오름차순
  */
-export function blockedSpansOf(log, cast, { team = null, since = null, until = null, now = Date.now() } = {}) {
+export function blockedSpansOf(log, cast, { team = null, since = null, until = null, now = Date.now(), pauses = [] } = {}) {
   const s = since != null ? new Date(since).getTime() : dayStartSeoul(now), u = until != null ? new Date(until).getTime() : now;
   const ms = (ts) => new Date(ts ?? 0).getTime();
   const one = (t, n) => String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
@@ -1828,7 +1831,8 @@ export function blockedSpansOf(log, cast, { team = null, since = null, until = n
   for (const e of log) {
     if (e.type === 'note' && e.meta?.blocked) { if (!fail) fail = { team, kind: 'fail', from: e.ts, to: null, text: one(e.text, 120), by: null, ref: e.id }; continue; }
     if (e.type === 'note' && e.meta?.resumed) { if (fail) { fail.to = e.ts; spans.push(fail); fail = null; } continue; }
-    if (e.type === 'round_start') { if (ask) { spans.push(ask); ask = null; } continue; }   // 라운드가 바뀌면 지난 물음은 그 라운드 것 — teamSummary 와 같은 선
+    // 라운드가 닫히거나 새로 열리면 그 라운드의 막힘·물음은 거기서 끝난다(라운드 닫힘이 곧 풀림 — 마케팅 '반박 3회' 가 사흘째 열린 채 섰다, 나리 09-15). teamSummary 와 같은 선
+    if (e.type === 'round_end' || e.type === 'round_start') { if (fail) { fail.to = e.ts; spans.push(fail); fail = null; } if (ask) { ask.to = e.ts; spans.push(ask); ask = null; } continue; }
     if (e.type === 'message' && e.actor === 'boss' && !e.meta?.via) { if (ask) { ask.to = e.ts; spans.push(ask); ask = null; } continue; }
     if (e.type === 'note' && e.meta?.proxyAnswer) { if (ask) { ask.to = e.ts; spans.push(ask); ask = null; } continue; }
     if (!ask && e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && cast?.[e.actor] && asksBoss(e.text, cast)) {
@@ -1837,5 +1841,22 @@ export function blockedSpansOf(log, cast, { team = null, since = null, until = n
   }
   if (fail) spans.push(fail);
   if (ask) spans.push(ask);
-  return spans.filter((sp) => ms(sp.from) < u && (sp.to == null || ms(sp.to) >= s)).sort((a, b) => String(a.from).localeCompare(String(b.from)));
+  // 멈춘 구간(state/pauses.json — 대표가 쉬어라 한 시간)은 막힘이 아니다 — 그 구간을 잘라낸다. 창 전체가 멈춤이면 막힌 것 0 (나리 09-15: 멈춘 하루가 '네 팀이 밤새 막혔다' 로 섰다)
+  const clip = (sp) => {
+    let pieces = [{ from: ms(sp.from), to: sp.to == null ? null : ms(sp.to) }];
+    for (const p of pauses) {
+      const pf = ms(p.from), pt = ms(p.to);
+      if (!Number.isFinite(pf) || !Number.isFinite(pt) || pt <= pf) continue;
+      pieces = pieces.flatMap(({ from, to }) => {
+        const end = to ?? u;
+        if (pt <= from || pf >= end) return [{ from, to }];
+        const out = [];
+        if (pf > from) out.push({ from, to: pf });
+        if (pt < end) out.push({ from: pt, to });
+        return out;
+      });
+    }
+    return pieces.map((pc) => ({ ...sp, from: new Date(pc.from).toISOString(), to: pc.to == null ? null : new Date(pc.to).toISOString() }));
+  };
+  return spans.flatMap(clip).filter((sp) => ms(sp.from) < u && (sp.to == null || ms(sp.to) > s)).sort((a, b) => String(a.from).localeCompare(String(b.from)));
 }

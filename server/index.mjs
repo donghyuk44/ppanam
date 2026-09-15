@@ -369,7 +369,8 @@ const server = http.createServer((req, res) => {
     const nightDay = yesterdayKey(until - 1);
     let nightly = null; try { nightly = { day: nightDay, file: `hq/out/nightly/${nightDay}.md`, md: fs.readFileSync(path.join(paths('hq').out, 'nightly', `${nightDay}.md`), 'utf8') }; } catch { /* 아직 자정이 안 왔거나 서버가 없었다 */ }
     // 보고서 탭(헨리 report 1판, 새 7단계) — 띠의 빨간 구간(FAIL·답 없는 물음, bus.blockedSpansOf 순수) · 팀 줄(단계 N/M · 회차 · 지금 단계 · 방·색). 총괄실도 줄 하나(단계 없음).
-    const blocked = rooms.filter((t) => !isOffice(t.id)).flatMap((t) => bus.blockedSpansOf(readLog(t.id), readCast(t.id).agents ?? {}, { team: t.id, since, until, now }).map((sp) => ({ ...sp, teamName: t.name, name: sp.by ? (readCast(t.id).agents?.[sp.by]?.name ?? sp.by) : null })));
+    const pausesNow = bus.readPauses();
+    const blocked = rooms.filter((t) => !isOffice(t.id)).flatMap((t) => bus.blockedSpansOf(readLog(t.id), readCast(t.id).agents ?? {}, { team: t.id, since, until, now, pauses: pausesNow }).map((sp) => ({ ...sp, teamName: t.name, name: sp.by ? (readCast(t.id).agents?.[sp.by]?.name ?? sp.by) : null })));
     const teamRows = listTeams().filter((t) => !bus.roomRules(t.id).speakers).map((t) => {
       const s = teamSummary(t.id), rm = readRoadmap(t.id);
       const nowM = rm.milestones?.find((m) => m.n === s.milestone) ?? null;

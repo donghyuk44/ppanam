@@ -2199,6 +2199,13 @@ function renderReport(r) {
   }
   sec3.appendChild(bands);
   sec3.appendChild(el('div', 'rep__legend', '점 = 낸 것 하나 · 빨간 띠 = 멈춰 있던 시간 · 색 = 팀'));
+  // 창이 통째로(또는 거의) 쉰 시간이면 막힌 것이 아니라 쉰 것 — 한 줄로(나리 09-15: 멈춘 하루가 '네 팀이 밤새 막혔다' 로 읽혔다). 서버도 그 구간은 띠에서 잘라냈다
+  const rested = pausedMs(since, until, pauses);
+  if (rested > 0) {
+    const p = pauses.find((pz) => Date.parse(pz.to) > since && Date.parse(pz.from) < until);
+    const whole = rested >= (until - since) * 0.95;
+    sec3.appendChild(el('div', 'rep__rest', `${whole ? '이 창은 쉰 시간이에요' : `이 창의 ${forShort(rested).replace(/째$/, '')}은 쉰 시간이에요`} — ${p ? `${whenKo(p.from)} → ${whenKo(p.to)}${p.why ? ' · ' + String(p.why).split('(')[0].trim() : ''}` : ''}`));
+  }
   for (const s of spans) {
     const row = el('button', 'dash__row rep__stuck'); row.type = 'button';
     const head = el('span', 'dash__head'); head.appendChild(el('i', 'dot dot--bad')); head.appendChild(el('b', null, `${s.teamName}${s.name ? ' · ' + s.name : ''} — ${s.text}`)); row.appendChild(head);

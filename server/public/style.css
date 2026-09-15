@@ -690,6 +690,7 @@ body {
 .rep__sec { margin-bottom: 12px; }
 .rep__axis { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--ink-4); font-family: 'IBM Plex Mono', monospace; padding: 2px 0 0 92px; }
 .rep__legend { font-size: 11px; color: var(--ink-4); padding: 4px 0 6px; }
+.rep__rest { font-size: 12px; color: var(--ink-2); padding: 6px 0; border-top: 1px dashed var(--line); }
 .rep__stuck .dash__head b { color: var(--ink); }
 .rep__team .dash__head { flex-wrap: wrap; }
 .rep__thumbs { display: flex; gap: 6px; margin-top: 4px; }
