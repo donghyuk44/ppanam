@@ -2,10 +2,10 @@
   "default": "hq",
   "teams": [
     { "id": "hq",        "name": "총괄",   "room": "총괄실",       "kind": "office", "model": "opus" },
-    { "id": "marketing", "name": "마케팅", "room": "마케팅 작전실", "model": "opus" },
-    { "id": "dev",       "name": "개발",   "room": "개발 작전실",   "model": "opus" },
-    { "id": "design",    "name": "디자인", "room": "디자인 작전실", "model": "opus" },
-    { "id": "finance",   "name": "경영", "room": "경영 작전실", "model": "opus" },
+    { "id": "marketing", "name": "마케팅", "room": "마케팅 방", "model": "opus" },
+    { "id": "dev",       "name": "개발",   "room": "개발 방",   "model": "opus" },
+    { "id": "design",    "name": "디자인", "room": "디자인 방", "model": "opus" },
+    { "id": "finance",   "name": "경영", "room": "경영 방", "model": "opus" },
     { "id": "sera",      "name": "세라",   "room": "비서실",       "kind": "office", "model": "opus",
       "owner": "secretary", "speakers": ["boss", "secretary", "system"], "only": ["message"] }
   ]

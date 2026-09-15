@@ -324,14 +324,14 @@ $('railMore')?.addEventListener('click', () => { const nav = $('teams'); nav.scr
 
 function renderHead() {
   const t = teams.find((x) => x.id === active);
-  $('roomName').textContent = t?.room ?? '작전실';
+  $('roomName').textContent = t?.room ?? '팀 방';   // 방 이름은 teams.json room("개발 방") — 하영 사전 0-1 (덤) 작전실 → 팀 방
   // 총괄실은 대표와의 1:1 이라 라운드가 없다. 늘 열려 있다.
   const office = t?.kind === 'office';
   // 라운드가 "있다" 는 번호가 아니라 phase 다. 번호는 닫힌 뒤에도 남아서, 번호로 그리면 닫힌 방이
   // "R14 · 라운드 닫기 · 입력 가능" 으로 보이고 보내면 409, 닫으면 두 번 닫힌다 (Fable 재점검, 2026-09-12).
   const open = office || summary.phase === 'running' || summary.phase === 'blocked';
   const blocked = !office && summary.phase === 'blocked';
-  document.title = open && !office ? `${summary.round}회차 · ${t?.name ?? '작전실'}` : (t?.room ?? '작전실');
+  document.title = open && !office ? `${summary.round}회차 · ${t?.name ?? '팀 방'}` : (t?.room ?? '팀 방');
   const turns = bossTurns().n;
   if (turns) document.title = `(${turns}) ` + document.title;   // 탭 제목에도 — 다른 창에 있어도 보이게
 
@@ -2023,7 +2023,7 @@ function loadDashboardBand(r) {
       const text = s.status === 'gated' ? `${s.n != null ? s.n + '단계' : s.title} — ${s.gate}` : s.status === 'blocked' ? `${s.n}단계 — 막힘${s.blockedWhy ? '(' + s.blockedWhy + ')' : ''}` : `${s.n}단계${to ? ' · ' + fmtTo(s.plannedTo) + '까지' : ''}`;
       b.textContent = text; b.title = `${s.n != null ? s.n + '단계 ' : ''}${s.title}`;
       b.style.left = `${left}%`; b.style.width = `${width}%`;
-      b.addEventListener('click', () => { const why = row.querySelector('.band__why'); if (why) { why.remove(); return; } const w = el('div', 'band__why'); w.textContent = `${s.n != null ? s.n + '단계 ' : ''}${s.title}${s.plannedFrom ? ` · ${fmtTo(s.plannedFrom)} → ${fmtTo(s.plannedTo)}` : ''}${s.gate ? ` · ${s.gate}` : ''}${s.blockedWhy ? ` · ${s.blockedWhy}` : ''}${s.late ? ` · ${fmtLate(s.late)}` : ''} — 계획표는 관제탑 팀 카드에`; row.appendChild(w); });
+      b.addEventListener('click', () => { const why = row.querySelector('.band__why'); if (why) { why.remove(); return; } const w = el('div', 'band__why'); w.textContent = `${s.n != null ? s.n + '단계 ' : ''}${s.title}${s.plannedFrom ? ` · ${fmtTo(s.plannedFrom)} → ${fmtTo(s.plannedTo)}` : ''}${s.gate ? ` · ${s.gate}` : ''}${s.blockedWhy ? ` · ${s.blockedWhy}` : ''}${s.late ? ` · ${fmtLate(s.late)}` : ''} — 계획표는 현황 팀 카드에`; row.appendChild(w); });
       lane.appendChild(b);
       if (s.late > 0) { const lt = el('span', 'band__late', fmtLate(s.late)); lt.style.setProperty('--w', `${Math.max(3, Math.min(40, x(now + s.late)))}%`); lane.appendChild(lt); row.classList.add('band__row--late'); }
     }

@@ -4,7 +4,7 @@
       "name": "유진",
       "initial": "유",
       "color": "#d8b25c",
-      "title": "실행",
+      "title": "경영팀장",
       "does": "로드맵 · 스코프 방어",
       "model": "claude"
     },
@@ -26,7 +26,7 @@
       "name": "빅터",
       "initial": "빅",
       "color": "#5b3a63",
-      "title": "교차검증",
+      "title": "외부 감사",
       "does": "기술감사 · 외부 시각",
       "model": "gemini",
       "geminiModel": "gemini-3.6-flash"
@@ -43,8 +43,8 @@
       "name": "나리",
       "initial": "나",
       "color": "#8a8175",
-      "title": "안내",
-      "does": "방에 자동으로 뜨는 안내 · 하네스",
+      "title": "검수",
+      "does": "파일을 열어 다시 센다 · 재시작·스크린샷·유니티처럼 저장소 밖에 손이 닿는 일 (자동 안내 글도 이 자리 이름으로 뜬다)",
       "model": null
     }
   }

@@ -4,7 +4,7 @@
       "name": "톰",
       "initial": "톰",
       "color": "#1f5f4f",
-      "title": "총괄",
+      "title": "실장",
       "does": "대표 지시를 팀에 배분",
       "model": "claude"
     },
@@ -12,9 +12,10 @@
       "name": "제리",
       "initial": "제",
       "color": "#7a3b52",
-      "title": "대조",
+      "title": "감사 · 다른 회사",
       "does": "원문과 배분을 맞춰본다",
-      "model": "gpt"
+      "model": "gemini",
+      "geminiModel": "gemini-3.6-flash"
     },
     "secretary": {
       "name": "세라",
@@ -33,11 +34,11 @@
       "model": null
     },
     "system": {
-      "name": "시스템",
-      "initial": "·",
+      "name": "나리",
+      "initial": "나",
       "color": "#8a8175",
-      "title": "훅",
-      "does": "CLI",
+      "title": "검수",
+      "does": "파일을 열어 다시 센다 · 재시작·스크린샷·유니티처럼 저장소 밖에 손이 닿는 일 (자동 안내 글도 이 자리 이름으로 뜬다)",
       "model": null
     }
   }

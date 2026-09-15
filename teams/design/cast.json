@@ -4,7 +4,7 @@
       "name": "헨리",
       "initial": "헨",
       "color": "#4b5f9e",
-      "title": "메인 디자인",
+      "title": "디자인팀장",
       "does": "양식을 정하고 그림을 뽑는다",
       "model": "claude"
     },
@@ -12,7 +12,7 @@
       "name": "클레멘타인",
       "initial": "클",
       "color": "#c96f3b",
-      "title": "보조 디자인",
+      "title": "디자이너",
       "does": "팔레트·시트·검수 스크립트",
       "model": "claude",
       "llm": "sonnet"
@@ -21,9 +21,10 @@
       "name": "마크",
       "initial": "마",
       "color": "#6b4a2f",
-      "title": "외부감사",
+      "title": "외부 감사",
       "does": "열어서 재고 세어 본다",
-      "model": "gpt"
+      "model": "gemini",
+      "geminiModel": "gemini-3.6-flash"
     },
     "boss": {
       "name": "함동혁(댄)",
@@ -34,11 +35,11 @@
       "model": null
     },
     "system": {
-      "name": "시스템",
-      "initial": "·",
+      "name": "나리",
+      "initial": "나",
       "color": "#8a8175",
-      "title": "훅",
-      "does": "CLI",
+      "title": "검수",
+      "does": "파일을 열어 다시 센다 · 재시작·스크린샷·유니티처럼 저장소 밖에 손이 닿는 일 (자동 안내 글도 이 자리 이름으로 뜬다)",
       "model": null
     }
   }

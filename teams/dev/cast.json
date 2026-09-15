@@ -4,7 +4,7 @@
       "name": "테라",
       "initial": "테",
       "color": "#4a5d3a",
-      "title": "실무",
+      "title": "개발팀장",
       "does": "만들고 고친다",
       "model": "claude"
     },
@@ -12,7 +12,7 @@
       "name": "솔라",
       "initial": "솔",
       "color": "#2f6b7a",
-      "title": "개발·운영",
+      "title": "운영 담당",
       "does": "만들고 굴러가게 한다",
       "model": "claude",
       "llm": "sonnet"
@@ -21,9 +21,10 @@
       "name": "레오",
       "initial": "레",
       "color": "#9c3b2f",
-      "title": "외부감사",
+      "title": "외부 감사",
       "does": "실제로 돌려본다",
-      "model": "gpt"
+      "model": "gemini",
+      "geminiModel": "gemini-3.6-flash"
     },
     "boss": {
       "name": "함동혁(댄)",
@@ -34,11 +35,11 @@
       "model": null
     },
     "system": {
-      "name": "시스템",
-      "initial": "·",
+      "name": "나리",
+      "initial": "나",
       "color": "#8a8175",
-      "title": "훅",
-      "does": "CLI",
+      "title": "검수",
+      "does": "파일을 열어 다시 센다 · 재시작·스크린샷·유니티처럼 저장소 밖에 손이 닿는 일 (자동 안내 글도 이 자리 이름으로 뜬다)",
       "model": null
     }
   }

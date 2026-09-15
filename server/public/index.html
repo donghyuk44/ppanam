@@ -40,9 +40,10 @@
       <span class="rail__sub">작전실</span>
     </div>
     <nav class="views" id="views" aria-label="화면">
-      <button type="button" data-view="room">작전실</button>
-      <button type="button" data-view="tower">관제탑</button>
-      <button type="button" data-view="dashboard">대시보드</button>
+      <!-- 탭 이름은 하영 사전 0-1 확정(결정 136 · apr_ee0c16a2): 작전실→팀 방 · 관제탑→현황 · 대시보드→앞으로. 분석·마을은 그대로. 세계 이름(위 작전실)은 아직 -->
+      <button type="button" data-view="room">팀 방</button>
+      <button type="button" data-view="tower">현황</button>
+      <button type="button" data-view="dashboard">앞으로</button>
       <button type="button" data-view="analysis">분석</button>
       <button type="button" data-view="world">마을</button>
     </nav>
@@ -55,7 +56,7 @@
   <section class="room">
     <header class="bar">
       <div class="bar__id">
-        <h1 id="roomName">작전실</h1>
+        <h1 id="roomName">팀 방</h1>
         <!-- 자리마다 상태 글자 — 폰에서는 칩(crew)이 숨어 이 줄이 전부다 (독립검수 #5) -->
         <div class="who" id="roomWho">서버에 붙는 중…</div>
       </div>
@@ -118,11 +119,11 @@
   <!-- 관제탑: 네 팀을 한 화면에. 서브 탭 넷 — 전체(첫 화면) · 팀(카드 다섯) · 개인(열넷 + 대표) · 요청(팀 사이 요청, M3) — 결정 40·50 -->
   <section class="tower" id="tower">
     <header class="tower__head">
-      <h1>관제탑 <span class="dash__sub">— 지금 무슨 일이 벌어지고 있나</span></h1>
+      <h1>현황 <span class="dash__sub">— 지금 무슨 일이 벌어지고 있나</span></h1>
       <p>위에서 아래로 넷 — 뭐가 막혔나 · 누가 뭘 했나 · 내 차례 · 팀. 없으면 그 칸은 안 떠요.</p>
     </header>
     <!-- 서브탭 글자는 하영 사전(도면 1판 셋째 겹 "사람", 팀↔팀 줄 "요청"). "전체" 와 위 탭 이름 셋은 대표가 0-1 을 고를 때까지 지금 이름 -->
-    <nav class="tabs" id="towerTabs" aria-label="관제탑 탭">
+    <nav class="tabs" id="towerTabs" aria-label="현황 탭">
       <button type="button" data-tab="all">전체</button>
       <button type="button" data-tab="teams">팀<i class="tabs__n" hidden></i></button>
       <button type="button" data-tab="people">사람<i class="tabs__n" hidden></i></button>

@@ -4,7 +4,7 @@
       "name": "하영",
       "initial": "하",
       "color": "#2f4f7a",
-      "title": "실무",
+      "title": "마케팅팀장",
       "does": "실행과 로드맵, 스코프 방어",
       "model": "claude"
     },
@@ -12,7 +12,7 @@
       "name": "안젤",
       "initial": "안",
       "color": "#a8541f",
-      "title": "내부감사",
+      "title": "감사",
       "does": "논리와 구조 감사",
       "model": "claude",
       "llm": "sonnet",
@@ -26,9 +26,10 @@
       "name": "다니엘",
       "initial": "다",
       "color": "#5b3a63",
-      "title": "외부감사",
+      "title": "외부 감사",
       "does": "교차검증, 다른 회사 모델",
-      "model": "gpt"
+      "model": "gemini",
+      "geminiModel": "gemini-3.6-flash"
     },
     "boss": {
       "name": "함동혁(댄)",
@@ -39,11 +40,11 @@
       "model": null
     },
     "system": {
-      "name": "시스템",
-      "initial": "·",
+      "name": "나리",
+      "initial": "나",
       "color": "#8a8175",
-      "title": "훅",
-      "does": "CLI",
+      "title": "검수",
+      "does": "파일을 열어 다시 센다 · 재시작·스크린샷·유니티처럼 저장소 밖에 손이 닿는 일 (자동 안내 글도 이 자리 이름으로 뜬다)",
       "model": null
     }
   }

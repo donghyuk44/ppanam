@@ -368,7 +368,7 @@ function bubble(a, text, { kind = 'say', who = a.name, cls = '', ms, id = null, 
   if (kind !== 'tool') { const w = document.createElement('span'); w.className = 'wb__who'; w.textContent = who; el.appendChild(w); }
   const body = document.createElement('span'); body.textContent = kind === 'tool' ? '⌨ 작업 중' : text; el.appendChild(body);
   if (id && team && S.jump) {                       // 기록된 발언이면 작전실의 그 자리로 건너갈 수 있다 (W3)
-    const go = document.createElement('button'); go.type = 'button'; go.className = 'wb__go'; go.textContent = '↗'; go.title = '작전실에서 보기';
+    const go = document.createElement('button'); go.type = 'button'; go.className = 'wb__go'; go.textContent = '↗'; go.title = '팀 방에서 보기';
     go.addEventListener('click', (ev) => { ev.stopPropagation(); S.jump(team, id); });
     el.appendChild(go);
   }
@@ -626,7 +626,7 @@ async function submitTalk(ev) {
   if (!a || !text) return closeTalk();
   const r = await fetch('/api/say', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ team: a.team, text }) })
     .then(async (x) => ({ ok: x.ok, data: await x.json().catch(() => ({})) })).catch(() => ({ ok: false, data: {} }));
-  if (r.ok) { S.talkTarget = { key: a.key, at: performance.now() }; toast(`${a.name}에게 전했습니다. 답은 여기와 작전실에 같이 뜹니다.`); }
+  if (r.ok) { S.talkTarget = { key: a.key, at: performance.now() }; toast(`${a.name}에게 전했습니다. 답은 여기와 팀 방에 같이 떠요.`); }
   else toast(r.data.needsRound ? `${a.team} 방 회차를 먼저 시작하세요.` : (r.data.error ?? '전하지 못했어요.'), 5000);
   closeTalk();
 }
