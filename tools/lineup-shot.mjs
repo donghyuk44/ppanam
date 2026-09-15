@@ -41,6 +41,8 @@ let st = null;
 for (let i = 0; i < 120; i++) { st = await ev('window.__lineup ? JSON.stringify(window.__lineup) : null'); if (st && JSON.parse(st).ready) break; await sleep(500); }
 const info = st ? JSON.parse(st) : null;
 console.log('lineup', info ? `loaded ${info.loaded} · placed ${info.placed ?? '?'} · misplaced ${info.misplaced ?? 0} · offscreen ${info.offscreen ?? 0} · failed ${info.failed} · colormaps ${info.colormaps} · ${info.names.join('·')}` : '(상태 없음)');
+// 머리 그림(head=1)이면 어깨선~머리 꼭대기가 몇 px 인지 — spec.md 1절 "얼굴 120px 이상" 을 찍는 쪽이 바로 센다(헨리 req_0f26d834)
+if (info?.head) console.log('head', `facePx ${info.head.facePx}/${H} · 어깨선 ${info.head.bottom} · 꼭대기 ${info.head.top} · 폭 ${info.head.spanX}`);
 if (!info?.ready) cleanup(3, 'NO_RENDER — lineup.js 가 ready 를 못 냈다 (three CDN? /out/design 색표?)');
 if (info.loaded === 0) cleanup(3, 'NO_DOLLS — 인형을 하나도 못 불렀다');
 // 화면에 선 수가 부른 수와 다르면 그림이 틀린 것이다 — exit 0 에 파일만 있는 조용한 실패를 막는다(하네스 R25: 열여섯이 한 자리에 겹침)
