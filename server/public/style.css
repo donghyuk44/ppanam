@@ -619,12 +619,12 @@ body {
 .dash__body p { margin-bottom: 10px; color: var(--ink-4); font-size: 13px; }
 
 .tower__head { padding: 20px 22px 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
-.tower__head h1 { font-family: 'Gowun Batang', serif; font-size: 19px; font-weight: 400; }
-.tower__head p { margin-top: 3px; font-size: 12px; color: var(--ink-4); }
+.tower__head h1 { font-family: 'Gowun Batang', serif; font-size: 17px; font-weight: 400; }
+.tower__head p { margin-top: 3px; font-size: 11px; color: var(--ink-4); }
 
 .tower__grid {
   flex: 1; overflow-y: auto; padding: 16px;
-  display: grid; gap: 14px; align-content: start;
+  display: grid; gap: 7px; align-content: start;
   grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
 }
 
@@ -805,7 +805,7 @@ body {
 }
 
 /* 전체 — 숫자 셋 + 카드 셋 (대표 차례 · 팀 · 오늘 보고). 줄을 누르면 그 방으로. */
-.dash__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.dash__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
 .dash__tile {
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
   display: flex; flex-direction: column; gap: 3px; min-width: 0;
@@ -816,7 +816,7 @@ body {
 .dash__tile[data-alert="1"] b { color: var(--bad); }
 /* min-width: 0 — 세로 flex 안의 카드·줄은 안 그러면 제일 긴 낱말(`node tools/pixel/…` 같은 경로) 폭으로 벌어져 412 에서 오른쪽이 잘렸다 (R21 첫 스크린샷). */
 .dash__card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; min-width: 0; }
-.dash__k { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: .13em; color: var(--ink-4); padding-bottom: 6px; }
+.dash__k { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .12em; color: var(--ink-4); padding-bottom: 6px; }
 .dash__row {
   display: flex; flex-direction: column; gap: 2px; align-items: stretch; text-align: left; width: 100%; min-width: 0;
   font: inherit; font-size: 12.5px; color: var(--ink-2); background: none; border: 0; border-top: 1px solid var(--line-2);
@@ -827,7 +827,7 @@ button.dash__row:hover b { text-decoration: underline; }
 .dash__row b { font-weight: 500; color: var(--ink); overflow-wrap: anywhere; }
 .dash__head { display: flex; align-items: center; gap: 8px; }
 .dash__head .pill { margin-left: auto; }
-.dash__sub { font-size: 12px; color: var(--ink-3); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.dash__sub { font-size: 11px; color: var(--ink-4); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .dash__empty { font-size: 12px; color: var(--ink-4); font-style: italic; padding: 6px 0; }
 
 /* 그림 부품 — 헨리 numbers.md 한 벌: 점 8 · 막대 5 라운드 2.5 · 시간 띠 · 큰 숫자 28/이름 11. 상태 색은 여기서만(초록·빨강·노랑·회색), 팀·사람 색은 자리 색. */
@@ -858,7 +858,7 @@ button.dash__row:hover b { text-decoration: underline; }
 /* 현황 첫 화면 넷(헨리 시안 2판): 막힌 것 → 한 것 → 내 차례 → 팀. 막힌 것·내 차례는 테두리로 튀고, 팀 줄은 펼쳐진다. */
 .dash__card[data-block="stuck"] { border-color: var(--bad-line); }
 .dash__card[data-block="stuck"] .dash__k { color: var(--bad); }
-.dash__card[data-block="mine"] { border-color: var(--me-line); background: color-mix(in srgb, var(--me) 8%, var(--panel)); }
+.dash__card[data-block="mine"] { border-color: var(--me-line); background: color-mix(in srgb, var(--me) 8%, var(--panel)); box-shadow: inset 3px 0 0 var(--me-line); }
 .dash__card[data-block="mine"] .dash__k { color: var(--me-ink); }
 .dash__go { font-size: 11px; color: var(--seal); margin-top: 2px; }
 .dash__more { align-self: flex-start; margin-top: 6px; font: inherit; font-size: 12px; color: var(--seal); background: none; border: 0; padding: 4px 0; cursor: pointer; }
@@ -885,7 +885,7 @@ button.dash__row:hover b { text-decoration: underline; }
 .pgroup:not([open]) .pgroup__head::after { content: '▸'; }
 .pgroup:not([open]) .pgroup__head { margin-bottom: 0; }
 .pgroup__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--bad); }
-.pgrid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.pgrid { display: grid; gap: 7px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 .pcard {
   display: flex; flex-direction: column; gap: 6px; min-width: 0;
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
