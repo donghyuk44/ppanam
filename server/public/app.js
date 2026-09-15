@@ -6,7 +6,7 @@
 import * as World from '/world/world.js';
 import { toolLabel, toolPhrase, baseName, ga } from '/toollabel.js';
 import { findOutPaths, linkOutPaths } from '/outlink.js';
-import { notificationsOf, blockedOf } from '/notify.js';
+import { notificationsOf, blockedOf, pausedMs } from '/notify.js';
 import { parseMention } from '/mention.js';
 
 const $ = (id) => document.getElementById(id);
@@ -812,6 +812,7 @@ function connect() {
       } else if (view === 'tower') renderTower();
       // 대시보드는 summaries 랑 안 엮여 있어 매번 재 보되(파일 하나, 가볍다), 안 바뀌었으면 loadDashboard 안에서 다시 안 그린다.
       if (view === 'dashboard') loadDashboard();
+      if (view === 'report') loadReport();   // 안 바뀌었으면 loadReport 안에서 다시 안 그린다(펼친 팀 줄이 닫히지 않게)
       // 분석은 값이 실제로 움직였을 때만 다시 불러온다. 250ms 마다 받아올 이유가 없다.
       if (view === 'analysis') {
         const s = summaries[active] ?? {};
@@ -1026,7 +1027,7 @@ $('scrim').addEventListener('click', () => openSide(false));
 /* ══ 화면 전환 ══ */
 
 let view = 'room';
-const VIEWS = new Set(['room', 'tower', 'dashboard', 'analysis', 'world']);
+const VIEWS = new Set(['room', 'tower', 'dashboard', 'report', 'analysis', 'world']);
 
 // 주소에 팀과 화면을 함께 남긴다 (#marketing/tower). 새로고침해도, 뒤로 가도 보던 곳으로 돌아온다.
 // 우리가 쓴 해시는 되읽지 않는다 — 안 그러면 화면을 바꿀 때마다 한 번 더 바꾸려 든다.
@@ -1057,6 +1058,7 @@ function setView(v) {
   }
   if (v === 'tower') renderTower();
   if (v === 'dashboard') loadDashboard();
+  if (v === 'report') loadReport({ force: true });
   if (v === 'analysis') loadAnalysis();
   // 마을은 열려 있을 때만 그린다. 닫히면 rAF 를 멈춘다 — 관람은 공짜여야 한다.
   if (v === 'world') World.open({ teams, jump: jumpTo }).catch(() => {}); else World.close();
@@ -2106,6 +2108,163 @@ async function loadDashboard() {
   if (!r?.text) { body.appendChild(el('p', 'tcard__quiet', '아직 예정 작업 표가 없어요 — teams/hq/out/plan-table.md 가 오면 여기 뜹니다.')); return; }
   body.appendChild(el('div', 'gates__k', '예정 작업 표 (톰)'));
   body.appendChild(mdToDom(r.text));
+}
+
+/* ══ 보고서 — "어제 하루가 어땠나" (나리 정본 · 헨리 report 1판 · 결정 80·81, 새 7단계) ══
+ * 창은 서버 기본(어제 18시 → 오늘 9시, 우리 시각). 절 다섯 + 한마디 — 낱말은 하영 5판 3-5-1(report 24~118). 절 이름은 경영 틀이 오면 그쪽(5판 3-5-5).
+ * 정하실 것은 현황 ③ 과 같은 목록(blockedOf waitOn boss — 같은 것을 두 군데서 다르게 세지 않는다), 나머지는 /api/report 아래층. */
+let reportMark = '', reportFetchedAt = 0;
+const openReport = new Set();   // 펼친 팀 줄
+async function loadReport({ force = false } = {}) {
+  // /api/report 는 다섯 방 대화록을 훑는다 — 요약이 바뀔 때마다가 아니라 30초에 한 번(탭을 새로 열면 바로)
+  if (!force && reportMark && Date.now() - reportFetchedAt < 30_000) return;
+  reportFetchedAt = Date.now();
+  const r = await fetch('/api/report').then((r) => r.json()).catch(() => null);
+  const body = $('repBody');
+  if (!r) { body.replaceChildren(el('p', 'tcard__quiet', '보고서를 못 읽었어요 — 서버가 옛 판이면 다시 켜야 해요.')); return; }
+  const mark = `${r.since}|${r.until}|${(r.done ?? []).map((t) => t.items.length).join(',')}|${(r.blocked ?? []).length}|${(r.proxy ?? []).length}|${approvals.length}|${(r.chief ?? '').length}`;
+  if (reportMark === mark) return;
+  reportMark = mark;
+  renderReport(r);
+}
+/** 날짜 머리 — "9월 15일 밤"(보고서 이름, 시계 아님 — 5판 3-5-1 report 24~26). 창의 끝 날 + 지금 때. */
+const dayKo = (ts) => { const d = new Date(ts); return `${d.getMonth() + 1}월 ${d.getDate()}일`; };
+/** 창 한 줄 — "어제 저녁 6시 → 오늘 아침 9시". 오늘·어제가 아니면 날짜로. */
+function windowKo(since, until) {
+  const d0 = seoulDayStart(Date.now());
+  const day = (t) => (seoulDayStart(t) === d0 ? '오늘' : seoulDayStart(t) === d0 - 86_400_000 ? '어제' : dayKo(t));
+  return `${day(Date.parse(since))} ${whenKo(since)} → ${day(Date.parse(until))} ${whenKo(until)}`;
+}
+function renderReport(r) {
+  const body = $('repBody');
+  body.replaceChildren();
+  const since = Date.parse(r.since), until = Date.parse(r.until), now = Date.now();
+  $('repDate').textContent = `${dayKo(until)} ${whenKo(now).split(' ')[0]}`;
+  $('repWindow').textContent = `${windowKo(r.since, r.until)} · 톰이 쓰고, 세라가 대표님 말로 고치고, 나리가 숫자를 맞춰 봤어요`;
+  const teamOf = (id) => (r.teams ?? []).find((t) => t.id === id) ?? teams.find((t) => t.id === id) ?? { id, name: id };
+  const colorOf = (id) => teamOf(id).color ?? teamColor(id);
+
+  // ① 오늘 정하실 것 N — 현황 ③ 과 같은 목록(결재 C · 대표님께 물어봄 · 멈춤 + 상황판 '대표님이 보실 것'). 없으면 칸이 사라진다
+  const pendingAll = approvals.map((a) => ({ id: a.id, grade: a.grade, team: a.team, by: a.by, what: a.what, ts: a.requestedAt ?? a.ts }));
+  const mine = blockedOf({ teams, summaries, approvals: pendingAll, requests: requestsAll.filter((q) => q.status !== 'closed'), infra }, { now, pauses }).filter((it) => it.waitOn === 'boss');
+  const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
+  if (mine.length || fromBoard.length) {
+    const sec = el('section', 'dash__card rep__sec'); sec.dataset.block = 'mine'; sec.dataset.alert = '1';
+    sec.appendChild(el('div', 'dash__k', `오늘 정하실 것 ${mine.length + fromBoard.length}`));
+    for (const it of mine) {
+      const row = el('button', 'dash__row'); row.type = 'button';
+      row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '결재 기다림' : it.kind === 'boss' ? '대표님께 물어봄' : '멈춤'}`));
+      row.appendChild(el('span', 'dash__sub', it.text));
+      row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '읽고 답하기' : '방으로'));
+      row.addEventListener('click', () => { const tg = it.target ?? {}; if (it.kind === 'approval') { const a = approvals.find((x) => x.id === (tg.approval ?? String(it.id).split(':')[1])); if (a) openApprovalPop(a); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
+      sec.appendChild(row);
+    }
+    for (const b of fromBoard) { const row = el('button', 'dash__row'); row.type = 'button'; row.appendChild(el('b', null, `${b.teamName} · 상황판`)); row.appendChild(el('span', 'dash__sub', b.text)); row.addEventListener('click', () => jumpTo(b.team, null)); sec.appendChild(row); }
+    body.appendChild(sec);
+  }
+
+  // ② 톰·제리가 대표님 대신 정했어요 — 창 안의 대리 결정(note meta.proxy). 되돌리시려면 방에 한마디(결정 85 ③)
+  if ((r.proxy ?? []).length) {
+    const sec = el('section', 'dash__card rep__sec'); sec.dataset.block = 'proxy';
+    sec.appendChild(el('div', 'dash__k', '톰·제리가 대표님 대신 정했어요 — 되돌리시려면 방에 한마디'));
+    for (const p of r.proxy) {
+      const row = el('button', 'dash__row'); row.type = 'button';
+      row.appendChild(el('b', null, `${teamOf(p.team).name} · ${whenKo(p.ts)}`));
+      row.appendChild(el('span', 'dash__sub', String(p.text).replace(/^대리 결정[^—:]*[—:]\s*/, '')));
+      row.appendChild(el('span', 'dash__go', '방으로'));
+      row.addEventListener('click', () => jumpTo(p.team, p.id));
+      sec.appendChild(row);
+    }
+    body.appendChild(sec);
+  }
+
+  // ③ 막힌 것 N · 한 것은 점, 멈춤은 빨간 띠 — 팀마다 시간 띠 한 줄(창 = 띠 가로), 그 밑에 멈춘 구간 하나씩(5판 3-5-3 ⑫: '멈춘 것' 이 아니라 '막힌 것' — 막힌 것 = 일)
+  const spans = r.blocked ?? [];
+  const sec3 = el('section', 'dash__card rep__sec'); sec3.dataset.block = 'band';
+  sec3.appendChild(el('div', 'dash__k', `막힌 것 ${spans.length} · 한 것은 점, 멈춤은 빨간 띠`));
+  const axis = el('div', 'rep__axis'); axis.append(el('span', null, whenKo(since)), el('span', null, whenKo(until))); sec3.appendChild(axis);
+  const bands = el('div', 'bands');
+  for (const t of (r.teams ?? [])) {
+    const line = el('div', 'bands__row');
+    const lab = el('span', 'bands__who'); const d = el('span', 'dot'); d.style.background = colorOf(t.id); lab.appendChild(d); lab.append(t.room ?? t.name); line.appendChild(lab);
+    const items = (r.done ?? []).find((x) => x.team === t.id)?.items ?? [];
+    const marks = items.map((it) => ({ at: Date.parse(it.ts), color: colorOf(t.id), title: `${it.name ?? t.name} · ${it.text} · ${whenKo(it.ts)}` }));
+    const sp = spans.filter((s) => s.team === t.id).map((s) => ({ from: Math.max(since, Date.parse(s.from)), to: s.to ? Math.min(until, Date.parse(s.to)) : until }));
+    line.appendChild(timeBand(since, until, marks, sp));
+    bands.appendChild(line);
+  }
+  sec3.appendChild(bands);
+  sec3.appendChild(el('div', 'rep__legend', '점 = 낸 것 하나 · 빨간 띠 = 멈춰 있던 시간 · 색 = 팀'));
+  for (const s of spans) {
+    const row = el('button', 'dash__row rep__stuck'); row.type = 'button';
+    const head = el('span', 'dash__head'); head.appendChild(el('i', 'dot dot--bad')); head.appendChild(el('b', null, `${s.teamName}${s.name ? ' · ' + s.name : ''} — ${s.text}`)); row.appendChild(head);
+    const to = s.to ? Date.parse(s.to) : now;
+    row.appendChild(el('span', 'dash__sub', `${whenKo(s.from)} → ${s.to ? whenKo(s.to) : '아직'}${s.to ? ' · 지금은 풀렸어요' : ''}`));
+    const w = el('span', 'wait'); w.appendChild(el('i', 'dot dot--bad')); w.append(forShort(Math.max(0, to - Date.parse(s.from) - pausedMs(s.from, to, pauses))).replace(/째$/, '')); row.appendChild(w);
+    row.addEventListener('click', () => jumpTo(s.team, s.ref ?? null));
+    sec3.appendChild(row);
+  }
+  body.appendChild(sec3);
+
+  // ④ 팀마다 한 것 — 누르면 세 줄(한 것 · 막힌 것 · 검토 결과). 줄 = 팀 · N단계 제목 · N회차 · 진행 막대 N/M · 한 줄 · 그림
+  const sec4 = el('section', 'dash__card rep__sec'); sec4.dataset.block = 'teams';
+  sec4.appendChild(el('div', 'dash__k', '팀마다 한 것 — 누르면 세 줄'));
+  for (const t of (r.teams ?? [])) {
+    const items = (r.done ?? []).find((x) => x.team === t.id)?.items ?? [];
+    const made = items.filter((it) => it.kind !== 'verdict' && it.kind !== 'decision');
+    const verdicts = items.filter((it) => it.kind === 'verdict');
+    const imgs = (r.images ?? []).filter((im) => im.team === t.id).slice(0, 3);
+    const row = el('button', 'dash__row rep__team'); row.type = 'button';
+    const head = el('span', 'dash__head');
+    const d = el('span', 'dot'); d.style.background = colorOf(t.id); head.appendChild(d);
+    head.appendChild(el('b', null, t.room ?? t.name));
+    head.appendChild(el('span', 'dash__stage', t.milestone ? `${t.milestone}단계 ${t.milestoneTitle ?? ''}`.slice(0, 22) + (t.round ? ` · ${t.round}회차` : '') : '단계 없음'));
+    if (!t.office && t.total) { head.appendChild(progressBar(t.done, t.total, colorOf(t.id))); head.appendChild(el('span', 'bars__n', `${t.done}/${t.total}`)); }
+    row.appendChild(head);
+    row.appendChild(el('span', 'dash__sub', made.length ? made.slice(0, 2).map((it) => it.text.replace(/^(커밋|산출물) — /, '')).join(' · ') : '이 사이엔 한 일이 없어요.'));
+    if (imgs.length) { const th = el('span', 'rep__thumbs'); for (const im of imgs) { const img = el('img', 'rep__thumb'); img.src = im.url; img.alt = im.name; img.loading = 'lazy'; th.appendChild(img); } row.appendChild(th); }
+    row.addEventListener('click', () => { if (openReport.has(t.id)) openReport.delete(t.id); else openReport.add(t.id); renderReport(r); });
+    sec4.appendChild(row);
+    if (openReport.has(t.id)) {
+      const box = el('div', 'dash__open');
+      const three = [
+        ['한 것', made.length ? made.map((it) => it.text).join(' · ') : '없어요'],
+        ['막힌 것', spans.filter((s) => s.team === t.id).map((s) => s.text).join(' · ') || '없어요'],
+        ['검토 결과', verdicts.length ? verdicts.map((it) => `${it.text.split(' — ')[0]}(${it.name ?? it.by})`).join(' · ') : '없어요'],
+      ];
+      for (const [k, v] of three) { const kv = el('div', 'dash__kv'); kv.appendChild(el('b', null, `${k} —`)); kv.appendChild(el('span', null, v)); box.appendChild(kv); }
+      sec4.appendChild(box);
+    }
+  }
+  body.appendChild(sec4);
+
+  // ⑤ 오늘 — 각 방이 먼저 할 일: 상황판 '다음' 첫 줄, 실무 이름으로
+  const nexts = (r.teams ?? []).map((t) => ({ t, line: (r.next?.[t.id] ?? [])[0] })).filter((x) => x.line);
+  if (nexts.length) {
+    const sec5 = el('section', 'dash__card rep__sec'); sec5.dataset.block = 'next';
+    sec5.appendChild(el('div', 'dash__k', '오늘 — 각 방이 먼저 할 일'));
+    for (const { t, line } of nexts) {
+      const row = el('button', 'dash__row'); row.type = 'button';
+      const head = el('span', 'dash__head'); const d = el('span', 'dot'); d.style.background = colorOf(t.id); head.appendChild(d); head.appendChild(el('b', null, t.guide ?? t.name)); row.appendChild(head);
+      row.appendChild(el('span', 'dash__sub', line));
+      row.addEventListener('click', () => jumpTo(t.id, null));
+      sec5.appendChild(row);
+    }
+    body.appendChild(sec5);
+  }
+
+  // 한마디 — 사람 글(teams/hq/out/daily/<날짜>.md)이 있는 날만: 첫 머리 밑 첫 문단, 꼬리 "— 톰". 전부는 문(파일)
+  if (r.chief) {
+    const paras = String(r.chief).split(/\n\s*\n/).map((p) => p.trim()).filter((p) => p && !p.startsWith('#'));
+    const first = paras[0] ?? '';
+    if (first) {
+      const q = el('div', 'rep__word');
+      q.append(first.replace(/\*\*/g, '').slice(0, 240));
+      q.appendChild(el('span', 'rep__by', ' — 톰'));
+      if (r.chiefFile) { const a = el('a', 'rep__more', '전부 읽기'); a.href = `/out/${r.chiefFile}`; a.target = '_blank'; a.rel = 'noopener'; q.appendChild(a); }
+      body.appendChild(q);
+    }
+  }
 }
 
 /* ══ 분석 ══ */

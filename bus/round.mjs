@@ -18,7 +18,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import {
   startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound,
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
-  addressees, callsBoss, asksBoss, bossParagraph, bossNotesOf, doneOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
+  addressees, callsBoss, asksBoss, bossParagraph, bossNotesOf, doneOf, blockedSpansOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
   mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, delegationActive, overdue, setMilestoneStatus,
   roomRules, allowedIn, plansOf, timeboxRounds, DEFAULT_ROUND_MS, stageTable, swapSection, pausedMs, roundLengthMs,
@@ -372,6 +372,21 @@ switch (cmd) {
       const mkOk = mk.length === 2 && mk[0].id === 'file:ops:teams/dev/out/m7.md' && mk[0].ts === at(4) && mk[0].text === '산출물 — dev/out/m7.md' && mk[0].by === 'ops'
         && mk[1].kind === 'commit' && mk[1].by === 'guide' && mk[1].text === "커밋 — 관제탑 ② '더 보기' 는 오늘 안에서만 — 어제는 보고서";
       out.push(['한 것 — 커밋·산출물(나리 09-15)', mkOk ? '✓ 커밋 -m 글자(안의 따옴표 글자) · 산출물 같은 파일 마지막 한 번 · Read·out 밖·git status 안 셈' : '✗ ' + JSON.stringify(mk)]);
+      // 멈춰 있던 구간(blockedSpansOf — 보고서 띠의 빨간 띠, 헨리 report 1판): FAIL(blocked note → resumed note) · 답 없는 물음(asksBoss → 대표 말/대리 답) · 창과 겹치는 것만 · 안 풀린 건 to null · 라운드가 바뀌면 지난 물음은 닫힘
+      const bsLog = [
+        { id: 's1', ts: at(1), actor: 'system', type: 'note', text: 'FAIL — 대표 판단', meta: { blocked: true } },
+        { id: 's2', ts: at(3), actor: 'system', type: 'note', text: '대표 판단으로 재개', meta: { resumed: true } },
+        { id: 's3', ts: at(4), actor: 'guide', type: 'message', text: '솔라, 됐어.\n\n대표님, 유니티로 갈까요?' },
+        { id: 's4', ts: at(6), actor: 'boss', type: 'message', text: '유니티' },
+        { id: 's5', ts: at(7), actor: 'ops', type: 'message', text: '대표님, 색을 골라 주세요.' },
+        { id: 's6', ts: at(8), actor: 'system', type: 'round_start', text: '라운드 2 시작' },
+        { id: 's7', ts: at(9), actor: 'guide', type: 'message', text: '대표님, 이건 어느 쪽으로 할까요?' },
+      ];
+      const bs = blockedSpansOf(bsLog, pcast, { team: 'dev', since: at(0), until: at(10), now: Date.parse(at(10)) });
+      const bsKinds = bs.map((s) => `${s.kind}:${s.from === at(1) ? 1 : s.from === at(4) ? 4 : s.from === at(7) ? 7 : s.from === at(9) ? 9 : '?'}:${s.to == null ? 'open' : s.to === at(3) ? 3 : s.to === at(6) ? 6 : '?'}`).join(',');
+      const bsWin = blockedSpansOf(bsLog, pcast, { team: 'dev', since: at(2), until: at(5), now: Date.parse(at(10)) }).map((s) => s.kind + ':' + (s.to == null ? 'open' : 'closed')).join(',');
+      const bsOk = bsKinds === 'fail:1:3,ask:4:6,ask:7:open,ask:9:open' && bs[1].text === '대표님, 유니티로 갈까요?' && bs[1].by === 'guide' && bs[0].by === null && bsWin === 'fail:closed,ask:closed';
+      out.push(['멈춰 있던 구간(blockedSpansOf)', bsOk ? '✓ FAIL 구간 · 물음→대표 답 · 라운드 넘긴 물음은 열린 채 · 창과 겹치는 것만 · 인용은 대표 문단' : '✗ ' + JSON.stringify({ bsKinds, bsWin, bs })]);
       // 대표에게 한 그 문단(bossParagraph) — "헨리, 셌어…" 넷째 문단이 "대표님, 한 줄요 — …?" 였는데 첫 줄이 대표 차례로 섰다(나리 09-15)
       const bp = bossParagraph('헨리, 셌어. 낱말 사전 밖 말 0.\n\n걸리는 거 하나 — 메모야?\n\n대표님, 한 줄요 — 유진 색이 겹쳐요. 계속 쓸까요?\n\n클레멘타인 끝.', pcast);
       const bp2 = bossParagraph('솔라, 됐어.\n\n대표님, 올렸습니다.', pcast);

@@ -1811,3 +1811,31 @@ export function doneOf(log, cast, { team = null, since = null, until = null, app
   out.sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
   return out;
 }
+
+/**
+ * 멈춰 있던 구간 — 보고서 탭 "막힌 것 N · 한 것은 점, 멈춤은 빨간 띠"(헨리 report 1판 · 결정 80 ②). 순수 — check 가 돌린다.
+ * 두 종류: FAIL 로 방이 막힌 구간(note meta.blocked → note meta.resumed, 안 풀렸으면 to: null) · 대표를 불렀는데 답이 없던 구간(asksBoss 말 → 그 뒤 첫 대표 말/대리 답, 없으면 to: null).
+ * 창(since ≤ … < until)과 겹치는 것만 — 창 앞에서 시작해 창 안에서 풀린 것도 든다. from·to 는 ISO. text 는 왜 멈췄나 한 줄, by 는 사람(FAIL 은 null).
+ * @returns [{ team, kind: 'fail'|'ask', from, to, text, by, ref }] — from 오름차순
+ */
+export function blockedSpansOf(log, cast, { team = null, since = null, until = null, now = Date.now() } = {}) {
+  const s = since != null ? new Date(since).getTime() : dayStartSeoul(now), u = until != null ? new Date(until).getTime() : now;
+  const ms = (ts) => new Date(ts ?? 0).getTime();
+  const one = (t, n) => String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+  const spans = [];
+  let fail = null;   // 열린 FAIL 구간
+  let ask = null;    // 열린 물음 구간
+  for (const e of log) {
+    if (e.type === 'note' && e.meta?.blocked) { if (!fail) fail = { team, kind: 'fail', from: e.ts, to: null, text: one(e.text, 120), by: null, ref: e.id }; continue; }
+    if (e.type === 'note' && e.meta?.resumed) { if (fail) { fail.to = e.ts; spans.push(fail); fail = null; } continue; }
+    if (e.type === 'round_start') { if (ask) { spans.push(ask); ask = null; } continue; }   // 라운드가 바뀌면 지난 물음은 그 라운드 것 — teamSummary 와 같은 선
+    if (e.type === 'message' && e.actor === 'boss' && !e.meta?.via) { if (ask) { ask.to = e.ts; spans.push(ask); ask = null; } continue; }
+    if (e.type === 'note' && e.meta?.proxyAnswer) { if (ask) { ask.to = e.ts; spans.push(ask); ask = null; } continue; }
+    if (!ask && e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && cast?.[e.actor] && asksBoss(e.text, cast)) {
+      ask = { team, kind: 'ask', from: e.ts, to: null, text: one(bossParagraph(e.text, cast), 120), by: e.actor, ref: e.id };
+    }
+  }
+  if (fail) spans.push(fail);
+  if (ask) spans.push(ask);
+  return spans.filter((sp) => ms(sp.from) < u && (sp.to == null || ms(sp.to) >= s)).sort((a, b) => String(a.from).localeCompare(String(b.from)));
+}

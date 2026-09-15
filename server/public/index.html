@@ -44,6 +44,7 @@
       <button type="button" data-view="room">팀 방</button>
       <button type="button" data-view="tower">현황</button>
       <button type="button" data-view="dashboard">앞으로</button>
+      <button type="button" data-view="report">보고서</button>
       <button type="button" data-view="analysis">분석</button>
       <button type="button" data-view="world">마을</button>
     </nav>
@@ -143,6 +144,15 @@
       <div class="gates" id="dashGates"></div>
       <div id="dashBody"></div>
     </div>
+  </section>
+
+  <!-- 보고서 = "어제 하루가 어땠나"(나리 정본 · 헨리 report 1판 · 결정 80·81). 절은 다섯 — 정하실 것 · 대신 정한 것 · 막힌 것(띠) · 팀마다 한 것 · 오늘 각 방이 먼저 할 일 + 한마디. 절 이름은 경영 틀이 오면 그쪽(5판 3-5-5) -->
+  <section class="report" id="report">
+    <header class="tower__head">
+      <h1>보고서 <span class="dash__sub">(어제 하루)</span> <span class="rep__date" id="repDate"></span></h1>
+      <p id="repWindow">어제 저녁 6시 → 오늘 아침 9시</p>
+    </header>
+    <div class="dash__body" id="repBody"></div>
   </section>
 
   <!-- 분석: 팀 하나를 깊게 -->

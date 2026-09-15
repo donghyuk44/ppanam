@@ -368,7 +368,16 @@ const server = http.createServer((req, res) => {
     // 자정 마감 한 장(M7) — 창의 끝 날 바로 전날(마지막으로 닫힌 하루) 의 대표용 장. 없으면 null — 지어내지 않는다.
     const nightDay = yesterdayKey(until - 1);
     let nightly = null; try { nightly = { day: nightDay, file: `hq/out/nightly/${nightDay}.md`, md: fs.readFileSync(path.join(paths('hq').out, 'nightly', `${nightDay}.md`), 'utf8') }; } catch { /* 아직 자정이 안 왔거나 서버가 없었다 */ }
-    return json(res, 200, { since: new Date(since).toISOString(), until: new Date(until).toISOString(), done: doneBy, next, images, proxy, chief, chiefFile: chief ? `hq/out/daily/${dayKey}.md` : null, nightly });
+    // 보고서 탭(헨리 report 1판, 새 7단계) — 띠의 빨간 구간(FAIL·답 없는 물음, bus.blockedSpansOf 순수) · 팀 줄(단계 N/M · 회차 · 지금 단계 · 방·색). 총괄실도 줄 하나(단계 없음).
+    const blocked = rooms.filter((t) => !isOffice(t.id)).flatMap((t) => bus.blockedSpansOf(readLog(t.id), readCast(t.id).agents ?? {}, { team: t.id, since, until, now }).map((sp) => ({ ...sp, teamName: t.name, name: sp.by ? (readCast(t.id).agents?.[sp.by]?.name ?? sp.by) : null })));
+    const teamRows = listTeams().filter((t) => !bus.roomRules(t.id).speakers).map((t) => {
+      const s = teamSummary(t.id), rm = readRoadmap(t.id);
+      const nowM = rm.milestones?.find((m) => m.n === s.milestone) ?? null;
+      return { id: t.id, name: t.name, room: t.room, color: readCast(t.id).agents?.[t.kind === 'office' ? 'chief' : 'guide']?.color ?? null, office: t.kind === 'office',
+        milestone: s.milestone ?? null, milestoneTitle: nowM?.title ?? null, round: s.round ?? null, done: s.milestonesDone ?? 0, total: s.milestonesTotal ?? 0, phase: s.phase ?? 'idle',
+        guide: readCast(t.id).agents?.[t.kind === 'office' ? 'chief' : 'guide']?.name ?? null };
+    });
+    return json(res, 200, { since: new Date(since).toISOString(), until: new Date(until).toISOString(), done: doneBy, next, images, proxy, chief, chiefFile: chief ? `hq/out/daily/${dayKey}.md` : null, nightly, blocked, teams: teamRows });
   }
 
   // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.
