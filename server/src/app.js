@@ -1164,19 +1164,32 @@ async function loadSettings() {
   // ② 낱말 사전 — 하영(teams/marketing/out/opsroom-words.md). 길어서 접힘.
   body.appendChild(el('div', 'set__k', '낱말 — 화면에 쓰는 말과 뜻'));
   body.appendChild(mdFold('낱말 사전 펼치기 (하영)', '/out/marketing/opsroom-words.md'));
-  // ③ 인격 파일 — 팀 · 이름 · 직책 · 파일 자리. 파일은 서버가 안 내준다(out/ 만) — 자리만 적는다.
-  body.appendChild(el('div', 'set__k', '인격 — 자리마다 파일 하나'));
-  const ul = el('ul', 'set__list');
-  for (const t of teams) {
-    const cast = summaries[t.id]?.cast ?? {};
-    for (const [seat, a] of Object.entries(cast)) {
+  // ③ 인격 — **사람 단위로 한 번씩**(열일곱 + 대표), 줄은 이름 · 직책 · 팀 · 파일(대표 09-16 08:5x "중복 배치가 너무 많다" — 자리 단위로 돌리니 나리가 여섯 번, 톰이 다섯 번 서고
+  // 열한 줄이 없는 파일을 가리켰다, 나리 R32). 총괄실 사람(톰·제리·세라·나리)과 대표는 팀 칸에 '전체', 파일은 사람마다 하나(hq/·sera/ 밑). 없는 파일은 '없음' — 경로를 지어내지 않는다:
+  // 있는지는 /api/actor 가 인격을 돌려주는가로 잰다(system·대표는 카드가 없어 404 → 없음). 이 규칙이 세계관 서브탭(U1)의 정본.
+  body.appendChild(el('div', 'set__k', '인격 — 사람마다 파일 하나'));
+  const ul = el('ul', 'set__list'); body.appendChild(ul);
+  const people = new Map();   // 이름 → { name, title, teamWord, team, seat }. 총괄실을 먼저 돌아 톰·제리·세라·나리의 집이 hq 가 되게
+  const HQ_SEATS = new Set(['chief', 'system', 'secretary']);
+  for (const t of [...teams].sort((a, b) => (a.id === 'hq' ? -1 : b.id === 'hq' ? 1 : 0))) {
+    for (const [seat, a] of Object.entries(summaries[t.id]?.cast ?? {})) {
       if (seat === 'boss') continue;
-      const li = el('li'); li.append(`${t.name} · ${a.name ?? seat}${a.title ? ' · ' + a.title : ''} `);
-      li.appendChild(el('code', null, `teams/${t.id}/${seat}.md`));
-      ul.appendChild(li);
+      const name = a.name ?? seat;
+      if (people.has(name)) continue;
+      const shared = t.id === 'hq' || HQ_SEATS.has(seat);
+      // 세라의 파일은 teams/sera/secretary.md(비서실 세션, apr_078fa7fc) — 총괄실 cast 에도 서지만 파일은 sera/ 밑 하나
+      people.set(name, { name, title: a.title ?? '', teamWord: shared ? '전체' : t.name, team: seat === 'secretary' && teams.some((x) => x.id === 'sera') ? 'sera' : t.id, seat });
     }
   }
-  body.appendChild(ul);
+  const row = (name, title, teamWord, file) => {
+    const li = el('li'); li.append(`${name} · ${title || '—'} · ${teamWord} `);
+    li.appendChild(el('code', null, file ?? '없음'));
+    ul.appendChild(li);
+  };
+  row(summaries.hq?.cast?.boss?.name ?? '대표', '대표', '전체', null);   // 대표는 인격 파일이 없다 — 사람이다
+  const list = [...people.values()];
+  const files = await Promise.all(list.map((p) => fetch(`/api/actor?team=${encodeURIComponent(p.team)}&actor=${encodeURIComponent(p.seat)}`).then((r) => r.ok ? r.json() : null).then((r) => (r?.persona ? `teams/${p.team}/${p.seat}.md` : null)).catch(() => null)));
+  list.forEach((p, i) => row(p.name, p.title, p.teamWord, files[i]));
   // ④ 숨김 화면 — 마을은 탭에서 뺐다(대표 09-16 '마을은 최최최최후'). 여기 링크로만.
   const hid = el('p', 'set__hidden');
   const a = el('a', null, '숨김 화면 — 마을 열기'); a.href = `#${active ?? 'hq'}/world`; hid.append('마을은 아직 손볼 게 많아 탭에서 뺐어요. ', a);
