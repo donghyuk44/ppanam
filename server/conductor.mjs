@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams, isForeign, allowIdleChat } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { ga } from './public/toollabel.js';
 
@@ -33,7 +33,7 @@ const OUTSIDE = path.join(REPO, 'bus', 'outside.mjs');
 const STORE = path.join(REPO, 'state', 'conductor.json');
 
 export const LULL_MS = Number(process.env.PPANAM_LULL_MS || 90_000);
-export const MAX_LULL_PER_HOUR = Number(process.env.PPANAM_LULL_PER_HOUR || 30);
+export const MAX_LULL_PER_HOUR = CAPS.lullPerHour;   // 결정 6 — 장부는 bus(state/budget.json), 재시작을 넘긴다(8단계 ④)
 // (MAX_EXCHANGE — 두 사람 왕복 브레이크 — 는 결정 120 으로 뺐다.) recent 는 관제탑 snapshot 이 보여 주는 최근 발언자 열둘.
 const RECENT_KEEP = 12;
 const HOUR = 3_600_000;
@@ -52,8 +52,7 @@ function room(team) {
       chatNoted: false,
       lastGiven: new Map(), // 자리 → 마지막으로 준 차례 종류
       lullTimer: null,
-      lastLull: 0,
-      lulls: [],            // 침묵 차례 시각 (시간당 상한)
+      lastLull: 0,          // 침묵 차례 수(시간당 상한)는 여기 없다 — bus 장부 state/budget.json (8단계 ④, 재시작을 넘긴다)
       capNoted: 0,
       retryTimer: null,     // 큐에 남긴 외부 자리 재시도(8단계 ①) — notBefore 가 되면 dispatch
       retryAt: null,
@@ -508,14 +507,15 @@ function onFlowEvent(team, e) {
 
 /* ── 침묵 ── */
 
+/** 침묵 차례 하나를 장부에서 쓴다(결정 6 · 8단계 ④). 상한이면 안 쓰고 false — 한 시간에 한 번만 알린다. 장부는 파일이라 재시작에도 0 이 안 된다. */
 function underCap(team) {
   const r = room(team);
   const now = Date.now();
-  r.lulls = r.lulls.filter((t) => now - t < HOUR);
-  if (r.lulls.length < MAX_LULL_PER_HOUR) return true;
+  const b = takeLull(team, now);
+  if (b.ok) return true;
   if (now - r.capNoted > HOUR) {
     r.capNoted = now;
-    note(team, `침묵 차례가 시간당 상한(${MAX_LULL_PER_HOUR}회)에 닿았습니다. 한 시간 동안은 호명·판정·대표 지시에만 답합니다.`);
+    emit(team, { actor: 'system', type: 'note', text: `침묵 차례가 시간당 상한(${b.cap}회)에 닿았습니다. 한 시간 동안은 호명·판정·대표 지시에만 답합니다 (결정 6).`, meta: { cap: { kind: 'lull', used: b.used, cap: b.cap } } });
   }
   return false;
 }
@@ -548,7 +548,6 @@ function armLull(team) {
     if (mode !== 'work' && mode !== 'lunch') return;                 // 밤·휴식엔 아무도 깨우지 않는다
     if (anyBusy(team)) { armLull(team); return; }                     // 일하는 중은 조용한 게 아니다
     if (!isOffice(team) && readState(team).phase !== 'running') return;
-    if (!underCap(team)) return;
     // 잡담 브레이크(결정 121) — 같은 둘이 침묵 차례로만 오가고 있으면 침묵 차례를 안 준다. 호명·판정·대표 말은 그대로 온다.
     if (chatLoop(r.chat)) {
       if (!r.chatNoted) { r.chatNoted = true; const [a, b] = [...new Set(r.chat.slice(-MAX_CHAT * 2))]; note(team, `${nameOf(team, a)}·${nameOf(team, b)} 잡담이 길어져 잠시 쉽니다 — 누가 이름을 부르거나 다른 사람이 말하면 이어갑니다.`); }
@@ -556,8 +555,8 @@ function armLull(team) {
     }
     const who = quietest(team);
     if (!who) return;
+    if (!underCap(team)) return;   // 맨 마지막에 — 줄 사람이 정해진 뒤에야 장부(state/budget.json)에서 하나를 쓴다
     r.lastLull = Date.now();
-    r.lulls.push(r.lastLull);
     enqueue(team, who, mode === 'lunch' ? 'lunch' : 'lull');
   }, LULL_MS);
 }
@@ -686,5 +685,5 @@ export function wake(team, actor) {
 /** 화면·시험용. */
 export function snapshot(team) {
   const r = room(team);
-  return { pending: [...r.pending.entries()].map(([a, p]) => `${a}:${p.kind}`), recent: r.recent, lulls: r.lulls.length, outsideBusy: r.outsideBusy, flow: r.flow ? { step: r.flow.steps[r.flow.i], waiting: r.flow.waiting, asked: r.flow.asked } : null };
+  return { pending: [...r.pending.entries()].map(([a, p]) => `${a}:${p.kind}${p.notBefore ? '@' + new Date(p.notBefore).toISOString().slice(11, 19) : ''}`), recent: r.recent, lulls: lullUsed(team), outsideBusy: r.outsideBusy, flow: r.flow ? { step: r.flow.steps[r.flow.i], waiting: r.flow.waiting, asked: r.flow.asked } : null };
 }

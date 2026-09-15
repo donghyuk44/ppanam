@@ -18,7 +18,7 @@ import { spawn as spawnProc } from 'node:child_process';
 import {
   ROOT, emit, listTeams, isOffice, paths, endRound, startRound, readCast, readState, readRoadmap, listRounds,
   readLog, quiet, RELAY_QUIET, appendJournal, journalPrompt, collectJournals, writeTurn, readProgress, progressFresh, progressText,
-  isForeign, engineName, roomRules, listApprovals,
+  isForeign, engineName, roomRules, listApprovals, takeVillage,
 } from '../bus/bus.mjs';
 import { listRequests } from '../bus/requests.mjs';
 import { toolPhrase } from './public/toollabel.js';
@@ -699,7 +699,12 @@ async function journalAll(team, round) {
     if (isForeign(cast[actor]?.model)) return journalOutside(team, actor);
     return Promise.race([sendAndWait(team, quiet(p), actor, { kind: 'journal', internal: true }), new Promise((r) => setTimeout(() => r(null), JOURNAL_TIMEOUT))]);
   };
-  const actors = [...spoke].filter((a) => cast[a]?.model === 'claude' || isForeign(cast[a]?.model));
+  const spoken = [...spoke].filter((a) => cast[a]?.model === 'claude' || isForeign(cast[a]?.model));
+  // 마을 하루 상한(결정 6 · 8단계 ④) — 일지는 마을 턴이다(계획 15·마주침 30·일지 15 중 지금 있는 것). 자리마다 장부에서 하나씩 쓰고, 넘으면 그 자리는 건너뛴다 —
+  // 조용히가 아니라 note 로. 걷기 전에 가르니 collectJournals 의 "한 번 더 묻습니다" 가 상한에 걸린 자리를 또 묻지 않는다.
+  const { allowed, skipped, cap } = takeVillageFor(spoken, (a) => takeVillage('journal', { team, actor: a }));
+  if (skipped.length) note(team, `마을 하루 상한(${cap.cap}회)에 닿아 일지 차례 ${skipped.length}건(${skipped.map((a) => cast[a]?.name ?? a).join('·')})을 건너뜁니다 — 라운드 ${round} 은 그 자리 일지 없이 닫습니다 (결정 6: 넘으면 마을 턴부터).`, { cap: { kind: 'village', used: cap.used, cap: cap.cap, skipped } });
+  const actors = allowed;
   const once = async (a) => {
     try {
       const text = await ask(a);
@@ -711,6 +716,22 @@ async function journalAll(team, round) {
   // 걷는 순서·note 문구는 bus.mjs collectJournals 하나 — round.mjs check 가 같은 함수를 가짜 once 로 돌린다.
   const { got } = await collectJournals(actors, once, { note: (t) => note(team, t), nameOf: (a) => cast[a]?.name ?? a, round });
   return got;
+}
+
+/**
+ * 마을 턴을 받을 자리 가르기(8단계 ④) — 순수. take(actor) 가 { ok, used, cap } 을 돌려주는 장부 호출이다. 앞에서부터 하나씩 쓰고, 처음 막힌 뒤로는 전부 건너뛴다(장부를 더 안 두드린다).
+ * round.mjs check 가 가짜 take 로 돌려본다. @returns { allowed, skipped, cap: { used, cap } }
+ */
+export function takeVillageFor(actors, take) {
+  const allowed = [], skipped = [];
+  let cap = { used: 0, cap: 0 }, blocked = false;
+  for (const a of actors) {
+    if (blocked) { skipped.push(a); continue; }
+    const r = take(a);
+    cap = { used: r.used, cap: r.cap };
+    if (r.ok) allowed.push(a); else { blocked = true; skipped.push(a); }
+  }
+  return { allowed, skipped, cap };
 }
 
 /** 외부감사의 일지는 outside.mjs 가 쓴다. 끝나기만 기다린다. exit 0 만 'ok' — (패스)·빈 답은 outside.mjs 가 exit 3 을 낸다. */

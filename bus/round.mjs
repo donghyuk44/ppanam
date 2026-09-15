@@ -981,6 +981,38 @@ switch (cmd) {
         out.push(['codex 한도 쿨다운(R25)', untilOk && !p1.reason.includes('\x1b') && p2 && new Date(p2.until).getTime() === cNow + 6 * 3600_000 && p3 === null && gone === null && live?.noted?.[0] === 'dev' && cleared === null
           ? `✓ 실제 오류에서 ${p1.until.slice(0, 10)} 읽음 · ANSI 뗌 · 시각 없으면 6시간 · 한도 아니면 null · 지난 파일 null · 산 파일 noted · 지움` : '✗ ' + JSON.stringify({ p1, p2, p3, gone, live, cleared })]);
       }
+      // 비용 상한(결정 6 · 8단계 ④) — 침묵 방당 시간당 30 · 마을 하루 60. 장부는 파일(state/budget.json)이라 재시작을 넘긴다. 진짜 파일은 시험 뒤 되돌린다.
+      {
+        const { capTake, takeLull, takeVillage, lullUsed, villageUsed, clearBudget, CAPS, dayStartSeoul } = await import('./bus.mjs');
+        const { takeVillageFor } = await import('../server/session.mjs');
+        const bPath = path.join(ROOT, 'state', 'budget.json');
+        const bBefore = fs.existsSync(bPath) ? fs.readFileSync(bPath, 'utf8') : null;
+        try {
+          clearBudget();
+          // 순수 — 창 밖은 버리고, cap 미만이면 넣는다
+          const c1 = capTake([1, 2, 3], 3, { now: 10, since: 2 });       // 창 안 2개 → 넣음 3
+          const c2 = capTake([1, 2, 3], 2, { now: 10, since: 2 });       // 창 안 2개 = cap → 거부
+          const cWant = c1.ok && c1.used === 3 && c1.list.join(',') === '2,3,10' && !c2.ok && c2.used === 2 && c2.list.join(',') === '2,3';
+          // 침묵 — 방당 시간당. 30 쓰면 31번째 거부, 한 시간 지나면 다시. 다른 방은 따로. 파일에 남는다(재시작 넘김 = 새로 읽어도 같은 수).
+          const t0 = Date.parse('2026-09-16T03:00:00Z');
+          let lastOk = null; for (let i = 0; i < CAPS.lullPerHour; i++) lastOk = takeLull('_check', t0 + i * 1000);
+          const over = takeLull('_check', t0 + 60_000), other = takeLull('_check2', t0 + 60_000), later = takeLull('_check', t0 + 3_600_001);
+          const lWant = lastOk?.ok === true && lastOk.used === CAPS.lullPerHour && over.ok === false && over.used === CAPS.lullPerHour && other.ok === true && other.used === 1
+            && later.ok === true && lullUsed('_check', t0 + 60_000) === CAPS.lullPerHour && JSON.parse(fs.readFileSync(bPath, 'utf8')).lull._check.length === CAPS.lullPerHour;
+          // 마을 — 하루(서울 0시). 60 쓰면 61번째 거부, 날이 바뀌면 다시.
+          const d0 = dayStartSeoul(t0) + 3_600_000;
+          let vLast = null; for (let i = 0; i < CAPS.villagePerDay; i++) vLast = takeVillage('journal', { team: '_check', actor: 'a' }, d0 + i * 1000);
+          const vOver = takeVillage('journal', { team: '_check', actor: 'b' }, d0 + 100_000), vNext = takeVillage('plan', { team: '_check' }, d0 + 86_400_000);
+          const vWant = vLast?.ok === true && vLast.used === CAPS.villagePerDay && vOver.ok === false && vNext.ok === true && vNext.used === 1 && villageUsed(d0 + 86_400_000) === 1;
+          // 걷기 전에 가르기 — 셋 중 둘째에서 막히면 둘째·셋째 건너뜀, 장부는 두 번만 두드림
+          let calls = 0;
+          const tv = takeVillageFor(['a', 'b', 'c'], () => { calls += 1; return calls === 1 ? { ok: true, used: 60, cap: 60 } : { ok: false, used: 60, cap: 60 }; });
+          const tvWant = tv.allowed.join(',') === 'a' && tv.skipped.join(',') === 'b,c' && calls === 2 && tv.cap.used === 60;
+          out.push(['비용 상한(결정 6 · 8단계 ④)', cWant && lWant && vWant && tvWant ? `✓ capTake 창·cap · 침묵 ${CAPS.lullPerHour}/시간 방당(31번째 거부·다른 방 따로·한 시간 뒤 다시·파일에 남음) · 마을 ${CAPS.villagePerDay}/하루(61번째 거부·다음 날 다시) · 일지 걷기 전 가르기(막힌 뒤 전부 건너뜀)` : '✗ ' + JSON.stringify({ c1, c2, lastOk, over, other, later, vLast, vOver, vNext, tv, calls })]);
+        } finally {
+          if (bBefore != null) fs.writeFileSync(bPath, bBefore); else clearBudget();
+        }
+      }
       // claude 자리로 codex 를 띄우면 거부 (결정 69 ① — --actor 는 cast.json 이 gpt 인 자리만). 진짜 방(dev)의 guide 는 claude 다. --dry 라 codex 는 안 뜬다.
       const devGuide = readCast('dev').agents?.guide?.model;
       const j2 = spawnSync('node', [path.join(ROOT, 'bus', 'outside.mjs'), '--team', 'dev', '--actor', 'guide', '--turn', 'called', '--dry'], { cwd: ROOT, encoding: 'utf8', timeout: 20_000 });

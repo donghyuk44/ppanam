@@ -1012,6 +1012,61 @@ export function clearOutsideCooldown() {
   try { fs.rmSync(cooldownPath, { force: true }); } catch { /* 이미 없음 */ }
 }
 
+/* ── 비용 상한 (결정 6 · 8단계 ④) — 침묵 차례 방당 시간당 30 · 마을 하루 60 ──
+ * '왕복 3회' 는 결정 120 으로 철회(121·c234d90). 상한을 넘으면 그 종류의 자동 턴을 건너뛴다 — 호명·판정·대표 지시는 상한과 무관하다.
+ * 건너뛰는 순서는 마을 턴부터(제일 값싼 것): 마을(일지·앞으로 계획·마주침) > 침묵 > 호명·판정(안 끊음).
+ * 장부는 파일이다(state/budget.json) — 전엔 침묵 차례 수가 사회자 메모리에만 있어 서버 재시작마다 0 이 됐다.
+ *   { lull: { <방>: [ms, …] (지난 한 시간), village: { day: <서울 날짜 시작 ms>, items: [{ at, what, team, actor }] } }
+ * 마을 하루는 서울 0시 기준(결정 101). 순수한 부분(capTake)은 round.mjs check 가 돌려본다.
+ */
+export const CAPS = {
+  lullPerHour: Number(process.env.PPANAM_LULL_PER_HOUR || 30),
+  villagePerDay: Number(process.env.PPANAM_VILLAGE_PER_DAY || 60),
+};
+const budgetPath = path.join(ROOT, 'state', 'budget.json');
+function readBudget() {
+  try { const b = JSON.parse(fs.readFileSync(budgetPath, 'utf8')); return { lull: b.lull ?? {}, village: b.village ?? { day: 0, items: [] } }; }
+  catch { return { lull: {}, village: { day: 0, items: [] } }; }
+}
+function writeBudget(b) {
+  fs.mkdirSync(path.dirname(budgetPath), { recursive: true });
+  const tmp = `${budgetPath}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(b) + '\n');
+  fs.renameSync(tmp, budgetPath);
+}
+/** 순수 — 창(since 이후) 안의 기록 수가 cap 미만이면 하나 더 넣고 ok. { ok, used, cap, list } — list 는 창 밖을 뺀 새 목록(넣었으면 포함). */
+export function capTake(list, cap, { now = Date.now(), since = 0, item = now, at = (x) => (typeof x === 'number' ? x : x.at) } = {}) {
+  const kept = (list ?? []).filter((x) => at(x) >= since);
+  if (kept.length >= cap) return { ok: false, used: kept.length, cap, list: kept };
+  return { ok: true, used: kept.length + 1, cap, list: [...kept, item] };
+}
+/** 침묵 차례 하나를 쓴다 — 방당 지난 한 시간. 넘었으면 ok:false (안 쓴다). */
+export function takeLull(team, now = Date.now()) {
+  const b = readBudget();
+  const r = capTake(b.lull[team], CAPS.lullPerHour, { now, since: now - 3_600_000 });
+  b.lull[team] = r.list;
+  writeBudget(b);
+  return { ok: r.ok, used: r.used, cap: r.cap };
+}
+export function lullUsed(team, now = Date.now()) {
+  return (readBudget().lull[team] ?? []).filter((t) => t >= now - 3_600_000).length;
+}
+/** 마을 턴 하나를 쓴다(일지·계획·마주침) — 하루(서울 0시부터). 넘었으면 ok:false (안 쓴다). */
+export function takeVillage(what, { team = null, actor = null } = {}, now = Date.now()) {
+  const b = readBudget();
+  const day = dayStartSeoul(now);
+  const items = b.village.day === day ? b.village.items : [];
+  const r = capTake(items, CAPS.villagePerDay, { now, since: day, item: { at: now, what, team, actor } });
+  b.village = { day, items: r.list };
+  writeBudget(b);
+  return { ok: r.ok, used: r.used, cap: r.cap };
+}
+export function villageUsed(now = Date.now()) {
+  const b = readBudget();
+  return b.village.day === dayStartSeoul(now) ? b.village.items.length : 0;
+}
+export function clearBudget() { try { fs.rmSync(budgetPath, { force: true }); } catch { /* 이미 없음 */ } }
+
 /* ── 방이 닫혀 있어도 채팅 (결정 127 ②, 대표가 직접 겪은 불편) ──
  * /api/say 는 라운드가 idle 이어도 이제 막지 않는다 — 하지만 훅(.claude/hooks/to-bus.mjs)은 그대로면 idle 일 때
  * 기록을 안 해서(잡담이 새어들지 않게 하려던 것) 대표 말도 실무 답도 대화록에서 사라진다. 서버가 깨우기 직전에
