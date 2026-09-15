@@ -261,7 +261,7 @@ M3 데이터 전까지 빈 상태 문구). 마지막에 본 탭은 브라우저�
 
 | `kind` | 어디서 | `text` | `mine` (대표 손이 필요한가) | `target` |
 | --- | --- | --- | --- | --- |
-| `boss` 대표 차례(빨강) | 팀 요약 `bossCall`(결정을 청했는데 답 없음, 8절) + `people[by].bossCall.text` | 그 말 앞머리 80자 | 예. 위임 중엔 돈·바깥 물음(`bossCall.forbidden` = `proxyForbidden`)만 | 그 방, 그 말풍선 |
+| `boss` 대표 차례(빨강) | 팀 요약 `bossCall`(결정을 청했는데 답 없음, 8절) + `people[by].bossCall.text` | 그 말 앞머리 80자 | 예. 위임 중엔 돈·바깥·`.claude` 물음(`bossCall.forbidden` = `proxyForbidden`)만 | 그 방, 그 말풍선 |
 | `approval` 승인 대기 | `approvals` 대기 중 C(대표 판단)·B(톰·제리) | `승인 [C] what` · `승인 [B] what — 톰·제리 차례` | C 만. 위임 중엔 대리 못 하는 C(`proxyable:false` — 서버가 `proxyEligible` 로 잰 것)만. B 는 아니오 | 관제탑 요청·승인 카드 |
 | `blocked` 막힘 | 팀 요약 `needsBoss`(`blocked`·`attempts`·`silent`) | 이유 한 줄(`BOSS_WHY`) | 예. 위임 중엔 아니오(톰·제리가 푼다) | 그 방 |
 | `report` 보고 | `bossNotes[]` 중 `ask` 아닌 것(오늘) | 그 말 앞머리 160자 | 아니오 — 읽을 것이지 누를 것이 아니다 | 그 방, 그 말풍선 |
@@ -686,10 +686,10 @@ codex 를 부르기 전에 `note` 로 거부된다.
 | `answer` | 대표에게 결정을 청한 말(`bossCall`)이 10분 넘게 답 없음 | 그 방에 note "대리 결정 — 톰·제리: <톰의 이유>"(`meta.proxyAnswer: <그 말 id>`) — 요약·개인 카드의 `bossCall` 은 이 note 로 답한 것으로 본다 |
 
 10분은 **둘 다** 여야 한다 — 그 일이 10분 넘게 기다렸고, 대표가 어느 방에서도 10분 넘게 말이 없었다(`bossQuietFor`).
-**위임 스위치**(결정 136 — 대표 09-15 "12시간 맡긴다" · "다음부턴 너가 처리해"): `state/delegation.json` `{ to, until, decision }` 이 있고 지금이 `until` 안이면 **C 카드는 기다리지 않는다** — 10분·대표 조용 조건 없이 바로 총괄실 B "대리 결정 — …" 으로(`proxyCandidates` 의 `immediate`, 순수 판별은 `delegationActive`). 대리 요청 detail 과 판정 note·이유에 " — 대리, 나리 위임 136" 이 붙는다(`delegationTag`). 돈·바깥(`proxyForbidden`)은 위임 중에도 대표만. `until` 이 지나면 파일이 있어도 평소대로. 방의 물음(`answer`)·FAIL 풀기(`unblock`)는 위임 중에도 10분 규칙 그대로(나리가 정한 건 C 카드뿐). 화면은 `boot.delegation` 으로 받아 종 배지가 위임 중엔 돈·바깥만 센다(3절 알림 패널 `mine`, 나리 결정 ②). 같은 일에 대리 요청은 한 번(`state/notifier.json`
+**위임 스위치**(결정 136 — 대표 09-15 "12시간 맡긴다" · "다음부턴 너가 처리해"): `state/delegation.json` `{ to, until, decision }` 이 있고 지금이 `until` 안이면 **C 카드는 기다리지 않는다** — 10분·대표 조용 조건 없이 바로 총괄실 B "대리 결정 — …" 으로(`proxyCandidates` 의 `immediate`, 순수 판별은 `delegationActive`). 대리 요청 detail 과 판정 note·이유에 " — 대리, 나리 위임 136" 이 붙는다(`delegationTag`). 돈·바깥·`.claude`(`proxyForbidden`)는 위임 중에도 대표만. `until` 이 지나면 파일이 있어도 평소대로. 방의 물음(`answer`)·FAIL 풀기(`unblock`)는 위임 중에도 10분 규칙 그대로(나리가 정한 건 C 카드뿐). 화면은 `boot.delegation` 으로 받아 종 배지가 위임 중엔 돈·바깥만 센다(3절 알림 패널 `mine`, 나리 결정 ②). 같은 일에 대리 요청은 한 번(`state/notifier.json`
 `proxied[열쇠]`). ② 방에는 늘 "대리 결정" 이라는 말이 남는다. ③ `teams/hq/out/proxy-decisions.md` 맨 위에 그날 대리 결정을 한 줄씩 적는다 —
 자정 보고서(M7)가 "대표님 대신 정한 것" 절로 맨 위에 싣는다, 대표가 아침에 보고 뒤집을 수 있게. ④ **돈이 나가는 것과 바깥으로 나가는 것은 대리 대상이
-아니다** — `proxyForbidden(text)`: 비용·상한·결제·돈·유료·외부·발송·메일·공개·병합 이 있으면 안 올린다. C 승인은 **`what` 만**(`proxyEligible` — `detail` 은 요청자의 설명 글이라 안 훑는다: "돈·바깥이 아니라 대리 대상" 이라 적은 로드맵 카드가 '돈' 에 걸려 빠졌다, 톰 09-15 apr_1bf1b266. 설명에 숨긴 부탁은 톰·제리가 대리 판정하며 읽는다. `action.type` 이 `cost`·`send`·`merge` 도 제외),
+아니다, `.claude` 밑도** — `proxyForbidden(text)`: 비용·상한·결제·돈·유료·외부·발송·메일·공개·병합·`.claude` 가 있으면 안 올린다(`.claude` 는 결정 136 원문 "돈·바깥·.claude 는 대표만" 의 셋째 — 경로 글자로만, "클로드"·"훅" 낱말은 안 걸린다. 제리 REVISE apr_4fb49ab6). C 승인은 **`what` 만**(`proxyEligible` — `detail` 은 요청자의 설명 글이라 안 훑는다: "돈·바깥이 아니라 대리 대상" 이라 적은 로드맵 카드가 '돈' 에 걸려 빠졌다, 톰 09-15 apr_1bf1b266. 설명에 숨긴 부탁은 톰·제리가 대리 판정하며 읽는다. `action.type` 이 `cost`·`send`·`merge` 도 제외),
 방의 물음(`answer`)은 **그 말 자체**로 — "유료 결제를 허용해 주세요" 를 질문 경로로 대리하면 금지선을 우회한다(레오 R23). 그건 대표만.
 빠진 것도 조용히 사라지지 않는다 — 10분 넘게 기다린 것이면 총괄실에 note "대리로 정하지 않습니다 — 돈·바깥이라 대표만" 을 한 번 남긴다(`proxied[열쇠].excluded`).
 
