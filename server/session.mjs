@@ -22,6 +22,10 @@ import {
 } from '../bus/bus.mjs';
 import { listRequests } from '../bus/requests.mjs';
 import { toolPhrase } from './public/toollabel.js';
+// 대화 기록은 훅이 한다(위 주석) — 이건 다른 층이다. usage·total_cost_usd 는 stdout 의 result 메시지에만
+// 실려 오고 훅은 그 원시 스트림을 못 본다. 그래서 여기서만 뜰 수 있는 토큰 장부(T1, 대표 09-16 "톰 역할
+// 토큰을 걱정했는데 지금은 잴 수가 없다").
+import { recordUsage } from './usage.mjs';
 
 const STORE = path.join(ROOT, 'state', 'sessions.json');
 
@@ -468,6 +472,7 @@ function drain(s) {
       if (msg.subtype && msg.subtype !== 'success') {
         note(s.team, `${name(s)}이 이번 턴을 끝내지 못했습니다 (${msg.subtype}).`);
       }
+      try { recordUsage(s.team, s.actor, readState(s.team).round, msg); } catch { /* 장부 실패는 턴을 막지 않는다 */ }
       done?.resolve?.(typeof msg.result === 'string' ? msg.result : '');
       if (closing.has(s.team)) { dropped(s); maybeFinishClose(s.team); return; }
       next(s);

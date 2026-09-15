@@ -1,7 +1,9 @@
 # 책장 — 개발
 
 결정 116 ①: 대화록을 통째로 붓는 대신 읽을 것을 경로로 준다. 여기 없는 건
-`node tools/library.mjs find <낱말>` (문서 전용 — 아래 "안 읽어도 되는 것" 참고).
+`node tools/library.mjs find <낱말>` — 단, 이 명령이 맨 명령으로 막혀 있다(P2,
+teams/dev/out/p2-tools-permission.md). settings.json 이 고쳐지기 전까지는 "안 되면
+grep 으로 직접 찾는다" 로 대신한다.
 
 ## 읽을 것 (경로만 먼저 보고, 필요한 절만)
 
@@ -9,10 +11,11 @@
   grep 해서 그 함수만 본다.
 - `bus/round.mjs` (1457줄) — 라운드 진행·`check`(회귀 시험 113개). 시험을 고칠 땐 비슷한 시험을 하나 찾아
   그 옆에 붙이는 식으로, 전체를 다시 읽지 않는다.
-- `server/public/app.js` (2497줄) — 대표 화면(관제탑) 클라이언트. 화면 한 칸을 고칠 땐 그 칸 이름
-  (`bossLine`·`progress` 등)으로 grep.
+- `server/src/app.js` (편집은 여기서만 — `server/public/app.js` 는 `build:public` 이 이 파일에서 다시
+  만드는 산출물이다. `public/app.js` 를 고치면 다음 빌드가 조용히 덮어쓴다, R29 에서 실제로 겪은 일)
+  — 대표 화면(관제탑) 클라이언트. 화면 한 칸을 고칠 땐 그 칸 이름(`bossLine`·`progress` 등)으로 grep.
 - `docs/event-schema.md` (993줄) — 대화록 이벤트 계약. 이건 .md 라 `node tools/library.mjs find <절 이름>`
-  으로 절을 먼저 찾을 수 있다.
+  으로 절을 먼저 찾을 수 있다(위 막힘 참고).
 
 ## 전문 Read 금지
 
