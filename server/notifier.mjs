@@ -27,7 +27,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  listApprovals, readCast, readState, readRoadmap, isOffice, quiet, emit, paths, setMilestoneStatus,
+  listApprovals, readCast, readState, writeState, readRoadmap, isOffice, quiet, emit, paths, setMilestoneStatus,
   proxyCandidates, requestApproval, decideApproval, resumeRound, startRound, APPROVAL_GRADES, readDelegation, delegationTag, teamExists,
 } from '../bus/bus.mjs';
 
@@ -105,6 +105,15 @@ function applyAction(r, store) {
     if (ok && a.autoOpen) {
       try { const st = startRound(r.team, { topic: a.title ?? null }); text += ` 라운드 ${st.round} 을 열었습니다.`; }
       catch (e) { text += ` 라운드는 안 열었습니다 — ${String(e.message).slice(0, 80)}`; }
+    } else if (ok) {
+      // 로드맵 교체가 열린 라운드 중에 들어가면(R29) round.json 의 milestone 이 옛 단계에 그대로 남는다 — 안 맞추면
+      // 이 라운드가 닫힐 때 옛 마일스톤을 또 pass 로 찍고 다음 단계를 잘못 센다(나리 실측, apr_115838b4).
+      const st = readState(r.team);
+      if (st.phase !== 'idle' && st.milestone !== a.n) {
+        writeState(r.team, { milestone: a.n, attempt: st.attempts?.[a.n] ?? 0 });
+        emit(r.team, { actor: 'system', type: 'note', text: `열린 라운드 ${st.round} 의 마일스톤을 ${st.milestone} → ${a.n} 로 맞췄습니다.` });
+        text += ` 열린 라운드 ${st.round} 도 맞췄습니다.`;
+      }
     }
     return text;
   }

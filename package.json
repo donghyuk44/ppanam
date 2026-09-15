@@ -12,7 +12,8 @@
     "say": "node bus/say.mjs",
     "round": "node bus/round.mjs",
     "demo": "node bus/demo.mjs",
-    "outside": "node bus/outside.mjs"
+    "outside": "node bus/outside.mjs",
+    "build:public": "node tools/build-public.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"

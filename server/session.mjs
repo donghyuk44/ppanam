@@ -680,7 +680,7 @@ export async function closeRound(team, opts = {}) {
     // --next (결정 25): 닫은 그 자리에서 다음 라운드를 연다 — 여는 손이 없어 방이 멈추던 일. PASS 로 닫아 now 가 없으면
     // startRound 가 거부한다(다음 착수는 B) — 그건 note 로만 남기고 닫힘은 그대로다.
     if (opts.next) {
-      try { const s = startRound(team, { milestone: opts.next.milestone ?? null, topic: opts.next.topic ?? null }); out.next = { round: s.round, milestone: s.milestone, topic: s.topic }; }
+      try { const s = startRound(team, { milestone: opts.next.milestone ?? null, topic: opts.next.topic ?? null, auditor: opts.next.auditor ?? null }); out.next = { round: s.round, milestone: s.milestone, topic: s.topic }; }
       catch (e) { out.nextError = e.message; }
     }
     return out;

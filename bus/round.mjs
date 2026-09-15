@@ -2,6 +2,8 @@
 // 라운드 제어.
 //
 //   node bus/round.mjs start --topic "가드" -m 1      # 주제는 게이트 이름
+//   node bus/round.mjs start -m 9 --auditor ops      # 이 회차의 안 걸음 감사 자리(결정 125)
+//   node bus/round.mjs auditor ops                   # 열린 회차 중에 정하거나 바꾼다
 //   node bus/round.mjs status                        # 전체 팀 한눈에
 //   node bus/round.mjs end -v PASS --summary "1안 확정"
 //   node bus/round.mjs end --next --summary "로드맵 교체" [-m 1 --topic "…"]   # 닫고 그 자리에서 다음 라운드를 연다 (결정 25)
@@ -16,7 +18,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
-  startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound,
+  startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound, setAuditor,
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
   addressees, callsBoss, asksBoss, bossParagraph, bossCallOf, bossNotesOf, doneOf, blockedSpansOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
@@ -26,7 +28,7 @@ import {
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
-const o = { team: null, milestone: null, verdict: null, limit: 20, topic: null, summary: null, next: false };
+const o = { team: null, milestone: null, verdict: null, limit: 20, topic: null, summary: null, next: false, auditor: null };
 const words = [];
 
 for (let i = 1; i < argv.length; i++) {
@@ -38,6 +40,7 @@ for (let i = 1; i < argv.length; i++) {
   else if (a === '--topic') o.topic = argv[++i];
   else if (a === '--summary') o.summary = argv[++i];
   else if (a === '--next') o.next = true;
+  else if (a === '--auditor') o.auditor = argv[++i];   // 이 회차의 안 걸음 감사 자리(결정 125) — start · end --next 에
   else words.push(a);
 }
 
@@ -92,8 +95,19 @@ async function viaServer(body, api = '/api/round') {
 switch (cmd) {
   case 'start': {
     try {
-      const s = startRound(team, { topic, milestone: o.milestone });
-      console.log(`[${team}] 라운드 ${s.round} 시작 · 마일스톤 ${s.milestone}${s.topic ? ' — ' + s.topic : ''}${s.attempt ? ` · 반박 ${s.attempt}/${MAX_ATTEMPTS} 물려받음` : ''}`);
+      const s = startRound(team, { topic, milestone: o.milestone, auditor: o.auditor });
+      console.log(`[${team}] 라운드 ${s.round} 시작 · 마일스톤 ${s.milestone}${s.topic ? ' — ' + s.topic : ''}${s.auditor ? ` · 감사 ${s.auditor}` : ''}${s.attempt ? ` · 반박 ${s.attempt}/${MAX_ATTEMPTS} 물려받음` : ''}`);
+    } catch (e) {
+      console.error('오류: ' + e.message);
+      process.exit(1);
+    }
+    break;
+  }
+  case 'auditor': {
+    // 열린 회차의 감사 자리를 정한다(결정 125) — node bus/round.mjs auditor ops. 방에 note 가 남는다.
+    try {
+      const n = setAuditor(team, phrase ?? o.auditor);
+      console.log(`[${team}] R${n.round} ${n.text}`);
     } catch (e) {
       console.error('오류: ' + e.message);
       process.exit(1);
@@ -104,7 +118,7 @@ switch (cmd) {
     // 상황판(결정 23)이 이 라운드 동안 갱신되지 않았으면 한 줄 경고 — 거부는 아니다. 닫히면 다음 세션이 이 파일로 자리를 잡는다.
     if (!progressFresh(team)) console.error(`경고: teams/${team}/progress.json 이 이 라운드 동안 갱신되지 않았습니다 — node bus/progress.mjs --team ${team} --doing "…" --next "…" 로 먼저 쓰세요.`);
     // --next: 닫은 그 자리에서 다음 라운드를 연다 (결정 25). 주제는 --topic 만 — 남은 단어는 이 라운드의 요약이다.
-    const next = o.next ? { milestone: o.milestone, topic: o.topic } : null;
+    const next = o.next ? { milestone: o.milestone, topic: o.topic, auditor: o.auditor } : null;
     const r = await viaServer({ team, action: 'end', verdict: o.verdict, summary, next });
     if (r) {
       const then = r.next ? ' 닫히면 그 자리에서 다음 라운드가 열립니다(--next).' : '';
@@ -835,6 +849,53 @@ switch (cmd) {
         for (const r of listApprovals({ team: T, status: 'pending' })) voidApproval(r.id, '자가 시험');
         const want = bWant && selfRefused === '✓ 거부' && closed2 === true;
         out.push(['만든 사람이 판정하지 않는다(R25)', want ? '✓ buildersOf(Edit·Write) · review 가 고치고 PASS → 거부 · 안 고친 outside 가 새 PASS → 회복' : '✗ ' + JSON.stringify({ bWant, selfRefused, closed2 })]);
+      }
+      // 감사 자리(결정 125) — review 없는 방(개발)에서 ops 를 회차 감사로 정하면 카드를 낼 수 있고, 안 정하면 못 낸다. 자기가 고친 파일은 못 본다(파일 단위):
+      // 테라 X · 솔라 Y 를 고치고 솔라 PASS(마지막) → 솔라 것을 본 카드가 없어 거부 → 레오 PASS → 닫힘. 같은 파일을 둘이 고치면 거부. 닫히면 auditor 비움.
+      {
+        const { editsOf, selfPassError, verdictSeats, auditorError } = await import('./bus.mjs');
+        const ed = editsOf([
+          { type: 'tool', actor: 'guide', text: `${ROOT}/bus/a.mjs`, meta: { tool: 'Edit' } },
+          { type: 'tool', actor: 'ops', text: `${ROOT}/.claude/worktrees/w1/server/b.mjs`, meta: { tool: 'Write' } },
+          { type: 'tool', actor: 'ops', text: `${ROOT}/bus/a.mjs`, meta: { tool: 'Read' } },
+        ]);
+        const edWant = ed.get('guide')?.has('bus/a.mjs') && ed.get('ops')?.has('server/b.mjs') && ed.get('ops').size === 1;
+        const seatsWant = [...verdictSeats({ guide: {}, ops: {}, outside: {} }, { auditor: 'ops' })].join(',') === 'outside,ops'
+          && [...verdictSeats({ guide: {}, review: {}, outside: {} }, { auditor: null })].join(',') === 'outside,review';
+        fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, ops: { name: '솔라', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
+        const badSeat = auditorError(T, 'outside'), badName = auditorError(T, 'review');
+        startRound(T, { milestone: 2, topic: '서로 감사 시험' });
+        const noSeat = refuses(() => recordVerdict(T, { actor: 'ops', verdict: 'PASS', text: '안 정했는데' }), '감사 자리가 아닙니다');
+        const set = setAuditor(T, 'ops');
+        const stAud = readState(T).auditor === 'ops' && set.meta?.auditor === 'ops';
+        artifact();   // ops 가 out/물건.md 를 씀
+        emit(T, { actor: 'guide', type: 'tool', text: '/a/b/app.js', meta: { tool: 'Edit' } });   // 아래 생존 알림 시험이 guide 의 마지막 도구 줄(app.js)을 본다
+        emit(T, { actor: 'ops', type: 'tool', text: `${ROOT}/server/y.mjs`, meta: { tool: 'Edit' } });
+        recordVerdict(T, { actor: 'ops', verdict: 'PASS', text: '테라 것 봤다' });
+        emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['ops'], skipped: [], reason: null } });
+        const unseen = refuses(() => endRound(T, { verdict: 'PASS' }), '외부감사');   // 레오가 외부라 먼저 그 문에 걸린다
+        const selfWhy = selfPassError(readLog(T).filter((e) => e.round === readState(T).round), readCast(T).agents);
+        recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: '둘 다 봤다' });
+        emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['ops', 'outside'], skipped: [], reason: null } });
+        let closed3 = null; try { endRound(T, { verdict: 'PASS' }); closed3 = readState(T).auditor === null && readState(T).phase === 'idle'; } catch (e) { closed3 = e.message; }
+        // 같은 파일을 둘이 고치면 — 순수 함수로
+        const shared = selfPassError([
+          { type: 'tool', actor: 'guide', text: 'bus/z.mjs', meta: { tool: 'Edit' }, ts: 't1' },
+          { type: 'tool', actor: 'ops', text: 'bus/z.mjs', meta: { tool: 'Edit' }, ts: 't2' },
+          { type: 'verdict', actor: 'ops', ts: 't3', meta: { verdict: 'PASS' } },
+        ], { guide: { name: '테라' }, ops: { name: '솔라' } });
+        // 안 고친 자리의 PASS 가 A 의 마지막 고침보다 앞이면 안 본 것
+        const early = selfPassError([
+          { type: 'verdict', actor: 'outside', ts: 't1', meta: { verdict: 'PASS' } },
+          { type: 'tool', actor: 'ops', text: 'server/y.mjs', meta: { tool: 'Edit' }, ts: 't2' },
+          { type: 'verdict', actor: 'ops', ts: 't3', meta: { verdict: 'PASS' } },
+        ], {});
+        fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
+        setMilestoneStatus(T, 2, 'wait');
+        for (const r of listApprovals({ team: T, status: 'pending' })) voidApproval(r.id, '자가 시험');
+        const want = edWant && seatsWant && badSeat?.includes('outside') && badName?.includes('명단') && noSeat === '✓ 거부' && stAud && unseen === '✓ 거부'
+          && selfWhy?.includes('만든 사람') && closed3 === true && shared?.includes('같은 파일') && shared.includes('bus/z.mjs') && early?.includes('만든 사람');
+        out.push(['감사 자리 · 서로 감사(결정 125)', want ? '✓ editsOf(접두 뗌·Read 안 셈) · verdictSeats · outside/명단 밖 거부 · 안 정하면 카드 거부 · auditor ops → 카드 ✓ · 자기 파일은 남이 봐야(먼저 외부 문) · 레오 PASS → 닫힘·auditor 비움 · 같은 파일 거부 · 고치기 전 PASS 는 안 본 것' : '✗ ' + JSON.stringify({ edWant, seatsWant, badSeat, badName, noSeat, stAud, unseen, selfWhy, closed3, shared, early })]);
       }
       // codex 가 도는 중 표시 — outside.mjs 가 두고 지우는 파일. 내 pid 로 두면 참, 지우면 null, 죽은 pid 는 무시(SIGKILL 로 못 지운 표시).
       {

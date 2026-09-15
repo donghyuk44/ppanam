@@ -554,7 +554,8 @@ M6(화면이-답하는-질문.md, 톰·제리 B): **화면 자리 ① 은 없앤
 **판정 규약 — 첫 줄 한 단어.** 사회자가 `⟦판정 요청⟧ <대상>` 턴을 주면(`/api/verdict` · `round.mjs verdict`) 답의 첫 줄이
 `PASS` / `REVISE` / `FAIL` 이다. 훅이 `UserPromptSubmit` 에서 턴 종류를 `state/turn/<방>.<자리>` 에 적고 `Stop` 에서 읽어
 판정 카드(`recordVerdict`)로 남긴다 — 클로드 자리도 codex 도 같다. `say.mjs --verdict` 는 호환용이다. 첫 줄에 판정이 없으면
-말로 남고(`meta.noVerdict`) 사회자가 한 번 더 묻는다. 순서는 내부감사 → (PASS 면) 외부감사. 둘 다 PASS 면 `note`
+말로 남고(`meta.noVerdict`) 사회자가 한 번 더 묻는다. 순서는 안 걸음 → (PASS 면) 외부감사 — 안 걸음은 **이 회차의 감사 자리**(`round.json` `auditor`,
+결정 125 — 아래 "감사 자리")이고, 없으면 `review` 자리(있으면), 그것도 없으면 외부감사만. 둘 다 PASS 면 `note`
 (`meta.verdictFlow: 'pass'`) — 라운드를 닫는 것은 실무나 대표다. `meta.stale` 카드(옛 라운드의 늦은 답)는 흐름에
 세지 않고 계속 기다린다 — 지난 라운드의 PASS 가 이번 완료 note 를 만들면 안 된다 (레오 감사, 2026-09-13).
 **누가 봤나는 기계가 읽는 칸에**(결정 118 ①): 흐름의 note 마다 `meta: { verdictFlow, steps, skipped, reason }` — `verdictFlow` 는 `start` · `skip`(외부감사 걸음을 건너뜀) ·
@@ -798,6 +799,19 @@ codex 를 부르기 전에 `note` 로 거부된다.
 | `running` | 진행 중 | `startRound` · `resumeRound` |
 | `blocked` | **FAIL — 대표 판단 대기.** 판정을 낼 수 없고(`recordVerdict` 거부, 외부감사 답은 말로만 남는다) **닫을 수도 없다**(`endRound` 거부). 레일·관제탑에 "대표 호출" | `recordVerdict`(반박 3회 또는 FAIL) |
 
+### 감사 자리 — `auditor` (결정 125)
+
+팀 안 둘은 각자 일하며 서로 감사한다. 회차마다 **누가 안 걸음의 감사인지** `round.json` 에 적는다: `auditor: '<자리>' | null`.
+정하는 법 — `round.mjs start --auditor ops` · 열린 회차 중엔 `round.mjs auditor ops`(방에 `note` "감사 자리 — 이 회차는 솔라가 본다", `meta.auditor`) ·
+`end --next --auditor ops` · 서버 `/api/round` `start` 의 `auditor`. 자리는 그 방 명단에 있어야 하고 `outside`·`boss` 는 못 된다(바깥눈은 늘 바깥 걸음).
+회차가 닫히면 비워진다 — 다음 회차에 다시 정한다.
+
+**판정 카드를 낼 수 있는 자리**(`bus.verdictSeats(team, state)`): `outside` · `review`(자리가 있으면) · `auditor`. 그 밖의 자리가 낸 판정은 `recordVerdict` 가
+거부한다 — 훅은 그 답을 "[PASS — 판정으로 세지 않음: …]" 말로 남기고, `say.mjs --verdict` 도 같은 문에서 막힌다. 전엔 `say.mjs` 가 `review` 만 받아
+`review` 자리가 없는 방(개발·디자인)은 안 걸음이 아예 없었다.
+
+만든 사람이 판정하지 않는다는 규칙은 그대로다 — 감사 자리도 **자기가 고친 파일은 못 본다**(아래 닫는 조건 6). 그래서 같은 파일을 둘이 잡지 않는다.
+
 막힌 방은 **대표가 그 방에 말하면 풀린다** — 입력창은 대표의 것이고 그 말이 곧 판단이다. 서버가 `/api/say` 에서
 `resumeRound` 를 불러 `running`·반박 0 으로 되돌리고 `note`(`meta.resumed`)를 남긴다. 들려주기(quiet)는 풀지 않는다.
 풀린 뒤에야 "라운드 닫기". 총괄실은 라운드가 없어 막히지 않는다 — 거기서 FAIL 은 한 마디일 뿐이다.
@@ -807,7 +821,7 @@ codex 를 부르기 전에 `note` 로 거부된다.
 
 ### 라운드를 PASS 로 닫는 조건
 
-만든 사람이 스스로 통과시키지 못하게 `endRound` 가 본다 (`endRefusal`). 다섯 가지가 다 맞아야 `-v PASS` 가 된다.
+만든 사람이 스스로 통과시키지 못하게 `endRound` 가 본다 (`endRefusal`). 여섯 가지가 다 맞아야 `-v PASS` 가 된다.
 
 1. 이 라운드에 `stale` 아닌 판정 카드가 있다.
 2. 그중 마지막 카드가 `PASS` 다. 마지막이 `REVISE`·`FAIL` 이면 거부.
@@ -819,6 +833,11 @@ codex 를 부르기 전에 `note` 로 거부된다.
    도구 줄(`type: tool`, `meta.tool` 이 `Edit`·`Write`·`NotebookEdit`)이 `teams/<팀>/out/` 밑에 쓴 파일. 모은 경로마다 **있고 0바이트가 아니어야** 한다 —
    하나라도 없거나 비었으면 거부(`산출물이 비었습니다 — …`), 하나도 안 모이면 거부(`이 라운드의 산출물이 없습니다`). 판정 대상 글의 줄임말 경로
    (`shots/a/b-412.png` 처럼 하나로 셋을 뜻하는 것)는 실제 경로로 적는다 — 거부되면 그 경로가 메시지에 나온다. `teams/<팀>/out/` 밖 경로(코드·docs)는 안 센다.
+6. **마지막 카드의 자리가 자기 것을 통과시킨 게 아니다**(대표 지시 R25 "만든 사람이 자기 걸 통과시키는 것 막기" + 결정 125). 이 라운드의 도구 줄에서
+   자리마다 고친 파일을 모은다(`bus.editsOf` — `Edit`·`Write`·`NotebookEdit` 의 경로, 체크아웃 접두는 뗀다). 마지막 PASS 카드의 자리 A 가 파일을 고쳤으면 —
+   ⓐ 그 파일을 다른 자리도 고쳤으면 거부(`같은 파일을 고쳤습니다` — 같은 파일은 둘 다 못 본다) ⓑ 아니면 A 가 고친 것을 본 **다른 자리의 PASS 카드**
+   (A 와 파일이 안 겹치는 자리 — 외부감사는 늘)가 있어야 한다. 없으면 거부(`만든 사람이 판정하지 않습니다`). 다른(안 고친) 자리가 그 뒤에 새 PASS 를
+   내면 그게 마지막 카드가 되어 스스로 풀린다. 전엔 A 가 무엇이든 고쳤으면 거부라 둘이 나란히 일하며 서로 보는 것(125)이 불가능했다.
 
 거부되면 방에 `note`(`meta.endRefused`)가 남고 서버는 `409 { refused: true }` 를 돌려준다. 서버는 닫기를 미루기(202) 전에
 먼저 본다. 통과한 `PASS` 는 로드맵의 그 마일스톤을 `pass` 로 옮긴다 — R3·R6·R8 의 "마일스톤 1 통과"(2026-09-12)는

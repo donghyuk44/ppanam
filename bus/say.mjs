@@ -10,14 +10,15 @@
 //   - 서버가 띄운 세션에는 PPANAM_TEAM 이 있다. 그 방에만 말할 수 있고, --as 는 guide · review · ops · system 뿐이다.
 //     실무가 --as outside --verdict PASS 로 자기 판정을 외부감사 이름으로 남길 수 있었다 (Fable 재점검, 2026-09-12).
 //     outside 는 bus/outside.mjs 가, boss 는 화면이, chief 는 총괄실 세션의 훅이 각자 남긴다 — 여기서는 못 쓴다.
-//   - 판정(--verdict)은 review 만 낸다. 만든 사람은 판정하지 않는다. ops 도 감사역이 아니다.
+//   - 판정(--verdict)은 감사 자리만 낸다 — review(있으면) · 이 회차의 감사 자리(round.json auditor, 결정 125 — round.mjs auditor ops).
+//     만든 사람은 판정하지 않는다 — 닫을 때 자기가 고친 파일을 본 카드인지 본다(bus.selfPassError).
 //   - PPANAM_ACTOR 가 있으면(서버가 자리별 세션을 띄울 때 넣는다) --as 는 그 값이어야 한다.
 //     ※ 아직 서버가 PPANAM_ACTOR 를 넣지 않는다(자리별 상주 세션은 B1 에서). 그때까지 같은 세션 안의 실무와
 //     내부감사 서브에이전트를 구분할 환경 변수가 없어 실무가 --as review --verdict 를 낼 수 있다 (레오 감사,
 //     2026-09-12). 외부감사·대표·총괄 사칭은 이미 막혔고, 이 구멍은 B1 이 닫는다.
 //   - 환경이 없는 셸은 대표의 터미널이다. 방을 --team 으로 고르되, 위의 화자 제한은 같다.
 
-import { emit, readCast, recordVerdict, EVENT_TYPES, VERDICTS, defaultTeam, teamExists, listTeams } from './bus.mjs';
+import { emit, readCast, recordVerdict, verdictSeatError, EVENT_TYPES, VERDICTS, defaultTeam, teamExists, listTeams } from './bus.mjs';
 
 const argv = process.argv.slice(2);
 const o = { team: null, type: 'message', actor: null, text: null, verdict: null, target: 'guide', tool: null, stdin: false };
@@ -78,9 +79,10 @@ if (envActor && o.actor !== envActor) {
   console.error(`오류: 너는 '${envActor}' 다. '${o.actor}' 로 말할 수 없다.`);
   process.exit(1);
 }
-if (o.type === 'verdict' && o.actor !== 'review') {
-  console.error('오류: 판정은 review 만 낸다. 만든 사람은 판정하지 않는다. 외부감사 판정은 bus/outside.mjs 로.');
-  process.exit(1);
+// 판정은 감사 자리만 낸다 — review(있으면) · 이 회차의 감사 자리(round.json auditor, 결정 125). 만든 사람은 판정하지 않는다(닫을 때 파일 단위로 본다).
+if (o.type === 'verdict') {
+  const seat = verdictSeatError(team, o.actor);
+  if (seat) { console.error('오류: ' + seat + ' 외부감사 판정은 bus/outside.mjs 로.'); process.exit(1); }
 }
 if (!text) { console.error('오류: 할 말이 비어 있습니다.'); process.exit(1); }
 

@@ -730,6 +730,7 @@ export function paths(team) {
 const BLANK_STATE = {
   round: 0, milestone: 0, phase: 'idle', topic: null,
   attempt: 0, attempts: {}, startedAt: null, endedAt: null,
+  auditor: null,   // 이 회차의 안 걸음 감사 자리(결정 125) — 닫히면 비운다
 };
 
 export function readState(team) {
@@ -767,17 +768,19 @@ export function deriveState(team) {
     return { ...BLANK_STATE, round: e.round ?? 0, milestone: e.milestone ?? 0, phase: 'idle', endedAt: e.ts, attempts };
   }
   let phase = 'running';
+  let auditor = e.meta?.auditor ?? null;   // 감사 자리(결정 125) — round_start 에, 회차 중 바꾸면 note meta.auditor
   for (let j = i + 1; j < log.length; j++) {
     const x = log[j];
     if (x.type === 'verdict' && !x.meta?.stale && x.meta?.verdict === 'FAIL') phase = 'blocked';
     // 대표가 말해서 풀렸다 (resumeRound 가 남기는 note)
     if (x.type === 'note' && x.meta?.resumed) phase = 'running';
+    if (x.type === 'note' && x.meta?.auditor !== undefined) auditor = x.meta.auditor;
   }
   const milestone = e.milestone ?? 0;
   return {
     ...BLANK_STATE,
     round: e.round ?? 0, milestone, phase,
-    topic: e.meta?.topic ?? null, attempt: attempts[milestone] ?? 0, attempts, startedAt: e.ts, endedAt: null,
+    topic: e.meta?.topic ?? null, attempt: attempts[milestone] ?? 0, attempts, startedAt: e.ts, endedAt: null, auditor,
   };
 }
 
@@ -1210,12 +1213,51 @@ export function setMilestoneStatus(team, n, status) {
   return true;
 }
 
-export function startRound(team, { topic = null, milestone = null } = {}) {
+/* ── 감사 자리 (결정 125 — 팀 안 둘은 각자 일하며 서로 감사한다) ──
+ * 회차마다 안 걸음의 감사가 누구인지 round.json `auditor` 에 적는다. 판정 카드를 낼 수 있는 자리는 outside · review(있으면) · auditor 뿐.
+ * 전엔 say.mjs 가 review 만 받아 review 자리가 없는 방(개발·디자인)은 안 걸음이 없었다. 계약은 docs/event-schema.md 7절 "감사 자리".
+ */
+/** 이 자리를 감사 자리로 정할 수 없으면 그 이유, 되면 null. 명단에 있어야 하고 바깥눈·대표는 안 된다. */
+export function auditorError(team, actor) {
+  const a = String(actor ?? '').trim();
+  if (!a) return '감사 자리를 적으세요 — 예) --auditor ops';
+  if (a === 'outside' || a === 'boss' || a === 'system') return `${a} 는 안 걸음의 감사 자리가 될 수 없습니다 — 바깥눈은 늘 바깥 걸음, 대표는 판정하지 않습니다.`;
+  const agents = readCast(team).agents ?? {};
+  if (Object.keys(agents).length && !agents[a]) return `'${a}' 는 ${team} 방 명단에 없습니다 (${Object.keys(agents).filter((k) => k !== 'boss').join(' · ')}).`;
+  return null;
+}
+/** 판정 카드를 낼 수 있는 자리들 — outside · review(자리가 있으면) · 이 회차의 auditor. 순수(state·cast 를 받는다). */
+export function verdictSeats(agents, state) {
+  const s = new Set(['outside']);
+  if (agents?.review) s.add('review');
+  if (state?.auditor) s.add(state.auditor);
+  return s;
+}
+/** 이 자리가 지금 판정 카드를 낼 수 없으면 그 이유, 되면 null. */
+export function verdictSeatError(team, actor, state = readState(team)) {
+  const agents = readCast(team).agents ?? {};
+  if (verdictSeats(agents, state).has(actor)) return null;
+  const name = agents[actor]?.name ?? actor;
+  return `${name}(${actor}) 자리는 이 회차의 감사 자리가 아닙니다 — 판정은 review · outside · 회차의 감사 자리(round.json auditor, 결정 125)만 냅니다. 정하려면 node bus/round.mjs auditor ${actor}`;
+}
+/** 열린 회차의 감사 자리를 정한다(바꾼다). 방에 note 가 남아 deriveState 가 되살린다. */
+export function setAuditor(team, actor) {
+  const state = readState(team);
+  if (!state.round || state.phase === 'idle') throw new Error('진행 중인 라운드가 없습니다 — 감사 자리는 회차의 것입니다.');
+  const bad = auditorError(team, actor);
+  if (bad) throw new Error(bad);
+  const name = readCast(team).agents?.[actor]?.name ?? actor;
+  writeState(team, { auditor: actor });
+  return emit(team, { type: 'note', actor: 'system', text: `감사 자리 — 이 회차는 ${name}이 봅니다 (결정 125). 자기가 고친 파일은 못 봅니다.`, meta: { auditor: actor } });
+}
+
+export function startRound(team, { topic = null, milestone = null, auditor = null } = {}) {
   const prev = readState(team);
   // 열린 라운드 위에 또 열면 앞 라운드는 round_end 도 rounds.jsonl 색인도 없이 사라진다.
   if (prev.phase === 'running' || prev.phase === 'blocked') {
     throw new Error(`이미 라운드 ${prev.round} 이 열려 있습니다. 먼저 닫으세요.`);
   }
+  if (auditor != null) { const bad = auditorError(team, auditor); if (bad) throw new Error(bad); }
   // 어느 마일스톤인가. 로드맵의 now 가 정한다. now 가 없으면(직전 것을 PASS 로 닫아 pass 가 됐다) 다음 착수는
   // B 승인이다 — 실무가 혼자 다음 것을 당겨오지 않는다. 번호를 명시하면(대표의 화면·터미널) 그건 대표 결정이다.
   const ms = readRoadmap(team).milestones ?? [];
@@ -1240,12 +1282,13 @@ export function startRound(team, { topic = null, milestone = null } = {}) {
     attempts,
     startedAt: new Date().toISOString(),
     endedAt: null,
+    auditor: auditor ?? null,   // 회차의 것 — 지난 회차 것을 물려받지 않는다
   });
   emit(team, {
     type: 'round_start',
     actor: 'system',
-    text: `라운드 ${next.round} 시작 · 마일스톤 ${next.milestone}`,
-    meta: { topic: next.topic },
+    text: `라운드 ${next.round} 시작 · 마일스톤 ${next.milestone}${next.auditor ? ` · 감사 ${readCast(team).agents?.[next.auditor]?.name ?? next.auditor}` : ''}`,
+    meta: { topic: next.topic, ...(next.auditor ? { auditor: next.auditor } : {}) },
   });
   return next;
 }
@@ -1281,15 +1324,12 @@ export function endRefusal(team, { verdict = null } = {}) {
   if (out && isForeign(out.model) && !out.suspended && !auditorsOf(events).outsideAudited) {
     return `외부감사(${out.name ?? 'outside'})의 PASS 카드가 이 라운드에 없습니다 — 내부감사만으로는 PASS 로 닫지 못합니다 (CLAUDE.md). 외부 감사를 못 부르는 동안이면 그 자리를 중단(suspended)으로 적으세요 (결정 118 ②).`;
   }
-  // 만든 사람이 판정하지 않는다(CLAUDE.md, 대표 지시 R25 "만든 사람이 자기 걸 통과시키는 것 막기") — 마지막 판정 카드를 낸 자리가
-  // 이 라운드에 파일을 직접 고쳤으면(Edit·Write) 그건 자기 것을 통과시킨 것이다. 마지막 카드만 본다 — 다른(안 고친) 자리가
-  // 그 뒤에 새로 PASS 를 내면 그게 새 "마지막 판정" 이 되어 스스로 풀린다(중단 없이도 회복). dev·design 처럼 review 자리가
-  // 아예 없는 팀은 대개 이 자리가 안 걸린다 — "실무 둘이 서로 감사" 로 갈지는 별도 결정할 일(대표 C, 여기서 안 정한다).
-  const lastActor = events[last].actor;
-  if (buildersOf(events).has(lastActor)) {
-    const name = readCast(team).agents?.[lastActor]?.name ?? lastActor;
-    return `${name} 가 이 라운드에 직접 고쳤습니다(Edit·Write) — 만든 사람이 판정하지 않습니다 (CLAUDE.md). 다른 사람이 봐야 닫을 수 있습니다.`;
-  }
+  // 만든 사람이 판정하지 않는다(CLAUDE.md, 대표 지시 R25 "만든 사람이 자기 걸 통과시키는 것 막기") + 결정 125(팀 안 둘이 각자 일하며 서로 본다).
+  // 마지막 판정 카드를 낸 자리 A 가 이 라운드에 파일을 고쳤으면 — ⓐ 그 파일을 다른 자리도 고쳤으면 둘 다 그 파일을 못 본다 ⓑ 아니면 A 가 고친 것을
+  // 본 다른 자리(A 와 파일이 안 겹치는 — outside 는 늘)의 PASS 카드가 있어야 한다. 전엔 A 가 무엇이든 고쳤으면 거부라 둘이 나란히 일하며 서로 보는 게
+  // 불가능했다. 마지막 카드만 본다 — 다른(안 고친) 자리가 그 뒤에 새로 PASS 를 내면 그게 새 "마지막 판정" 이 되어 스스로 풀린다.
+  const self = selfPassError(events, readCast(team).agents ?? {});
+  if (self) return self;
   // 부분 성공은 통과가 아니다(8단계 실패 수습) — 판정 카드는 PASS 인데 물건이 없거나 비어 있으면 닫지 못한다.
   const art = artifactsOf(team, events);
   if (!art.paths.length) return `판정은 PASS 인데 이 라운드의 산출물이 없습니다 — 판정 대상 글에 out/ 경로가 없고 teams/${team}/out/ 에 이 라운드에 쓴 파일도 없습니다. 산출물은 파일로 남깁니다 (CLAUDE.md).`;
@@ -1350,6 +1390,44 @@ export function buildersOf(events) {
   const s = new Set();
   for (const e of events) if (e.type === 'tool' && ['Edit', 'Write', 'NotebookEdit'].includes(e.meta?.tool)) s.add(e.actor);
   return s;
+}
+/**
+ * 자리마다 이 라운드에 고친 파일(결정 125 — "내 것은 상대가 본다" 를 파일 단위로). 훅이 남긴 절대 경로에서 체크아웃 접두(저장소 루트 ·
+ * .claude/worktrees/<이름>)를 떼어 두 세션이 다른 체크아웃에서 같은 파일을 고쳐도 같은 열쇠가 되게 한다. 순수 함수 — round.mjs check 가 돌린다.
+ * @returns Map<자리, Set<경로>>
+ */
+export function editsOf(events) {
+  const m = new Map();
+  const key = (t) => String(t ?? '').replace(/^.*\/\.claude\/worktrees\/[^/]+\//, '').replace(new RegExp('^' + ROOT.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/'), '');
+  for (const e of events) {
+    if (e.type !== 'tool' || !['Edit', 'Write', 'NotebookEdit'].includes(e.meta?.tool)) continue;
+    if (!m.has(e.actor)) m.set(e.actor, new Set());
+    m.get(e.actor).add(key(e.text));
+  }
+  return m;
+}
+/**
+ * 마지막 판정 카드의 자리가 자기 것을 통과시킨 것이면 그 이유, 아니면 null (닫는 조건 6). 순수 함수.
+ * A 가 고친 파일이 없으면 통과. 있으면 ⓐ 다른 자리와 겹치는 파일이 있으면 거부 ⓑ A 와 파일이 안 겹치는 다른 자리의 PASS 카드(자리당 마지막, stale 제외)가 있어야 한다.
+ */
+export function selfPassError(events, agents = {}) {
+  let last = null;
+  for (let i = events.length - 1; i >= 0; i--) if (events[i].type === 'verdict' && !events[i].meta?.stale) { last = events[i]; break; }
+  if (!last) return null;
+  const A = last.actor;
+  const edits = editsOf(events);
+  const mine = edits.get(A);
+  if (!mine?.size) return null;
+  const nameOf = (a) => agents[a]?.name ?? a;
+  for (const [who, files] of edits) {
+    if (who === A) continue;
+    const shared = [...mine].filter((f) => files.has(f));
+    if (shared.length) return `${nameOf(A)}가 ${nameOf(who)}와 같은 파일을 고쳤습니다(${shared.slice(0, 3).join(' · ')}) — 같은 파일을 둘이 고치면 둘 다 그 파일을 판정하지 못합니다 (결정 125). 다른 사람이 봐야 닫을 수 있습니다.`;
+  }
+  // ⓐ 를 지났으면 다른 자리는 전부 A 와 파일이 안 겹친다 — 그중 하나의 PASS 카드가 A 의 마지막 고침 뒤에 있으면 그게 A 것을 본 것이다
+  const lastEdit = events.filter((e) => e.actor === A && e.type === 'tool' && ['Edit', 'Write', 'NotebookEdit'].includes(e.meta?.tool)).at(-1)?.ts ?? '';
+  if (auditorsOf(events).auditors.some((c) => c.actor !== A && c.verdict === 'PASS' && String(c.ts ?? '') >= lastEdit)) return null;
+  return `${nameOf(A)}가 이 라운드에 직접 고쳤습니다(Edit·Write) — 만든 사람이 판정하지 않습니다 (CLAUDE.md). ${nameOf(A)}가 고친 것을 다른 사람이 봐야 닫을 수 있습니다 (결정 125).`;
 }
 
 /** 닫을 수 없으면 사유를 방에 남기고 던진다. 서버(/api/round)는 미루기 전에, endRound 는 닫기 직전에 부른다. */
@@ -1462,7 +1540,7 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
     }
   } catch { /* 파일이 없으면 열린 세션도 없다 */ }
 
-  writeState(team, { phase: 'idle', endedAt: new Date().toISOString() });
+  writeState(team, { phase: 'idle', endedAt: new Date().toISOString(), auditor: null });
   return state.round;
 }
 
@@ -1514,6 +1592,8 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
   if (state.phase === 'blocked') {
     throw new Error(`대표 판단 대기 중입니다 (라운드 ${state.round}, FAIL). 대표가 이 방에 말하면 풀립니다. 그 전엔 판정을 낼 수 없습니다.`);
   }
+  // 판정 카드는 감사 자리만 낸다(결정 125) — outside · review(있으면) · 이 회차의 auditor. 총괄실은 라운드가 없어 안 본다(제리의 대조 REVISE).
+  if (!isOffice(team)) { const seat = verdictSeatError(team, actor, state); if (seat) throw new Error(seat); }
 
   let attempt = state.attempt || 0;
   let final = v;
@@ -1757,7 +1837,7 @@ export function peopleOf(log, cast, { now = Date.now(), progress = null } = {}) 
     }
     if (isToday(ts)) {
       if (e.type === 'message') p.todaySay += 1;
-      else if (p.todayVerdict != null) p.todayVerdict += 1;
+      else p.todayVerdict = (p.todayVerdict ?? 0) + 1;   // 회차 감사 자리(결정 125)는 JUDGES 밖이라도 카드를 냈으면 숫자
     }
     // 이 라운드에서 대표에게 결정을 청했는데 그 뒤 대표가 말하지 않았다 — teamSummary.bossCall(bossCallOf)과 같은 판별(결정 52), 인용문만 더한다.
     // 그 사람이 그 뒤 다시 말했으면 지나간 물음(나리 결정 ①) — 마지막 말만 물음일 수 있다.

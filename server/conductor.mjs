@@ -435,7 +435,9 @@ export function startVerdict(team, target) {
   // 외부감사 걸음을 건너뛸 때는 **조용히 빠지지 않는다**(결정 118 ②) — 왜 건너뛰는지 flow 에 적고 방에 note. 전에는 경고 한 줄 없이 버렸다.
   const out = cast.outside ?? null;
   const outsideWhy = !out ? 'no-seat' : out.suspended ? 'suspended' : !isForeign(out.model) ? 'not-foreign' : null;
-  const steps = [cast.review?.model ? 'review' : null, outsideWhy ? null : 'outside'].filter(Boolean);
+  // 안 걸음은 이 회차의 감사 자리(round.json auditor, 결정 125 — 개발처럼 review 가 없는 방도 둘이 서로 본다), 없으면 review 자리.
+  const inside = state.auditor && cast[state.auditor] ? state.auditor : cast.review?.model ? 'review' : null;
+  const steps = [inside, outsideWhy ? null : 'outside'].filter(Boolean);
   if (!steps.length) throw new Error('이 방에는 감사역이 없습니다.');
   r.round = state.round;
   r.flow = { target: String(target ?? '').trim() || '이번 라운드 산출물', steps, i: 0, asked: 0, skipped: outsideWhy && out ? ['outside'] : [], reason: outsideWhy };
