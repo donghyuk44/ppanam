@@ -198,7 +198,7 @@ if (o.mode === 'request') {
   catch (e) { console.error('오류: ' + e.message); process.exit(1); }
 
   console.log(fmt(r));
-  if (r.small) console.log('작은 B — 톰 혼자 보면 닫힙니다(제리 대조 생략, 점검-0916 3-9). 작은 게 아니라고 보면 톰이 돌려보냅니다.');
+  if (r.small) { const d = nameOf(r.team, needsOf(r)[0]); console.log(`작은 B — ${d} 혼자 보면 닫힙니다(제리 대조 생략, 점검-0916 3-9). 작은 게 아니라고 보면 ${d}가 돌려보냅니다.`); }
   if (action?.type === 'push') console.log(`푸시 대상: ${action.remote}/${action.branch} @ ${action.sha.slice(0, 8)} — 이 커밋을 통과시키는 것입니다.`);
   if (action?.type === 'milestone') console.log(`착수 대상: 마일스톤 ${action.n}${action.title ? ' ' + action.title : ''} — 통과하면 서버가 now 로 옮깁니다.`);
   if (action?.type === 'roadmap') console.log(`교체 대상: out/${action.file} — 통과하면 서버가 roadmap.json 으로 옮깁니다.`);
