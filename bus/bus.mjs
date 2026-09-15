@@ -1651,7 +1651,125 @@ export function countsAsDispute(prev, { sha, text }) {
   return sameIssue(prev.text, text);
 }
 
-export function recordVerdict(team, { actor, verdict, text, target = 'guide', round = null, sha = undefined, engine = null }) {
+/* ── 작업 보드 (W1, 대표 09-16 "동일 타임라인에 동시에 · 병목 안 겹치게 · 모두가 보고 · 끝나면 넘기며 알림") ──
+ * 정본은 state/work.json, 규칙은 teams/hq/out/작업보드-0916.md. 서버가 채우기 전엔 나리·톰이 손으로 상태를 옮기고 호명했다.
+ */
+export const WORK_PATH = path.join(ROOT, 'state', 'work.json');
+/** work.json 그대로 — 파일이 없으면 { items: [] }. */
+export function readWork() { return readJSON(WORK_PATH, { items: [] }); }
+function writeWork(work) { return writeJSON(WORK_PATH, work); }
+
+const WORK_ACTIVE = new Set(['대기', '진행', '감사 대기', '막힘']);   // 통과·안 함은 끝난 일 — 브리프에 안 올린다
+
+/**
+ * 브리프 두 줄(작업보드 4절 ①) — 이 자리(team+seat)가 걸린 work.json 항목에서 "내 다음 일" · "나를 기다리는 사람"
+ * (그 일이 끝나야 시작할 수 있는 다른 항목들, after 로 역참조). session.mjs 의 briefOf 가 progressLines 옆에
+ * 이 두 줄을 붙일 수 있게 순수 문자열로 돌려준다 — 이 함수는 아직 어디서도 불리지 않는다(연결은 session.mjs 몫).
+ * 파일이 없거나 이 자리에 걸린 항목이 없어도 던지지 않는다 — "없음" 줄을 돌려준다.
+ * @returns { mine: string, waiting: string }
+ */
+export function workBriefOf(team, seat) {
+  const items = readWork().items ?? [];
+  const mine = items.find((it) => it.team === team && it.seat === seat && WORK_ACTIVE.has(it.status)) ?? null;
+  const mineLine = mine
+    ? `내 다음 일: [${mine.id}] ${mine.what}(${mine.status}${mine.bottleneck ? ' · 병목: ' + mine.bottleneck : ''})`
+    : '내 다음 일: work.json 에 이 자리 항목 없음';
+  let waitLine = '나를 기다리는 사람: 없음';
+  if (mine) {
+    const waiters = items.filter((it) => Array.isArray(it.after) && it.after.includes(mine.id) && it.status !== '통과' && it.status !== '안 함');
+    if (waiters.length) waitLine = `나를 기다리는 사람: ${waiters.map((w) => `${w.team}/${w.seat}(${w.id} ${w.what})`).join(' · ')}`;
+  }
+  return { mine: mineLine, waiting: waitLine };
+}
+
+/**
+ * 판정·산출물로 자동 통과(작업보드 4절 ②) — team+seat 에서 status "진행" 인 첫 항목을 "통과" 로 옮긴다.
+ * workId 를 직접 주면(더 정확한 배선 — 이 판정이 어느 work.json 항목인지 실무가 붙이면) 그것을 우선한다.
+ * recordVerdict 의 PASS 가 부른다. 걸린 항목이 없으면 null — work.json 배선 전 팀·자리도 있으므로 조용히 넘어간다.
+ * @returns 통과로 바뀐 항목(이미 바뀐 값) 또는 null
+ */
+export function advanceWorkOnPass(team, seat, { workId = null } = {}) {
+  const work = readWork();
+  const items = work.items ?? [];
+  const idx = workId != null
+    ? items.findIndex((it) => it.id === workId && it.status !== '통과')
+    : items.findIndex((it) => it.team === team && it.seat === seat && it.status === '진행');
+  if (idx === -1) return null;
+  items[idx] = { ...items[idx], status: '통과' };
+  writeWork(work);
+  return items[idx];
+}
+
+/**
+ * "뒤에" 주인 호명(작업보드 4절 ③) — 방금 통과한 id 가 after 에 든 항목 중, 그 항목의 다른 after 도 전부 통과라
+ * 병목이 완전히 풀린 것만 note 로 그 자리를 부른다. 세션을 실제로 깨우는 것(wake)은 server/conductor.mjs 몫이다 —
+ * 여기는 note 만 남긴다(무엇을 어디에 거는지는 out/w1-wake-hook.md).
+ * @returns 호명한 항목들
+ */
+export function announceUnblocked(passedId) {
+  if (!passedId) return [];
+  const work = readWork();
+  const items = work.items ?? [];
+  const passedIds = new Set(items.filter((it) => it.status === '통과').map((it) => it.id));
+  const passedWhat = items.find((it) => it.id === passedId)?.what ?? passedId;
+  const called = [];
+  for (const it of items) {
+    if (it.status === '통과' || it.status === '안 함') continue;
+    if (!Array.isArray(it.after) || !it.after.includes(passedId)) continue;
+    if (!it.after.every((a) => passedIds.has(a))) continue;   // 다른 병목이 아직 안 풀렸다
+    const who = readCast(it.team).agents?.[it.seat]?.name ?? `${it.team}/${it.seat}`;
+    try {
+      // seat 을 meta 에 그대로 둔다 — conductor.mjs 의 wake 훅이 문장에서 이름을 다시 파싱하지 않고 바로 쓸 수 있게(out/w1-wake-hook.md).
+      emit(it.team, { actor: 'system', type: 'note', text: `${ga(passedWhat)} 끝나 ${eul(who)} 부릅니다 — [${it.id}] ${it.what}`, meta: { workAutoCall: it.id, causedBy: passedId, seat: it.seat } });
+      called.push(it);
+    } catch { /* 방이 없거나 라운드가 닫혀 있어도 다음 통과 때 다시 시도된다 — 조용히 넘어간다 */ }
+  }
+  return called;
+}
+
+const WORK_STATUSES = ['대기', '진행', '감사 대기', '통과', '막힘', '안 함'];
+
+/**
+ * 타임라인 탭 + 대시보드 보드 블록 자료(작업보드 4절 ④, 대표 08:2x "간트 시스템도 대시보드에서 보여야") — work.json 을
+ * stream(줄기)별로 묶어 화면이 바로 그릴 수 있는 모양으로. 둘이 같은 함수를 나눠 쓴다 — 새 함수를 안 만들고
+ * 이 반환값에 줄기별 개수(counts, "시작 가능" 은 status 대기 이면서 after 가 전부 통과된 것)와 가장 급한 병목
+ * 한둘(topBlockers, work.json 의 bottleneck 글자 기준 — 그 자리를 기다리는 건수가 많은 순)을 보탰다.
+ * 입력 없이 state/work.json 을 읽는 순수 함수 — API 라우트 추가는 server/index.mjs 몫(다른 사람), app.js 가 이 모양을 그대로 그린다.
+ * @returns {
+ *   streams: [{ name, items: [{ id, what, team, seat, status, bottleneck }], counts: { 대기, 진행, '감사 대기', 통과, 막힘, '안 함', 시작가능 } }],
+ *   topBlockers: [{ bottleneck, count, waiting: [{ id, team, seat, what }] }]   // 최대 2개, waiting 은 최대 3개(전부 나열 안 함)
+ * }
+ */
+export function timelineOf() {
+  const items = readWork().items ?? [];
+  const passedIds = new Set(items.filter((it) => it.status === '통과').map((it) => it.id));
+  const isReady = (it) => it.status === '대기' && (!it.after?.length || it.after.every((a) => passedIds.has(a)));
+
+  const streams = [];
+  const byName = new Map();
+  for (const it of items) {
+    let s = byName.get(it.stream);
+    if (!s) { s = { name: it.stream, items: [], counts: Object.fromEntries([...WORK_STATUSES.map((k) => [k, 0]), ['시작가능', 0]]) }; byName.set(it.stream, s); streams.push(s); }
+    s.items.push({ id: it.id, what: it.what, team: it.team, seat: it.seat, status: it.status, bottleneck: it.bottleneck ?? null });
+    if (s.counts[it.status] !== undefined) s.counts[it.status]++;
+    if (isReady(it)) s.counts.시작가능++;
+  }
+
+  // 급한 병목 한둘 — 아직 안 끝난(통과·안 함이 아닌) 항목이 같은 bottleneck 글자를 든 건수로 줄 세운다.
+  const byBottleneck = new Map();
+  for (const it of items) {
+    if (!it.bottleneck || it.status === '통과' || it.status === '안 함') continue;
+    let b = byBottleneck.get(it.bottleneck);
+    if (!b) { b = { bottleneck: it.bottleneck, count: 0, waiting: [] }; byBottleneck.set(it.bottleneck, b); }
+    b.count++;
+    if (b.waiting.length < 3) b.waiting.push({ id: it.id, team: it.team, seat: it.seat, what: it.what });
+  }
+  const topBlockers = [...byBottleneck.values()].sort((a, b) => b.count - a.count).slice(0, 2);
+
+  return { streams, topBlockers };
+}
+
+export function recordVerdict(team, { actor, verdict, text, target = 'guide', round = null, sha = undefined, engine = null, workId = null }) {
   const v = String(verdict || '').toUpperCase();
   if (!VERDICTS.has(v)) throw new Error(`판정은 ${[...VERDICTS].join(' / ')} 중 하나여야 합니다.`);
   const seen = sha === undefined ? headSha() : sha;
@@ -1724,6 +1842,16 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
         : 'FAIL — 대표 판단이 필요합니다. 이 방은 대표가 말할 때까지 멈춥니다.',
       meta: { blocked: true },
     });
+  }
+  // 작업 보드 자동 통과·호명(작업보드 4절 ②③) — PASS 로 최종 닫힌 회차만. 단순 매칭(team+target 의 "진행" 첫 항목)이라
+  // work.json 이 아직 안 걸린 팀·자리는 조용히 넘어간다. 여기서 던지면 판정 기록 자체가 실패하므로 삼킨다.
+  if (final === 'PASS' && !isOffice(team)) {
+    try {
+      const passed = advanceWorkOnPass(team, target, { workId });
+      if (passed) announceUnblocked(passed.id);
+    } catch (e) {
+      emit(team, { type: 'note', actor: 'system', text: `작업 보드 자동 통과를 걸지 못했습니다 — ${String(e.message).slice(0, 120)}`, meta: { workBoardError: true } });
+    }
   }
   return rec;
 }
