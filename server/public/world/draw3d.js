@@ -50,6 +50,8 @@ export async function init({ stage, onClick }) {
   D.stage = stage;
   const [city, parts, map] = await Promise.all(['city', 'parts', 'map'].map((n) => fetch(`/world/${n}.json`).then((r) => { if (!r.ok) throw new Error(`${n}.json ${r.status}`); return r.json(); })));
   D.city = city; D.parts = parts; D.map = map;
+  const onlyQ = new URLSearchParams(location.search).get('only');
+  D.only = onlyQ ? onlyQ.split(',').map((s) => s.trim()).filter(Boolean) : null;   // 비교판 — buildVillage 가 본다
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -152,9 +154,12 @@ function buildVillage(g, name, spec, w, h) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(x.len, z.len), mat(p.kind, p.kind === 'water' ? { roughness: 0.35 } : {}));
     m.rotation.x = -Math.PI / 2; m.position.set(x.mid, y, z.mid); m.receiveShadow = true; g.add(m);
   }
-  for (const b of spec.buildings ?? []) g.add(placePart(b, teamColorOf(b.team)));
-  for (const p of spec.props ?? []) g.add(placePart(p, null));
-  for (const l of spec.landmarks ?? []) { const o = LANDMARK[l.kind]?.(l); if (o) g.add(o); }
+  // 비교판(결정 123, 톰 09-15): ?only=castle,namsan,home.design 이면 그 조각만 세운다 — 유니티 판(헨리 조각 셋)과 같은 조건으로 찍기 위해. 소품은 'props' 를 목록에 넣을 때만.
+  const only = D.only;
+  const keep = (id) => !only || only.some((k) => id === k || String(id ?? '').startsWith(k + '.'));
+  for (const b of spec.buildings ?? []) if (keep(b.id)) g.add(placePart(b, teamColorOf(b.team)));
+  if (!only || only.includes('props')) for (const p of spec.props ?? []) g.add(placePart(p, null));
+  for (const l of spec.landmarks ?? []) { if (!keep(l.id)) continue; const o = LANDMARK[l.kind]?.(l); if (o) g.add(o); }
 }
 
 const TEAM_COLORS = {};

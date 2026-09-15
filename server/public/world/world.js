@@ -79,6 +79,16 @@ async function load() {
   window.addEventListener('keydown', onKey);
   lookAt(S.boss, true);
   if (S.world) applyWorld(S.world);
+  // 비교판(결정 123, 톰 09-15) — ?only=… 이면 유니티 판과 같은 조건: 인형은 댄·세라 둘만 회사 앞 통로(26.2·28.8, 9.5 — PpanamShot.cs 와 같은 자리), 표찰·말풍선 없음, 루틴 이동 없음.
+  if (new URLSearchParams(location.search).get('only')) {
+    S.compare = true; S.cam = false;
+    for (const a of S.actors.values()) if (a.key !== 'hq:secretary') a.hidden = true;
+    const sec = S.actors.get('hq:secretary');
+    if (sec) teleport(sec, { scene: 'village', x: 28.8, y: 9.5, dir: 'down' });
+    teleport(S.boss, { scene: 'village', x: 26.2, y: 9.5, dir: 'down' });
+    setScene('village');
+    $('wvStage').classList.add('world--compare');
+  }
 }
 
 /** 장면을 바꾼다. 장면은 draw3d 가 한 번 세워 두고 보이기만 바꾼다. */
@@ -201,7 +211,7 @@ function routinePlace(a, name, i) {
 }
 /** 서버의 시계가 준 자리로 걸어간다. 재생 중인 방은 건드리지 않는다. 대표는 사람이라 움직이지 않는다. */
 function applyWorld(w) {
-  if (!S.map || !w?.actors) return;
+  if (!S.map || !w?.actors || S.compare) return;   // 비교판은 아무도 안 움직인다
   let i = 0;
   for (const a of S.actors.values()) {
     const t = w.actors[a.key]; i += 1;
@@ -266,7 +276,7 @@ function gather(team, ms = 25000) {
 /** 살아 있는 느낌의 잔동작 — 근무 중 놀고 있는 사람 하나가 가끔 근처를 한 바퀴 돈다. 토큰 0. */
 let fidgetAt = 0;
 function fidget(now) {
-  if (now < fidgetAt) return;
+  if (now < fidgetAt || S.compare) return;
   fidgetAt = now + 40000 + Math.random() * 50000;
   if (S.world?.mode !== 'work') return;
   const pool = [...S.actors.values()].filter((a) => !a.hidden && a.act === 'idle' && !a.detour && !a.path.length && !(R.team === a.team && R.events.length));
@@ -411,6 +421,7 @@ function toast(text, ms = 3500) {
 const actorFor = (team, id) => S.actors.get(`${team}:${id}`) ?? null;
 
 function handle(team, e) {
+  if (S.compare) return;   // 비교판 — 사건 연출 없음(유니티 판과 같은 정지 그림)
   const P = S.map.places;
   switch (e.type) {
     case 'message': {
