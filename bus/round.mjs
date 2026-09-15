@@ -504,6 +504,12 @@ switch (cmd) {
           && r3.status === 'acked' && lineError(r3, 'confirm', C) === null && r4.status === 'closed' && r4.closedBy === 'close' && foldRequest([]) === null;
         out.push(['요청 블록 접기', fWant ? '✓ open→done→acked→closed · milestone 은 ack 으로 안 닫힘 · close 줄로 닫힘' : '✗ ' + JSON.stringify({ r1: r1.status, r2: r2.status, r3: r3.status, r4: r4.status })]);
         out.push(['요청 블록 자리 검사', eWant ? '✓ 바깥·역할·순서·서버 줄 거부 6, 허용 5' : '✗ ' + JSON.stringify(e)]);
+        // 총괄실이 받는(to: hq/chief) · 보내는(from: hq/chief) 부탁 — 톰은 chief 이면서 그쪽 자리다(9단계 ④, 나리). 전엔 chief 하나로 읽어 자기 앞 부탁에 '됐다'·자기가 낸 부탁에 '받았다' 를 못 썼다
+        const toHq = foldRequest([{ ...open, id: 'req_00000001', from: F, to: C }]), fromHq = foldRequest([{ ...open, id: 'req_00000002', from: C, to: T }, { kind: 'done', ts: at(3), by: T, text: 'a' }]);
+        const toHqDone = foldRequest([{ ...open, id: 'req_00000001', from: F, to: C }, { kind: 'done', ts: at(3), by: C, text: 'a' }, { kind: 'ack', ts: at(4), by: F, text: '' }]);
+        const hqOk = lineError(toHq, 'done', C) === null && lineError(toHq, 'goal', C) === null && lineError(toHq, 'ack', C) !== null && lineError(fromHq, 'ack', C) === null && lineError(fromHq, 'done', C) !== null
+          && lineError(toHqDone, 'confirm', C) === null && toHqDone.status === 'acked';
+        out.push(['총괄실 부탁은 톰이 닫는다(9단계 ④)', hqOk ? '✓ 받는 부탁 done·goal·confirm 톰 · 보내는 부탁 ack 톰 · 남의 자리 줄은 그대로 거부' : '✗ ' + JSON.stringify({ d: lineError(toHq, 'done', C), a: lineError(fromHq, 'ack', C), c: lineError(toHqDone, 'confirm', C), st: toHqDone.status })]);
       }
       // 판정 대상 문구 (솔라 R21) — 빈 문구·플래그 모양은 서버로 가기 전에 거부. `--help` 가 대상이 됐던 R20 사고.
       const vt = [verdictTargetError(null), verdictTargetError('--help'), verdictTargetError('M2 people 집계 -v'), verdictTargetError('M2 people 집계')];

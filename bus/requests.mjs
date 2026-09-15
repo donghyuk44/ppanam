@@ -59,13 +59,22 @@ export function foldRequest(lines) {
   return r;
 }
 
-/** 자리가 블록의 어느 쪽인가 — 'from' · 'to' · 'chief' · null(바깥). 톰은 hq 의 chief 다. */
+/**
+ * 자리가 블록의 어느 쪽들인가 — 'from' · 'to' · 'chief' 의 집합(빈 집합 = 바깥). 톰은 hq 의 chief 이면서 총괄실이 받는 부탁(to: hq/chief)의 받는 쪽이기도 하다 —
+ * 전엔 chief 하나만 돌려줘 톰이 자기 앞으로 온 부탁에 '됐다'(done) 를 못 쓰고 블록을 못 닫았다(나리 9단계 ④ "총괄실이 받는 부탁을 실장이 닫을 수 있게").
+ */
+export function rolesOf(r, who) {
+  const out = new Set();
+  if (!who) return out;
+  if (who.team === 'hq' && who.actor === 'chief') out.add('chief');
+  if (same(r.from, who)) out.add('from');
+  if (same(r.to, who)) out.add('to');
+  return out;
+}
+/** 대표 자리 하나 — from · to · chief · null. 글에 쓸 때(누구로서 말했나). */
 export function roleOf(r, who) {
-  if (!who) return null;
-  if (who.team === 'hq' && who.actor === 'chief') return 'chief';
-  if (same(r.from, who)) return 'from';
-  if (same(r.to, who)) return 'to';
-  return null;
+  const s = rolesOf(r, who);
+  return s.has('from') ? 'from' : s.has('to') ? 'to' : s.has('chief') ? 'chief' : null;
 }
 
 /** 이 줄을 이 자리가 쓸 수 있나 — 못 쓰면 이유 문장, 되면 null. 순수 함수. */
@@ -74,9 +83,9 @@ export function lineError(r, kind, who) {
   if (!k) return `모르는 줄: ${kind}`;
   if (k.who === 'server') return `${kind} 는 서버가 쓰는 줄입니다.`;
   if (r.status === 'closed') return `${r.id} 는 닫힌 블록입니다 (${r.closedBy}).`;
-  const role = roleOf(r, who);
-  if (!role) return `${who?.team ?? '?'}/${who?.actor ?? '?'} 는 이 블록의 세 자리(${r.from.team}/${r.from.actor} · ${r.to.team}/${r.to.actor} · hq/chief) 밖입니다.`;
-  if (k.who !== 'any' && k.who !== role) return `${kind} 는 ${{ chief: '톰(총괄)', from: '요청한 작업자', to: '받는 작업자' }[k.who]}만 씁니다. 너는 ${role} 이다.`;
+  const roles = rolesOf(r, who);
+  if (!roles.size) return `${who?.team ?? '?'}/${who?.actor ?? '?'} 는 이 블록의 세 자리(${r.from.team}/${r.from.actor} · ${r.to.team}/${r.to.actor} · hq/chief) 밖입니다.`;
+  if (k.who !== 'any' && !roles.has(k.who)) return `${kind} 는 ${{ chief: '톰(총괄)', from: '요청한 작업자', to: '받는 작업자' }[k.who]}만 씁니다. 너는 ${roleOf(r, who)} 이다.`;
   if (kind === 'ack' && r.status !== 'done') return `아직 '됐다'(done) 가 없습니다 — 받는 쪽이 먼저 냅니다.`;
   if (kind === 'confirm' && r.mode === 'once' && r.status !== 'acked') return `됐다·받았다 뒤에 확인합니다 (지금 ${r.status}).`;
   return null;
