@@ -677,7 +677,8 @@ codex 를 부르기 전에 `note` 로 거부된다.
 | `unblock` | 방이 `blocked`(FAIL) 로 10분 넘게 | `resumeRound(team, { proxy })` — note "대리 결정(톰·제리)으로 재개합니다 — …" |
 | `answer` | 대표에게 결정을 청한 말(`bossCall`)이 10분 넘게 답 없음 | 그 방에 note "대리 결정 — 톰·제리: <톰의 이유>"(`meta.proxyAnswer: <그 말 id>`) — 요약·개인 카드의 `bossCall` 은 이 note 로 답한 것으로 본다 |
 
-10분은 **둘 다** 여야 한다 — 그 일이 10분 넘게 기다렸고, 대표가 어느 방에서도 10분 넘게 말이 없었다(`bossQuietFor`). 같은 일에 대리 요청은 한 번(`state/notifier.json`
+10분은 **둘 다** 여야 한다 — 그 일이 10분 넘게 기다렸고, 대표가 어느 방에서도 10분 넘게 말이 없었다(`bossQuietFor`).
+**위임 스위치**(결정 136 — 대표 09-15 "12시간 맡긴다" · "다음부턴 너가 처리해"): `state/delegation.json` `{ to, until, decision }` 이 있고 지금이 `until` 안이면 **C 카드는 기다리지 않는다** — 10분·대표 조용 조건 없이 바로 총괄실 B "대리 결정 — …" 으로(`proxyCandidates` 의 `immediate`, 순수 판별은 `delegationActive`). 대리 요청 detail 과 판정 note·이유에 " — 대리, 나리 위임 136" 이 붙는다(`delegationTag`). 돈·바깥(`proxyForbidden`)은 위임 중에도 대표만. `until` 이 지나면 파일이 있어도 평소대로. 방의 물음(`answer`)·FAIL 풀기(`unblock`)는 위임 중에도 10분 규칙 그대로(나리가 정한 건 C 카드뿐). 같은 일에 대리 요청은 한 번(`state/notifier.json`
 `proxied[열쇠]`). ② 방에는 늘 "대리 결정" 이라는 말이 남는다. ③ `teams/hq/out/proxy-decisions.md` 맨 위에 그날 대리 결정을 한 줄씩 적는다 —
 자정 보고서(M7)가 "대표님 대신 정한 것" 절로 맨 위에 싣는다, 대표가 아침에 보고 뒤집을 수 있게. ④ **돈이 나가는 것과 바깥으로 나가는 것은 대리 대상이
 아니다** — `proxyForbidden(text)`: 비용·상한·결제·돈·유료·외부·발송·메일·공개·병합 이 있으면 안 올린다. C 승인은 **`what` 만**(`proxyEligible` — `detail` 은 요청자의 설명 글이라 안 훑는다: "돈·바깥이 아니라 대리 대상" 이라 적은 로드맵 카드가 '돈' 에 걸려 빠졌다, 톰 09-15 apr_1bf1b266. 설명에 숨긴 부탁은 톰·제리가 대리 판정하며 읽는다. `action.type` 이 `cost`·`send`·`merge` 도 제외),

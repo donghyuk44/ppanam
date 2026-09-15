@@ -554,15 +554,41 @@ export function bossQuietFor(now = Date.now()) {
 export function overdue(items, { now = Date.now(), wait = PROXY_WAIT_MS } = {}) {
   return items.filter((it) => it.since && now - new Date(it.since).getTime() >= wait);
 }
-export function proxyCandidates({ now = Date.now(), wait = PROXY_WAIT_MS, withExcluded = false } = {}) {
-  const items = [], excluded = [];
-  const result = () => (withExcluded ? { items: overdue(items, { now, wait }), excluded: overdue(excluded, { now, wait }) } : overdue(items, { now, wait }));
-  if (bossQuietFor(now) < wait) return withExcluded ? { items: [], excluded: [] } : [];
+/* ── 위임 스위치 (결정 136 · 나리 09-15 — 대표 원문 "일단 승인버튼 눌렀는데 다음부턴 너가 처리해") ──
+ * state/delegation.json { "to": "system", "until": "2026-09-16T01:00:00Z", "decision": 136 }. until 안이면 C 카드가 대리 후보에 **바로** 든다(10분·대표 조용 조건 없이),
+ * 대리 판정 note 에 "대리 — 나리 위임 136" 이 붙는다. 돈·바깥(proxyForbidden)은 그대로 대표만. until 이 지나면 파일이 있어도 평소대로. 나리는 --decide 를 못 하니 이게 제일 짧은 길.
+ */
+const DELEGATION_PATH = path.join(ROOT, 'state', 'delegation.json');
+/** 순수 — 파일 내용이 지금 살아 있는 위임인가. until 이 없거나 지났으면 null. check 가 돌린다. */
+export function delegationActive(d, now = Date.now()) {
+  if (!d || typeof d !== 'object') return null;
+  const until = Date.parse(d.until ?? '');
+  if (!Number.isFinite(until) || now >= until) return null;
+  return { to: d.to ?? 'system', until: new Date(until).toISOString(), decision: d.decision ?? null };
+}
+export function readDelegation(now = Date.now()) { return delegationActive(readJSON(DELEGATION_PATH, null), now); }
+/** note·판정 이유 꼬리 — " — 대리, 나리 위임 136". 위임이 없으면 빈 문자열. */
+export function delegationTag(now = Date.now()) {
+  const d = readDelegation(now);
+  if (!d) return '';
+  const who = d.to === 'system' ? (readCast('hq').agents?.system?.name ?? '나리') : (readCast('hq').agents?.[d.to]?.name ?? d.to);
+  return ` — 대리, ${who} 위임${d.decision != null ? ' ' + d.decision : ''}`;
+}
+
+export function proxyCandidates({ now = Date.now(), wait = PROXY_WAIT_MS, withExcluded = false, delegation = readDelegation(now) } = {}) {
+  const items = [], excluded = [], immediate = [];
+  const quiet = bossQuietFor(now) >= wait;
+  const result = () => {
+    const due = quiet ? overdue(items, { now, wait }) : [];
+    return withExcluded ? { items: [...immediate, ...due], excluded: quiet ? overdue(excluded, { now, wait }) : [] } : [...immediate, ...due];
+  };
   for (const r of listApprovals({ status: 'pending' })) {
     if (r.grade !== 'C') continue;
     const it = { key: `approval:${r.id}`, kind: 'approval', team: r.team, ref: r.id, what: r.what, since: r.ts };
-    (proxyEligible(r) ? items : excluded).push(it);   // ④ 돈·바깥은 후보가 아니다 — 대표만. 빠진 것도 돌려줘 총괄실에 한 줄 남기게(조용히 사라지지 않게)
+    // ④ 돈·바깥은 후보가 아니다 — 대표만(위임 중에도). 빠진 것도 돌려줘 총괄실에 한 줄 남기게(조용히 사라지지 않게). 위임 중이면 나머지는 기다리지 않고 바로
+    (!proxyEligible(r) ? excluded : delegation ? immediate : items).push(it);
   }
+  if (!quiet && !immediate.length) return withExcluded ? { items: [], excluded: [] } : [];
   for (const t of listTeams()) {
     if (isOffice(t.id)) continue;
     const st = readState(t.id);

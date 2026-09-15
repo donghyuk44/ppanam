@@ -28,7 +28,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   listApprovals, readCast, readState, readRoadmap, isOffice, quiet, emit, paths, setMilestoneStatus,
-  proxyCandidates, requestApproval, decideApproval, resumeRound, startRound, APPROVAL_GRADES,
+  proxyCandidates, requestApproval, decideApproval, resumeRound, startRound, APPROVAL_GRADES, readDelegation, delegationTag,
 } from '../bus/bus.mjs';
 
 // 다시 부르기(R25) — 총괄실에 한 번 넣고 답이 없으면 30분마다, 세 번까지. 그 뒤엔 요청한 방에 한 줄 남기고 사람 몫.
@@ -146,19 +146,20 @@ function applyAction(r, store) {
 function applyProxy(r, store) {
   const a = r.action;
   const who = ['chief', 'outside'];
-  const reasons = r.decisions.map((d) => `${nameOf('hq', d.by)}: ${d.reason || '(이유 없음)'}`).join(' · ');
+  const tag = delegationTag();   // 위임 중이면 " — 대리, 나리 위임 136"(결정 136) — note 와 판정 이유 둘 다에
+  const reasons = r.decisions.map((d) => `${nameOf('hq', d.by)}: ${d.reason || '(이유 없음)'}`).join(' · ') + tag;
   let text;
   try {
     if (a.kind === 'approval') {
       const after = decideApproval(a.ref, { by: 'boss', decision: 'PASS', reason: `대리 결정(톰·제리) — ${reasons}`, proxy: who });
-      text = `대리 결정 — C 승인 ${a.ref} 를 대표 대신 통과시켰습니다 (${after.status}). ${reasons}`;
+      text = `대리 결정${tag} — C 승인 ${a.ref} 를 대표 대신 통과시켰습니다 (${after.status}). ${reasons}`;
     } else if (a.kind === 'unblock') {
       const st = resumeRound(a.team, { text: reasons, proxy: who });
-      text = st ? `대리 결정 — ${a.team} 방의 FAIL 을 대표 대신 풀었습니다. ${reasons}` : `${a.team} 방은 이미 막혀 있지 않습니다 — 할 게 없었습니다.`;
+      text = st ? `대리 결정${tag} — ${a.team} 방의 FAIL 을 대표 대신 풀었습니다. ${reasons}` : `${a.team} 방은 이미 막혀 있지 않습니다 — 할 게 없었습니다.`;
     } else if (a.kind === 'answer') {
       const tom = r.decisions.find((d) => d.by === 'chief')?.reason || reasons;
-      emit(a.team, { actor: 'system', type: 'note', text: `대리 결정 — 톰·제리: ${tom}`, meta: { proxy: who, proxyAnswer: a.ref, approval: r.id } });
-      text = `대리 결정 — ${a.team} 방의 물음에 대표 대신 답했습니다: ${tom}`;
+      emit(a.team, { actor: 'system', type: 'note', text: `대리 결정${tag} — 톰·제리: ${tom}`, meta: { proxy: who, proxyAnswer: a.ref, approval: r.id } });
+      text = `대리 결정${tag} — ${a.team} 방의 물음에 대표 대신 답했습니다: ${tom}`;
     } else text = `모르는 대리 종류: ${a.kind}`;
   } catch (e) {
     text = `대리 결정을 실행하지 못했습니다 — ${String(e.message).slice(0, 160)}`;
@@ -219,10 +220,13 @@ function runProxy(store) {
     const prev = store.proxied[it.key];
     if (prev?.id) continue;   // 올라간 것만 건너뛴다 — 실패한 것은 다음 살피기(30초)에 다시 (레오 REVISE R23: 실패도 기록하면 영원히 건너뛰어 조용히 죽는다)
     try {
+      const dg = readDelegation();
       const r = requestApproval('hq', {
         by: 'system', grade: 'B',
         what: `대리 결정 — ${it.what.slice(0, 120)}`,
-        detail: `대표 차례가 ${Math.round((Date.now() - new Date(it.since).getTime()) / 60000)}분째 답이 없습니다(결정 85). 종류: ${it.kind} · 방: ${it.team} · 대상: ${it.ref}. 둘 다 PASS 면 서버가 실행하고 방에 '대리 결정' 으로 남깁니다.`,
+        detail: dg && it.kind === 'approval'
+          ? `대표 위임 중(결정 ${dg.decision ?? '136'}, ${dg.until.slice(0, 16).replace('T', ' ')}Z 까지) — C 카드는 기다리지 않고 바로 올립니다. 종류: ${it.kind} · 방: ${it.team} · 대상: ${it.ref}. 둘 다 PASS 면 서버가 실행하고 방에 '대리 — 나리 위임' 으로 남깁니다.`
+          : `대표 차례가 ${Math.round((Date.now() - new Date(it.since).getTime()) / 60000)}분째 답이 없습니다(결정 85). 종류: ${it.kind} · 방: ${it.team} · 대상: ${it.ref}. 둘 다 PASS 면 서버가 실행하고 방에 '대리 결정' 으로 남깁니다.`,
         action: { type: 'proxy', kind: it.kind, team: it.team, ref: it.ref },
       });
       store.proxied[it.key] = { id: r.id, at: new Date().toISOString() };
