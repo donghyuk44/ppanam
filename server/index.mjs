@@ -24,6 +24,7 @@ import { listRequests, requestCounts } from '../bus/requests.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
+import { runNightly, yesterdayKey } from './nightly.mjs';
 import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues, expireFlows } from './conductor.mjs';
 import * as world from './world.mjs';
 import { startInfra } from './infra.mjs';
@@ -364,7 +365,10 @@ const server = http.createServer((req, res) => {
     const proxy = rooms.flatMap((t) => readLog(t.id).filter((e) => e.type === 'note' && e.meta?.proxy && Date.parse(e.ts) >= since && Date.parse(e.ts) < until).map((e) => ({ team: t.id, id: e.id, ts: e.ts, text: e.text, approval: e.meta.approval ?? null })));
     const dayKey = new Date(until - 1 + 9 * 3600_000).toISOString().slice(0, 10);   // 창의 끝 날(우리 시각) — 아침 보고서 파일 이름
     let chief = null; try { chief = fs.readFileSync(path.join(paths('hq').out, 'daily', `${dayKey}.md`), 'utf8'); } catch { /* 그날 글이 없다 */ }
-    return json(res, 200, { since: new Date(since).toISOString(), until: new Date(until).toISOString(), done: doneBy, next, images, proxy, chief, chiefFile: chief ? `hq/out/daily/${dayKey}.md` : null });
+    // 자정 마감 한 장(M7) — 창의 끝 날 바로 전날(마지막으로 닫힌 하루) 의 대표용 장. 없으면 null — 지어내지 않는다.
+    const nightDay = yesterdayKey(until - 1);
+    let nightly = null; try { nightly = { day: nightDay, file: `hq/out/nightly/${nightDay}.md`, md: fs.readFileSync(path.join(paths('hq').out, 'nightly', `${nightDay}.md`), 'utf8') }; } catch { /* 아직 자정이 안 왔거나 서버가 없었다 */ }
+    return json(res, 200, { since: new Date(since).toISOString(), until: new Date(until).toISOString(), done: doneBy, next, images, proxy, chief, chiefFile: chief ? `hq/out/daily/${dayKey}.md` : null, nightly });
   }
 
   // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.
@@ -696,6 +700,8 @@ setInterval(() => {
   runExecutor();
   // 승인 요청·결말·실행 결과를 귀에 넣는다. 알림은 서버의 일이다.
   try { runNotifier(); } catch (e) { console.error('notifier:', e.message); }
+  // 자정 마감(M7) — 날짜가 바뀌어 있으면 지난 하루를 팀마다 한 장 + 대표용 한 장으로. 안에서 겹침·오류를 스스로 막는다(한 날 한 번).
+  runNightly({ session }).catch((e) => console.error('nightly:', e.message));
 
   // 레일의 계기판 값이 바뀌었을 때만 보낸다.
   const s = summaries();

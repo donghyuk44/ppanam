@@ -331,8 +331,39 @@ codex 는 `which codex` · 세션은 메모리 맵의 좀비 수(`session.health
 **멈춘 시간은 빼고 센다** — `state/pauses.json` `[{ from, to, why }]`(대표가 "쉬어라" 한 구간, 나리·톰이 손으로 적는다) 를 `bus.readPauses()` 로 읽어, `late`·기다린 시간(`blockedOf` 의 `wait`)·회차 평균(`roundLengthMs`)에서 겹친 만큼 뺀다(`bus.pausedMs`, 순수). 09-14 낮~09-15 밤 멈춤이 "41시간 늦음"·"33시간째" 로 섰던 것(톰). 화면은 `boot.pauses` 로 받는다.
 `roundMs` = 그 팀 닫힌 회차 최근 여덟의 평균 길이(멈춤 뺀 것, 없으면 기본 90분). 계산은 순수 함수 `bus.plansOf({ roadmap, state, rounds, progress, now })` — `round.mjs check` 가 돌린다. 지금 단계의 `plannedFrom` 은 지금 회차 `startedAt`, `plannedTo` 는 거기에 timebox 회차 수 × `roundMs`; 다음 단계들은 앞 단계 `plannedTo` 뒤로 잇는다. timebox 에 "대표" 가 있으면 `gated`.
 `bossGates` = **gated 단계만**(`kind:'stage'` — 대표 답이 있어야 열리는 단계, 띠의 점선 칸과 같은 것). C 승인·상황판 `boss[]` 는 여기 **안 온다** — 그건 관제탑 ③ 내 차례의 목록이고, 같은 것을 두 군데 두지 않는다(톰 req_2749e30e, 09-15). 칸 이름 "대표 답이 있어야 열리는 단계"(낱말은 하영). ·
-`GET /api/report?since&until` → `{ done: [팀별], next: {팀: []}, images: [], proxy: [], chief: md|null }` · 관제탑은 지금처럼 `summaries`(+`infra`, `blockedOf` 는 화면이 센다).
-셋 다 **파일을 새로 만들지 않는다** — 있는 것을 읽어 조립할 뿐. 사람 글이 없어도 탭은 뜬다(아래층이 정본, 글은 그 위 한 문단 — `out/m6-screen-inventory.md` 3절).
+`GET /api/report?since&until` → `{ done: [팀별], next: {팀: []}, images: [], proxy: [], chief: md|null, nightly: { day, file, md }|null }` · 관제탑은 지금처럼 `summaries`(+`infra`, `blockedOf` 는 화면이 센다).
+셋 다 **파일을 새로 만들지 않는다** — 있는 것을 읽어 조립할 뿐. 사람 글이 없어도 탭은 뜬다(아래층이 정본, 글은 그 위 한 문단 — `out/m6-screen-inventory.md` 3절). 자정 마감 한 장(아래)만 예외 — 그건 서버가 자정에 쓰는 파일이다.
+
+### 자정 마감 — 하루 한 장 (M7 · 결정 45 ③ · chief.md "하루 마감 — 자정")
+
+**언제.** 서버 틱이 우리 시각 날짜가 바뀐 것을 보면(`bus.dayStartSeoul`) **지난 하루**를 마감한다. 서버가 자정에 죽어 있었으면 다시 뜬 뒤 첫 틱에 마감한다 —
+대표가 아침에 보는 것이니 빠뜨리지 않는다(빠진 날이 여럿이면 마지막 하루만, 그 앞은 파일이 없는 채로 남는다 — 지어내지 않는다). 한 날 한 번 — 파일이 이미 있으면 다시 쓰지 않는다
+(`state/nightly.json { lastDay }` 는 흔적, 파일이 진실). 자정에 열려 있는 라운드는 **닫지 않는다** — "아직 열림" 으로 적는다(라운드를 닫는 것은 실무·대표의 일, 7절).
+
+**팀마다 한 장.** `teams/<팀>/out/nightly/<YYYY-MM-DD>.md` (비서실은 뺀다 — 대화록이 보고뿐). 순수 함수 `bus/nightly.mjs nightlyOf({ team, name, day, log, rounds, approvals, progress, state, cast, now })` → `{ problems: [{ kind, text, ref? }], counts, md }`,
+`round.mjs check` 가 돌린다. 파일을 읽고 쓰고 톰을 깨우는 것은 `server/nightly.mjs runNightly`(서버 틱) 뿐 — `node bus/round.mjs nightly [--day YYYY-MM-DD]` 는 안 쓰고 찍어 보는 미리보기다.
+창은 그날 0시 ≤ ts < 다음 날 0시(우리 시각). 절은 다섯 — 세는 숫자는 절 제목에만:
+
+| 절 | 무엇 | 어디서 |
+| --- | --- | --- |
+| 맨 위 한 줄 | "문제 없음 — 읽고 넘기셔도 됩니다" 또는 "문제 N건" + 목록 | 아래 `problems` |
+| `## 라운드 N` | 그날 시작하거나 닫힌 라운드 — 번호 · 주제 · 마일스톤 · 판정(PASS/REVISE/FAIL/없음) · 시작~끝(우리 시각). 자정에 열린 것은 "아직 열림" | `rounds.jsonl` + `round.json` |
+| `## 판정 N` | 그날 판정 카드 — 시각 · 누가 · PASS/REVISE/FAIL · 엔진 · 대상 첫 줄. `meta.stale` 은 안 센다 | `log` `verdict` |
+| `## 승인 N` | 그날 올렸거나 판정된 승인 — id · 등급 · 무엇 · 상태 · 판정한 사람. 대기 중인 것은 "대기 (누구 차례)" | `approvals` |
+| `## 막힌 것 N` | 자정 시점 — FAIL 로 막힌 방 · 상황판 `blocked[]` · C 대기 · 답 없는 대표 호출(`bossCall`) · 자정 넘긴 열린 라운드 | `state` · `progress` · `approvals` · `teamSummary` 의 셈 |
+| `## 다음` | 상황판 `next[]` 그대로 | `progress` |
+
+`problems` 는 막힌 것 중 **대표 손이 필요한 것**만 — `blocked`(FAIL 방) · `approval`(C 대기) · `bossCall`(답 없는 호출) · `attempts`(반박 상한). 상황판 `blocked[]` 와 B 대기는 문제가 아니라 팀·톰 몫이라 "막힌 것" 절에만 선다.
+
+**총괄실 한 장 = 대표용.** `teams/hq/out/nightly/<YYYY-MM-DD>.md` — 맨 위 한 줄(문제 없음 / 문제 N건 — 팀·무엇, 그 팀 파일 링크) · `## 대표님 대신 정한 것`(그날 `proxy-decisions.md` 줄, 없으면 "없음") ·
+`## 팀마다`(팀당 한 줄: 라운드·판정·승인·막힌 것 수 + 파일 경로) · `## 톰의 자정 일지`(아래). 결정 45 ③ 그대로 — **문제 없으면 읽고 넘기고, 문제면 그때 개입.** `teams/hq/out/daily/` 는 톰이 손으로 쓰는 아침 글이라 건드리지 않는다(`/api/report` 의 `chief`).
+
+**총괄실 자정 일지.** 총괄실은 라운드가 없어 톰의 일지가 한 번도 안 걷혔다(`teams/hq/journal/` 에 `chief.md` 없음). 자정 마감이 톰 세션에 `⟦일지⟧` 턴(`bus.journalPrompt` 와 같은 문장, 라운드 대신 날짜)을 보내 한 문단을 받아
+`teams/hq/journal/chief.md` 에 붙인다(`appendJournal`, 3분 초과·`(패스)`·빈 답은 없음 — 총괄실에 note). 다음 톰 세션이 뜰 때 `assemblePrompt` 가 이 문단을 인격 뒤에 붙인다 — 팀 자리와 같은 세 층.
+
+**대표에게.** 총괄실에 `note`(system, `meta.nightly { day, problems, file }`) 한 줄 — "자정 마감 <날짜> — 문제 없음 · <파일>" 또는 "문제 N건". 문제가 있으면 그 뒤 톰에게 차례를 준다(`called`, 지시: 대표께 한 문장으로 **물어라** —
+물음이어야 종이 울린다, 결정 52). 종·`needsBoss` 는 새 장치가 아니라 있는 것 — 막힌 방은 이미 `needsBoss`, C 대기는 이미 관제탑 ③ 에 선다. 자정 마감은 그걸 **한 장으로 모아** 아침 첫 화면에 놓는 것이다.
+`/api/report` 는 창의 끝 날 총괄 페이지를 `nightly` 로 싣는다 — 보고서 탭 "어제 하루가 어땠나" 의 아래층 맨 위.
 문이 있는 자리(지금): 작전실 말풍선의 얼굴·이름과 오른쪽 참여 줄 → 관제탑 사람 카드가 팝업으로(`app.js openPersonPop`, 부품은 `personCard` 하나) · 마을 인형 → `/api/actor` 카드 · 관제탑 사람 탭은 카드 자체. 대표는 카드 없음. 나리(system 자리)는 세션이 없어 이름·직책만 — 인격 파일이 생기면 그 첫 줄이 붙는다.
 관제탑 "전체" 의 타일은 뺀다(결정 92 — 통계 타일 탈락). "내 차례"·팀 줄은 관제탑에 남는다 — 같은 것을 두 군데 두지 않는다(findings #5·#7). **상황판 탭은 없앤다** — 네 칸은 관제탑 팀 줄 안으로(낱말·파일·`progress.mjs` 그대로, 아래 절).
 

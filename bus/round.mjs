@@ -166,6 +166,20 @@ switch (cmd) {
     for (const e of events) console.log(`  ${e.actor.padEnd(8)} ${e.type.padEnd(11)} ${e.text.slice(0, 56)}`);
     break;
   }
+  case 'nightly': {
+    // 자정 마감 미리보기 (M7) — 파일·note·톰 호출 없이 그 날의 장 여섯을 찍는다. 쓰는 건 서버 틱(server/nightly.mjs runNightly)뿐.
+    //   node bus/round.mjs nightly [--day 2026-09-15]
+    const { buildNightly, yesterdayKey } = await import('../server/nightly.mjs');
+    const di = argv.indexOf('--day');
+    const day = di >= 0 ? argv[di + 1] : yesterdayKey();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(day))) { console.error(`날짜가 아닙니다: ${day}`); process.exit(2); }
+    const out = buildNightly(day);
+    for (const t of out.teams) { console.log(`===== ${t.file} =====`); console.log(t.md); }
+    console.log(`===== teams/hq/out/nightly/${day}.md =====`);
+    console.log(out.hq.md);
+    console.error(`[미리보기] ${day} · 팀 ${out.teams.length} · 문제 ${out.hq.problems.length}건 · 파일 안 씀`);
+    break;
+  }
   case 'check': {
     // 닫기 가드 자가 시험. 실제 방을 건드리지 않으려고 임시 방 `_check` 에서 돌리고 지운다.
     // 대표가 정한 통과 시험 넷 (2026-09-13): 카드 없이 PASS → 거부 · REVISE 뒤 PASS → 거부 · 정식 흐름 → 성공 + 로드맵 pass ·
@@ -952,6 +966,46 @@ switch (cmd) {
           out.push(['세라 재료(결정 98)', braceOk ? '✓ briefOf(sera) 에 다섯 팀·대기 승인·열린 요청 셋 다 · 총괄실엔 안 붙음' : '✗ ' + JSON.stringify({ err, head: brief?.slice(0, 200) })]);
         }
         out.push(['말풍선 쪼개기(speech.js)', spOk ? `✓ 짧은 셋 → 1 · 줄바꿈 2 · 긴 한 문장 ${sp3.length}조각(≤${PIECE}) · 넘치면 ${PIECES}+… · 대표 사진 문장 ${spBoss.length}조각` : '✗ ' + JSON.stringify({ sp1, sp2, sp3: sp3.map((p) => p.length), sp4: sp4.length, spBoss })]);
+        // 자정 마감(M7 · 결정 45 ③) — bus/nightly.mjs 순수 셋. 창은 우리 시각 그날(09-15 = UTC 09-14 15:00 ~ 09-15 15:00). 문제는 대표 손이 필요한 것만.
+        {
+          const { nightlyOf, nightlyHqOf, proxyLinesOf, dayStartOf, dayKeySeoul } = await import('./nightly.mjs');
+          const nCast = { guide: { name: '테라', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '함동혁(댄)' } };
+          const nNow = Date.parse('2026-09-15T15:00:00Z');   // 09-16 00:00 KST — 자정
+          const nRounds = [{ round: 25, milestone: 6, topic: '화면', verdict: 'PASS', startedAt: '2026-09-14T01:51:00Z', endedAt: '2026-09-15T12:32:00Z' }, { round: 20, milestone: 4, topic: '옛것', verdict: 'PASS', startedAt: '2026-09-13T01:00:00Z', endedAt: '2026-09-13T05:00:00Z' }];
+          const nLog = [
+            { id: 'e1', ts: '2026-09-15T12:24:00Z', type: 'verdict', actor: 'outside', text: '테라, 봤습니다.', meta: { verdict: 'PASS', target: 'guide', engine: 'gemini' } },
+            { id: 'e2', ts: '2026-09-14T12:00:00Z', type: 'verdict', actor: 'outside', text: '어제 것', meta: { verdict: 'REVISE', target: 'guide' } },   // 창 밖
+            { id: 'e3', ts: '2026-09-15T13:00:00Z', type: 'verdict', actor: 'outside', text: '늦게 온 것', meta: { verdict: 'PASS', stale: true } },   // stale — 안 셈
+            { id: 'e4', ts: '2026-09-15T12:33:00Z', type: 'round_start', actor: 'system', text: '라운드 26 시작' },
+            { id: 'e5', ts: '2026-09-15T13:10:00Z', type: 'message', actor: 'guide', text: '솔라, 됐어.\n\n대표님, 유니티로 갈까요 Three 로 갈까요?' },
+          ];
+          const nApr = [
+            { id: 'apr_c1', grade: 'C', what: '방향', team: 'dev', status: 'pending', ts: '2026-09-15T10:00:00Z', decisions: [] },
+            { id: 'apr_b1', grade: 'B', what: '푸시', team: 'dev', status: 'pending', ts: '2026-09-15T11:00:00Z', decisions: [{ by: 'chief', decision: 'PASS', ts: '2026-09-15T11:05:00Z' }] },
+            { id: 'apr_b0', grade: 'B', what: '지난 것', team: 'dev', status: 'passed', ts: '2026-09-13T11:00:00Z', decidedAt: '2026-09-13T12:00:00Z', decisions: [{ by: 'chief', decision: 'PASS', ts: '2026-09-13T11:30:00Z' }, { by: 'outside', decision: 'PASS', ts: '2026-09-13T12:00:00Z' }] },
+          ];
+          const q = nightlyOf({ team: 'dev', name: '개발', day: '2026-09-15', log: [nLog[0], nLog[3]], rounds: nRounds, approvals: [], progress: { next: ['내일 첫 일'], blocked: [] }, state: { round: 25, phase: 'idle' }, cast: nCast, now: nNow });
+          const quietOk = q.problems.length === 0 && q.counts.rounds === 1 && q.counts.verdicts === 1 && q.counts.approvals === 0 && q.counts.blocked === 0
+            && q.md.includes('문제 없음') && q.md.includes('- 25 · 화면 (6단계) · PASS · 09-14 10:51 ~ 21:32') && q.md.includes('레오 PASS (gemini) → 테라 — 테라, 봤습니다.') && q.md.includes('- 내일 첫 일') && !q.md.includes('옛것');
+          const b = nightlyOf({ team: 'dev', name: '개발', day: '2026-09-15', log: nLog, rounds: nRounds, approvals: nApr, progress: { blocked: ['디스크 꽉 참'], next: [] }, state: { round: 26, milestone: 7, topic: '기억', phase: 'blocked', attempt: 3, startedAt: '2026-09-15T12:33:00Z' }, cast: nCast, now: nNow });
+          const kinds = b.problems.map((p) => p.kind);
+          const blockOk = kinds.join(',') === 'blocked,approval,bossCall' && b.counts.blocked === 5 && b.counts.rounds === 2 && b.counts.verdicts === 1 && b.counts.approvals === 2
+            && b.md.includes('문제 3건') && b.md.includes('- 26 · 기억 (7단계) · 아직 열림 · 21:33 ~ (FAIL 로 막힘)') && b.md.includes('FAIL 로 막힘 — 라운드 26') && b.md.includes('승인 [C] apr_c1 방향 — 대표 차례')
+            && b.md.includes('테라이 22:10 에 대표를 불렀는데 답이 없음 — "대표님, 유니티로 갈까요 Three 로 갈까요?"') && b.md.includes('apr_b1 [B] 푸시 — 대기 (제리 차례) (톰 PASS)') && b.md.includes('상황판 — 디스크 꽉 참') && !b.md.includes('apr_b0') && !b.md.includes('늦게 온 것');
+          const a = nightlyOf({ team: 'dev', name: '개발', day: '2026-09-15', log: [...nLog, { id: 'e6', ts: '2026-09-15T13:20:00Z', type: 'message', actor: 'boss', text: '유니티' }], rounds: nRounds, approvals: [], state: { round: 26, phase: 'running', attempt: 0, startedAt: '2026-09-15T12:33:00Z' }, cast: nCast, now: nNow });
+          const answeredOk = a.problems.length === 0 && a.md.includes('아직 열림') && !a.md.includes('FAIL');
+          const t = nightlyOf({ team: 'dev', name: '개발', day: '2026-09-15', log: [], rounds: [], approvals: [], state: { round: 26, phase: 'running', attempt: 3, startedAt: '2026-09-15T12:33:00Z' }, cast: nCast, now: nNow });
+          const attemptsOk = t.problems.length === 1 && t.problems[0].kind === 'attempts';
+          const hq = nightlyHqOf({ day: '2026-09-15', teams: [{ team: 'dev', name: '개발', file: 'teams/dev/out/nightly/2026-09-15.md', counts: b.counts, problems: b.problems }, { team: 'design', name: '디자인', file: 'x.md', counts: q.counts, problems: [] }], proxy: ['- 2026-09-15 04:04 · approval · design · 대리'], journal: '나는 톰이다.', now: nNow });
+          const hq0 = nightlyHqOf({ day: '2026-09-15', teams: [{ team: 'design', name: '디자인', file: 'x.md', counts: q.counts, problems: [] }], now: nNow, late: true });
+          const hqOk = hq.problems.length === 3 && hq.problems[0].name === '개발' && hq.md.includes('문제 3건 — 대표님 손이 필요합니다.') && hq.md.includes('- 개발 — FAIL 로 막힘 — 라운드 26 대표 판단 대기 (teams/dev/out/nightly/2026-09-15.md)')
+            && hq.md.includes('- 2026-09-15 04:04 · approval') && hq.md.includes('- 개발 — 라운드 2 · 판정 1 · 승인 2 · 막힌 것 5 → teams/dev/out/nightly/2026-09-15.md') && hq.md.includes('나는 톰이다.')
+            && hq0.problems.length === 0 && hq0.md.includes('문제 없음 — 읽고 넘기셔도 됩니다.') && hq0.md.includes('늦게 썼습니다') && hq0.md.includes('없음 — 톰이 답하지 않았습니다') && hq0.md.includes('## 대표님 대신 정한 것\n\n없음');
+          const pl = proxyLinesOf('# 머리\n- 2026-09-15 04:04 · a\n- 2026-09-14 02:47 · b\n- 2026-09-15 01:00 · c\n', '2026-09-15');
+          const dayOk = dayStartOf('2026-09-15') === Date.parse('2026-09-14T15:00:00Z') && dayKeySeoul(Date.parse('2026-09-14T15:00:00Z')) === '2026-09-15' && dayKeySeoul(Date.parse('2026-09-14T14:59:59Z')) === '2026-09-14' && pl.length === 2 && pl[1].endsWith('· c');
+          const nightOk = quietOk && blockOk && answeredOk && attemptsOk && hqOk && dayOk;
+          out.push(['자정 마감(nightlyOf·nightlyHqOf)', nightOk ? '✓ 문제 없음 한 장 · 막힘 넷(FAIL·C·호출·B·상황판) 중 문제 셋 · 창 밖·stale 안 셈 · 자정 넘긴 라운드 "아직 열림" · 대표 답하면 호출 빠짐 · 반박 상한 · 총괄 장(문제 합·대리·일지·늦음) · 우리 시각 날짜' : '✗ ' + JSON.stringify({ quietOk, blockOk, answeredOk, attemptsOk, hqOk, dayOk, kinds, qmd: quietOk ? undefined : q.md, bmd: blockOk ? undefined : b.md, hqmd: hqOk ? undefined : hq.md + hq0.md })]);
+        }
       }
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });

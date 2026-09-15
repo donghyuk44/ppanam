@@ -1410,6 +1410,22 @@ export function resumeRound(team, { text = null, proxy = null } = {}) {
   return readState(team);
 }
 
+/**
+ * 이 라운드에서 대표에게 결정을 청했는데 그 뒤 대표가 말하지 않은 발언 — 화면의 종(호명 배지). 뒤에서 앞으로, round_start 까지만.
+ * 순수 — teamSummary 와 자정 마감(nightlyOf)이 같은 함수로 센다(한 군데는 전부가 아니다). 대표 말·대리 답(결정 85)이 뒤에 있으면 답한 것.
+ */
+export function bossCallOf(log, cast) {
+  let answered = false;
+  for (let i = log.length - 1; i >= 0; i--) {
+    const e = log[i];
+    if (e.type === 'round_start') break;
+    if (e.type === 'message' && e.actor === 'boss') answered = true;
+    if (e.type === 'note' && e.meta?.proxyAnswer) answered = true;   // 톰·제리의 대리 답(결정 85)도 답이다
+    if (!answered && e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && asksBoss(e.text, cast)) return { id: e.id, ts: e.ts, by: e.actor };
+  }
+  return null;
+}
+
 /** 팀 하나의 요약 — 왼쪽 레일의 계기판이 읽는 값. */
 export function teamSummary(team) {
   const state = readState(team);
@@ -1428,19 +1444,15 @@ export function teamSummary(team) {
 
   // 마지막 판정이 무엇이었는지 — FAIL 이면 레일에 경고가 뜬다. 같은 훑기로 이 라운드의 마지막 발언 시각과
   // "대표에게 결정을 청했는데 아직 답이 없는" 발언도 찾는다 — 부르기만 한 보고는 종이 아니다 (결정 52, asksBoss).
-  let lastVerdict = null, lastSpokeAt = null, bossCall = null, bossAnswered = false;
+  let lastVerdict = null, lastSpokeAt = null;
   const cast = readCast(team).agents ?? {};
   for (let i = log.length - 1; i >= 0; i--) {
     const e = log[i];
     if (e.type === 'round_start') break;
     if (e.type === 'verdict' && lastVerdict == null) lastVerdict = e.meta?.verdict ?? null;
     if ((e.type === 'message' || e.type === 'verdict') && !lastSpokeAt) lastSpokeAt = e.ts;
-    if (e.type === 'message' && e.actor === 'boss') bossAnswered = true;
-    if (e.type === 'note' && e.meta?.proxyAnswer) bossAnswered = true;   // 톰·제리의 대리 답(결정 85)도 답이다
-    if (!bossCall && !bossAnswered && e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && asksBoss(e.text, cast)) {
-      bossCall = { id: e.id, ts: e.ts, by: e.actor };
-    }
   }
+  const bossCall = bossCallOf(log, cast);
   const running = state.phase === 'running';
   const silentDay = running && lastSpokeAt != null && Date.now() - new Date(lastSpokeAt).getTime() > 24 * 3600_000;
 
