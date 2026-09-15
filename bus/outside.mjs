@@ -232,7 +232,12 @@ async function runGeminiPool(input, { resume = null, model = geminiModelOf(null)
 async function runGemini(input, opts = {}) {
   let pooled = null;
   try { pooled = await runGeminiPool(input, opts); }
-  catch (e) { process.stderr.write(`상주 gemini 실패 — agy -p 로: ${String(e.message).split('\n')[0].slice(0, 160)}\n`); }
+  catch (e) {
+    // 상주 프로세스가 죽었다(kill -9·시간 초과) — 조용히 agy -p 로 넘어가지 않고 방에 한 줄(8단계 ①: 재시도는 보여야 한다). 이게 gemini 자리의 첫 재시도다.
+    const why = String(e.message).split('\n')[0].slice(0, 160);
+    process.stderr.write(`상주 gemini 실패 — agy -p 로: ${why}\n`);
+    if (opts.team) try { emit(opts.team, { actor: ACTOR, type: 'note', text: `상주 gemini 가 답을 못 냈습니다 — ${why}. agy -p 로 한 번 더 부릅니다.`, meta: { retry: { actor: ACTOR, engine: 'pool→agy', why } } }); } catch { /* 기록 실패는 삼킨다 */ }
+  }
   // 빈 답은 답이 아니다 — 재시작 직후 상주 프로세스가 빈 답을 돌려줬고(R25 실측) 그대로 쓰면 감사역이 다시 죽는다. agy -p 로 넘어간다.
   if (pooled?.answer) return pooled;
   if (pooled) process.stderr.write(`상주 gemini 빈 답(${pooled.totalMs != null ? (pooled.totalMs / 1000).toFixed(1) + '초' : '?'}) — agy -p 로\n`);

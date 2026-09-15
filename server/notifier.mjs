@@ -28,7 +28,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   listApprovals, readCast, readState, readRoadmap, isOffice, quiet, emit, paths, setMilestoneStatus,
-  proxyCandidates, requestApproval, decideApproval, resumeRound, startRound, APPROVAL_GRADES, readDelegation, delegationTag,
+  proxyCandidates, requestApproval, decideApproval, resumeRound, startRound, APPROVAL_GRADES, readDelegation, delegationTag, teamExists,
 } from '../bus/bus.mjs';
 
 // 다시 부르기(R25) — 총괄실에 한 번 넣고 답이 없으면 30분마다, 세 번까지. 그 뒤엔 요청한 방에 한 줄 남기고 사람 몫.
@@ -309,6 +309,9 @@ export function runNotifier({ send = (team, text) => session.send(team, quiet(te
 
   for (const r of listApprovals()) {
     if (r.grade === 'A') continue;
+    // teams.json 에 없는 방의 요청(round.mjs check 의 임시 방 _check — approvals.jsonl 은 append-only 라 174건이 남아 있다)은 알리지 않는다.
+    // 전엔 (b-2) 가 send('_check', …) 로 **그 가짜 방의 claude 세션(opus)을 진짜로 띄웠다** — R28 실측: 서버 자식에 `_check:guide` 세션 13분째(테라 m8-ps).
+    if (!teamExists(r.team)) continue;
     const t = store.told[r.id] ??= {};
 
     // (a) B 요청 — 총괄실에
