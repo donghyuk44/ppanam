@@ -1,82 +1,85 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
-  <!-- 리포트 탭 첫 서브탭(R1) 시안 1판 — 클레멘타인 09-16. 나리 배정(08:5x) "유진 세 칸 틀을 화면으로". ui-spec.md 11절.
-       재료는 teams/finance/out/daily-template.md 1절 그대로(대신 정한 것 조건부 → 된 것 → 막힌 것 N → 대표님 손 N).
-       8절 카드 체계와 같은 부품(.card__block)이라 새 CSS 가 거의 없다 — .card__block[data-block="proxy"] 하나만 새로 더한다(회색 왼쪽 띠).
-       내용은 지어내지 않았다 — teams/hq/out/daily/2026-09-16.md(옛 다섯 절 판, 09-17 부터 이 새 틀로 자동 생성)의 실제 줄을 새 네 칸 자리에 옮겨 예시로 썼다. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="700" viewBox="0 0 1000 700" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 리포트 탭 첫 서브탭(R1) 시안 1판-b — 클레멘타인 09-16. 나리 배정(08:5x) "유진 세 칸 틀을 화면으로". ui-spec.md 11절.
+       재료는 teams/finance/out/daily-template.md 1절(네 칸) + 3절 본보기(된 것·대신 정한 것·대표님 손 각 실제 줄) 그대로.
+       8절 카드 체계와 같은 부품(.card__block)이라 새 CSS 가 거의 없다.
+       1판-b — 헨리 지적 셋 고침(review/report2-1판-헨리.md):
+       ① 단추는 줄마다 하나 — "대표님 손" 세 줄은 다 한마디 꼴(C 아님)이라 승인·반려 쌍을 뗐다. 각 줄 밑에 작은 "방에 한마디 →" 링크(--seal) 하나씩, dash__go·card__more 와 같은 부품.
+       ② "된 것" 예시를 09-16.md(옛 다섯 절 판) 대신 daily-template.md 3절 본보기(팀당 한 줄 잣대를 이미 통과한 실제 줄)로 바꿨다 — {사람}·{무엇} 표와 그림이 이제 같다. "대신 정한 것" 머리도 "나리·제리"로(위임은 나리, 2판 낱말).
+       ③ 카드 높이를 내용 끝(≈556)에 맞췄다 — 388×900 에 내용 554 로 250 비던 것을 고침.
+       남은 것 — "막힌 것 0" 을 보여줄지(daily-template 은 항상, 0절 2 는 "0 은 안 보인다") 는 나리가 정할 자리. 나는 헨리와 같은 쪽(좋은 소식 한 줄은 대표가 읽어야 한다)이라 지금은 보여 준다. -->
   <defs>
     <style>
       .k{font-size:10px;letter-spacing:.12em;fill:#8a8794}
       .h{font-family:'Gowun Batang','Noto Serif KR',serif;font-size:17px;fill:#1b1a1f}
       .t{font-size:12.5px;fill:#1b1a1f}
       .s{font-size:11px;fill:#6f6d78}
+      .go{font-size:11px;fill:#0f5b52}
       .m{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#8a8794}
       .card{fill:#ffffff;stroke:#e3ddd0}
       .proxyband{fill:#c9c2b4}
       .bossband{fill:#d8b25c}
-      .badband{fill:#c94a3a}
     </style>
   </defs>
-  <rect width="1000" height="1000" fill="#f6f2ea"/>
+  <rect width="1000" height="700" fill="#f6f2ea"/>
 
   <!-- ─────────── 폰 412 ─────────── -->
   <g transform="translate(24 20)">
-    <rect x="0" y="0" width="412" height="900" rx="18" fill="#fbf9f4" stroke="#d9d1bf"/>
-    <text x="16" y="-6" class="k">폰 412 · 리포트 — 한 단, 카드 하나</text>
+    <rect x="0" y="0" width="412" height="600" rx="18" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="-6" class="k">폰 412 · 리포트 — 한 단, 카드 하나(높이는 내용에서 끝난다)</text>
     <text x="16" y="34" class="h">리포트 — 아침</text>
     <text x="16" y="52" class="s">어제 저녁 6시 → 오늘 아침 9시</text>
 
-    <rect x="12" y="66" width="388" height="800" rx="10" class="card"/>
+    <rect x="12" y="66" width="388" height="490" rx="10" class="card"/>
 
     <!-- 블록 1: 대신 정한 것 (조건부 — 있을 때만, 회색 띠) -->
-    <rect x="16" y="80" width="3" height="150" class="proxyband"/>
+    <rect x="16" y="80" width="3" height="106" class="proxyband"/>
     <text x="30" y="94" class="k">대표님 대신 정한 것</text>
-    <text x="30" y="110" class="s">톰·제리가 대표님 대신 정했어요 — 되돌리시려면 방에 한마디</text>
-    <text x="30" y="130" class="t">나리 · 아침 보고는 이 한 장으로 정했어요</text>
-    <text x="30" y="150" class="t">나리 · 일을 닫으려면 감사 통과·나리 검사·헨리 "같다"까지 넷</text>
-    <text x="30" y="170" class="t">톰 · 대표님 화면 글은 60자 사람 말 한 줄로</text>
-    <text x="30" y="190" class="t">나리 · 얼굴·시안·보고서를 저장소에 — 큰 그림만 뺌</text>
-    <text x="30" y="210" class="t">제리 · 바깥 회사 감사 도구·로그인은 지금 안 삼</text>
+    <text x="30" y="112" class="s">나리·제리가 대표님 대신 정했어요 — 되돌리시려면 방에 한마디</text>
+    <text x="30" y="132" class="t">나리 · 일을 닫으려면 감사 통과에 나리 검사·헨리 "같다"까지 넷</text>
+    <text x="30" y="152" class="t">나리 · 대표님 화면의 글은 사람 말 한 줄, 60자 안으로 — 전 팀</text>
+    <text x="30" y="172" class="t">나리 · 아침 보고는 이 한 장으로 — 매일 여섯 시 반에 서버가 만들어요</text>
 
-    <!-- 블록 2: 된 것 — 팀당 한 줄 다섯 -->
-    <text x="30" y="248" class="k">된 것</text>
-    <text x="30" y="266" class="t">개발 · 화면 새로 짜기와 실패 수습, 열 중 아홉 닫음</text>
-    <text x="30" y="286" class="t">디자인 · 화면 시안 여덟 장과 얼굴 열일곱 장 닫음</text>
-    <text x="30" y="306" class="t">마케팅 · 낱말 사전과 화면 글 틀 닫음</text>
-    <text x="30" y="326" class="t">경영 · 보고서 틀(조사·비교·잣대·매뉴얼) 닫음</text>
-    <text x="30" y="346" class="t">총괄 · 계획표 다섯 칸이 생김, 아직 하나도 안 닫힘</text>
+    <!-- 블록 2: 된 것 — 팀당 한 줄 다섯(daily-template 3절 본보기 그대로) -->
+    <text x="30" y="206" class="k">된 것</text>
+    <text x="30" y="224" class="t">테라 · 결재 팝업과 마을 이름표 글자를 고쳤어요</text>
+    <text x="30" y="244" class="t">헨리 · 얼굴 그림 열일곱 장</text>
+    <text x="30" y="264" class="t">하영 · '앞으로'와 '분석' 화면에 들어갈 글의 틀</text>
+    <text x="30" y="284" class="t">유진·노라 · 보고서 쓰는 법과 새 틀로 쓴 어제 보고서</text>
+    <text x="30" y="304" class="t">총괄 · 어제는 낸 게 없어요</text>
 
-    <!-- 블록 3: 막힌 것 N — 0 이면 이 한 줄만 -->
-    <text x="30" y="384" class="k">막힌 것 0</text>
-    <text x="30" y="402" class="s">어젯밤 사이 멈춘 일 없음</text>
+    <!-- 블록 3: 막힌 것 N — 0 이면 이 한 줄만(0절 2 와 부딪힘 — 나리 정함, 지금은 보여 줌) -->
+    <text x="30" y="338" class="k">막힌 것 0</text>
+    <text x="30" y="356" class="s">어젯밤 사이 멈춘 일 없음</text>
 
-    <!-- 블록 4: 대표님 손 N — 놋쇠 상자 재사용, C 면 단추까지 -->
-    <rect x="16" y="424" width="3" height="130" class="bossband"/>
-    <rect x="24" y="424" width="364" height="130" rx="6" fill="#fdf6e6"/>
-    <text x="30" y="440" class="k">대표님 손 3</text>
-    <text x="30" y="460" class="t">총괄 · 속말이 방에 새는 걸 막는 줄 — 대표님 손으로만</text>
-    <text x="30" y="480" class="t">디자인 · 첫 화면 맞춤, "가" 하시면 바로 엽니다</text>
-    <text x="30" y="500" class="t">경영 · 이 한 장이 읽히는지 한마디 주세요</text>
-    <rect x="30" y="514" width="52" height="24" rx="6" fill="#0f5b52"/><text x="56" y="530" text-anchor="middle" fill="#f2ede2" class="t" font-size="11">승인</text>
-    <rect x="88" y="514" width="52" height="24" rx="6" fill="none" stroke="#b3261e"/><text x="114" y="530" text-anchor="middle" fill="#b3261e" class="t" font-size="11">반려</text>
+    <!-- 블록 4: 대표님 손 N — 줄마다 단추 하나. 셋 다 한마디 꼴이라 "방에 한마디 →" 링크(승인·반려 쌍 아님) -->
+    <rect x="16" y="372" width="3" height="134" class="bossband"/>
+    <rect x="24" y="372" width="364" height="134" rx="6" fill="#fdf6e6"/>
+    <text x="30" y="388" class="k">대표님 손 3</text>
+    <text x="30" y="406" class="t">총괄 · 방에 새는 영어 속말을 막는 한 줄 — 대표님 컴퓨터에서 명령 한 번</text>
+    <text x="30" y="420" class="go">방에 한마디 →</text>
+    <text x="30" y="440" class="t">디자인 · 첫 화면 시안에 "가" 하시면 그리기 시작해요</text>
+    <text x="30" y="454" class="go">방에 한마디 →</text>
+    <text x="30" y="474" class="t">경영 · 아침 한 장을 읽고 읽히는지 한마디 주세요</text>
+    <text x="30" y="488" class="go">방에 한마디 →</text>
 
-    <text x="16" y="882" class="s">넷 — 끝. 빈 칸은 절 자체가 없다(daily-template 규칙).</text>
+    <text x="16" y="536" class="s">넷 — 끝. 빈 칸은 절 자체가 없다(daily-template 규칙).</text>
   </g>
 
   <!-- ─────────── PC 1200(축소 표시, 카드 폭 720 한 단 — 편지는 두 단으로 안 읽는다) ─────────── -->
   <g transform="translate(480 20)">
-    <rect x="0" y="0" width="480" height="900" rx="18" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <rect x="0" y="0" width="480" height="600" rx="18" fill="#fbf9f4" stroke="#d9d1bf"/>
     <text x="16" y="-6" class="k">PC 1200 · 같은 카드, 폭 720 — 한 단 그대로(축소 표시)</text>
     <text x="16" y="34" class="h">리포트 — 저녁</text>
     <text x="16" y="52" class="s">오늘 아침 9시 → 오늘 저녁 6시</text>
-    <rect x="12" y="66" width="456" height="800" rx="10" class="card"/>
+    <rect x="12" y="66" width="456" height="490" rx="10" class="card"/>
     <text x="30" y="94" class="k">대표님 대신 정한 것</text>
     <text x="30" y="114" class="s">저녁판도 같은 틀 — 창만 다르다(결정 143, 세라 06:30·18:30)</text>
     <text x="30" y="160" class="k">된 것</text>
     <text x="30" y="180" class="s">팀당 한 줄 다섯 — 자리는 폰과 같다, 글자만 12.5 그대로(두 단 아님)</text>
     <text x="30" y="220" class="k">막힌 것 N</text>
-    <text x="30" y="260" class="k">대표님 손 N</text>
-    <text x="16" y="882" class="s">숫자는 막힌 것·대표님 손 둘뿐 — 8절 카드와 같은 잣대.</text>
+    <text x="30" y="260" class="k">대표님 손 N — 줄마다 단추 하나(승인·반려 또는 방에 한마디 →)</text>
+    <text x="16" y="536" class="s">숫자는 막힌 것·대표님 손 둘뿐 — 8절 카드와 같은 잣대.</text>
   </g>
 
-  <text x="24" y="960" font-size="11" fill="#8a8794">리포트 탭 R1 시안 1판 · 2026-09-16 · 클레멘타인 · ui-spec 11절 · 재료 daily-template.md 1절 · 카드 부품은 8절과 공유(card.css) · 예시 줄은 2026-09-16.md(옛 틀) 실제 문장을 새 네 칸에 옮긴 것, 지어낸 값 0</text>
+  <text x="24" y="660" font-size="11" fill="#8a8794">리포트 탭 R1 시안 1판-b · 2026-09-16 · 클레멘타인 · ui-spec 11절 · 재료 daily-template.md 1·3절 · 카드 부품은 8절과 공유(card.css) · 예시 줄은 daily-template.md 3절 본보기 그대로, 지어낸 값 0 · 헨리 지적 셋 고침</text>
 </svg>
