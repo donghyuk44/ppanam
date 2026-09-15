@@ -3,7 +3,7 @@
     "guide": {
       "name": "유진",
       "initial": "유",
-      "color": "#d8b25c",
+      "color": "#6f9a4a",
       "title": "경영팀장",
       "does": "로드맵 · 스코프 방어",
       "model": "claude"

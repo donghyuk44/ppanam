@@ -334,15 +334,18 @@ const server = http.createServer((req, res) => {
     let text = null, at = null;
     try { text = fs.readFileSync(file, 'utf8'); at = fs.statSync(file).mtime.toISOString(); } catch { /* 1판 표가 아직 없다 */ }
     const now = Date.now();
-    const order = ['sera', 'marketing', 'dev', 'design', 'finance'];   // 도면 순서 — 비서실 먼저(헨리 시안)
-    const rows = listTeams().filter((t) => t.id !== 'hq').sort((a, b) => (order.indexOf(a.id) + 1 || 99) - (order.indexOf(b.id) + 1 || 99));
-    // bossGates 는 gated 단계뿐 — C 승인·상황판 boss[] 는 관제탑 ③ 내 차례의 목록이라 여기 또 두면 '같은 것을 두 군데' 다(톰 req_2749e30e). 앞(대시보드)엔 "대표 답이 있어야 열리는 단계" 만.
+    // 도면 순서 — 총괄실 먼저(헨리 시안 2판-b 25·71행 · 결정 50 팀 다섯 · 나리 위임 5번 "총괄실 계획표는 톰이 쓴다"). 1판은 비서실이었다 — 비서실은 대표↔세라 채팅방이라 계획표가 있을 자리가 아니다(하영 T1).
+    const order = ['hq', 'marketing', 'dev', 'design', 'finance'];
+    const rows = listTeams().filter((t) => t.id !== 'sera').sort((a, b) => (order.indexOf(a.id) + 1 || 99) - (order.indexOf(b.id) + 1 || 99));
+    // bossGates 는 대표 문(gateBoss)인 단계뿐 — 다른 팀·다른 일 뒤(테라 붙인 뒤)는 점선이지만 대표님이 여실 단계가 아니다(T4). C 승인·상황판 boss[] 는 관제탑 ③ 내 차례의 목록이라 여기 또 두면 '같은 것을 두 군데' 다(톰 req_2749e30e).
     const bossGates = [];
     const teamsOut = rows.map((t) => {
       const plan = bus.plansOf({ roadmap: readRoadmap(t.id), state: isOffice(t.id) ? { phase: 'idle' } : readState(t.id), rounds: isOffice(t.id) ? [] : listRounds(t.id), progress: bus.readProgress(t.id), now, pauses: bus.readPauses() });
-      for (const s of plan.stages) if (s.status === 'gated') bossGates.push({ kind: 'stage', team: t.id, what: `${s.n != null ? s.n + '단계 ' : ''}${s.title} — ${s.gate}`, id: s.n });
-      const color = readCast(t.id).agents?.[bus.roomRules(t.id).owner]?.color ?? null;
-      return { id: t.id, name: t.name, room: t.room, color, ...plan };
+      for (const s of plan.stages) if (s.status === 'gated' && s.gateBoss) bossGates.push({ kind: 'stage', team: t.id, what: `${s.n != null ? s.n + '단계 ' : ''}${s.title} — ${s.gate}`, id: s.n });
+      const cast = readCast(t.id), owner = bus.roomRules(t.id).owner;
+      const color = cast.agents?.[owner]?.color ?? null;
+      // hasRoadmap: 계획표 파일이 있나 — 없으면 "계획표 아직 없어요", 있는데 남은 단계가 없으면 "다음 단계 아직 없어요"(하영 1-2 빈칸 말 둘). owners: 담당 점 둘(1-3)
+      return { id: t.id, name: t.name, room: t.room, color, hasRoadmap: fs.existsSync(paths(t.id).roadmap), owners: bus.ownersOf(cast, { owner }), ...plan };
     });
     // '팀별 단계' 절은 서버가 roadmap 에서 만들어 끼운다(톰 09-14: "손으로 세는 건 썩는다") — 톰이 쓰는 건 위·아래 두 표뿐. 정본은 표 파일 + roadmap 둘이 한 화면에.
     const merged = bus.swapSection(text ?? '', '팀별 단계', bus.stageTable(teamsOut, { now }));

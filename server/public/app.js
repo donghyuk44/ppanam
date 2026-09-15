@@ -7,6 +7,7 @@ import * as World from '/world/world.js';
 import { toolLabel, toolPhrase, baseName, ga } from '/toollabel.js';
 import { findOutPaths, linkOutPaths } from '/outlink.js';
 import { notificationsOf, blockedOf, pausedMs } from '/notify.js';
+import { dayWord, timeWord, spanWord } from '/when.js';
 import { parseMention } from '/mention.js';
 
 const $ = (id) => document.getElementById(id);
@@ -2061,20 +2062,32 @@ function loadDashboardBand(r) {
   head.appendChild(el('span', 'band__corner', ''));
   const scale = el('div', 'band__scale');
   for (const t of ticks) { const s = el('span', 'band__tick', t.label); s.style.left = `${x(t.at)}%`; scale.appendChild(s); }
-  head.appendChild(scale); band.appendChild(head);
-  const fmtTo = (iso) => { const t = Date.parse(iso); if (!Number.isFinite(t)) return ''; const dd = Math.floor((seoulDayStart(t) - seoulDayStart(now)) / DAY); const hm = new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' }); return dd <= 0 ? `오늘 ${hm}` : dd === 1 ? `내일 ${hm}` : dd === 2 ? `모레 ${hm}` : `${dd}일 뒤`; };
-  const fmtLate = (ms) => { const m = Math.round(ms / 60000); return m < 60 ? `${m}분 늦음` : m < 60 * 48 ? `${Math.round(m / 60)}시간 늦음` : `${Math.round(m / 1440)}일 늦음`; };
+  head.appendChild(scale); head.appendChild(el('span', 'band__corner', '')); band.appendChild(head);   // 셋째 칸 = 담당 점 자리
+  // 글자는 하영 화면 글 틀 1판(teams/marketing/out/screen-text-frames.md 1-2 · 1-4 · 6절) — 칸에는 {날}까지만, 시·분은 펼친 줄에서("{때 h:mm}" — when.js). 늦음은 "N단계 N분 늦음", 멈춘 시간은 뺀 것(T9·T5)
+  const stageNo = (s) => (s.n != null ? `${s.n}단계` : s.title);
+  const shortTitle = (s) => String(s.title ?? '').split(/\s*(?:—|∥|\()\s*/)[0].trim();   // 폰 폭 — 첫 구분 기호 앞까지(1-1)
+  const roundsWord = (n) => (n === 0.5 ? '반' : n);
+  const openWhy = (row, text) => { const why = row.querySelector('.band__why'); if (why) { why.remove(); return; } const w = el('div', 'band__why'); w.textContent = text; row.appendChild(w); };
+  const whyOf = (t, s) => {
+    if (s.status === 'gated') return `계획표에 적힌 조건 — "${s.gate}"`;
+    if (s.status === 'blocked') return s.blockedWhy ?? '';
+    if (!s.plannedFrom) return `${stageNo(s)} ${s.title}`;   // timebox 없는 단계 — 날짜를 지어내지 않는다
+    const base = `${timeWord(s.plannedFrom, now)} 시작 · 회차 평균 ${spanWord(t.roundMs)}${s.rounds != null ? ` × ${roundsWord(s.rounds)}회차` : ''} → ${timeWord(s.plannedTo, now)}`;
+    return s.late > 0 ? `${base} · 예정보다 ${spanWord(s.late)} 지났어요 — 멈춘 시간은 뺐어요` : base;
+  };
   for (const t of r.teams ?? []) {
     const row = el('div', 'band__row'); row.dataset.team = t.id;
     const label = el('div', 'band__team');
     label.appendChild(el('b', null, t.room ?? t.name));
     const nowStage = t.stages.find((s) => s.status === 'running' || s.status === 'blocked');
-    label.appendChild(el('span', null, nowStage ? `${nowStage.n}단계 ${nowStage.title}`.slice(0, 22) : '단계 없음'));
+    label.appendChild(el('span', null, nowStage ? `${nowStage.n}단계 ${shortTitle(nowStage)}` : '단계 없음'));
     row.appendChild(label);
     const lane = el('div', 'band__lane'); lane.style.setProperty('--team', t.color ?? 'var(--ink-4)');
     lane.style.setProperty('--seg', `${seg}%`);   // 칸 선 — 눈금 수에 맞춰(폰 넷·컴퓨터 다섯 + 뒤 한 칸)
-    if (!t.stages.length) {   // 계획표가 없다 — 대표가 열어야 한다(헨리 시안: 비서실·경영). 글자는 하영 5판 3-5-3 ⑧ — 대표가 읽는 화면에서 "대표가" 는 3인칭
-      const g = el('button', 'band__box band__box--gated', '계획표 — 대표님이 여시면'); g.type = 'button'; g.style.left = '0'; g.style.width = '48%'; lane.appendChild(g);
+    if (!t.stages.length) {   // 빈칸 말 둘(1-2) — 계획표 파일이 없다 / 있는데 남은 단계가 없다. 대표 문이 아니다 — 총괄실 계획표는 톰이, 경영 다음 단계는 노라가 적는다(T7)
+      const g = el('button', 'band__box band__box--gated', t.hasRoadmap === false ? '계획표 아직 없어요' : '다음 단계 아직 없어요'); g.type = 'button'; g.style.left = '0'; g.style.width = '48%';
+      g.addEventListener('click', () => openWhy(row, '계획표가 적히면 여기 떠요'));
+      lane.appendChild(g);
     }
     let cursorPct = 0;
     for (const s of t.stages) {
@@ -2085,15 +2098,20 @@ function loadDashboardBand(r) {
       if (width < 6) { left = Math.max(0, 100 - 6); width = 6; }
       cursorPct = left + width + 1;
       const b = el('button', `band__box band__box--${s.status}`); b.type = 'button';
-      // 칸 글자는 하영 5판 3-5-1: 점선 칸 "미정 · 대표님이 정한 뒤"(계획표의 timebox 원문은 누르면 한 줄에) · 빨간 칸 "N단계 — 언제까지 못 끝남 (이유)"(3-5-3 ⑨ — '막힘·닫음' 은 우리 말)
-      const text = s.status === 'gated' ? `${s.n != null ? s.n + '단계' : s.title} — 미정 · 대표님이 정한 뒤` : s.status === 'blocked' ? `${s.n}단계 — ${to ? fmtTo(s.plannedTo) + '까지 ' : ''}못 끝남${s.blockedWhy ? ' (' + s.blockedWhy + ')' : ''}` : `${s.n}단계${to ? ' · ' + fmtTo(s.plannedTo) + '까지' : ''}`;
+      // 점선 칸 "N단계 — 대표님이 정한 뒤"(대표 문) · "N단계 — {무엇} 뒤"(다른 팀·다른 일 뒤, T4) — timebox 원문은 펼친 줄에(T5). 빨간 칸 "N단계 — {날}까지 못 끝남 (이유)"(3-5-3 ⑨). 채움 "N단계 · {날}까지"
+      const text = s.status === 'gated' ? `${stageNo(s)} — ${s.gateWhat ?? '대표님이 정한 뒤'}` : s.status === 'blocked' ? `${stageNo(s)} — ${to ? dayWord(to, now) + '까지 ' : ''}못 끝남${s.blockedWhy ? ' (' + s.blockedWhy + ')' : ''}` : `${stageNo(s)}${to ? ' · ' + dayWord(to, now) + '까지' : ''}`;
       b.textContent = text; b.title = `${s.n != null ? s.n + '단계 ' : ''}${s.title}`;
       b.style.left = `${left}%`; b.style.width = `${width}%`;
-      b.addEventListener('click', () => { const why = row.querySelector('.band__why'); if (why) { why.remove(); return; } const w = el('div', 'band__why'); w.textContent = `${s.n != null ? s.n + '단계 ' : ''}${s.title}${s.plannedFrom ? ` · ${fmtTo(s.plannedFrom)} → ${fmtTo(s.plannedTo)}` : ''}${s.gate ? ` · ${s.gate}` : ''}${s.blockedWhy ? ` · ${s.blockedWhy}` : ''}${s.late ? ` · ${fmtLate(s.late)}` : ''} — 계획표는 현황 팀 카드에`; row.appendChild(w); });
+      b.addEventListener('click', () => openWhy(row, `${whyOf(t, s)} — 계획표는 현황 팀 카드에`));
       lane.appendChild(b);
-      if (s.late > 0) { const lt = el('span', 'band__late', fmtLate(s.late)); lt.style.setProperty('--w', `${Math.max(3, Math.min(40, x(now + s.late)))}%`); lane.appendChild(lt); row.classList.add('band__row--late'); }
+      if (s.late > 0) { const lt = el('span', 'band__late', `${stageNo(s)} ${spanWord(s.late)} 늦음`); lt.style.setProperty('--w', `${Math.max(3, Math.min(40, x(now + s.late)))}%`); lane.appendChild(lt); row.classList.add('band__row--late'); }
     }
-    row.appendChild(lane); band.appendChild(row);
+    row.appendChild(lane);
+    // 담당 점 둘(1-3, 결정 128 "누가") — 그 팀의 둘, 머리글자 · 직책 색. 서버 owners(cast 에서 다른 회사 뺀 둘, 팀장 먼저)
+    const who = el('div', 'band__who');
+    for (const o of t.owners ?? []) { const d = el('i', null, o.initial); d.style.background = o.color ?? 'var(--ink-4)'; d.title = o.name; who.appendChild(d); }
+    row.appendChild(who);
+    band.appendChild(row);
   }
   // gated 단계만 — 결재·상황판 대표 차례는 관제탑 '내 차례' 에 있다(같은 것을 두 군데 두지 않는다, 톰 req_2749e30e). 없으면 칸이 사라진다.
   // 머리 글자는 하영 사전 4절 "대표님이 여실 단계"(09-15 23:57 — 전엔 사전 밖 말 '대표 답이 있어야 열리는 단계' 였다, R26 어긋남 다섯 중 마지막).

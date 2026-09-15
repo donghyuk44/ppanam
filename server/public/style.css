@@ -582,7 +582,9 @@ body {
 
 /* ── 앞날 띠 (헨리 시안 1판 dashboard.svg · 결정 128) — 줄 = 팀, 가로 = 앞으로의 시간, 칸 = 단계. 채움 = 잡힌 예정, 점선 = 대표 답 뒤, 빨강 = 늦음/막힘 ── */
 .band { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px 6px; margin-bottom: 12px; }
-.band__head, .band__row { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 8px; align-items: center; }
+.band__head, .band__row { display: grid; grid-template-columns: 112px minmax(0, 1fr) 16px; gap: 8px; align-items: center; }   /* 셋째 칸 = 담당 점 둘(하영 1-3) */
+.band__who { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+.band__who i { width: 12px; height: 12px; border-radius: 50%; font: 600 7px/12px 'IBM Plex Sans KR', sans-serif; font-style: normal; color: #f4efe4; text-align: center; }
 .band__row { padding: 9px 0; border-top: 1px dashed var(--line-2); position: relative; flex-wrap: wrap; }
 .band__scale { position: relative; height: 16px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink-4); }
 .band__tick { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
@@ -1004,7 +1006,7 @@ button.dash__row:hover b { text-decoration: underline; }
   /* 예정 작업 표(결정 128)는 폰에서 줄마다 카드 — 칸 다섯을 412 에 욱여넣으면 글자가 한 자씩 세로로 떨어졌다(나리 실측 R25). 머리글은 칸 앞 작은 글자(td[data-label]). 헨리 '앞날 띠' 시안 전까지의 임시. */
   .dash__body { padding: 12px; }
   .band { padding: 8px 8px 4px; }
-  .band__head, .band__row { grid-template-columns: 96px minmax(0, 1fr); gap: 6px; }   /* 헨리 폰 시안 — 팀 이름 칸 좁게, 눈금 넷 */
+  .band__head, .band__row { grid-template-columns: 96px minmax(0, 1fr) 14px; gap: 6px; }   /* 헨리 폰 시안 — 팀 이름 칸 좁게, 눈금 넷, 오른쪽 점 둘 */
   .dash__body table, .dash__body tr, .dash__body td { display: block; width: 100%; }
   .dash__body th { display: none; }
   .dash__body tr { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 8px 10px; margin-bottom: 8px; }
