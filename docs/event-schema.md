@@ -559,7 +559,11 @@ M6(화면이-답하는-질문.md, 톰·제리 B): **화면 자리 ① 은 없앤
 (`meta.verdictFlow: 'pass'`) — 라운드를 닫는 것은 실무나 대표다. `meta.stale` 카드(옛 라운드의 늦은 답)는 흐름에
 세지 않고 계속 기다린다 — 지난 라운드의 PASS 가 이번 완료 note 를 만들면 안 된다 (레오 감사, 2026-09-13).
 **누가 봤나는 기계가 읽는 칸에**(결정 118 ①): 흐름의 note 마다 `meta: { verdictFlow, steps, skipped, reason }` — `verdictFlow` 는 `start` · `skip`(외부감사 걸음을 건너뜀) ·
-`pass` · `abort` · `timeout`, `steps` 는 실제로 물은 자리, `skipped` 는 건너뛴 자리, `reason` 은 `suspended`(중단 — 1절 `suspended`) · `not-foreign`(자리 엔진이 클로드) · `no-seat`.
+`pass` · `abort` · `timeout` · `auto`, `steps` 는 실제로 물은 자리, `skipped` 는 건너뛴 자리, `reason` 은 `suspended`(중단 — 1절 `suspended`) · `not-foreign`(자리 엔진이 클로드) · `no-seat`.
+**말로 부른 판정은 10분 뒤 서버가 흐름으로 돌린다**(나리 점검-0916 3-7, R31): 실무가 흐름 없이 "레오, … 판정 …" 하고 첫머리에 외부감사를 부르면 `called` 차례만 가서
+"재보겠습니다" 로 끝나고 카드가 안 온다(마크 89% · 다니엘 100%). 사회자가 그 말을 `_queue.<방>.verdictAsk { at, by, text, round }` 로 적어 두고(`conductor.asksVerdict` —
+"판정" 낱말), `AUTO_VERDICT_MS`(기본 10분, `PPANAM_AUTO_VERDICT_MS`) 안에 외부감사의 `verdict` 카드(stale 아닌 것)도 흐름도 없으면 `auto` note(`meta { verdictFlow:'auto', askedBy, askedAt, waitedMs }`)
+를 남기고 `startVerdict(방, 그 말)` — 판정 대상은 부른 말 그대로(거기 적힌 `out/…` 경로가 닫을 때 산출물 검사에 쓰인다). 카드가 오거나 흐름이 돌면 기록을 비운다. 회차가 닫혔거나 막혔으면 안 돌린다.
 **건너뛸 때는 조용히 빠지지 않는다** — `skip` note 가 방에 남는다("외부 감사 없이 판정합니다 — 레오 중단 중, 9/20 복귀 예정", CLAUDE.md "외부 모델이 연결돼 있지 않으면 작전실에 남긴다").
 흐름은 `state/conductor.json` `_queue.<방>.flow` 에 저장돼 재시작에 살아남고(같은 라운드만), 기다리는 자리가 **호출 상한의 두 배**(기본 10분) 안에 판정을 안 내면
 `timeout` note 와 함께 놓는다 — 전엔 메모리에만 있고 상한이 없어 `waiting:'outside'` 로 굳고 다음 `/verdict` 가 "이미 돌고 있습니다" 로 거부됐다(09-14 아침 실제).

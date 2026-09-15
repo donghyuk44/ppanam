@@ -64,6 +64,7 @@ function room(team) {
       round: readState(team).round,
       flow: null,           // 판정 흐름 { target, step: 'review'|'outside', asked: n }
       carry: null,          // 닫히는 중에 쌓인 차례 { round, items: [[actor, kind]] } — 다음 라운드 첫 턴으로 (결정 25)
+      verdictAsk: null,     // 말로 외부감사를 판정으로 부른 것 { at, by, text, round } — 카드 없이 AUTO_VERDICT_MS 지나면 서버가 흐름을 돌린다(autoVerdicts)
     });
   }
   return rooms.get(team);
@@ -115,6 +116,7 @@ function persist(team) {
     inflight: [...r.inflight].map(([a, p]) => [a, p.kind, p.cursor ?? null]),
     carry: r.carry, carryFrom: r.carryFrom ?? null,
     flow: r.flow ?? null,   // 판정 흐름도 살아남는다(결정 118 곁다리) — 전엔 메모리에만 있어 재시작에 흐름이 사라지고 verdict 차례만 남았다
+    verdictAsk: r.verdictAsk ?? null,
   };
   try { writeStore(all); }
   catch (e) { note(team, `차례를 저장하지 못했습니다 — ${String(e.message).slice(0, 120)}. 서버가 꺼지면 이 방의 대기 차례가 사라질 수 있습니다.`); }
@@ -146,6 +148,7 @@ export function restoreQueues() {
     if (got.carryFrom) r.carryFrom = got.carryFrom;
     // 판정 흐름 — 같은 라운드면 그대로(기다리던 자리의 verdict 차례도 위에서 되살아났다), 라운드가 바뀌었으면 버린다. 시간 제한은 expireFlows 가 이어서 잰다.
     if (saved.flow && saved.round === state.round && state.phase === 'running') r.flow = { ...saved.flow, since: saved.flow.since ?? Date.now() };
+    if (saved.verdictAsk && saved.verdictAsk.round === state.round && state.phase === 'running') r.verdictAsk = saved.verdictAsk;   // 시간은 autoVerdicts 가 이어서 잰다
     const n = got.pending.length + (got.carry?.items.length ?? 0);
     if (n) {
       const names = [...got.pending.map(([a]) => a), ...(got.carry?.items ?? []).map(([a]) => a)].map((a) => nameOf(team, a));
@@ -440,6 +443,7 @@ export function startVerdict(team, target) {
   const steps = [inside, outsideWhy ? null : 'outside'].filter(Boolean);
   if (!steps.length) throw new Error('이 방에는 감사역이 없습니다.');
   r.round = state.round;
+  r.verdictAsk = null;   // 흐름이 돌면 말로 부른 기록은 할 일을 다했다
   r.flow = { target: String(target ?? '').trim() || '이번 라운드 산출물', steps, i: 0, asked: 0, skipped: outsideWhy && out ? ['outside'] : [], reason: outsideWhy };
   // meta.target — 판정 대상 글 그대로. 닫을 때 bus.artifactsOf 가 여기서 out/ 경로를 읽어 산출물이 비었는지 본다(8단계).
   emit(team, { actor: 'system', type: 'note', text: `판정 시작 — ${r.flow.target}. ${steps.map((s) => nameOf(team, s)).join(' → ')} 순서.`, meta: { verdictFlow: 'start', steps, skipped: r.flow.skipped, reason: outsideWhy, target: r.flow.target } });
@@ -473,6 +477,31 @@ export function expireFlows(now = Date.now()) {
     const who = f.waiting;
     r.flow = null; r.pending.delete(who); persist(team);
     emit(team, { actor: 'system', type: 'note', text: `판정 흐름을 멈춥니다 — ${nameOf(team, who)}이 ${Math.round(FLOW_TIMEOUT_MS / 60_000)}분 안에 판정을 내지 않았습니다. 다시 부르세요 (node bus/round.mjs verdict).`, meta: { verdictFlow: 'timeout', waiting: who } });
+  }
+}
+
+/**
+ * 말로 부른 판정 — 카드 없이 10분이면 서버가 흐름을 돌린다 (나리 점검-0916 3-7, R31).
+ * 실무가 "레오, … 판정 …" 하고 부르면 called 차례만 가서 외부감사가 "재보겠습니다" 로 끝나는 일이 마크 89%·다니엘 100% 였다.
+ * 판정은 흐름(startVerdict → verdict 차례)이어야 카드가 온다. 순수한 asksVerdict 는 check 가 돌린다.
+ */
+export const AUTO_VERDICT_MS = Number(process.env.PPANAM_AUTO_VERDICT_MS || 10 * 60_000);
+/** 첫머리에 외부감사를 부른 말이 판정을 청하는가 — "판정" 낱말(판정해·판정 부탁·판정 카드). 인용("판정은 나중에")도 걸리지만 카드가 오면 안 돌리고, 돌아도 흐름 한 번이다. */
+export const asksVerdict = (text) => /판정/.test(String(text ?? ''));
+export function autoVerdicts(now = Date.now()) {
+  for (const [team, r] of rooms) {
+    const a = r.verdictAsk;
+    if (!a || r.flow || now - a.at < AUTO_VERDICT_MS) continue;
+    let state; try { state = readState(team); } catch { continue; }
+    r.verdictAsk = null; persist(team);
+    if (state.phase !== 'running' || state.round !== a.round) continue;   // 회차가 닫혔거나 막혔다 — 흐름 돌릴 자리가 아니다
+    const min = Math.round((now - a.at) / 60_000);
+    emit(team, { actor: 'system', type: 'note', text: `${ga(nameOf(team, a.by))} ${min}분 전에 ${eul(nameOf(team, 'outside'))} 판정으로 불렀는데 판정 카드가 없어 서버가 판정 흐름을 돌립니다.`, meta: { verdictFlow: 'auto', askedBy: a.by, askedAt: new Date(a.at).toISOString(), waitedMs: now - a.at } });
+    try {
+      startVerdict(team, a.text);
+    } catch (e) {
+      note(team, `말로 부른 판정을 흐름으로 돌리지 못했습니다 — ${String(e.message).slice(0, 120)}`);
+    }
   }
 }
 
@@ -643,6 +672,12 @@ export function noticeEvents(team, events) {
       if (e.actor === 'boss' && k === 0 && !isOutside(team, to)) continue;
       enqueue(team, to, 'called');
     }
+    // 말로 외부감사를 판정으로 불렀다("레오, … 판정 …") — 흐름(startVerdict) 없이 called 차례만 가면 "재보겠습니다" 로 끝나고 카드가 안 온다
+    // (나리 점검-0916 3-7: 마크 89%·다니엘 100%). 시각을 적어 두고 AUTO_VERDICT_MS 안에 카드가 없으면 autoVerdicts 가 흐름을 돌린다.
+    if (!isOffice(team) && e.type === 'message' && !r.flow && called.includes('outside') && isOutside(team, 'outside') && asksVerdict(e.text)) {
+      r.verdictAsk = { at: Date.now(), by: e.actor, text: e.text, round: state.round }; persist(team);
+    }
+    if (e.type === 'verdict' && e.actor === 'outside' && r.verdictAsk && !e.meta?.stale) { r.verdictAsk = null; persist(team); }   // 카드가 왔다 — 안 돌린다
     armLull(team);
   }
 }

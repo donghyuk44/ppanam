@@ -650,6 +650,10 @@ switch (cmd) {
         const { chatLoop } = await import('../server/conductor.mjs');
         const cl = [chatLoop(['a', 'b', 'a', 'b', 'a', 'b']), chatLoop(['a', 'a', 'b', 'b', 'a', 'b']), chatLoop(['a', 'b', 'a', 'b', 'a']), chatLoop(['a', 'b', 'c', 'a', 'b', 'a']), chatLoop(['x', 'a', 'b', 'a', 'b', 'a', 'b']), chatLoop([])];
         out.push(['잡담 브레이크(결정 121)', cl.join(',') === 'true,true,false,false,true,false' ? '✓ 둘이 3회씩 참 · 교대 아니어도 참 · 5개 거짓 · 셋 섞이면 거짓 · 앞에 다른 사람 있어도 마지막 6개로 · 빈 줄 거짓' : '✗ ' + cl.join(',')]);
+        // 말로 부른 판정(나리 점검-0916 3-7) — "레오, … 판정 …" 은 걸리고, 판정 낱말 없는 호명은 안 걸린다. 10분(AUTO_VERDICT_MS)은 env 로 줄일 수 있다.
+        const { asksVerdict, AUTO_VERDICT_MS } = await import('../server/conductor.mjs');
+        const av = [asksVerdict('레오, 산출물 out/m9-status.md 판정 부탁해요'), asksVerdict('마크, 판정해 주세요 — 얼굴 열일곱'), asksVerdict('레오, 이거 돌려봤어요?'), asksVerdict(''), asksVerdict(null)];
+        out.push(['말로 부른 판정(asksVerdict)', av.join(',') === 'true,true,false,false,false' && AUTO_VERDICT_MS === 10 * 60_000 ? '✓ 판정 낱말이면 참 · 호명만이면 거짓 · 빈 글 거짓 · 기본 10분' : '✗ ' + JSON.stringify({ av, AUTO_VERDICT_MS })]);
       }
       // 자리의 엔진·모델·추론 강도 (결정 69) — 순수 castChangeError 가 거르고, updateCastAgent 가 임시 방 cast.json 에 쓴다. 엔진 바꾸기는 아직 거부(같은 값은 통과).
       {

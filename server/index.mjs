@@ -25,7 +25,7 @@ import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
 import { runNightly, yesterdayKey } from './nightly.mjs';
-import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues, expireFlows } from './conductor.mjs';
+import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues, expireFlows, autoVerdicts } from './conductor.mjs';
 import * as world from './world.mjs';
 import { startInfra } from './infra.mjs';
 import * as gemini from './gemini.mjs';
@@ -735,6 +735,8 @@ setInterval(() => {
   }
   // 굳은 판정 흐름을 놓는다(결정 117 곁다리) — 외부감사가 답을 못 내면 waiting 으로 굳어 다음 /verdict 가 거부됐다.
   try { expireFlows(); } catch (e) { console.error('conductor expire:', e.message); }
+  // 말로 부른 판정에 10분 안 카드가 없으면 흐름을 돌린다(나리 점검-0916 3-7) — "재보겠습니다" 로 끝나는 외부감사.
+  try { autoVerdicts(); } catch (e) { console.error('conductor auto verdict:', e.message); }
   // 통과한 B 푸시를 서버가 대신 민다. 한 번에 하나씩, 겹치지 않게.
   runExecutor();
   // 승인 요청·결말·실행 결과를 귀에 넣는다. 알림은 서버의 일이다.
