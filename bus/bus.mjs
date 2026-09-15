@@ -256,34 +256,24 @@ export function callsBoss(text, cast) {
  */
 export const ASK_RE = /[?？]|정해\s*주|골라|답해|주세요|주시면|해\s*주|부탁|허용|실행/;
 /**
- * 대표에게 결정을 청했나 (결정 52) — 부른 것(`callsBoss`)에 물음이 있어야 한다. 종 배지(`bossCall`)는 이것만 본다.
+ * 대표에게 결정을 청했나 (결정 52) — 대표를 부른 **그 문단** 안에 물음이 있어야 한다. 종 배지(`bossCall`)는 이것만 본다.
  * "대표님, 정리했습니다." 는 보고라 종이 안 울리고 관제탑 "오늘 보고" 줄로 간다 — 하영·헨리 보고가 승인 요청으로 읽힌 09-13 건.
- * 물음은 **대표에게 한 문단** 안에 있어야 한다 — "대표님, 보고드립니다.\n\n솔라, 이 수치 맞아?" 는 솔라에게 물은 것이지 대표에게
- * 청한 게 아니다 (레오 REVISE, R23). 이름 없는 문단은 앞 문단의 상대에게 이어 말한 것으로 본다.
+ * 다른 사람 문단의 물음은 대표 것이 아니다 — "대표님, 보고드립니다.\n\n솔라, 이 수치 맞아?" 는 솔라에게 물은 것 (레오 REVISE, R23).
+ * 이름 없는 다음 문단도 안 센다 — 전엔 앞 문단의 상대에게 이어진다고 봤는데, 톰의 "대표님, 비교가 나왔습니다. … (셋째 문단) 그때 정해 주시면 됩니다" 와
+ * 세라가 비서실 캐스트 밖 사람에게 한 "나리, 검토 부탁해요" 가 대표 차례로 서서 대표 종에 넷이 남았다(나리 결정 ①, 09-15 — 대표 물음
+ * "결재 알림 왜 안 없어지냐"). 글 가운데의 "대표님" 은 0 — 문단 첫머리 호명만.
  */
 export function asksBoss(text, cast) {
-  let toBoss = false;
-  for (const p of String(text ?? '').split(/\n\s*\n/)) {
-    if (callsBoss(p, cast)) toBoss = true;
-    else if (addressees(p, cast).length) toBoss = false;
-    if (toBoss && ASK_RE.test(p)) return true;
-  }
-  return false;
+  return String(text ?? '').split(/\n\s*\n/).some((p) => callsBoss(p, cast) && ASK_RE.test(p));
 }
 /**
  * 대표에게 한 그 문단 — 인용은 첫 줄이 아니라 대표에게 한 말이어야 한다. "헨리, 셌어. …" 로 시작하는 말의 넷째 문단이 "대표님, 한 줄요 — …" 였는데
- * 관제탑 내 차례·종·자정 마감이 첫 줄을 보여 줘 "클레멘타인이 헨리한테 한 말이 대표 차례로 선다" 로 읽혔다(나리 09-15). asksBoss 와 같은 걸음으로
- * 대표에게 물은 문단을 찾고, 없으면(부르기만 했으면) 대표를 부른 문단, 그것도 없으면 원문.
+ * 관제탑 내 차례·종·자정 마감이 첫 줄을 보여 줘 "클레멘타인이 헨리한테 한 말이 대표 차례로 선다" 로 읽혔다(나리 09-15). asksBoss 와 같은 선으로
+ * 대표를 부르며 물은 문단을 찾고, 없으면(부르기만 했으면) 대표를 부른 첫 문단, 그것도 없으면 원문.
  */
 export function bossParagraph(text, cast) {
-  const paras = String(text ?? '').split(/\n\s*\n/);
-  let toBoss = false, called = null;
-  for (const p of paras) {
-    if (callsBoss(p, cast)) { toBoss = true; called ??= p; }
-    else if (addressees(p, cast).length) toBoss = false;
-    if (toBoss && ASK_RE.test(p)) return p;
-  }
-  return called ?? String(text ?? '');
+  const called = String(text ?? '').split(/\n\s*\n/).filter((p) => callsBoss(p, cast));
+  return called.find((p) => ASK_RE.test(p)) ?? called[0] ?? String(text ?? '');
 }
 export const quiet = (text) => `${RELAY_QUIET}\n${text}`;
 
@@ -1455,18 +1445,26 @@ export function resumeRound(team, { text = null, proxy = null } = {}) {
   return readState(team);
 }
 
+/** "(패스)" 로 시작하는 말 — 말한 것이 아니다(peopleOf·bossCallOf 가 같은 선). */
+export const isPassLine = (text) => /^\(패스\)/.test(String(text ?? '').trim());
+
 /**
  * 이 라운드에서 대표에게 결정을 청했는데 그 뒤 대표가 말하지 않은 발언 — 화면의 종(호명 배지). 뒤에서 앞으로, round_start 까지만.
- * 순수 — teamSummary 와 자정 마감(nightlyOf)이 같은 함수로 센다(한 군데는 전부가 아니다). 대표 말·대리 답(결정 85)이 뒤에 있으면 답한 것.
+ * 순수 — teamSummary·peopleOf·자정 마감(nightlyOf)이 같은 함수로 센다(한 군데는 전부가 아니다). 대표 말·대리 답(결정 85)이 뒤에 있으면 답한 것.
+ * 물은 사람이 그 뒤 다시 말했으면 그 물음은 지나간 것 — 답이 다른 길로 왔든 넘어갔든, 마지막 호명 발언이 답 끝난 뒤에도 서 있었다(나리 결정 ①, 09-15).
+ * (패스) 는 말한 것이 아니다.
  */
 export function bossCallOf(log, cast) {
   let answered = false;
+  const spokeAgain = new Set();   // 그 뒤에 다시 말한 사람
   for (let i = log.length - 1; i >= 0; i--) {
     const e = log[i];
     if (e.type === 'round_start') break;
     if (e.type === 'message' && e.actor === 'boss') answered = true;
     if (e.type === 'note' && e.meta?.proxyAnswer) answered = true;   // 톰·제리의 대리 답(결정 85)도 답이다
-    if (!answered && e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && asksBoss(e.text, cast)) return { id: e.id, ts: e.ts, by: e.actor };
+    if (answered || e.type !== 'message' || e.actor === 'boss' || e.actor === 'system') continue;
+    if (!spokeAgain.has(e.actor) && asksBoss(e.text, cast)) return { id: e.id, ts: e.ts, by: e.actor };
+    if (!isPassLine(e.text)) spokeAgain.add(e.actor);
   }
   return null;
 }
@@ -1553,7 +1551,7 @@ export function peopleOf(log, cast, { now = Date.now() } = {}) {
   const ids = Object.keys(agents).filter((a) => a !== 'system' && a !== 'boss');
   const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
   const isToday = (ts) => new Date(ts).getTime() >= dayStart.getTime();
-  const isPass = (e) => /^\(패스\)/.test(String(e.text ?? '').trim());
+  const isPass = (e) => isPassLine(e.text);
 
   const people = Object.fromEntries(ids.map((a) => [a, {
     busy: false, alive: null, lastSignal: null, state: null, lastSaidAt: null, doing: null,
@@ -1561,6 +1559,7 @@ export function peopleOf(log, cast, { now = Date.now() } = {}) {
   }]));
   const boss = { lastSaidAt: null, lastText: null, todaySay: 0, todayDecisions: 0 };
   const unsaid = new Set([...ids, 'boss']);   // 마지막 발언을 아직 못 찾은 자리
+  const spokeAgain = new Set();               // 이 라운드에서 그 뒤에 다시 말한 사람 — bossCallOf 와 같은 선(나리 결정 ①)
 
   let inRound = true, bossAnswered = false;
   for (let i = log.length - 1; i >= 0; i--) {
@@ -1597,10 +1596,12 @@ export function peopleOf(log, cast, { now = Date.now() } = {}) {
       if (e.type === 'message') p.todaySay += 1;
       else if (p.todayVerdict != null) p.todayVerdict += 1;
     }
-    // 이 라운드에서 대표에게 결정을 청했는데 그 뒤 대표가 말하지 않았다 — teamSummary.bossCall 과 같은 판별(결정 52), 인용문만 더한다.
-    if (inRound && !bossAnswered && !p.bossCall && e.type === 'message' && asksBoss(e.text, agents)) {
+    // 이 라운드에서 대표에게 결정을 청했는데 그 뒤 대표가 말하지 않았다 — teamSummary.bossCall(bossCallOf)과 같은 판별(결정 52), 인용문만 더한다.
+    // 그 사람이 그 뒤 다시 말했으면 지나간 물음(나리 결정 ①) — 마지막 말만 물음일 수 있다.
+    if (inRound && !bossAnswered && !p.bossCall && e.type === 'message' && !spokeAgain.has(e.actor) && asksBoss(e.text, agents)) {
       p.bossCall = { id: e.id, ts, text: bossParagraph(e.text, agents).replace(/\s+/g, ' ').trim().slice(0, 80) };   // 인용은 대표에게 한 그 문단(나리 09-15)
     }
+    if (inRound && e.type === 'message') spokeAgain.add(e.actor);
   }
   return { ...people, boss };
 }
@@ -1835,6 +1836,8 @@ export function blockedSpansOf(log, cast, { team = null, since = null, until = n
     if (e.type === 'round_end' || e.type === 'round_start') { if (fail) { fail.to = e.ts; spans.push(fail); fail = null; } if (ask) { ask.to = e.ts; spans.push(ask); ask = null; } continue; }
     if (e.type === 'message' && e.actor === 'boss' && !e.meta?.via) { if (ask) { ask.to = e.ts; spans.push(ask); ask = null; } continue; }
     if (e.type === 'note' && e.meta?.proxyAnswer) { if (ask) { ask.to = e.ts; spans.push(ask); ask = null; } continue; }
+    // 물은 사람이 그 뒤 다시 말하면 그 물음은 거기서 끝 — bossCallOf 와 같은 선(나리 결정 ①). 같은 말이 새 물음이면 바로 밑에서 다시 연다
+    if (ask && e.type === 'message' && e.actor === ask.by && !isPassLine(e.text)) { ask.to = e.ts; spans.push(ask); ask = null; }
     if (!ask && e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && cast?.[e.actor] && asksBoss(e.text, cast)) {
       ask = { team, kind: 'ask', from: e.ts, to: null, text: one(bossParagraph(e.text, cast), 120), by: e.actor, ref: e.id };
     }

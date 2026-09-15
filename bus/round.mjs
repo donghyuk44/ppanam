@@ -18,7 +18,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import {
   startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound,
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
-  addressees, callsBoss, asksBoss, bossParagraph, bossNotesOf, doneOf, blockedSpansOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
+  addressees, callsBoss, asksBoss, bossParagraph, bossCallOf, bossNotesOf, doneOf, blockedSpansOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
   mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, delegationActive, overdue, setMilestoneStatus,
   roomRules, allowedIn, plansOf, timeboxRounds, DEFAULT_ROUND_MS, stageTable, swapSection, pausedMs, roundLengthMs,
@@ -312,11 +312,25 @@ switch (cmd) {
       const pick = asksBoss('대표님, A 와 B 중 골라 주세요.', pcast), noCall = asksBoss('안젤, 이거 맞아?', pcast);
       const rWant = rp.guide.bossCall === null && rn.length === 1 && rn[0].ask === false && an.length === 1 && an[0].ask === true && pick && !noCall;
       out.push(['보고는 종 없이 보고 줄로(결정 52)', rWant ? '✓ 보고 → bossCall 없음·ask:false · 물음 → bossCall·ask:true · "골라" 는 결정 · 대표 안 부르면 아님' : '✗ ' + JSON.stringify({ call: rp.guide.bossCall, rn, an, pick, noCall })]);
-      // 물음은 대표에게 한 문단 안에 있어야 한다 (레오 REVISE R23) — 다른 사람 문단의 물음표는 대표 것이 아니고, 이름 없는 문단은 앞 상대에게 이어진다.
+      // 물음은 대표를 부른 그 문단 안에서만 (레오 REVISE R23 + 나리 결정 ① 09-15) — 다른 사람 문단의 물음표는 대표 것이 아니고, 이름 없는 다음 문단도 안 센다.
+      // 전엔 앞 상대에게 이어진다고 봤는데 톰 "…(셋째 문단) 그때 정해 주시면 됩니다" 와 세라가 캐스트 밖 나리에게 한 "나리, 검토 부탁해요" 가 대표 차례로 서서 대표 종에 넷이 남았다.
       const mixed = asksBoss('대표님, 진행 상황 보고드립니다.\n\n솔라, 이 수치가 맞습니까?', pcast);
       const cont = asksBoss('대표님, 정리했습니다.\n\n둘 중 어느 쪽으로 갈까요?', pcast);
       const back = asksBoss('솔라, 이거 맞아?\n\n대표님, 위 결과 보고드립니다.', pcast);
-      out.push(['물음은 대표 문단 안에서만', !mixed && cont && !back ? '✓ 솔라 문단의 물음표는 보고 · 이름 없는 다음 문단은 대표에게 이어짐 · 앞 문단의 물음은 안 섞임' : '✗ ' + JSON.stringify({ mixed, cont, back })]);
+      const tom = asksBoss('대표님, 유니티 비교가 나왔습니다 — 그림 둘과 한 줄입니다.\n\n- 유니티: 조각이라 마을 전체는 아닙니다.\n\n제 판단 하나 보태면, 대표님이 정하시기 전에 한 장 다시 찍게 하겠습니다. 그때 한마디로 정해 주시면 됩니다.', pcast);
+      const sera = asksBoss('대표님, 우선순위 표를 만들어 두었습니다.\n\n나리, 검토 부탁해요 — 2판으로 두고 A-1 부터 가 주세요.', pcast);
+      const mid = asksBoss('솔라, 이건 대표님이 정하실 것 같은데 어떻게 할까?', pcast);
+      const same = asksBoss('대표님, 둘 중 어느 쪽으로 갈까요?\n\n솔라, 됐어.', pcast);
+      out.push(['물음은 대표를 부른 그 문단 안에서만(나리 ①)', !mixed && !cont && !back && !tom && !sera && !mid && same ? '✓ 솔라 문단의 물음표는 보고 · 이름 없는 다음 문단은 안 셈(톰 셋째 문단·세라→나리) · 글 가운데 "대표님" 0 · 부른 문단의 물음만' : '✗ ' + JSON.stringify({ mixed, cont, back, tom, sera, mid, same })]);
+      // 물은 사람이 그 뒤 다시 말하면 그 물음은 지나간 것(나리 ①) — bossCallOf · peopleOf · blockedSpansOf 셋이 같은 선. (패스) 는 말한 것이 아니다.
+      const agLog = [plog[1], { id: 'g1', ts: at(1), actor: 'guide', type: 'message', text: '대표님, A 와 B 중 골라 주세요.' }, { id: 'g2', ts: at(2), actor: 'guide', type: 'message', text: '안젤, 그동안 B 로 가 둘게.' }];
+      const agPass = [agLog[0], agLog[1], { id: 'g3', ts: at(2), actor: 'guide', type: 'message', text: '(패스)' }];
+      const agOther = [agLog[0], agLog[1], { id: 'g4', ts: at(2), actor: 'ops', type: 'message', text: '테라, 나도 B.' }];
+      const agNew = [...agLog, { id: 'g5', ts: at(3), actor: 'guide', type: 'message', text: '대표님, 색은요?' }];
+      const agGot = [bossCallOf(agLog, pcast)?.id ?? null, bossCallOf(agPass, pcast)?.id ?? null, bossCallOf(agOther, pcast)?.id ?? null, bossCallOf(agNew, pcast)?.id ?? null,
+        peopleOf(agLog, pcast, { now: d0.getTime() + 10 * 60_000 }).guide.bossCall?.id ?? null, peopleOf(agPass, pcast, { now: d0.getTime() + 10 * 60_000 }).guide.bossCall?.id ?? null,
+        blockedSpansOf(agNew, pcast, { team: 'dev', since: at(0), until: at(10), now: Date.parse(at(10)) }).map((s) => `${s.ref}:${s.to == null ? 'open' : 'closed'}`).join(',')];
+      out.push(['물은 사람이 다시 말하면 지움(나리 ①)', agGot.map(String).join('|') === 'null|g1|g1|g5|null|g1|g1:closed,g5:open' ? '✓ 다음 말이 있으면 없음 · (패스)·남의 말은 그대로 · 새 물음이면 그것 · 사람 카드 같음 · 보고서 물음 구간도 그 말에서 닫힘' : '✗ ' + JSON.stringify(agGot)]);
       // 대표에게 해 달라는 부탁도 종이다 (결정 66) — 헨리 "zip 받아 풀어 주시면" 이 보고로 빠지면 대표가 못 본다. 단순 보고(올렸습니다·됐습니다)는 그대로.
       const favors = ['대표님, 손 하나 더 빌립니다 — 세 zip 을 받아 ref/kenney/ 에 풀어 주시면 클레멘타인이 목록을 적습니다.', '대표님, 확인 부탁드립니다.',
         '대표님, allow 한 줄 허용해 주세요.', '대표님, 이 명령 실행 한 번만요.', '대표님, 서버 다시 띄워 주세요.'].map((t) => asksBoss(t, pcast));
