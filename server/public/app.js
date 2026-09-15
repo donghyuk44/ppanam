@@ -2340,11 +2340,12 @@ function renderReport(r) {
   // ② 톰·제리가 대표님 대신 정했어요 — 창 안의 대리 결정(note meta.proxy). 되돌리시려면 방에 한마디(결정 85 ③)
   if ((r.proxy ?? []).length) {
     const sec = el('section', 'dash__card rep__sec'); sec.dataset.block = 'proxy';
-    sec.appendChild(el('div', 'dash__k', '톰·제리가 대표님 대신 정했어요 — 되돌리시려면 방에 한마디'));
+    sec.appendChild(el('div', 'dash__k', `${deciders(delegation)}가 대표님 대신 정했어요 — 되돌리시려면 방에 한마디`));   // 위임 중엔 나리·제리(notify.deciders)
     for (const p of r.proxy) {
       const row = el('button', 'dash__row'); row.type = 'button';
       row.appendChild(el('b', null, `${teamOf(p.team).name} · ${whenKo(p.ts)}`));
-      row.appendChild(el('span', 'dash__sub', String(p.text).replace(/^대리 결정[^—:]*[—:]\s*/, '')));
+      // 사람 말 검사(결정 140, G4 — 안젤 사용성 표: [C]·카드 번호·결정 번호가 그대로 섰다). 머리말을 뗀 뒤 자에 안 맞으면 "아직 쉬운 말로 안 적음" + 원문 펼침
+      row.appendChild(bossLine(String(p.text).replace(/^대리 결정[^—:]*[—:]\s*/, ''), 'dash__sub'));
       row.appendChild(el('span', 'dash__go', '방으로'));
       row.addEventListener('click', () => jumpTo(p.team, p.id));
       sec.appendChild(row);
