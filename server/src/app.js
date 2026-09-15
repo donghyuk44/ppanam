@@ -1045,7 +1045,8 @@ let hashByUs = false;
 
 const syncHash = () => {
   if (!active) return;
-  const h = view === 'room' ? active : `${active}/${view}`;
+  // 방도 #팀/room 으로 적는다 — 첫 화면이 현황이 된 뒤(U2) 맨 #팀 은 "화면 없음" 이라 새로고침이 방으로 안 돌아온다.
+  const h = `${active}/${view}`;
   if (location.hash.slice(1) === h) return;
   hashByUs = true;
   location.hash = h;
@@ -2454,5 +2455,7 @@ connect();
 const [hashTeam, hashView] = location.hash.slice(1).split('/');
 await selectTeam(teams.some((t) => t.id === hashTeam) ? hashTeam : boot.defaultTeam);
 renderApprovals();
-// 부팅 — 주소에 화면이 없으면: 대표 차례가 있으면 관제탑, 아니면 방 (G-UX).
-setView(hashView ?? (bossTurns().n ? 'tower' : 'room'));
+// 부팅 — 주소에 화면이 없으면 **현황 한 장**(관제탑 '전체' 탭 — 누르실 것·고르실 것·이 회차 된 것)이 첫 화면, 방은 두 번째(나리 usability-0916 U2:
+// 총괄실 대화 벽이 첫 화면이라 대표가 30초 안에 할 일을 못 봤다, 결정 92). 전엔 대표 차례가 있을 때만 관제탑이었다(G-UX). 보던 방으로 돌아오는 건 주소(#팀/room)가 한다.
+if (hashView == null) towerTab = 'all';
+setView(hashView ?? 'tower');
