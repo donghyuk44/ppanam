@@ -1979,7 +1979,15 @@ function loadDashboardBand(r) {
   const wide = window.innerWidth >= 1180;
   const ticks = bandTicks(now, wide);
   const end = ticks[ticks.length - 1].at + (wide ? 3 * DAY : DAY);   // 마지막 눈금 뒤 여유 — 그 너머는 끝에 붙는다
-  const x = (t) => Math.min(100, Math.max(0, ((t - now) / (end - now)) * 100));   // %
+  // 자는 시간이 아니라 칸이다(헨리 시안: 오늘·내일·모레·이번 주가 같은 폭) — 시간 그대로 펴면 밤 9시엔 '오늘' 이 2%로 눌려 눈금이 겹치고 오늘 단계 칸이 실처럼 됐다(412 실측 09-15).
+  // 눈금 사이를 같은 폭으로 두고 그 안에서만 시간 비례. 마지막 눈금 뒤는 한 칸.
+  const bounds = [...ticks.map((t) => t.at), end];
+  const seg = 100 / (bounds.length - 1);
+  const x = (t) => {
+    if (t <= bounds[0]) return 0;
+    for (let i = 0; i < bounds.length - 1; i++) if (t < bounds[i + 1]) return i * seg + seg * ((t - bounds[i]) / Math.max(1, bounds[i + 1] - bounds[i]));
+    return 100;
+  };
   // 눈금 머리
   const head = el('div', 'band__head');
   head.appendChild(el('span', 'band__corner', ''));
@@ -1996,6 +2004,7 @@ function loadDashboardBand(r) {
     label.appendChild(el('span', null, nowStage ? `${nowStage.n}단계 ${nowStage.title}`.slice(0, 22) : '단계 없음'));
     row.appendChild(label);
     const lane = el('div', 'band__lane'); lane.style.setProperty('--team', t.color ?? 'var(--ink-4)');
+    lane.style.setProperty('--seg', `${seg}%`);   // 칸 선 — 눈금 수에 맞춰(폰 넷·컴퓨터 다섯 + 뒤 한 칸)
     if (!t.stages.length) {   // 계획표가 없다 — 대표가 열어야 한다(헨리 시안: 비서실·경영)
       const g = el('button', 'band__box band__box--gated', '계획표 — 대표가 연다'); g.type = 'button'; g.style.left = '0'; g.style.width = '48%'; lane.appendChild(g);
     }

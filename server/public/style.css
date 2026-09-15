@@ -588,7 +588,7 @@ body {
 .band__team { min-width: 0; font-size: 12.5px; line-height: 1.3; }
 .band__team b { display: block; font-weight: 600; }
 .band__team span { display: block; font-size: 11px; color: var(--ink-4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.band__lane { position: relative; height: 26px; border-left: 1px dashed var(--ink); background: repeating-linear-gradient(90deg, transparent 0 24.9%, var(--line-2) 24.9% 25%); }
+.band__lane { position: relative; height: 26px; border-left: 1px dashed var(--ink); background: repeating-linear-gradient(90deg, transparent 0 calc(var(--seg, 25%) - 1px), var(--line-2) calc(var(--seg, 25%) - 1px) var(--seg, 25%)); }
 .band__box {
   position: absolute; top: 2px; height: 22px; box-sizing: border-box; border-radius: 6px; padding: 0 6px;
   font: 10.5px/20px 'IBM Plex Sans KR', sans-serif; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; min-width: 24px;
@@ -604,7 +604,7 @@ body {
 .band__why { grid-column: 1 / -1; font-size: 12px; color: var(--ink-2); background: var(--panel-2); border-radius: 8px; padding: 6px 10px; margin-top: 6px; }
 .gates { margin-bottom: 14px; }
 .gates__k { font-size: 10.5px; letter-spacing: .12em; color: var(--ink-4); margin: 6px 0 6px; }
-.gates__card { background: var(--panel); border: 1px solid var(--me-line); border-radius: 8px; padding: 6px 10px; font-size: 13px; margin-bottom: 6px; }
+.gates__card { background: var(--panel); border: 1px solid var(--me-line); border-radius: 8px; padding: 6px 10px; font-size: 13px; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }   /* 상황판 '대표 차례' 줄이 문단이라 세 줄에서 접는다(412 실측) — 전문은 그 방 상황판 */
 .gates__card b { font-weight: 600; margin-right: 4px; }
 .dash__body table { border-collapse: collapse; width: 100%; margin-bottom: 18px; font-size: 13px; }
 .dash__body th, .dash__body td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top; }
