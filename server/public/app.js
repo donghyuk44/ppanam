@@ -9,7 +9,7 @@
 import * as World from '/world/world.js';
 import { toolLabel, toolPhrase, baseName, ga } from '/toollabel.js';
 import { findOutPaths, linkOutPaths } from '/outlink.js';
-import { notificationsOf, blockedOf, pausedMs } from '/notify.js';
+import { notificationsOf, blockedOf, pausedMs, delegated } from '/notify.js';
 import { dayWord, timeWord, clockWord, spanWord } from '/when.js';
 import { parseMention } from '/mention.js';
 
@@ -1204,6 +1204,13 @@ function openApprovalPop(r) {
   document.body.append(scrim, pop);
   x.focus();
 }
+/** 글의 첫 문장 한 줄 — 첫 줄에서 문장 끝(. ! ? 뒤 공백이나 끝)까지. "index.mjs" 같은 안쪽 점은 안 자른다. 마침표 없이 160자를 넘는 줄은 거기서 …(그러면 원문 칸이 뒤에 그대로 뜬다). */
+function oneLine(s) {
+  const line = String(s ?? '').split(/\n/).map((x) => x.trim()).find(Boolean) ?? '';
+  const m = line.match(/^.*?[.!?](?=\s|$)/);
+  const one = (m ? m[0] : line).trim();
+  return one.length > 160 ? one.slice(0, 159).trimEnd() + '…' : one;
+}
 /** 결재 카드 — approval 시안 1판-b 순서: 머리(누가·어디·결재 기다림·N분 전) → 주제 → 왜 → 바뀌는 것 → N이 쓴 원문 → 낸 것 → 확인 / 돌려보냄 → 안내 두 줄. */
 function approvalCard(r) {
   const card = el('div', 'apr apr--card');
@@ -1220,14 +1227,17 @@ function approvalCard(r) {
   // 주제·왜 에 적힌 out/… 경로는 링크 (결정 36). 이스케이프 뒤에 잇는다 — 말풍선과 같은 순서.
   const linked = (cls, text) => { const d = el('div', cls); d.innerHTML = linkOutPaths(escapeHtml(text), r.team, outAnchor); return d; };
   card.appendChild(linked('apr__what', r.what));
-  // 왜 — 대표 원문이 있으면 그 말부터(세라 자리, 결정 98 — 아직 세라가 안 바꾼 카드는 요청자 글 첫 두 줄). 원문 칸은 그대로, 줄이지 않는다(5판 3-5-1 "N이 쓴 원문").
+  // 왜 — 대표 원문이 있으면 그 말부터(세라 자리, 결정 98 — 아직 세라가 안 바꾼 카드는 요청자 글 첫 문장 한 줄). 원문 칸은 그대로, 줄이지 않는다(5판 3-5-1 "N이 쓴 원문").
+  // R31 ①(나리): 왜와 원문이 같은 글로 두 번 찍히지 않게 — 왜는 한 줄, 원문은 그 한 줄보다 긴 것이 있을 때만(같으면 칸 숨김). 왜가 주제와 같은 글이면 그 칸도 숨긴다.
   const detail = r.detail || '';
-  const why = detail ? detail.split(/\n/).filter(Boolean).slice(0, 2).join('\n') : '왜 하는지가 안 적혔어요 — 올린 사람에게 물어보세요';
-  card.appendChild(el('div', 'apr__k', '왜'));
-  card.appendChild(linked('apr__why', why));
+  const why = detail ? oneLine(detail) : '왜 하는지가 안 적혔어요 — 올린 사람에게 물어보세요';   // 안 적힌 때의 글은 하영 196행
+  if (why.trim() !== (r.what ?? '').trim()) {
+    card.appendChild(el('div', 'apr__k', '왜'));
+    card.appendChild(linked('apr__why', why));
+  }
   const pv = previewNode(r);
   if (pv) { card.appendChild(el('div', 'apr__k', '바뀌는 것')); card.appendChild(pv); }
-  if (detail) {
+  if (detail && detail.trim() !== why.trim()) {
     const who = (summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by;
     card.appendChild(el('div', 'apr__k', `${who}이 쓴 원문`));
     card.appendChild(linked('apr__detail', detail));
@@ -1240,6 +1250,9 @@ function approvalCard(r) {
     card.appendChild(arts);
   }
   if (r.grade === 'C') {
+    // 위임 중(결정 136)이고 톰·제리가 대리할 수 있는 카드 — 단추 위에 한 줄, 단추는 그대로(R31 ②, 나리 · 톰 apr_e3e08ac8 반려: 대표가 누르는 길은 안 닫는다). 돈·바깥(proxyable false)은 단추만.
+    const proxied = delegated(delegation) && !!r.proxyable;
+    if (proxied) card.appendChild(el('div', 'apr__proxy', '지금은 톰·제리가 정해요 · 직접 누르셔도 돼요'));
     const act = el('div', 'apr__act');
     const err = el('div', 'apr__err'); err.hidden = true;
     const reasonBox = el('input', 'apr__reason'); reasonBox.type = 'text'; reasonBox.placeholder = '왜 — 한 마디'; reasonBox.hidden = true;
@@ -1262,7 +1275,9 @@ function approvalCard(r) {
     card.appendChild(act);
     card.appendChild(reasonBox);
     card.appendChild(err);
-    card.appendChild(el('div', 'apr__hint', '돌려보냄을 누르면 한 줄 칸이 열려요 — "왜" 한 마디.\n10분 안 누르시면 톰·제리가 대신 정해요 — 돈이 나가거나 밖으로 가는 일은 빼고. 되돌리시려면 방에 한마디.'));
+    card.appendChild(el('div', 'apr__hint', proxied
+      ? '돌려보냄을 누르면 한 줄 칸이 열려요 — "왜" 한 마디.\n되돌리시려면 방에 한마디.'   // 위임 중엔 10분이 아니라 바로 대리된다 — 그 줄만 뺀다(하영 331행 꼬리)
+      : '돌려보냄을 누르면 한 줄 칸이 열려요 — "왜" 한 마디.\n10분 안 누르시면 톰·제리가 대신 정해요 — 돈이 나가거나 밖으로 가는 일은 빼고. 되돌리시려면 방에 한마디.'));
   } else {
     // 누가 판정했고 누가 남았나 — 이름으로. 그리고 총괄실이 이 요청을 들었는가.
     const hq = summaries.hq?.cast ?? {};
