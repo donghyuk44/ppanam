@@ -1,0 +1,413 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2130" height="1260" viewBox="0 0 2130 1260" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 카드 체계 시안 1판 — 헨리 2026-09-16 아침. 구조는 나리 teams/hq/out/카드-체계-0916.md 1~3절(팀 상황 카드 · 판정 카드 · 결재 카드), 글은 결정 140(사람 말 한 줄 60자).
+       값은 09-16 07:2x 다섯 팀 progress.json · 결재 큐 · rounds.jsonl 실물을 사람 말로 옮긴 것(꼴은 하영 boss-lines.md 세 꼴). 지어 넣은 값 0 — 멈춤 판정만 기록에 없어 꼴(머리)만.
+       왼쪽 폰 412 = 첫 화면 '한 장'(팀 카드 다섯 세로) · 가운데 폰 412 = 방에 뜨는 판정 카드·결재 카드 · 오른쪽 PC 1200 = 같은 부품 두 단. 비어 있는 블록은 안 그린다. 폰 카드 하나 ≤ 236(반 화면 457 안). 색은 임시 hex — 클레멘타인이 토큰으로. -->
+  <defs>
+    <style>
+      .k{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;fill:#8a8794}
+      .h{font-family:'Gowun Batang','Noto Serif KR',serif;font-size:17px;fill:#1b1a1f}
+      .h2{font-family:'Gowun Batang','Noto Serif KR',serif;font-size:15px;fill:#1b1a1f}
+      .t{font-size:12.5px;fill:#1b1a1f}
+      .t2{font-size:12.5px;fill:#4a443b}
+      .s{font-size:11px;fill:#6f6d78}
+      .m{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#8a8794}
+      .pill{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em}
+      .stamp{font-family:'Gowun Batang','Noto Serif KR',serif;font-size:12px;fill:#ffffff}
+      .btn{font-size:12px;fill:#ffffff}
+      .btn2{font-size:12px;fill:#1b1a1f}
+      .card{fill:#ffffff;stroke:#e3ddd0}
+      .bad{fill:#c94a3a}.live{fill:#3a8f5c}
+      .memo{font-size:11px;fill:#6f6d78}
+    </style>
+  </defs>
+  <rect width="2130" height="1260" fill="#f6f2ea"/>
+
+  <!-- ═══════════════ 폰 412 — 첫 화면 '한 장': 팀 상황 카드 다섯 ═══════════════ -->
+  <g transform="translate(24 20)">
+    <rect x="0" y="0" width="412" height="1100" rx="18" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="-6" class="k">폰 412 · 한 장 — 팀 상황 카드 다섯 (세라 06:30 도 이 다섯을 올린다)</text>
+
+    <!-- ── 총괄실 — 지금 · 대표님 손 · 꼬리 (된 것·막힌 것 없어 안 그림) ── -->
+    <g transform="translate(12 12)">
+      <rect x="0" y="0" width="388" height="236" rx="10" class="card"/>
+      <circle cx="16" cy="20" r="4" fill="#1f5f4f"/>
+      <text x="28" y="25" class="h2">총괄실</text>
+      <rect x="100" y="11" width="64" height="18" rx="9" fill="#f3e6bd" stroke="#d8b25c"/>
+      <text x="132" y="23" text-anchor="middle" class="pill" fill="#6b5312">승인 대기</text>
+      <text x="374" y="24" text-anchor="end" class="m">7:24</text>
+      <text x="14" y="46" class="k">진행 중</text>
+      <text x="14" y="63" class="t"><tspan font-weight="600">톰</tspan> · 밤새 대표님 대신 정한 것 열 남짓을 아침 한 장에</text>
+      <text x="14" y="80" class="t">모았어요 — 되돌리시려면 한마디면 돼요</text>
+      <!-- 대표님 손 — 동작 하나 + 단추. 결재(C)가 아니면 단추는 '방에 한마디' 하나 -->
+      <rect x="14" y="94" width="360" height="102" rx="8" fill="#fdf8e9" stroke="#d8b25c"/>
+      <rect x="14" y="94" width="3" height="102" fill="#d8b25c"/>
+      <text x="26" y="112" class="k" fill="#6b5312">승인 대기</text>
+      <text x="26" y="129" class="t">대표님 화면에 새는 영어 속말을 막는 한 줄 —</text>
+      <text x="26" y="146" class="t">명령 한 번 돌려 주세요</text>
+      <rect x="26" y="158" width="108" height="28" rx="6" fill="#1b1a1f"/>
+      <text x="80" y="176" text-anchor="middle" class="btn">방에 한마디 →</text>
+      <text x="362" y="176" text-anchor="end" class="s">하나 더 · 자세히에</text>
+      <line x1="14" y1="208" x2="374" y2="208" stroke="#efeae0"/>
+      <text x="14" y="224" class="m">1단계 · 2회차</text>
+      <text x="374" y="224" text-anchor="end" class="m" fill="#8a3b2b">자세히 →</text>
+    </g>
+
+    <!-- ── 마케팅팀 — 지금 · 된 것 · 꼬리 ── -->
+    <g transform="translate(12 258)">
+      <rect x="0" y="0" width="388" height="162" rx="10" class="card"/>
+      <circle cx="16" cy="20" r="4" fill="#2f4f7a"/>
+      <text x="28" y="25" class="h2">마케팅팀</text>
+      <rect x="100" y="11" width="62" height="18" rx="9" fill="none" stroke="#3a8f5c"/>
+      <text x="131" y="23" text-anchor="middle" class="pill" fill="#2e7d4f">진행 중</text>
+      <text x="374" y="24" text-anchor="end" class="m">7:12</text>
+      <text x="14" y="46" class="k">진행 중</text>
+      <text x="14" y="63" class="t"><tspan font-weight="600">하영</tspan> · 톰이 하는 일 일곱 가지를 다시 쓰는 중 —</text>
+      <text x="14" y="80" class="t">제리가 대조해요</text>
+      <text x="14" y="103" class="k">된 것</text>
+      <rect x="14" y="111" width="8" height="10" rx="1" fill="none" stroke="#8a8794"/>
+      <text x="28" y="120" class="t2"><tspan font-weight="600">하영</tspan> · 화면 여섯을 30초씩 본 표</text>
+      <line x1="14" y1="134" x2="374" y2="134" stroke="#efeae0"/>
+      <text x="14" y="150" class="m">5단계 4/5 · 36회차</text>
+      <text x="374" y="150" text-anchor="end" class="m" fill="#8a3b2b">자세히 →</text>
+    </g>
+
+    <!-- ── 개발팀 — 지금 · 된 것 · 꼬리 ── -->
+    <g transform="translate(12 430)">
+      <rect x="0" y="0" width="388" height="179" rx="10" class="card"/>
+      <circle cx="16" cy="20" r="4" fill="#4a5d3a"/>
+      <text x="28" y="25" class="h2">개발팀</text>
+      <rect x="100" y="11" width="62" height="18" rx="9" fill="none" stroke="#3a8f5c"/>
+      <text x="131" y="23" text-anchor="middle" class="pill" fill="#2e7d4f">진행 중</text>
+      <text x="374" y="24" text-anchor="end" class="m">7:24</text>
+      <text x="14" y="46" class="k">진행 중</text>
+      <text x="14" y="63" class="t"><tspan font-weight="600">테라</tspan> · 마을 탭을 숨겼어요 — 이제 대표 화면 글 셋을</text>
+      <text x="14" y="80" class="t">사람 말로 검사해요</text>
+      <text x="14" y="103" class="k">된 것</text>
+      <rect x="14" y="111" width="8" height="10" rx="1" fill="none" stroke="#8a8794"/>
+      <text x="28" y="120" class="t2"><tspan font-weight="600">테라</tspan> · 결재 카드·첫 화면·알림·판정 규칙을 고친 코드</text>
+      <text x="28" y="137" class="t2">— 레오 승인</text>
+      <line x1="14" y1="151" x2="374" y2="151" stroke="#efeae0"/>
+      <text x="14" y="167" class="m">10단계 9/11 · 32회차</text>
+      <text x="374" y="167" text-anchor="end" class="m" fill="#8a3b2b">자세히 →</text>
+    </g>
+
+    <!-- ── 디자인팀 — 지금 · 된 것 둘 · 막힌 것 · 꼬리 ── -->
+    <g transform="translate(12 619)">
+      <rect x="0" y="0" width="388" height="236" rx="10" class="card"/>
+      <circle cx="16" cy="20" r="4" fill="#4b5f9e"/>
+      <text x="28" y="25" class="h2">디자인팀</text>
+      <rect x="100" y="11" width="62" height="18" rx="9" fill="none" stroke="#3a8f5c"/>
+      <text x="131" y="23" text-anchor="middle" class="pill" fill="#2e7d4f">진행 중</text>
+      <text x="374" y="24" text-anchor="end" class="m">7:22</text>
+      <text x="14" y="46" class="k">진행 중</text>
+      <text x="14" y="63" class="t"><tspan font-weight="600">헨리</tspan> · 시안과 실물이 어디가 다른지 화면 여덟 장을</text>
+      <text x="14" y="80" class="t">견줘 적었어요</text>
+      <text x="14" y="103" class="k">된 것</text>
+      <rect x="14" y="111" width="8" height="10" rx="1" fill="none" stroke="#8a8794"/>
+      <text x="28" y="120" class="t2"><tspan font-weight="600">헨리</tspan> · 화면 여덟 장 다른 점 목록</text>
+      <rect x="14" y="128" width="8" height="10" rx="1" fill="none" stroke="#8a8794"/>
+      <text x="28" y="137" class="t2"><tspan font-weight="600">클레멘타인</tspan> · 현황 글자·간격을 시안 값으로 고친 코드</text>
+      <!-- 막힌 것 — 빨간 띠, 무엇이 왜 — 누가 푸나 -->
+      <rect x="14" y="150" width="3" height="50" fill="#c94a3a"/>
+      <text x="26" y="160" class="k" fill="#c94a3a">막힌 것</text>
+      <text x="26" y="177" class="t">얼굴 그림 열일곱과 시안이 이 컴퓨터에만 있어요 —</text>
+      <text x="26" y="194" class="t">톰이 저장 규칙을 풀어야 해요</text>
+      <line x1="14" y1="208" x2="374" y2="208" stroke="#efeae0"/>
+      <text x="14" y="224" class="m">5단계 5/6 · 18회차</text>
+      <text x="374" y="224" text-anchor="end" class="m" fill="#8a3b2b">자세히 →</text>
+    </g>
+
+    <!-- ── 경영팀 — 지금 · 대표님 손 · 꼬리 ── -->
+    <g transform="translate(12 865)">
+      <rect x="0" y="0" width="388" height="219" rx="10" class="card"/>
+      <circle cx="16" cy="20" r="4" fill="#6f9a4a"/>
+      <text x="28" y="25" class="h2">경영팀</text>
+      <rect x="100" y="11" width="64" height="18" rx="9" fill="#f3e6bd" stroke="#d8b25c"/>
+      <text x="132" y="23" text-anchor="middle" class="pill" fill="#6b5312">승인 대기</text>
+      <text x="374" y="24" text-anchor="end" class="m">7:03</text>
+      <text x="14" y="46" class="k">진행 중</text>
+      <text x="14" y="63" class="t"><tspan font-weight="600">유진</tspan> · 아침 한 장의 틀을 만들었어요 — 빅터 판정을</text>
+      <text x="14" y="80" class="t">기다려요</text>
+      <rect x="14" y="94" width="360" height="85" rx="8" fill="#fdf8e9" stroke="#d8b25c"/>
+      <rect x="14" y="94" width="3" height="85" fill="#d8b25c"/>
+      <text x="26" y="112" class="k" fill="#6b5312">승인 대기</text>
+      <text x="26" y="129" class="t">아침 한 장을 읽고 읽히는지 한마디 주세요</text>
+      <rect x="26" y="141" width="108" height="28" rx="6" fill="#1b1a1f"/>
+      <text x="80" y="159" text-anchor="middle" class="btn">방에 한마디 →</text>
+      <line x1="14" y1="191" x2="374" y2="191" stroke="#efeae0"/>
+      <text x="14" y="207" class="m">4단계 3/4 · 5회차</text>
+      <text x="374" y="207" text-anchor="end" class="m" fill="#8a3b2b">자세히 →</text>
+    </g>
+  </g>
+
+  <!-- ═══════════════ 폰 412 — 방에 뜨는 것: 판정 카드 · 결재 카드 ═══════════════ -->
+  <g transform="translate(460 20)">
+    <rect x="0" y="0" width="412" height="1100" rx="18" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="-6" class="k">폰 412 · 방 — 판정 카드(도장 대신) · 결재 카드 · 나리·제리 몫 한 줄</text>
+
+    <text x="16" y="34" class="k">판정 카드 — 승인 · 반려 · 보류</text>
+
+    <!-- 통과 — 마크 → 헨리 (R17 얼굴 열일곱, 새벽 4:23 실물) -->
+    <g transform="translate(12 44)">
+      <rect x="0" y="0" width="388" height="96" rx="10" class="card"/>
+      <rect x="0" y="0" width="3" height="96" rx="1.5" fill="#3a8f5c"/>
+      <rect x="14" y="11" width="44" height="20" rx="10" fill="#3a8f5c"/>
+      <text x="36" y="25" text-anchor="middle" class="stamp">승인</text>
+      <text x="68" y="25" class="t"><tspan font-weight="600">마크</tspan> → 헨리 · 얼굴 열일곱</text>
+      <text x="374" y="24" text-anchor="end" class="m">새벽 4:23</text>
+      <text x="14" y="52" class="t">승인 — 얼굴 열일곱이 규격대로 찍혔어요 — 크기·투명·</text>
+      <text x="14" y="69" class="t">정면이 다 맞아요</text>
+      <text x="14" y="88" class="m">자세히 ▸</text>
+    </g>
+
+    <!-- 다시 — 톰 → 헨리 (5단계 착수 카드 두 번째 반려, 새벽 4:23 실물) -->
+    <g transform="translate(12 150)">
+      <rect x="0" y="0" width="388" height="96" rx="10" class="card"/>
+      <rect x="0" y="0" width="3" height="96" rx="1.5" fill="#c9782a"/>
+      <rect x="14" y="11" width="44" height="20" rx="10" fill="#c9782a"/>
+      <text x="36" y="25" text-anchor="middle" class="stamp">반려</text>
+      <text x="68" y="25" class="t"><tspan font-weight="600">톰</tspan> → 헨리 · 5단계 시작</text>
+      <text x="374" y="24" text-anchor="end" class="m">새벽 4:23</text>
+      <text x="14" y="52" class="t">반려 — 5단계는 대표님이 여는 문이에요 — 한마디 전엔</text>
+      <text x="14" y="69" class="t">다시 올리지 마세요</text>
+      <text x="14" y="88" class="m">자세히 ▸</text>
+      <text x="374" y="88" text-anchor="end" class="m" fill="#c9782a">반려 2번째 · 다음은 보류</text>
+    </g>
+
+    <!-- 멈춤 — 머리만 (최근 기록에 멈춤 판정이 없다 — 꼴만) -->
+    <g transform="translate(12 256)">
+      <rect x="0" y="0" width="388" height="44" rx="10" class="card"/>
+      <rect x="0" y="0" width="3" height="44" rx="1.5" fill="#c94a3a"/>
+      <rect x="14" y="11" width="44" height="20" rx="10" fill="#c94a3a"/>
+      <text x="36" y="25" text-anchor="middle" class="stamp">보류</text>
+      <text x="68" y="25" class="s">보류 — 세 번 고쳐도 안 됐어요, 대표님께 가요 (머리만 — 실물 없음)</text>
+    </g>
+
+    <text x="16" y="334" class="k">결재 카드 — 대표님 몫(C)만 이 카드, 나리·제리 몫(B)은 한 줄</text>
+
+    <!-- 결재 C — 경영 · 보고서 틀 두 단계 (apr_5da90dbd 실물, 어젯밤 10:57 — 지금은 통과된 것, 꼴 본보기) -->
+    <g transform="translate(12 344)">
+      <rect x="0" y="0" width="388" height="234" rx="10" class="card" stroke="#d8b25c" stroke-width="1.5"/>
+      <rect x="0" y="0" width="3" height="234" rx="1.5" fill="#d8b25c"/>
+      <circle cx="20" cy="20" r="5" fill="#6f9a4a"/>
+      <text x="32" y="24" class="s">유진 · 경영 · 승인 대기</text>
+      <text x="374" y="24" text-anchor="end" class="m">밤 10:57</text>
+      <!-- 무엇 — 폰에선 Gowun 16 두 줄(한 줄은 1판 PNG 에서 오른쪽이 잘렸다) -->
+      <text x="14" y="52" class="h" font-size="16">보고서 틀 만들기를 계획표에</text>
+      <text x="14" y="72" class="h" font-size="16">두 단계로 넣어도 될까요</text>
+      <text x="14" y="94" class="k">왜</text>
+      <text x="14" y="111" class="t">대표님이 어제 "보고서 틀을 고쳐라" 하셨어요 — 조사·비교</text>
+      <text x="14" y="128" class="t">한 단계, 실물로 바꾸기 한 단계예요</text>
+      <rect x="14" y="144" width="172" height="34" rx="7" fill="#1b1a1f"/>
+      <text x="100" y="166" text-anchor="middle" class="btn">승인</text>
+      <rect x="202" y="144" width="172" height="34" rx="7" fill="none" stroke="#1b1a1f"/>
+      <text x="288" y="166" text-anchor="middle" class="btn2">반려</text>
+      <text x="14" y="196" class="s">반려를 누르면 "왜" 한 마디 칸이 열려요.</text>
+      <line x1="14" y1="208" x2="374" y2="208" stroke="#efeae0"/>
+      <text x="14" y="224" class="m">자세히 ▸  요청 원문 · 파일 하나</text>
+    </g>
+
+    <!-- B — 대표 화면엔 한 줄 (지금 큐 실물: B 다섯) -->
+    <g transform="translate(12 590)">
+      <rect x="0" y="0" width="388" height="36" rx="10" fill="#f6f2ea" stroke="#e3ddd0"/>
+      <text x="14" y="23" class="s">나리·제리 검토 중 5 — 대표님 손 필요 없어요</text>
+      <text x="374" y="23" text-anchor="end" class="m">보기 ▸</text>
+    </g>
+
+    <!-- 방 안에서 이 카드가 어떻게 서나 — 말풍선 사이, 폭은 말풍선과 같다 -->
+    <text x="16" y="660" class="k">방 안 — 말풍선 사이에 같은 폭으로</text>
+    <g transform="translate(12 670)">
+      <rect x="0" y="0" width="300" height="34" rx="12" fill="#efeae0"/>
+      <text x="14" y="21" class="t2">헨리 · 시안 대 실물 목록 1판 올렸습니다.</text>
+      <rect x="0" y="44" width="388" height="96" rx="10" class="card"/>
+      <rect x="0" y="44" width="3" height="96" rx="1.5" fill="#3a8f5c"/>
+      <rect x="14" y="55" width="44" height="20" rx="10" fill="#3a8f5c"/>
+      <text x="36" y="69" text-anchor="middle" class="stamp">승인</text>
+      <text x="68" y="69" class="t"><tspan font-weight="600">마크</tspan> → 헨리 · 얼굴 열일곱</text>
+      <text x="374" y="68" text-anchor="end" class="m">새벽 4:23</text>
+      <text x="14" y="96" class="t">승인 — 얼굴 열일곱이 규격대로 찍혔어요 — 크기·투명·</text>
+      <text x="14" y="113" class="t">정면이 다 맞아요</text>
+      <text x="14" y="132" class="m">자세히 ▸</text>
+      <rect x="88" y="150" width="300" height="34" rx="12" fill="#e4ecf7"/>
+      <text x="102" y="171" class="t2">나리 · 헨리, 18회차 열었어요 — 5단계는 시안 대 실물.</text>
+    </g>
+
+    <!-- 팀 방 맨 위 고정 — 그 팀 카드 하나 (3절 ③ 자리) -->
+    <text x="16" y="900" class="k">팀 방 맨 위 — 그 팀 카드 하나 고정 (지금 "회차" 줄 자리)</text>
+    <g transform="translate(12 910)">
+      <rect x="0" y="0" width="388" height="120" rx="10" class="card"/>
+      <circle cx="16" cy="20" r="4" fill="#4b5f9e"/>
+      <text x="28" y="25" class="h2">디자인팀</text>
+      <rect x="100" y="11" width="62" height="18" rx="9" fill="none" stroke="#3a8f5c"/>
+      <text x="131" y="23" text-anchor="middle" class="pill" fill="#2e7d4f">진행 중</text>
+      <text x="374" y="24" text-anchor="end" class="m">7:22</text>
+      <text x="14" y="46" class="k">진행 중</text>
+      <text x="14" y="63" class="t"><tspan font-weight="600">헨리</tspan> · 시안과 실물이 어디가 다른지 화면 여덟 장을</text>
+      <text x="14" y="80" class="t">견줘 적었어요</text>
+      <line x1="14" y1="92" x2="374" y2="92" stroke="#efeae0"/>
+      <text x="14" y="108" class="m">5단계 5/6 · 18회차</text>
+      <text x="374" y="108" text-anchor="end" class="m" fill="#8a3b2b">펼치기 ▾ 된 것 2 · 막힌 것 1</text>
+    </g>
+  </g>
+
+  <!-- ═══════════════ PC 1200 — '한 장' 두 단 + 방 카드 ═══════════════ -->
+  <g transform="translate(896 20)">
+    <rect x="0" y="0" width="1200" height="860" rx="12" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="-6" class="k">PC 1200 · 한 장 — 같은 카드 두 단(카드 580 · 사이 14), 한 줄이 한 줄로 든다 · 아래는 방 카드 같은 폭</text>
+
+    <!-- 왼쪽 단: 총괄실 · 개발팀 · 경영팀 -->
+    <g transform="translate(14 14)">
+      <rect x="0" y="0" width="580" height="203" rx="10" class="card"/>
+      <circle cx="16" cy="20" r="4" fill="#1f5f4f"/>
+      <text x="28" y="25" class="h2">총괄실</text>
+      <rect x="100" y="11" width="64" height="18" rx="9" fill="#f3e6bd" stroke="#d8b25c"/>
+      <text x="132" y="23" text-anchor="middle" class="pill" fill="#6b5312">승인 대기</text>
+      <text x="566" y="24" text-anchor="end" class="m">7:24</text>
+      <text x="14" y="46" class="k">진행 중</text>
+      <text x="14" y="63" class="t"><tspan font-weight="600">톰</tspan> · 밤새 대표님 대신 정한 것 열 남짓을 아침 한 장에 모았어요 — 되돌리시려면 한마디면 돼요</text>
+      <rect x="14" y="78" width="552" height="85" rx="8" fill="#fdf8e9" stroke="#d8b25c"/>
+      <rect x="14" y="78" width="3" height="85" fill="#d8b25c"/>
+      <text x="26" y="96" class="k" fill="#6b5312">승인 대기</text>
+      <text x="26" y="113" class="t">대표님 화면에 새는 영어 속말을 막는 한 줄 — 명령 한 번 돌려 주세요</text>
+      <rect x="26" y="125" width="108" height="28" rx="6" fill="#1b1a1f"/>
+      <text x="80" y="143" text-anchor="middle" class="btn">방에 한마디 →</text>
+      <text x="554" y="143" text-anchor="end" class="s">하나 더 · 자세히에</text>
+      <line x1="14" y1="175" x2="566" y2="175" stroke="#efeae0"/>
+      <text x="14" y="191" class="m">1단계 · 2회차</text>
+      <text x="566" y="191" text-anchor="end" class="m" fill="#8a3b2b">자세히 →</text>
+    </g>
+    <g transform="translate(14 231)">
+      <rect x="0" y="0" width="580" height="145" rx="10" class="card"/>
+      <circle cx="16" cy="20" r="4" fill="#4a5d3a"/>
+      <text x="28" y="25" class="h2">개발팀</text>
+      <rect x="100" y="11" width="62" height="18" rx="9" fill="none" stroke="#3a8f5c"/>
+      <text x="131" y="23" text-anchor="middle" class="pill" fill="#2e7d4f">진행 중</text>
+      <text x="566" y="24" text-anchor="end" class="m">7:24</text>
+      <text x="14" y="46" class="k">진행 중</text>
+      <text x="14" y="63" class="t"><tspan font-weight="600">테라</tspan> · 마을 탭을 숨겼어요 — 이제 대표 화면 글 셋을 사람 말로 검사해요</text>
+      <text x="14" y="86" class="k">된 것</text>
+      <rect x="14" y="94" width="8" height="10" rx="1" fill="none" stroke="#8a8794"/>
+      <text x="28" y="103" class="t2"><tspan font-weight="600">테라</tspan> · 결재 카드·첫 화면·알림·판정 규칙을 고친 코드 — 레오 승인</text>
+      <line x1="14" y1="117" x2="566" y2="117" stroke="#efeae0"/>
+      <text x="14" y="133" class="m">10단계 9/11 · 32회차</text>
+      <text x="566" y="133" text-anchor="end" class="m" fill="#8a3b2b">자세히 →</text>
+    </g>
+    <g transform="translate(14 390)">
+      <rect x="0" y="0" width="580" height="186" rx="10" class="card"/>
+      <circle cx="16" cy="20" r="4" fill="#6f9a4a"/>
+      <text x="28" y="25" class="h2">경영팀</text>
+      <rect x="100" y="11" width="64" height="18" rx="9" fill="#f3e6bd" stroke="#d8b25c"/>
+      <text x="132" y="23" text-anchor="middle" class="pill" fill="#6b5312">승인 대기</text>
+      <text x="566" y="24" text-anchor="end" class="m">7:03</text>
+      <text x="14" y="46" class="k">진행 중</text>
+      <text x="14" y="63" class="t"><tspan font-weight="600">유진</tspan> · 아침 한 장의 틀을 만들었어요 — 빅터 판정을 기다려요</text>
+      <rect x="14" y="78" width="552" height="68" rx="8" fill="#fdf8e9" stroke="#d8b25c"/>
+      <rect x="14" y="78" width="3" height="68" fill="#d8b25c"/>
+      <text x="26" y="96" class="k" fill="#6b5312">승인 대기</text>
+      <text x="26" y="113" class="t">아침 한 장을 읽고 읽히는지 한마디 주세요</text>
+      <rect x="440" y="94" width="108" height="28" rx="6" fill="#1b1a1f"/>
+      <text x="494" y="112" text-anchor="middle" class="btn">방에 한마디 →</text>
+      <line x1="14" y1="158" x2="566" y2="158" stroke="#efeae0"/>
+      <text x="14" y="174" class="m">4단계 3/4 · 5회차</text>
+      <text x="566" y="174" text-anchor="end" class="m" fill="#8a3b2b">자세히 →</text>
+    </g>
+
+    <!-- 오른쪽 단: 마케팅팀 · 디자인팀 · 판정 둘 -->
+    <g transform="translate(608 14)">
+      <rect x="0" y="0" width="580" height="145" rx="10" class="card"/>
+      <circle cx="16" cy="20" r="4" fill="#2f4f7a"/>
+      <text x="28" y="25" class="h2">마케팅팀</text>
+      <rect x="100" y="11" width="62" height="18" rx="9" fill="none" stroke="#3a8f5c"/>
+      <text x="131" y="23" text-anchor="middle" class="pill" fill="#2e7d4f">진행 중</text>
+      <text x="566" y="24" text-anchor="end" class="m">7:12</text>
+      <text x="14" y="46" class="k">진행 중</text>
+      <text x="14" y="63" class="t"><tspan font-weight="600">하영</tspan> · 톰이 하는 일 일곱 가지를 다시 쓰는 중 — 제리가 대조해요</text>
+      <text x="14" y="86" class="k">된 것</text>
+      <rect x="14" y="94" width="8" height="10" rx="1" fill="none" stroke="#8a8794"/>
+      <text x="28" y="103" class="t2"><tspan font-weight="600">하영</tspan> · 화면 여섯을 30초씩 본 표</text>
+      <line x1="14" y1="117" x2="566" y2="117" stroke="#efeae0"/>
+      <text x="14" y="133" class="m">5단계 4/5 · 36회차</text>
+      <text x="566" y="133" text-anchor="end" class="m" fill="#8a3b2b">자세히 →</text>
+    </g>
+    <g transform="translate(608 173)">
+      <rect x="0" y="0" width="580" height="202" rx="10" class="card"/>
+      <circle cx="16" cy="20" r="4" fill="#4b5f9e"/>
+      <text x="28" y="25" class="h2">디자인팀</text>
+      <rect x="100" y="11" width="62" height="18" rx="9" fill="none" stroke="#3a8f5c"/>
+      <text x="131" y="23" text-anchor="middle" class="pill" fill="#2e7d4f">진행 중</text>
+      <text x="566" y="24" text-anchor="end" class="m">7:22</text>
+      <text x="14" y="46" class="k">진행 중</text>
+      <text x="14" y="63" class="t"><tspan font-weight="600">헨리</tspan> · 시안과 실물이 어디가 다른지 화면 여덟 장을 견줘 적었어요</text>
+      <text x="14" y="86" class="k">된 것</text>
+      <rect x="14" y="94" width="8" height="10" rx="1" fill="none" stroke="#8a8794"/>
+      <text x="28" y="103" class="t2"><tspan font-weight="600">헨리</tspan> · 화면 여덟 장 다른 점 목록</text>
+      <rect x="14" y="111" width="8" height="10" rx="1" fill="none" stroke="#8a8794"/>
+      <text x="28" y="120" class="t2"><tspan font-weight="600">클레멘타인</tspan> · 현황 글자·간격을 시안 값으로 고친 코드</text>
+      <rect x="14" y="133" width="3" height="33" fill="#c94a3a"/>
+      <text x="26" y="143" class="k" fill="#c94a3a">막힌 것</text>
+      <text x="26" y="160" class="t">얼굴 그림 열일곱과 시안이 이 컴퓨터에만 있어요 — 톰이 저장 규칙을 풀어야 해요</text>
+      <line x1="14" y1="174" x2="566" y2="174" stroke="#efeae0"/>
+      <text x="14" y="190" class="m">5단계 5/6 · 18회차</text>
+      <text x="566" y="190" text-anchor="end" class="m" fill="#8a3b2b">자세히 →</text>
+    </g>
+
+    <!-- 방 카드 — PC 에서도 같은 부품, 폭만 말풍선(580) -->
+    <text x="608" y="404" class="k">방 — 판정 카드 · 결재 카드 (같은 부품, 폭 580)</text>
+    <g transform="translate(608 414)">
+      <rect x="0" y="0" width="580" height="76" rx="10" class="card"/>
+      <rect x="0" y="0" width="3" height="76" rx="1.5" fill="#3a8f5c"/>
+      <rect x="14" y="11" width="44" height="20" rx="10" fill="#3a8f5c"/>
+      <text x="36" y="25" text-anchor="middle" class="stamp">승인</text>
+      <text x="68" y="25" class="t"><tspan font-weight="600">마크</tspan> → 헨리 · 얼굴 열일곱</text>
+      <text x="566" y="24" text-anchor="end" class="m">새벽 4:23</text>
+      <text x="14" y="52" class="t">승인 — 얼굴 열일곱이 규격대로 찍혔어요 — 크기·투명·정면이 다 맞아요</text>
+      <text x="14" y="68" class="m">자세히 ▸</text>
+    </g>
+    <g transform="translate(608 500)">
+      <rect x="0" y="0" width="580" height="76" rx="10" class="card"/>
+      <rect x="0" y="0" width="3" height="76" rx="1.5" fill="#c9782a"/>
+      <rect x="14" y="11" width="44" height="20" rx="10" fill="#c9782a"/>
+      <text x="36" y="25" text-anchor="middle" class="stamp">반려</text>
+      <text x="68" y="25" class="t"><tspan font-weight="600">톰</tspan> → 헨리 · 5단계 시작</text>
+      <text x="566" y="24" text-anchor="end" class="m">새벽 4:23</text>
+      <text x="14" y="52" class="t">반려 — 5단계는 대표님이 여는 문이에요 — 한마디 전엔 다시 올리지 마세요</text>
+      <text x="14" y="68" class="m">자세히 ▸</text>
+      <text x="566" y="68" text-anchor="end" class="m" fill="#c9782a">반려 2번째 · 다음은 보류</text>
+    </g>
+
+    <text x="14" y="600" class="k">결재 카드 C — PC 에선 가운데 480 팝업이 아니라 그 자리 카드(580)</text>
+    <g transform="translate(14 610)">
+      <rect x="0" y="0" width="580" height="196" rx="10" class="card" stroke="#d8b25c" stroke-width="1.5"/>
+      <rect x="0" y="0" width="3" height="196" rx="1.5" fill="#d8b25c"/>
+      <circle cx="20" cy="20" r="5" fill="#6f9a4a"/>
+      <text x="32" y="24" class="s">유진 · 경영 · 승인 대기</text>
+      <text x="566" y="24" text-anchor="end" class="m">밤 10:57</text>
+      <text x="14" y="52" class="h">보고서 틀 만들기를 계획표에 두 단계로 넣어도 될까요</text>
+      <text x="14" y="74" class="k">왜</text>
+      <text x="14" y="91" class="t">대표님이 어제 "보고서 틀을 고쳐라" 하셨어요 — 조사·비교 한 단계, 실물로 바꾸기 한 단계예요</text>
+      <rect x="14" y="108" width="172" height="34" rx="7" fill="#1b1a1f"/>
+      <text x="100" y="130" text-anchor="middle" class="btn">승인</text>
+      <rect x="202" y="108" width="172" height="34" rx="7" fill="none" stroke="#1b1a1f"/>
+      <text x="288" y="130" text-anchor="middle" class="btn2">반려</text>
+      <text x="14" y="160" class="s">반려를 누르면 "왜" 한 마디 칸이 열려요.</text>
+      <line x1="14" y1="172" x2="566" y2="172" stroke="#efeae0"/>
+      <text x="14" y="188" class="m">자세히 ▸  요청 원문 · 파일 하나</text>
+    </g>
+    <g transform="translate(608 610)">
+      <rect x="0" y="0" width="580" height="36" rx="10" fill="#f6f2ea" stroke="#e3ddd0"/>
+      <text x="14" y="23" class="s">나리·제리 검토 중 5 — 대표님 손 필요 없어요</text>
+      <text x="566" y="23" text-anchor="end" class="m">보기 ▸</text>
+    </g>
+    <text x="608" y="680" class="memo">읽는 법 — 카드 하나 = 팀 하나. 블록 여섯(머리 · 진행 중 · 된 것 · 막힌 것 · 승인 대기 · 꼬리), 비면 안 그린다.</text>
+    <text x="608" y="697" class="memo">머리 알약 셋: 진행 중(초록 테두리) · 차단됨(빨강 테두리) · 승인 대기(놋쇠 채움). 시각 = 상황판 갱신, 우리 시각.</text>
+    <text x="608" y="714" class="memo">된 것 앞 작은 네모 = 파일, 누르면 열림. 막힌 것 = 빨간 왼쪽 띠 3px. 승인 대기 = 놋쇠 상자 + 단추(결재면 승인·반려, 한마디면 방에 한마디 하나).</text>
+    <text x="608" y="731" class="memo">꼬리 = N단계 끝/전체 · 회차 · 자세히 → (팀 방). 숫자는 이 둘뿐 — 된 것 수·막힌 것 수는 줄이 곧 수다.</text>
+    <text x="608" y="748" class="memo">판정 카드 = 왼쪽 띠 + 도장 알약(승인 초록 · 반려 주황 · 보류 빨강) · 누가 → 누구 · 시각 / 한 줄("승인 — …") / 자세히 ▸ / 반려엔 반려 N번째 · 다음은 보류.</text>
+    <text x="608" y="765" class="memo">글은 전부 결정 140 — 60자 안, 카드 번호·경로·회차 번호 없음. 이 시안의 글은 07:2x 상황판 실물을 그 규칙으로 옮긴 것.</text>
+  </g>
+
+  <text x="24" y="1150" class="memo">시안 메모(화면 글자 아님) — 폰 카드 최고 236(총괄·디자인) &lt; 반 화면 457. 다섯 카드 세로 1084 — 첫 화면(915)엔 넉 장 반, 다섯째는 한 번 밀면. 한 줄 60자는 폰(28자/줄)에서 두 줄, PC(44자/줄)에서 한 줄 — 블록 높이는 줄 수로 는다.</text>
+  <text x="24" y="1167" class="memo">알약·블록·판정·단추 글자는 하영 card-words.md 2판(09-16 08:xx) 머리 그대로 — 진행 중·차단됨·승인 대기 / 승인·반려·보류 / 승인·반려 / 나리·제리 검토 중 N. 탭은 2판 확정 다섯(대시보드·타임라인·채팅·리포트·설정) — 이 그림엔 탭이 없다. 색 hex 임시, 토큰은 클레멘타인. 지어 넣은 값 0 — 보류 판정만 실물이 없어 머리만.</text>
+  <text x="24" y="1184" class="memo">서버 값(솔라 /api/card/&lt;팀&gt;) — { team, name, color, state: working|stuck|boss, at, now:{who,text}, done:[{who,text,file}], stuck:[{text}], boss:{text, kind: approval|ask, approval?}, stage:{n,done,total}, round }. 판정: { verdict: pass|again|stop, from, to, topic, line, detail, rebuttal?:{n,of:3}, ts }.</text>
+  <text x="24" y="1201" class="memo">카드 체계 시안 1판-b(하영 2판 글자 · 폰 결재 제목 두 줄) · 2026-09-16 아침 · 헨리 · 나리 카드-체계-0916.md 1~3절 · 결정 140 · 하영 boss-lines.md 꼴 셋 · 값 07:2x progress.json 다섯 + approvals + rounds 실물</text>
+</svg>

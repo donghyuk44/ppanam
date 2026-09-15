@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="670" viewBox="0 0 1000 670" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 결재 카드 시안 1판-b — 헨리 09-14 (M4). 하영 2판 7절 ② "결재 카드 한 장" (대표 결정 20-2 "뭐에 대한 승인인지 주제, 목적, 이유 … 그냥 승인 반려만 있는 것도 고쳐야함") + 7절 ③ "눌렀다 → 됐다" (evt_f054428919 "승인버튼 눌렀는데 … 전송이 안된거야?").
+       현황 ③ 내 차례의 "읽고 답하기" 를 누르면 뜨는 카드. 칸 다섯: 주제 · 왜 · 바뀌는 것(계획표면 단계 표, 원격 올리기면 파일) · 요청한 사람의 원문(줄이지 않는다 — 잎 층) · 버튼 둘(확인 / 돌려보냄). 등급 말 없음 — 여기 오는 건 대표님이 정할 것(C)뿐(9절 1).
+       본보기는 실제 C 하나 — apr_dd13a64c 마케팅 계획표 '세계 재정비 로드맵 2~5단계'(하영, 대표 PASS 09-14 낮). 1판의 본보기(톰 · 계획표 순서 바꿈)는 결정 46 B 라 내 차례에 안 뜨는 카드였다 — 하영 대조에서 잡혀 바꿈.
+       왼쪽 누르기 전 · 오른쪽 누른 뒤 — 카드가 사라지지 않고 "됐어요" 줄이 남는다. 폰 폭 388, 데스크톱은 같은 카드가 가운데 480. -->
+  <defs><style>
+    .k{font-size:10px;letter-spacing:.12em;fill:#8a8794}
+    .h{font-family:'Gowun Batang','Noto Serif KR',serif;font-size:16px;fill:#1b1a1f}
+    .t{font-size:12.5px;fill:#1b1a1f}.s{font-size:11px;fill:#6f6d78}.m{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#8a8794}
+    .card{fill:#ffffff;stroke:#e3ddd0}
+    .box{fill:#fbf9f4;stroke:#e3ddd0}
+    .was{fill:none;stroke:#a8a6ae;stroke-dasharray:4 3}
+  </style></defs>
+  <rect width="1000" height="670" fill="#f6f2ea"/>
+
+  <!-- ─────────── 누르기 전 ─────────── -->
+  <g transform="translate(24 24)">
+    <text x="0" y="-6" class="k">결재 카드 — 대표님이 보실 것의 "읽고 답하기" 를 누르면</text>
+    <rect x="0" y="4" width="388" height="590" rx="12" class="card" stroke="#d8b25c" stroke-width="1.5"/>
+    <rect x="0" y="4" width="3" height="590" rx="1" fill="#d8b25c"/>
+    <text x="372" y="26" text-anchor="end" font-size="16" fill="#6f6d78">×</text>
+    <!-- 누가 · 언제 -->
+    <circle cx="30" cy="34" r="10" fill="#2f4f7a"/><text x="30" y="38" text-anchor="middle" font-size="9" fill="#f4efe4">하</text>
+    <text x="48" y="38" class="s">하영 · 마케팅 · 결재 기다림 · 1시간 전</text>
+    <!-- 주제 -->
+    <text x="16" y="70" class="h">마케팅 계획표 — 세계 재정비 2~5단계</text>
+    <!-- 왜 -->
+    <text x="16" y="98" class="k">왜</text>
+    <text x="16" y="116" class="t">대표님이 "둘 다 일한다" 하셨어요.</text>
+    <text x="16" y="133" class="t">단계마다 하영 몫과 안젤 몫을 나란히 새로 썼어요.</text>
+    <!-- 바뀌는 것 — 계획표면 단계 표 -->
+    <text x="16" y="164" class="k">바뀌는 것 — 단계 표 (목표 · 지금 안 하는 것은 그대로)</text>
+    <rect x="16" y="172" width="356" height="132" rx="6" class="box"/>
+    <text x="28" y="190" class="s">지금 (톰의 틀)</text><text x="196" y="190" class="s">바뀐 뒤</text>
+    <rect x="28" y="198" width="156" height="20" rx="4" class="was"/><text x="36" y="212" class="s">2단계 세계관</text>
+    <rect x="196" y="198" width="168" height="20" rx="4" fill="#ffffff" stroke="#1b1a1f" stroke-width="1.5"/><rect x="196" y="198" width="3" height="20" fill="#3a8f5c"/><text x="204" y="212" class="t" font-weight="600">2단계 관제탑 내용 ∥ 인격 재기</text>
+    <rect x="28" y="224" width="156" height="20" rx="4" class="was"/><text x="36" y="238" class="s">3단계 사람들의 내력</text>
+    <rect x="196" y="224" width="168" height="20" rx="4" class="was"/><text x="204" y="238" class="s">3단계 낱말 사전 ∥ 인격 초안</text>
+    <rect x="28" y="250" width="156" height="20" rx="4" class="was"/><text x="36" y="264" class="s">4단계 관계도</text>
+    <rect x="196" y="250" width="168" height="20" rx="4" class="was"/><text x="204" y="264" class="s">4단계 대시보드 글 틀 ∥ 브랜딩</text>
+    <rect x="28" y="276" width="156" height="20" rx="4" class="was"/><text x="36" y="290" class="s">5단계 캐릭터 다시 쓰기</text>
+    <rect x="196" y="276" width="168" height="20" rx="4" class="was"/><text x="204" y="290" class="s">5단계 붙은 화면 30초 시험</text>
+    <!-- 요청한 사람의 원문 — 줄이지 않는다 -->
+    <text x="16" y="334" class="k">하영이 쓴 원문</text>
+    <rect x="16" y="342" width="356" height="120" rx="6" class="box"/>
+    <text x="28" y="360" class="s">대표님이 고르실 것: 이 로드맵으로 갈지. 목적지·컷리스트는 톰의</text>
+    <text x="28" y="376" class="s">틀(apr_efc22490) 그대로, 2~5단계만 새로 썼습니다. 단계마다 하영</text>
+    <text x="28" y="392" class="s">몫과 안젤 몫이 나란히 있고 내 것은 상대가 봅니다(125). 하영: 관제탑</text>
+    <text x="28" y="408" class="s">내용 선정 2판(헨리 시안 다섯 장 위, 결정 47) → 낱말 사전 5판 → …</text>
+    <text x="28" y="424" class="s">안젤 PASS·다니엘 PASS(R32). 대표님이 안 고르신 셋은 막지 않습니다.</text>
+    <text x="28" y="450" class="m">전부 읽기 · 방에서 보기 →</text>
+    <!-- 버튼 둘 -->
+    <rect x="16" y="482" width="170" height="36" rx="8" fill="#1b1a1f"/><text x="101" y="505" text-anchor="middle" font-size="13" fill="#f4efe4">확인</text>
+    <rect x="202" y="482" width="170" height="36" rx="8" fill="none" stroke="#1b1a1f" stroke-width="1.5"/><text x="287" y="505" text-anchor="middle" font-size="13" fill="#1b1a1f">돌려보냄</text>
+    <text x="16" y="540" class="s">돌려보냄을 누르면 한 줄 칸이 열려요 — "왜" 한 마디.</text>
+    <text x="16" y="558" class="s">10분 안 누르시면 톰·제리가 대신 정해요 — 돈이 나가거나</text>
+    <text x="16" y="574" class="s">밖으로 가는 일은 빼고. 되돌리시려면 방에 한마디.</text>
+  </g>
+
+  <!-- ─────────── 누른 뒤 — 사라지지 않는다 ─────────── -->
+  <g transform="translate(470 24)">
+    <text x="0" y="-6" class="k">확인을 누른 뒤 — 카드는 그 자리에, 버튼 자리에 "됐어요"</text>
+    <rect x="0" y="4" width="388" height="590" rx="12" class="card"/>
+    <rect x="0" y="4" width="3" height="590" rx="1" fill="#3a8f5c"/>
+    <text x="372" y="26" text-anchor="end" font-size="16" fill="#6f6d78">×</text>
+    <circle cx="30" cy="34" r="10" fill="#2f4f7a"/><text x="30" y="38" text-anchor="middle" font-size="9" fill="#f4efe4">하</text>
+    <text x="48" y="38" class="s">하영 · 마케팅 · 확인 · 낮 12:13</text>
+    <text x="16" y="70" class="h">마케팅 계획표 — 세계 재정비 2~5단계</text>
+    <text x="16" y="98" class="k">왜</text>
+    <text x="16" y="116" class="t">대표님이 "둘 다 일한다" 하셨어요.</text>
+    <text x="16" y="133" class="t">단계마다 하영 몫과 안젤 몫을 나란히 새로 썼어요.</text>
+    <text x="16" y="164" class="k">바뀐 것 — 단계 표</text>
+    <rect x="16" y="172" width="356" height="132" rx="6" class="box"/>
+    <text x="28" y="190" class="s">전</text><text x="196" y="190" class="s">지금</text>
+    <rect x="28" y="198" width="156" height="20" rx="4" class="was"/><text x="36" y="212" class="s">2단계 세계관</text>
+    <rect x="196" y="198" width="168" height="20" rx="4" fill="#ffffff" stroke="#1b1a1f" stroke-width="1.5"/><rect x="196" y="198" width="3" height="20" fill="#3a8f5c"/><text x="204" y="212" class="t" font-weight="600">2단계 관제탑 내용 ∥ 인격 재기</text>
+    <rect x="28" y="224" width="156" height="20" rx="4" class="was"/><text x="36" y="238" class="s">3단계 사람들의 내력</text>
+    <rect x="196" y="224" width="168" height="20" rx="4" class="was"/><text x="204" y="238" class="s">3단계 낱말 사전 ∥ 인격 초안</text>
+    <rect x="28" y="250" width="156" height="20" rx="4" class="was"/><text x="36" y="264" class="s">4단계 관계도</text>
+    <rect x="196" y="250" width="168" height="20" rx="4" class="was"/><text x="204" y="264" class="s">4단계 대시보드 글 틀 ∥ 브랜딩</text>
+    <rect x="28" y="276" width="156" height="20" rx="4" class="was"/><text x="36" y="290" class="s">5단계 캐릭터 다시 쓰기</text>
+    <rect x="196" y="276" width="168" height="20" rx="4" class="was"/><text x="204" y="290" class="s">5단계 붙은 화면 30초 시험</text>
+    <text x="16" y="334" class="k">하영이 쓴 원문</text>
+    <rect x="16" y="342" width="356" height="120" rx="6" class="box"/>
+    <text x="28" y="360" class="s">대표님이 고르실 것: 이 로드맵으로 갈지. 목적지·컷리스트는 톰의</text>
+    <text x="28" y="376" class="s">틀(apr_efc22490) 그대로, 2~5단계만 새로 썼습니다. 단계마다 하영</text>
+    <text x="28" y="392" class="s">몫과 안젤 몫이 나란히 있고 내 것은 상대가 봅니다(125). 하영: 관제탑</text>
+    <text x="28" y="408" class="s">내용 선정 2판(헨리 시안 다섯 장 위, 결정 47) → 낱말 사전 5판 → …</text>
+    <text x="28" y="424" class="s">안젤 PASS·다니엘 PASS(R32). 대표님이 안 고르신 셋은 막지 않습니다.</text>
+    <text x="28" y="450" class="m">전부 읽기 · 방에서 보기 →</text>
+    <!-- 됐어요 줄 — 버튼 자리에 남는다 (7절 ③) -->
+    <rect x="16" y="482" width="356" height="36" rx="8" fill="#eef5f0" stroke="#3a8f5c"/>
+    <circle cx="34" cy="500" r="5" fill="#3a8f5c"/>
+    <text x="48" y="504" class="t">됐어요 — 확인, 마케팅에 전해졌어요 · 낮 12:13</text>
+    <text x="16" y="540" class="s">되돌리시려면 방에 한마디 — 톰이 되돌려요.</text>
+  </g>
+  <!-- 주석 — 카드 밖(하영 5판 3-5-4) -->
+  <text x="24" y="636" class="s">시안 메모(화면 글자 아님) — 현황 "대표님이 보실 것" 칸에도 이 "됐어요" 한 줄이 남는다. 카드가 사라지면 "전송이 안 된 거야?" 가 또 온다(evt_f054428919).</text>
+  <text x="988" y="662" text-anchor="end" font-size="9" fill="#a8a6ae">결재 카드 시안 1판-c(5판 낱말) · 2026-09-14 · 헨리 · 하영 2판 7절 ②③ · 본보기 apr_dd13a64c(C) · 결정 20-2 · 85 · 낱말 하영(확인 / 돌려보냄)</text>
+</svg>

@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="640" viewBox="0 0 1000 640" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 숫자 한 벌 — 본보기 한 장 (헨리 09-14, out/numbers.md). 숲 층: 큰 숫자 둘 + 그림 다섯(진행 막대 · 회차 네모 · 시간 띠 · 작은 그림 다섯 · 강조). 색 넷: 누구(팀 색) · 얼마나(한 색 옅→짙) · 위아래(초록/빨강+회색) · 상태(초록·빨강·노랑·회색).
+       2판 (09-14 오후, 하영 2판 9절 5·6): 큰 숫자에서 "오늘 한 것" 을 뺐다 — 자기 통계(ui-spec 0절 3 과 numbers.md 4절을 한쪽으로). ⑤ 작은 그림 다섯은 분석에서만, 현황 ④ 에 안 붙는다. -->
+  <defs><style>
+    .k{font-size:10px;letter-spacing:.12em;fill:#8a8794}
+    .h{font-family:'Gowun Batang','Noto Serif KR',serif;font-size:16px;fill:#1b1a1f}
+    .big{font-size:28px;fill:#1b1a1f;font-weight:600}
+    .t{font-size:12px;fill:#1b1a1f}.s{font-size:11px;fill:#6f6d78}.m{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#8a8794}
+    .card{fill:#ffffff;stroke:#e3ddd0}
+  </style></defs>
+  <rect width="1000" height="640" fill="#f6f2ea"/>
+  <text x="24" y="34" class="h">숫자 한 벌 — 숲 층 본보기</text>
+  <text x="976" y="34" text-anchor="end" class="m">색은 임시 hex · 토큰으로 바꿈</text>
+
+  <!-- ① 큰 숫자 셋 -->
+  <g transform="translate(24 50)">
+    <text x="0" y="0" class="k">① 큰 숫자 둘 — 0 이면 칸이 없다 ("오늘 한 것" 은 자기 통계라 뺐다, 하영 9절 5)</text>
+    <rect x="0" y="8" width="150" height="64" rx="10" class="card" stroke="#d8b25c" stroke-width="1.5"/><text x="14" y="46" class="big">2</text><text x="14" y="64" class="s">대표님이 보실 것</text>
+    <rect x="160" y="8" width="150" height="64" rx="10" class="card"/><text x="174" y="46" class="big" fill="#c94a3a">2</text><text x="174" y="64" class="s">막힌 것</text>
+  </g>
+
+  <!-- ② 진행 막대 + ③ 회차 네모 -->
+  <g transform="translate(520 50)">
+    <text x="0" y="0" class="k">② 진행 막대 (단계 N/M) · ③ 회차 네모</text>
+    <rect x="0" y="8" width="456" height="64" rx="10" class="card"/>
+    <text x="14" y="30" class="t" font-weight="600">마케팅팀</text><text x="90" y="30" class="s">1장 7단계 마을 브랜딩</text>
+    <rect x="14" y="40" width="240" height="5" rx="2.5" fill="#e6e0d3"/><rect x="14" y="40" width="206" height="5" rx="2.5" fill="#2f4f7a"/><text x="262" y="45" class="m">6/7</text>
+    <g><rect x="300" y="36" width="12" height="12" rx="2" fill="#8a8794"/><rect x="316" y="36" width="12" height="12" rx="2" fill="#8a8794"/><rect x="332" y="36" width="12" height="12" rx="2" fill="none" stroke="#3a8f5c" stroke-width="1.5"/><rect x="348" y="36" width="12" height="12" rx="2" fill="none" stroke="#a8a6ae"/><rect x="364" y="36" width="12" height="12" rx="2" fill="none" stroke="#a8a6ae"/></g>
+    <text x="300" y="62" class="s">회차 — 채움 끝 · 초록 테두리 지금 · 회색 남음</text>
+  </g>
+
+  <!-- ④ 시간 띠 — 오늘, 사람마다 한 줄 -->
+  <g transform="translate(24 150)">
+    <text x="0" y="0" class="k">④ 시간 띠 — 오늘(우리 시각) · 사람마다 한 줄 · 점 = 한 것 · 빨간 점 = 막힘 · 빨간 띠 = 멈춘 구간</text>
+    <rect x="0" y="8" width="952" height="176" rx="10" class="card"/>
+    <g class="m"><text x="110" y="28">06시</text><text x="310" y="28">09시</text><text x="510" y="28">12시</text><text x="710" y="28">15시</text><text x="910" y="28">18시</text></g>
+    <g stroke="#e3ddd0"><line x1="120" y1="34" x2="120" y2="176"/><line x1="320" y1="34" x2="320" y2="176"/><line x1="520" y1="34" x2="520" y2="176"/><line x1="720" y1="34" x2="720" y2="176"/><line x1="920" y1="34" x2="920" y2="176"/></g>
+    <line x1="586" y1="34" x2="586" y2="176" stroke="#1b1a1f" stroke-dasharray="3 3"/><text x="590" y="44" class="m">지금</text>
+    <!-- 헨리 -->
+    <circle cx="20" cy="60" r="6" fill="#4b5f9e"/><text x="32" y="64" class="t">헨리</text>
+    <line x1="120" y1="60" x2="586" y2="60" stroke="#eeeae0" stroke-width="8" stroke-linecap="round"/>
+    <g fill="#4b5f9e"><circle cx="160" cy="60" r="5"/><circle cx="230" cy="60" r="5"/><circle cx="300" cy="60" r="5"/><circle cx="420" cy="60" r="5"/><circle cx="470" cy="60" r="5"/><circle cx="560" cy="60" r="5"/></g>
+    <text x="596" y="64" class="s">화면 시안 셋 · 색표 · 도면</text>
+    <!-- 테라 -->
+    <circle cx="20" cy="90" r="6" fill="#4a5d3a"/><text x="32" y="94" class="t">테라</text>
+    <line x1="120" y1="90" x2="586" y2="90" stroke="#eeeae0" stroke-width="8" stroke-linecap="round"/>
+    <g fill="#4a5d3a"><circle cx="140" cy="90" r="5"/><circle cx="200" cy="90" r="5"/><circle cx="260" cy="90" r="5"/><circle cx="330" cy="90" r="5"/><circle cx="380" cy="90" r="5"/><circle cx="440" cy="90" r="5"/><circle cx="500" cy="90" r="5"/></g>
+    <line x1="500" y1="90" x2="586" y2="90" stroke="#c94a3a" stroke-width="8" stroke-linecap="round" opacity="0.35"/><circle cx="500" cy="90" r="5" fill="#c94a3a"/>
+    <text x="596" y="94" class="s">유니티 그림 — 나리 손 기다림 40분</text>
+    <!-- 마크 -->
+    <circle cx="20" cy="120" r="6" fill="#6b4a2f"/><text x="32" y="124" class="t">마크</text>
+    <line x1="120" y1="120" x2="586" y2="120" stroke="#eeeae0" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="150" cy="120" r="5" fill="#6b4a2f"/><circle cx="190" cy="120" r="5" fill="#c94a3a"/>
+    <line x1="190" y1="120" x2="586" y2="120" stroke="#c94a3a" stroke-width="8" stroke-linecap="round" opacity="0.35"/>
+    <text x="596" y="124" class="s">계정 한도 — 4단계 검토 멈춤 6시간</text>
+    <!-- 하영 -->
+    <circle cx="20" cy="150" r="6" fill="#2f4f7a"/><text x="32" y="154" class="t">하영</text>
+    <line x1="120" y1="150" x2="586" y2="150" stroke="#eeeae0" stroke-width="8" stroke-linecap="round"/>
+    <g fill="#2f4f7a"><circle cx="170" cy="150" r="5"/><circle cx="250" cy="150" r="5"/><circle cx="360" cy="150" r="5"/><circle cx="450" cy="150" r="5"/><circle cx="540" cy="150" r="5"/></g>
+    <text x="596" y="154" class="s">브랜딩 2판 · 낱말 · 캐릭터 설정</text>
+    <text x="14" y="176" class="s">손 올리면 그 점 한 줄: 사람 · 무엇 · 언제. 누르면 방의 그 말(잎).</text>
+  </g>
+
+  <!-- ⑤ 작은 그림 다섯 — 팀마다 같은 자 -->
+  <g transform="translate(24 360)">
+    <text x="0" y="0" class="k">⑤ 작은 그림 다섯 — 팀마다 같은 자·같은 크기, 한 그림에 다섯 선을 겹치지 않는다 · 분석에서만(현황 ④ 엔 안 붙는다 — ② 와 겹침, 하영 9절 6)</text>
+    <g id="mini">
+      <rect x="0" y="8" width="180" height="96" rx="10" class="card"/><text x="12" y="28" class="t" font-weight="600">총괄실</text><text x="12" y="46" class="s">단계 없음</text>
+      <rect x="12" y="56" width="156" height="5" rx="2.5" fill="#e6e0d3"/>
+      <line x1="12" y1="84" x2="168" y2="84" stroke="#eeeae0" stroke-width="6" stroke-linecap="round"/><g fill="#1f5f4f"><circle cx="40" cy="84" r="4"/><circle cx="90" cy="84" r="4"/><circle cx="130" cy="84" r="4"/></g>
+    </g>
+    <g transform="translate(193 0)">
+      <rect x="0" y="8" width="180" height="96" rx="10" class="card"/><text x="12" y="28" class="t" font-weight="600">마케팅팀</text><text x="12" y="46" class="s">7단계 · 30회차</text>
+      <rect x="12" y="56" width="156" height="5" rx="2.5" fill="#e6e0d3"/><rect x="12" y="56" width="134" height="5" rx="2.5" fill="#2f4f7a"/><text x="168" y="50" text-anchor="end" class="m">6/7</text>
+      <line x1="12" y1="84" x2="168" y2="84" stroke="#eeeae0" stroke-width="6" stroke-linecap="round"/><g fill="#2f4f7a"><circle cx="30" cy="84" r="4"/><circle cx="60" cy="84" r="4"/><circle cx="95" cy="84" r="4"/><circle cx="120" cy="84" r="4"/><circle cx="150" cy="84" r="4"/></g>
+    </g>
+    <g transform="translate(386 0)">
+      <rect x="0" y="8" width="180" height="96" rx="10" class="card"/><text x="12" y="28" class="t" font-weight="600">개발팀</text><text x="12" y="46" class="s">6단계 · 33회차</text>
+      <rect x="12" y="56" width="156" height="5" rx="2.5" fill="#e6e0d3"/><rect x="12" y="56" width="98" height="5" rx="2.5" fill="#4a5d3a"/><text x="168" y="50" text-anchor="end" class="m">5/8</text>
+      <line x1="12" y1="84" x2="168" y2="84" stroke="#eeeae0" stroke-width="6" stroke-linecap="round"/><g fill="#4a5d3a"><circle cx="24" cy="84" r="4"/><circle cx="44" cy="84" r="4"/><circle cx="64" cy="84" r="4"/><circle cx="90" cy="84" r="4"/><circle cx="110" cy="84" r="4"/></g><line x1="130" y1="84" x2="168" y2="84" stroke="#c94a3a" stroke-width="6" stroke-linecap="round" opacity="0.35"/><circle cx="130" cy="84" r="4" fill="#c94a3a"/>
+    </g>
+    <g transform="translate(579 0)">
+      <rect x="0" y="8" width="180" height="96" rx="10" class="card" stroke="#c94a3a"/><text x="12" y="28" class="t" font-weight="600">디자인팀</text><text x="12" y="46" class="s" fill="#c94a3a">4단계 · 검토 멈춤</text>
+      <rect x="12" y="56" width="156" height="5" rx="2.5" fill="#e6e0d3"/><rect x="12" y="56" width="31" height="5" rx="2.5" fill="#4b5f9e"/><text x="168" y="50" text-anchor="end" class="m">1/5</text>
+      <line x1="12" y1="84" x2="168" y2="84" stroke="#eeeae0" stroke-width="6" stroke-linecap="round"/><g fill="#4b5f9e"><circle cx="28" cy="84" r="4"/><circle cx="50" cy="84" r="4"/><circle cx="76" cy="84" r="4"/><circle cx="100" cy="84" r="4"/><circle cx="140" cy="84" r="4"/></g><line x1="46" y1="84" x2="168" y2="84" stroke="#c94a3a" stroke-width="6" stroke-linecap="round" opacity="0.25"/>
+    </g>
+    <g transform="translate(772 0)">
+      <rect x="0" y="8" width="180" height="96" rx="10" class="card"/><text x="12" y="28" class="t" font-weight="600">경영팀</text><text x="12" y="46" class="s">단계 없음</text>
+      <rect x="12" y="56" width="156" height="5" rx="2.5" fill="#e6e0d3"/>
+      <line x1="12" y1="84" x2="168" y2="84" stroke="#eeeae0" stroke-width="6" stroke-linecap="round"/><g fill="#6f9a4a"><circle cx="50" cy="84" r="4"/><circle cx="100" cy="84" r="4"/></g>
+    </g>
+    <text x="0" y="124" class="s">⑥ 강조 — 튀는 것만 색(디자인팀 빨간 테두리), 나머지는 제 색 그대로. 경영은 잎 초록 #6f9a4a(나리 대리 결정 09-15) — 놋쇠 테두리 방편은 끝.</text>
+  </g>
+
+  <!-- 색 넷 범례 -->
+  <g transform="translate(24 510)">
+    <text x="0" y="0" class="k">색 넷 — 뜻 하나에 색 하나</text>
+    <g class="s">
+      <circle cx="8" cy="20" r="6" fill="#1f5f4f"/><circle cx="24" cy="20" r="6" fill="#2f4f7a"/><circle cx="40" cy="20" r="6" fill="#4a5d3a"/><circle cx="56" cy="20" r="6" fill="#4b5f9e"/><circle cx="72" cy="20" r="6" fill="#6f9a4a"/><text x="88" y="24">누구 — 팀·사람 색(마을 인형 옷 색). 사람을 따라간다</text>
+      <rect x="0" y="36" width="16" height="10" fill="#4b5f9e" opacity="0.2"/><rect x="16" y="36" width="16" height="10" fill="#4b5f9e" opacity="0.4"/><rect x="32" y="36" width="16" height="10" fill="#4b5f9e" opacity="0.6"/><rect x="48" y="36" width="16" height="10" fill="#4b5f9e" opacity="0.8"/><rect x="64" y="36" width="16" height="10" fill="#4b5f9e"/><text x="88" y="45">얼마나 — 한 색 옅→짙. 무지개 없음</text>
+      <rect x="0" y="58" width="24" height="10" fill="#3a8f5c"/><rect x="28" y="58" width="24" height="10" fill="#a8a6ae"/><rect x="56" y="58" width="24" height="10" fill="#c94a3a"/><text x="88" y="67">위·아래 — 초록 / 회색 가운데 / 빨강</text>
+      <circle cx="8" cy="86" r="5" fill="#3a8f5c"/><text x="18" y="90">일하는 중</text><circle cx="88" cy="86" r="5" fill="#c94a3a"/><text x="98" y="90">멈춤</text><circle cx="140" cy="86" r="5" fill="#d8b25c"/><text x="150" y="90">대표님이 보실 것</text><circle cx="262" cy="86" r="5" fill="#a8a6ae"/><text x="272" y="90">쉬는 중 · 자리 비움</text><text x="420" y="90">— 상태 색은 여기서만. 늘 점 + 글자</text>
+    </g>
+    <text x="0" y="118" class="s">안 쓰는 것 — 원그래프 · 세로축 둘 · 3D · 점마다 숫자 · 게이지 바늘 · 발언 수 그래프. 숲에 표 없음, 표는 나무부터.</text>
+  </g>
+  <text x="976" y="632" text-anchor="end" font-size="9" fill="#a8a6ae">숫자 한 벌 본보기 · 2026-09-14 · 헨리 · out/numbers.md · 셋(현황·보고서·대시보드)이 같이 쓴다</text>
+</svg>

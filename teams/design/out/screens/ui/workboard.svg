@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="620" viewBox="0 0 1700 620" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 작업 보드 블록 시안 1판 — 헨리 2026-09-16 아침. 나리 카드-체계-0916.md 1-1절: 대시보드 팀 카드 다섯 '위에' 한 블록, state/work.json 그대로 — 줄기마다 진행·감사 대기·통과·막힘·지금 시작 가능, 밑에 누가 누구를 기다리나. 누르면 타임라인 탭. 폰 다섯 줄 안, 빈 줄기는 안 그린다.
+       값은 state/work.json 08:2x 실물(M0 '안 함' 은 빈 줄기라 안 그림): 토큰 4 · 권한 3 · 화면 글 3 · 카드 체계 8 · 시안 대 실물 3 · 운영 5 · 인격 3 = 29. 진행 7 · 감사 대기 2 · 통과 4 · 막힘 0 · 대기 16(지금 시작 가능 8).
+       상태 색은 numbers.md 대로 넷(초록·노랑·빨강·회색) + 진행은 먹색. 왼쪽 폰 412(블록 + 밑에 첫 팀 카드 자리) · 오른쪽 PC 1200(줄기마다 한 줄). 색 hex 임시 — 토큰은 클레멘타인. -->
+  <defs>
+    <style>
+      .k{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;fill:#8a8794}
+      .h2{font-family:'Gowun Batang','Noto Serif KR',serif;font-size:15px;fill:#1b1a1f}
+      .t{font-size:12.5px;fill:#1b1a1f}
+      .t2{font-size:12.5px;fill:#4a443b}
+      .s{font-size:11px;fill:#6f6d78}
+      .m{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#8a8794}
+      .n{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#4a443b}
+      .pill{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em}
+      .card{fill:#ffffff;stroke:#e3ddd0}
+      .memo{font-size:11px;fill:#6f6d78}
+      .pass{fill:#3a8f5c}.run{fill:#4a443b}.audit{fill:#d8b25c}.wait{fill:#e3ddd0}.stuck{fill:#c94a3a}
+    </style>
+  </defs>
+  <rect width="1700" height="620" fill="#f6f2ea"/>
+
+  <!-- ═══════════════ 폰 412 — 대시보드 맨 위 ═══════════════ -->
+  <g transform="translate(24 20)">
+    <rect x="0" y="0" width="412" height="420" rx="18" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="-6" class="k">폰 412 · 대시보드 맨 위 — 작업 보드 한 블록(다섯 줄), 그 밑이 팀 카드 다섯</text>
+
+    <g transform="translate(12 12)">
+      <rect x="0" y="0" width="388" height="128" rx="10" class="card"/>
+      <!-- 줄 1 — 머리: 이름 + 수 다섯. 막힘 0 이면 그 수는 안 쓴다(0 은 안 보인다) -->
+      <text x="14" y="22" class="h2">작업 보드</text>
+      <text x="374" y="22" text-anchor="end" class="n">진행 7 · 감사 대기 2 · 통과 4 · 지금 시작 가능 8</text>
+      <!-- 줄 2~3 — 줄기 일곱, 막대 하나씩(통과 초록 · 진행 먹 · 감사 대기 놋쇠 · 대기 회색 · 막힘 빨강). 폭은 같고 칸은 그 줄기의 일 수로 나눈다 -->
+      <g transform="translate(14 34)">
+        <!-- 토큰 4: 진행1 대기3 -->
+        <text x="0" y="10" class="s">토큰</text>
+        <rect x="0" y="16" width="12" height="8" rx="1" class="run"/><rect x="13" y="16" width="35" height="8" rx="1" class="wait"/>
+        <!-- 권한 3: 통과1 진행1 대기1 -->
+        <text x="54" y="10" class="s">권한</text>
+        <rect x="54" y="16" width="15" height="8" rx="1" class="pass"/><rect x="70" y="16" width="15" height="8" rx="1" class="run"/><rect x="86" y="16" width="16" height="8" rx="1" class="wait"/>
+        <!-- 화면 글 3: 통과1 진행1 대기1 -->
+        <text x="108" y="10" class="s">화면 글</text>
+        <rect x="108" y="16" width="15" height="8" rx="1" class="pass"/><rect x="124" y="16" width="15" height="8" rx="1" class="run"/><rect x="140" y="16" width="16" height="8" rx="1" class="wait"/>
+        <!-- 카드 체계 8: 통과1 진행1 대기6 -->
+        <text x="162" y="10" class="s">카드</text>
+        <rect x="162" y="16" width="5" height="8" rx="1" class="pass"/><rect x="168" y="16" width="5" height="8" rx="1" class="run"/><rect x="174" y="16" width="36" height="8" rx="1" class="wait"/>
+        <!-- 시안 대 실물 3: 통과1 감사대기1 대기1 -->
+        <text x="216" y="10" class="s">시안</text>
+        <rect x="216" y="16" width="15" height="8" rx="1" class="pass"/><rect x="232" y="16" width="15" height="8" rx="1" class="audit"/><rect x="248" y="16" width="16" height="8" rx="1" class="wait"/>
+        <!-- 운영 5: 진행3 대기2 -->
+        <text x="270" y="10" class="s">운영</text>
+        <rect x="270" y="16" width="28" height="8" rx="1" class="run"/><rect x="299" y="16" width="19" height="8" rx="1" class="wait"/>
+        <!-- 인격 3: 감사대기1 대기2 -->
+        <text x="324" y="10" class="s">인격</text>
+        <rect x="324" y="16" width="15" height="8" rx="1" class="audit"/><rect x="340" y="16" width="34" height="8" rx="1" class="wait"/>
+      </g>
+      <!-- 줄 4~5 — 누가 누구를 기다리나(work.json after 그대로, 사람 이름으로) -->
+      <text x="14" y="86" class="k">기다림</text>
+      <text x="14" y="103" class="t2">헨리 → 테라(화면 글) · 클레멘타인 → 헨리(카드 시안)</text>
+      <text x="14" y="120" class="t2">테라 → 하영·솔라(카드 글·재료) · 하영 → 제리(인격 감사)</text>
+      <text x="374" y="120" text-anchor="end" class="m" fill="#8a3b2b">타임라인 →</text>
+    </g>
+
+    <!-- 그 밑 — 팀 카드 다섯의 첫 장(cards.svg 그대로, 자리만 보이려고) -->
+    <g transform="translate(12 150)">
+      <rect x="0" y="0" width="388" height="236" rx="10" class="card"/>
+      <circle cx="16" cy="20" r="4" fill="#1f5f4f"/>
+      <text x="28" y="25" class="h2">총괄실</text>
+      <rect x="100" y="11" width="64" height="18" rx="9" fill="#f3e6bd" stroke="#d8b25c"/>
+      <text x="132" y="23" text-anchor="middle" class="pill" fill="#6b5312">승인 대기</text>
+      <text x="374" y="24" text-anchor="end" class="m">7:24</text>
+      <text x="14" y="46" class="k">진행 중</text>
+      <text x="14" y="63" class="t"><tspan font-weight="600">톰</tspan> · 밤새 대표님 대신 정한 것 열 남짓을 아침 한 장에</text>
+      <text x="14" y="80" class="t">모았어요 — 되돌리시려면 한마디면 돼요</text>
+      <rect x="14" y="94" width="360" height="102" rx="8" fill="#fdf8e9" stroke="#d8b25c"/>
+      <rect x="14" y="94" width="3" height="102" fill="#d8b25c"/>
+      <text x="26" y="112" class="k" fill="#6b5312">승인 대기</text>
+      <text x="26" y="129" class="t">대표님 화면에 새는 영어 속말을 막는 한 줄 —</text>
+      <text x="26" y="146" class="t">명령 한 번 돌려 주세요</text>
+      <rect x="26" y="158" width="108" height="28" rx="6" fill="#1b1a1f"/>
+      <text x="80" y="176" text-anchor="middle" fill="#ffffff" font-size="12">방에 한마디 →</text>
+      <line x1="14" y1="208" x2="374" y2="208" stroke="#efeae0"/>
+      <text x="14" y="224" class="m">1단계 · 2회차</text>
+      <text x="374" y="224" text-anchor="end" class="m" fill="#8a3b2b">자세히 →</text>
+    </g>
+    <text x="16" y="408" class="k">… 마케팅 · 개발 · 디자인 · 경영 (cards.svg)</text>
+  </g>
+
+  <!-- ═══════════════ PC 1200 — 줄기마다 한 줄 ═══════════════ -->
+  <g transform="translate(472 20)">
+    <rect x="0" y="0" width="1200" height="420" rx="12" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="-6" class="k">PC 1200 · 대시보드 맨 위 — 같은 블록, 줄기마다 한 줄(막대 한 자 = 일 하나) + 수 · 기다림은 한 줄</text>
+    <g transform="translate(14 14)">
+      <rect x="0" y="0" width="1172" height="262" rx="10" class="card"/>
+      <text x="14" y="24" class="h2">작업 보드</text>
+      <text x="1158" y="24" text-anchor="end" class="n">진행 7 · 감사 대기 2 · 통과 4 · 지금 시작 가능 8 · 전부 29</text>
+      <!-- 범례 -->
+      <g transform="translate(120 14)">
+        <rect x="0" y="0" width="10" height="10" rx="1" class="pass"/><text x="14" y="9" class="s">통과</text>
+        <rect x="46" y="0" width="10" height="10" rx="1" class="run"/><text x="60" y="9" class="s">진행</text>
+        <rect x="92" y="0" width="10" height="10" rx="1" class="audit"/><text x="106" y="9" class="s">감사 대기</text>
+        <rect x="164" y="0" width="10" height="10" rx="1" class="wait"/><text x="178" y="9" class="s">대기</text>
+        <rect x="210" y="0" width="10" height="10" rx="1" class="stuck"/><text x="224" y="9" class="s">막힘</text>
+      </g>
+      <line x1="14" y1="36" x2="1158" y2="36" stroke="#efeae0"/>
+      <!-- 줄기 일곱 — 이름 · 막대(칸 하나 = 일 하나, 22×10, 사이 3) · 수 · 지금 시작 가능 -->
+      <g transform="translate(14 46)">
+        <text x="0" y="14" class="t">토큰</text>
+        <g transform="translate(110 4)"><rect x="0" y="0" width="22" height="10" rx="2" class="run"/><rect x="25" y="0" width="22" height="10" rx="2" class="wait"/><rect x="50" y="0" width="22" height="10" rx="2" class="wait"/><rect x="75" y="0" width="22" height="10" rx="2" class="wait"/></g>
+        <text x="400" y="14" class="n">진행 1 · 대기 3</text>
+        <text x="620" y="14" class="s">지금 시작 가능 3 — 솔라(세션 안 버림 · 재전송 중단 · 큰 파일)</text>
+      </g>
+      <g transform="translate(14 72)">
+        <text x="0" y="14" class="t">권한</text>
+        <g transform="translate(110 4)"><rect x="0" y="0" width="22" height="10" rx="2" class="pass"/><rect x="25" y="0" width="22" height="10" rx="2" class="run"/><rect x="50" y="0" width="22" height="10" rx="2" class="wait"/></g>
+        <text x="400" y="14" class="n">통과 1 · 진행 1 · 대기 1</text>
+        <text x="620" y="14" class="s">대기 1 은 대표 손(훅) — 솔라 뒤</text>
+      </g>
+      <g transform="translate(14 98)">
+        <text x="0" y="14" class="t">화면 글</text>
+        <g transform="translate(110 4)"><rect x="0" y="0" width="22" height="10" rx="2" class="pass"/><rect x="25" y="0" width="22" height="10" rx="2" class="run"/><rect x="50" y="0" width="22" height="10" rx="2" class="wait"/></g>
+        <text x="400" y="14" class="n">통과 1 · 진행 1 · 대기 1</text>
+        <text x="620" y="14" class="s">테라가 서버 검사 중 — 판정 카드는 카드 부품 뒤</text>
+      </g>
+      <g transform="translate(14 124)">
+        <text x="0" y="14" class="t">카드 체계</text>
+        <g transform="translate(110 4)"><rect x="0" y="0" width="22" height="10" rx="2" class="pass"/><rect x="25" y="0" width="22" height="10" rx="2" class="run"/><rect x="50" y="0" width="22" height="10" rx="2" class="wait"/><rect x="75" y="0" width="22" height="10" rx="2" class="wait"/><rect x="100" y="0" width="22" height="10" rx="2" class="wait"/><rect x="125" y="0" width="22" height="10" rx="2" class="wait"/><rect x="150" y="0" width="22" height="10" rx="2" class="wait"/><rect x="175" y="0" width="22" height="10" rx="2" class="wait"/></g>
+        <text x="400" y="14" class="n">통과 1 · 진행 1 · 대기 6</text>
+        <text x="620" y="14" class="s">지금 시작 가능 2 — 솔라(카드 재료) · 테라(카드 부품)</text>
+      </g>
+      <g transform="translate(14 150)">
+        <text x="0" y="14" class="t">시안 대 실물</text>
+        <g transform="translate(110 4)"><rect x="0" y="0" width="22" height="10" rx="2" class="pass"/><rect x="25" y="0" width="22" height="10" rx="2" class="audit"/><rect x="50" y="0" width="22" height="10" rx="2" class="wait"/></g>
+        <text x="400" y="14" class="n">통과 1 · 감사 대기 1 · 대기 1</text>
+        <text x="620" y="14" class="s">헨리가 클레멘타인 값을 봄 — '같다' 는 테라 뒤</text>
+      </g>
+      <g transform="translate(14 176)">
+        <text x="0" y="14" class="t">운영</text>
+        <g transform="translate(110 4)"><rect x="0" y="0" width="22" height="10" rx="2" class="run"/><rect x="25" y="0" width="22" height="10" rx="2" class="run"/><rect x="50" y="0" width="22" height="10" rx="2" class="run"/><rect x="75" y="0" width="22" height="10" rx="2" class="wait"/><rect x="100" y="0" width="22" height="10" rx="2" class="wait"/></g>
+        <text x="400" y="14" class="n">진행 3 · 대기 2</text>
+        <text x="620" y="14" class="s">지금 시작 가능 2 — 솔라(아침 한 장 자동 · 작업 보드 배선)</text>
+      </g>
+      <g transform="translate(14 202)">
+        <text x="0" y="14" class="t">인격·자리</text>
+        <g transform="translate(110 4)"><rect x="0" y="0" width="22" height="10" rx="2" class="audit"/><rect x="25" y="0" width="22" height="10" rx="2" class="wait"/><rect x="50" y="0" width="22" height="10" rx="2" class="wait"/></g>
+        <text x="400" y="14" class="n">감사 대기 1 · 대기 2</text>
+        <text x="620" y="14" class="s">지금 시작 가능 1 — 하영(인격 40줄)</text>
+      </g>
+      <line x1="14" y1="230" x2="1158" y2="230" stroke="#efeae0"/>
+      <text x="14" y="250" class="k">기다림</text>
+      <text x="70" y="250" class="t2">헨리 → 테라(화면 글) · 클레멘타인 → 헨리(카드 시안) · 테라 → 하영·솔라(카드 글·재료) · 하영 → 제리(인격 감사) · 대표 → 솔라(훅)</text>
+      <text x="1158" y="250" text-anchor="end" class="m" fill="#8a3b2b">타임라인 →</text>
+    </g>
+    <text x="14" y="300" class="k">그 밑 — 팀 카드 다섯 두 단 (cards.svg PC)</text>
+    <rect x="14" y="310" width="580" height="90" rx="10" fill="#ffffff" stroke="#e3ddd0" stroke-dasharray="4 3"/>
+    <rect x="608" y="310" width="580" height="90" rx="10" fill="#ffffff" stroke="#e3ddd0" stroke-dasharray="4 3"/>
+    <text x="304" y="360" text-anchor="middle" class="s">총괄실 · 개발팀 · 경영팀</text>
+    <text x="898" y="360" text-anchor="middle" class="s">마케팅팀 · 디자인팀</text>
+  </g>
+
+  <text x="24" y="480" class="memo">시안 메모(화면 글자 아님) — 폰 블록 128: 머리 1 · 줄기 막대 2(이름 + 막대) · 기다림 2 = 다섯 줄. 막대 폭은 줄기마다 같고(48) 칸은 일 수로 나눈다 — 수는 머리에 넷, 줄기엔 안 쓴다(폰). PC 는 칸 하나 = 일 하나(22×10)라 세면 수가 나온다.</text>
+  <text x="24" y="497" class="memo">막힘 0 이면 '막힘 0' 을 안 쓴다(0 은 안 보인다, ui-spec 0절 2). 막힘이 생기면 그 칸이 빨강이고 머리에 '막힘 N' 이 빨강으로 선다. 빈 줄기(M0 안 함)는 안 그린다. 기다림은 work.json after 를 사람 이름으로 — 같은 사람이 여럿을 기다리면 한 줄에 모은다.</text>
+  <text x="24" y="514" class="memo">상태 색: 통과 초록 #3a8f5c · 감사 대기 놋쇠 #d8b25c · 막힘 빨강 #c94a3a · 대기 회색 #e3ddd0(numbers.md 넷) + 진행 먹 #4a443b. 팀 색은 안 쓴다 — 줄기는 팀이 아니다.</text>
+  <text x="24" y="531" class="memo">서버 값(W1 솔라, /api/work) — { streams:[{ name, pass, run, audit, wait, stuck, startable }], waits:[{ who, on, what }], total }. 누르면 타임라인 탭(보드 전체).</text>
+  <text x="24" y="548" class="memo">작업 보드 블록 시안 1판 · 2026-09-16 아침 · 헨리 · 나리 카드-체계-0916.md 1-1절 · 값 state/work.json 08:2x · 글자 하영 card-words.md 2판</text>
+</svg>

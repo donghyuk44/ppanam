@@ -1,0 +1,74 @@
+{
+  "_note": "건물·소품 색표 칸 이름 — 헨리가 out/kit/colormap-uv-commercial.md · colormap-uv-suburban.md(클레멘타인 실측)를 칸 단위로 읽고 붙인 것. 2026-09-14 R15 M3. 사람 색표(colormap-roles.json)와 같은 방식인데 줄이 셋이다 — 건물 키트 colormap.png 는 위 128px 이 검정 빈칸이고 그 아래 64px 띠 여덟 × 128px 줄 셋(A py 128~255 · B 256~383 · C 384~511). 칸 = {tile(px÷64), row(A·B·C)}. 칠하는 법은 사람과 같다: Kenney 원본을 복사해 roles 의 칸만 colors 의 hex 로 칸 전체를 한 색으로 채운다(칸 안 그라데이션은 안 살린다 — 밝기 차이는 빛이 낸다). 안 쓰는 칸은 그대로. 근거 칸이 어느 부품 어느 높이인지는 evidence 에.",
+  "tileGrid": { "tileWidth": 64, "rows": { "A": [128, 255], "B": [256, 383], "C": [384, 511] }, "size": 512, "blank": [0, 127] },
+  "source": {
+    "commercial": "server/public/world/assets/kenney/city-kit-commercial/Models/GLB format/Textures/colormap.png",
+    "suburban": "server/public/world/assets/kenney/city-kit-suburban/Models/GLB format/Textures/colormap.png"
+  },
+  "colors": {
+    "wall": "#f4efe4",
+    "roof": "#7a8797",
+    "window": "#ffd27a",
+    "stone": "#6f6d78",
+    "stone-light": "#a8a6ae",
+    "wood": "#8b5a2b",
+    "leaf": "#6f9a4a",
+    "brass": "#d8b25c",
+    "_source": "buildings.json colors 와 같은 값 — direction.md 5절(#7a8797 #ffd27a) + out/palette.json 32색. 새 색 없음"
+  },
+  "maps": {
+    "commercial": {
+      "file": "kit/colormaps/commercial.png",
+      "source": "commercial",
+      "who": ["building-l", "building-m", "building-n", "building-skyscraper-a"],
+      "roles": {
+        "wall": [{ "tile": 3, "row": "B" }],
+        "roof": [{ "tile": 0, "row": "B" }],
+        "window": [{ "tile": 5, "row": "A" }],
+        "stone": [{ "tile": 1, "row": "B" }],
+        "leaf": [{ "tile": 0, "row": "A" }]
+      },
+      "evidence": {
+        "3B 흰색 → wall": "px 240 · py 268~370 · #c2c2d8~#f8f8fb. building-l y 0.40~2.00(1층 띠 위 벽), building-m 0.40~2.95, building-n 0.05~2.40, skyscraper-a 0.40~2.80. Kenney Sample.png 에서 벽이 흰색이다 — 면 수는 창틀보다 적지만(l 약 1250) 넓이는 제일 크다",
+        "0B 회청 → roof": "px 48 · py 268~370 · #5a6078~#81869c. 넷 다 y 0~꼭대기(l 2.27 · m 3.15 · n 2.48 · a 2.88). 지붕 윗면(l y 2.00~2.27 면 533)·창틀·발코니·1층 띠 — Kenney 의 어두운 회청 부분 전부. 우리 기와 청회색 #7a8797 로 — 위에 얹는 RoundedBox 기와 층과 같은 색이라 지붕선이 한 덩어리로 읽힌다",
+        "5A 파랑 → window": "px 367 · py 203~243 · #719cdd~#a4c5ef. 유리창(l y 0.02~1.85 면 192 · m 0.02~2.25 · n 0~1.85 · a 0.03~2.64). 창 노랑 #ffd27a — 안에서 켠 불(direction 4절)",
+        "1B 짙은 회색 → stone": "px 112 · py 268~370 · #3d3f4b~#525564. 기단·1층 문틀(l y 0~0.40 면 341, 0.28~1.72 문 240 · n 1.25~1.60 문 · a 0~0.40). 돌 회색 #6f6d78 — 검정으로 두면 장난감이 무거워진다(direction 4절 검은 그림자 없음)",
+        "0A 초록 → leaf": "px 48 · py 141~243 · #20896b~#59c387. 건물 발치 화분·풀(l y 0.02~0.40 면 210 · m 0.02~2.85 면 36 · n 1.49~1.71 면 102 옥상 화단). 잎 #6f9a4a"
+      }
+    },
+    "commercial-cafe": {
+      "file": "kit/colormaps/commercial-cafe.png",
+      "source": "commercial",
+      "who": ["detail-awning-wide", "detail-parasol-a", "detail-parasol-b"],
+      "roles": {
+        "wall": [{ "tile": 3, "row": "B" }],
+        "roof": [{ "tile": 0, "row": "B" }],
+        "window": [{ "tile": 5, "row": "A" }],
+        "stone": [{ "tile": 1, "row": "B" }],
+        "brass": [{ "tile": 0, "row": "A" }]
+      },
+      "evidence": {
+        "왜 따로 한 장": "차양 천(awning-wide y 0.33~0.40 면 60)·파라솔 천(parasol-a/b y 0.30~0.45 면 96·168)이 건물 화분과 **같은 칸 0A** 다. 천은 놋쇠 #d8b25c(village-branding 3-1, 클레멘타인 확인) 인데 화분까지 놋쇠가 되면 안 되니 찻집 부품 셋만 이 장을 본다 — buildings.json 부품의 colormap 키가 commercial-cafe",
+        "0B → roof": "차양 살(awning y 0~0.35 면 60)·파라솔 받침(y 0~0.12 면 150) — 회청",
+        "1B → stone": "파라솔 기둥(y 0.02~0.35 면 24) — 돌 회색",
+        "3B → wall": "파라솔 탁자 윗면(y 0.12 면 18) — 크림"
+      }
+    },
+    "suburban": {
+      "file": "kit/colormaps/suburban.png",
+      "source": "suburban",
+      "who": ["tree-large", "tree-small", "planter", "fence-low", "path-stones-short"],
+      "roles": {
+        "wood": [{ "tile": 4, "row": "B" }],
+        "leaf": [{ "tile": 1, "row": "C" }],
+        "stone-light": [{ "tile": 0, "row": "B" }]
+      },
+      "evidence": {
+        "4B 주황 갈색 → wood": "px 303 · py 268~370 · #b76646~#e89066. 나무 줄기(tree-large y 0~0.33 면 30 · tree-small 0~0.13) · 울타리 전부(fence-low y 0~0.17 면 540) · 화분 테 한 줄(planter y 0.03 면 30). 나무 #8b5a2b",
+        "1C 초록 → leaf": "px 112 · py 396~498 · #1e886a~#5bc588. 나무 잎(tree-large y 0.33~0.77 면 96 · small 0.13~0.57) · 화분 풀(planter y 0.03~0.18 면 336). 잎 #6f9a4a — 광장·골목 나무 열넷이 전부 이 한 색",
+        "0B 회청 → stone-light": "px 48 · py 268~370 · #5b6179~#81869e. 디딤돌(path-stones-short y 0~0.01 면 72) · 화분 통(planter y 0~0.05 면 246). 밝은 돌 #a8a6ae — 댄의 집 기단(stone-light)과 같은 색"
+      }
+    }
+  },
+  "check": "마크가 세는 것: 세 png 가 512×512 · 칠한 칸 안 픽셀이 전부 colors 의 hex 하나(칸 안 그라데이션 없음) · 안 칠한 칸은 Kenney 원본과 같음 · 쓰인 hex 전부 buildings.json colors 안"
+}

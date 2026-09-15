@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="740" viewBox="0 0 1000 740" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 분석 1판 — 헨리 09-16. 나리 '화면이 답하는 질문': 분석 = "왜 자꾸 이렇게 되나"(뒤). 세는 화면이 아니라 까닭을 찾는 화면 — 숫자는 늘 둘이 나란히, 하나면 이 화면 말이 아니다(나리 42~44행).
+       틀은 하영 글 틀 1판(teams/marketing/out/screen-text-frames.md 3절): 칸 셋(나리 43행 글자 그대로) · 그림은 numbers ⑤ 작은 그림 다섯(팀마다 같은 자·같은 크기) + ⑥ 강조(튀는 것만 색) · 위·아래 색(초록/회색/빨강) · 회차 네모 같은 자리에 겹침.
+       문장 틀 셋(3-2): ㄱ 시간으로 견줌 "{팀} {무엇} — 지난 회차 N → 이번 회차 M" · ㄴ 팀끼리 견줌 "{무엇} — {팀} a건 중 b · …(다섯 팀 다, 같은 순서)" · ㄷ 같은 자리 몇 번째 "{팀} {무엇} — {자리}·{자리}·{자리}, 같은 자리에서 N번째". {무엇}은 사전 말 넷(돌려보낸 결재 · 회차 길이 · 대표님이 누르기까지 · 멈춘 시간).
+       값은 전부 하영 4절 실물(state/approvals.jsonl 484행 · teams/*/rounds.jsonl · state/pauses.json) — 지어 넣은 값 0. "대표님이 누르기까지" 줄은 하영 8절이 대표께 여쭌 것이라 이 판엔 없다(답 없으면 셋만).
+       세 겹(나리): 한 줄 = 그림 + 문장 → 누르면 그 자리에서 펼친 줄(어느 카드·어느 회차였나) → 한 번 더 = 결재 카드 / 회차의 그 말. 첫 층엔 칸마다 그림 하나. 옛 분석 타일(끝난 회차 N · 통과 N · 평균 다시 N번)은 안 온다 — 숫자 하나짜리. -->
+  <defs><style>
+    .k{font-size:10px;letter-spacing:.12em;fill:#8a8794}
+    .h{font-family:'Gowun Batang','Noto Serif KR',serif;font-size:17px;fill:#1b1a1f}
+    .t{font-size:12.5px;fill:#1b1a1f}.s{font-size:11px;fill:#6f6d78}.m{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#8a8794}
+    .card{fill:#ffffff;stroke:#e3ddd0}
+    .bad{fill:#c94a3a}.good{fill:#3a8f5c}
+  </style></defs>
+  <rect width="1000" height="740" fill="#f6f2ea"/>
+
+  <!-- ─── 폰 412 ─── -->
+  <g transform="translate(24 20)">
+    <rect x="0" y="0" width="412" height="540" rx="18" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="34" class="h">분석 <tspan class="s">— 왜 자꾸 이렇게 되나</tspan></text>
+
+    <!-- ① 어디서 자꾸 막히나 — 틀 ㄴ 팀끼리 견줌. 그림: 팀마다 같은 자(1건 = 7.1px, 28건 = 200) · 옅은 띠 = 올린 결재 · 짙은 띠 = 돌려보낸 것 · 튀는 팀만 빨강(⑥) -->
+    <g>
+      <rect x="16" y="52" width="380" height="172" rx="10" class="card"/>
+      <text x="28" y="72" class="k">어디서 자꾸 막히나</text>
+      <text x="28" y="90" class="t">돌려보낸 결재 — <tspan class="bad">디자인 12건 중 4</tspan> · 마케팅 28건 중 4 ·</text>
+      <text x="28" y="106" class="t">총괄 11건 중 3 · 개발 25건 중 2 · 경영 3건 중 0</text>
+      <g class="s">
+        <text x="28" y="126">총괄실</text><rect x="92" y="118" width="79" height="10" rx="3" fill="#1f5f4f" opacity="0.2"/><rect x="92" y="118" width="21" height="10" rx="3" fill="#1f5f4f"/><text x="300" y="126" class="m">11건 중 3</text>
+        <text x="28" y="146">마케팅팀</text><rect x="92" y="138" width="200" height="10" rx="3" fill="#2f4f7a" opacity="0.2"/><rect x="92" y="138" width="29" height="10" rx="3" fill="#2f4f7a"/><text x="300" y="146" class="m">28건 중 4</text>
+        <text x="28" y="166">개발팀</text><rect x="92" y="158" width="179" height="10" rx="3" fill="#4a5d3a" opacity="0.2"/><rect x="92" y="158" width="14" height="10" rx="3" fill="#4a5d3a"/><text x="300" y="166" class="m">25건 중 2</text>
+        <text x="28" y="186" fill="#c94a3a">디자인팀</text><rect x="92" y="178" width="86" height="10" rx="3" fill="#4b5f9e" opacity="0.2"/><rect x="92" y="178" width="29" height="10" rx="3" fill="#c94a3a"/><text x="300" y="186" class="m" fill="#c94a3a">12건 중 4</text>
+        <text x="28" y="206">경영팀</text><rect x="92" y="198" width="21" height="10" rx="3" fill="#6f9a4a" opacity="0.2"/><text x="300" y="206" class="m">3건 중 0</text>
+      </g>
+    </g>
+
+    <!-- ② 무엇이 느려졌나 — 틀 ㄱ 시간으로 견줌. 그림: 지난(회색) · 이번(위·아래 색) 띠 둘, 같은 자(1분 = 0.277px, 12시간 2분 = 200) -->
+    <g>
+      <rect x="16" y="232" width="380" height="144" rx="10" class="card"/>
+      <text x="28" y="252" class="k">무엇이 느려졌나</text>
+      <text x="28" y="272" class="t" fill="#c94a3a">개발 회차 길이 — 지난 회차 2시간 5분 → 이번 회차 12시간 2분</text>
+      <text x="28" y="288" class="m">지난</text><rect x="60" y="280" width="35" height="6" rx="3" fill="#a8a6ae"/>
+      <text x="28" y="300" class="m">이번</text><rect x="60" y="292" width="200" height="6" rx="3" fill="#c94a3a"/>
+      <text x="28" y="316" class="s">멈춘 31시간 38분은 뺐어요</text>
+      <text x="28" y="340" class="t" fill="#3a8f5c">마케팅 회차 길이 — 지난 회차 1시간 27분 → 이번 회차 56분</text>
+      <text x="28" y="356" class="m">지난</text><rect x="60" y="348" width="24" height="6" rx="3" fill="#a8a6ae"/>
+      <text x="28" y="368" class="m">이번</text><rect x="60" y="360" width="16" height="6" rx="3" fill="#3a8f5c"/>
+    </g>
+
+    <!-- ③ 같은 일이 몇 번째인가 — 틀 ㄷ. 그림: 회차 네모(numbers ③)를 같은 자리에 겹침 — 세 번째부터 빨강(반박 세 번이면 FAIL 인 것과 같은 자) -->
+    <g>
+      <rect x="16" y="384" width="380" height="132" rx="10" class="card"/>
+      <text x="28" y="404" class="k">같은 일이 몇 번째인가</text>
+      <g><rect x="28" y="416" width="12" height="12" rx="2" fill="#8a8794"/><rect x="34" y="420" width="12" height="12" rx="2" fill="#8a8794"/><rect x="40" y="424" width="12" height="12" rx="2" fill="#c94a3a"/></g>
+      <text x="68" y="426" class="t" fill="#c94a3a">디자인 계획표 2~4단계 재편 카드 —</text>
+      <text x="68" y="442" class="t" fill="#c94a3a">밤 8:19 · 8:20 · 8:23, 같은 자리에서 세 번째에 통과</text>
+      <g><rect x="28" y="462" width="12" height="12" rx="2" fill="#8a8794"/><rect x="33" y="465" width="12" height="12" rx="2" fill="#8a8794"/><rect x="38" y="468" width="12" height="12" rx="2" fill="#c94a3a"/><rect x="43" y="471" width="12" height="12" rx="2" fill="#c94a3a"/><rect x="48" y="474" width="12" height="12" rx="2" fill="#c94a3a"/><rect x="53" y="477" width="12" height="12" rx="2" fill="#c94a3a"/><rect x="58" y="480" width="12" height="12" rx="2" fill="#c94a3a"/><rect x="63" y="483" width="12" height="12" rx="2" fill="#c94a3a"/></g>
+      <text x="92" y="472" class="t" fill="#c94a3a">개발 1단계 — 13회차부터 20회차,</text>
+      <text x="92" y="488" class="t" fill="#c94a3a">같은 자리에서 여덟 번째</text>
+    </g>
+  </g>
+
+  <!-- ─── 데스크톱 — 같은 칸 셋, ① 가로 · ②③ 나란히 ─── -->
+  <g transform="translate(470 20)">
+    <rect x="0" y="0" width="506" height="540" rx="12" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="34" class="h">분석 <tspan class="s">— 왜 자꾸 이렇게 되나</tspan></text>
+    <g>
+      <rect x="16" y="52" width="474" height="166" rx="10" class="card"/>
+      <text x="28" y="72" class="k">어디서 자꾸 막히나</text>
+      <text x="28" y="90" class="t">돌려보낸 결재 — <tspan class="bad">디자인 12건 중 4</tspan> · 마케팅 28건 중 4 · 총괄 11건 중 3 ·</text>
+      <text x="28" y="106" class="t">개발 25건 중 2 · 경영 3건 중 0</text>
+      <g class="s">
+        <text x="28" y="126">총괄실</text><rect x="92" y="118" width="118" height="9" rx="3" fill="#1f5f4f" opacity="0.2"/><rect x="92" y="118" width="32" height="9" rx="3" fill="#1f5f4f"/><text x="404" y="126" class="m">11건 중 3</text>
+        <text x="28" y="144">마케팅팀</text><rect x="92" y="136" width="300" height="9" rx="3" fill="#2f4f7a" opacity="0.2"/><rect x="92" y="136" width="43" height="9" rx="3" fill="#2f4f7a"/><text x="404" y="144" class="m">28건 중 4</text>
+        <text x="28" y="162">개발팀</text><rect x="92" y="154" width="268" height="9" rx="3" fill="#4a5d3a" opacity="0.2"/><rect x="92" y="154" width="21" height="9" rx="3" fill="#4a5d3a"/><text x="404" y="162" class="m">25건 중 2</text>
+        <text x="28" y="180" fill="#c94a3a">디자인팀</text><rect x="92" y="172" width="129" height="9" rx="3" fill="#4b5f9e" opacity="0.2"/><rect x="92" y="172" width="43" height="9" rx="3" fill="#c94a3a"/><text x="404" y="180" class="m" fill="#c94a3a">12건 중 4</text>
+        <text x="28" y="198">경영팀</text><rect x="92" y="190" width="32" height="9" rx="3" fill="#6f9a4a" opacity="0.2"/><text x="404" y="198" class="m">3건 중 0</text>
+      </g>
+    </g>
+    <g>
+      <rect x="16" y="228" width="234" height="204" rx="10" class="card"/>
+      <text x="28" y="248" class="k">무엇이 느려졌나</text>
+      <text x="28" y="268" class="t" fill="#c94a3a">개발 회차 길이 —</text>
+      <text x="28" y="284" class="t" fill="#c94a3a">지난 회차 2시간 5분 → 이번 회차 12시간 2분</text>
+      <text x="28" y="300" class="m">지난</text><rect x="60" y="292" width="26" height="6" rx="3" fill="#a8a6ae"/>
+      <text x="28" y="312" class="m">이번</text><rect x="60" y="304" width="150" height="6" rx="3" fill="#c94a3a"/>
+      <text x="28" y="328" class="s">멈춘 31시간 38분은 뺐어요</text>
+      <text x="28" y="352" class="t" fill="#3a8f5c">마케팅 회차 길이 —</text>
+      <text x="28" y="368" class="t" fill="#3a8f5c">지난 회차 1시간 27분 → 이번 회차 56분</text>
+      <text x="28" y="384" class="m">지난</text><rect x="60" y="376" width="18" height="6" rx="3" fill="#a8a6ae"/>
+      <text x="28" y="396" class="m">이번</text><rect x="60" y="388" width="12" height="6" rx="3" fill="#3a8f5c"/>
+    </g>
+    <g>
+      <rect x="256" y="228" width="234" height="204" rx="10" class="card"/>
+      <text x="268" y="248" class="k">같은 일이 몇 번째인가</text>
+      <g><rect x="268" y="260" width="12" height="12" rx="2" fill="#8a8794"/><rect x="274" y="264" width="12" height="12" rx="2" fill="#8a8794"/><rect x="280" y="268" width="12" height="12" rx="2" fill="#c94a3a"/></g>
+      <text x="268" y="300" class="t" fill="#c94a3a">디자인 계획표 2~4단계 재편 카드 —</text>
+      <text x="268" y="316" class="t" fill="#c94a3a">밤 8:19 · 8:20 · 8:23,</text>
+      <text x="268" y="332" class="t" fill="#c94a3a">같은 자리에서 세 번째에 통과</text>
+      <g><rect x="268" y="348" width="12" height="12" rx="2" fill="#8a8794"/><rect x="273" y="351" width="12" height="12" rx="2" fill="#8a8794"/><rect x="278" y="354" width="12" height="12" rx="2" fill="#c94a3a"/><rect x="283" y="357" width="12" height="12" rx="2" fill="#c94a3a"/><rect x="288" y="360" width="12" height="12" rx="2" fill="#c94a3a"/><rect x="293" y="363" width="12" height="12" rx="2" fill="#c94a3a"/><rect x="298" y="366" width="12" height="12" rx="2" fill="#c94a3a"/><rect x="303" y="369" width="12" height="12" rx="2" fill="#c94a3a"/></g>
+      <text x="268" y="400" class="t" fill="#c94a3a">개발 1단계 — 13회차부터 20회차,</text>
+      <text x="268" y="416" class="t" fill="#c94a3a">같은 자리에서 여덟 번째</text>
+    </g>
+  </g>
+
+  <!-- 읽는 법 — 시안 메모. 프레임 밖(하영 5판 3-5-4). 테라가 지을 때 이 글자는 안 짓는다 -->
+  <g class="s" transform="translate(24 584)">
+    <text x="0" y="0">읽는 법(시안 메모 — 화면 글자 아님) — 칸 셋, 넷을 안 넘는다(ui-spec 0절 2). 칸마다 첫 층에 그림 하나 + 문장 하나. 숫자는 늘 둘이 나란히(a건 중 b · 지난 → 이번 · N번째) — 하나짜리 타일은 없다.</text>
+    <text x="0" y="18">① 팀마다 같은 자(1건 = 같은 길이) — 옅은 띠 = 올린 결재, 짙은 띠 = 돌려보낸 것. 튀는 팀 하나만 빨강, 나머지는 제 색(numbers ⑥).</text>
+    <text x="0" y="36">② 지난 = 회색, 이번 = 나빠짐 빨강 / 좋아짐 초록 / 같음 회색(위·아래 색). 멈춘 시간은 뺐다고 밑에 한 줄. ③ 회차 네모를 같은 자리에 겹친다 — 세 번째부터 빨강(반박 세 번 = FAIL 과 같은 자).</text>
+    <text x="0" y="54">누르면 그 자리에서 펼친 줄(어느 카드·어느 회차) → 한 번 더 = 결재 카드 / 회차의 그 말. 두 번이면 닿는다. "대표님이 누르기까지" 줄은 대표님 답 뒤(하영 8절).</text>
+    <text x="0" y="72">빈칸 말 — 견줄 것이 하나뿐이면 "견줄 회차가 아직 없어요 — 회차 둘이 끝나면 떠요", 같은 자리를 두 번 돈 일이 없으면 "같은 자리를 두 번 간 일이 없어요"(사전 6판 6절).</text>
+    <text x="0" y="90">값은 하영 글 틀 1판 4절 실물 그대로(approvals.jsonl · rounds.jsonl · pauses.json) — 손으로 안 적고 개발이 센다. 색은 임시 hex, 토큰으로.</text>
+    <text x="0" y="112" class="k">서버 값 — analysis.stuck[{ team, what, total, count }] · slowed[{ team, what, prev, cur, pausedMs }] · repeats[{ team, what, at[], nth, passed }] — 셈은 하영 3-3</text>
+  </g>
+  <text x="988" y="732" text-anchor="end" font-size="9" fill="#a8a6ae">분석 1판 · 2026-09-16 · 헨리 · 하영 글 틀 1판 3·4절(H4) · 나리 화면이-답하는-질문 41~44행 · numbers.md ⑤·⑥ · 결정 92</text>
+</svg>

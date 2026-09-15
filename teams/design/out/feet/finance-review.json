@@ -1,0 +1,506 @@
+{
+ "file": "teams/design/out/sprites/finance-review.png",
+ "cell": [
+  32,
+  48
+ ],
+ "footline": 46,
+ "frames": [
+  {
+   "dir": "south",
+   "pose": "stand",
+   "planted": "both",
+   "feet": {
+    "left": [
+     9,
+     41,
+     8,
+     6
+    ],
+    "right": [
+     17,
+     41,
+     8,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 46
+   },
+   "figure": {
+    "top": 5,
+    "bottom": 46,
+    "x": [
+     7,
+     28
+    ]
+   }
+  },
+  {
+   "dir": "south",
+   "pose": "left",
+   "planted": "left",
+   "feet": {
+    "left": [
+     11,
+     41,
+     6,
+     6
+    ],
+    "right": [
+     17,
+     41,
+     5,
+     4
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 44
+   },
+   "figure": {
+    "top": 3,
+    "bottom": 46,
+    "x": [
+     6,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "south",
+   "pose": "stand",
+   "planted": "both",
+   "feet": {
+    "left": [
+     7,
+     41,
+     8,
+     6
+    ],
+    "right": [
+     15,
+     41,
+     8,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 46
+   },
+   "figure": {
+    "top": 5,
+    "bottom": 46,
+    "x": [
+     4,
+     26
+    ]
+   }
+  },
+  {
+   "dir": "south",
+   "pose": "right",
+   "planted": "right",
+   "feet": {
+    "left": [
+     9,
+     41,
+     6,
+     5
+    ],
+    "right": [
+     15,
+     41,
+     5,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 45,
+    "right": 46
+   },
+   "figure": {
+    "top": 3,
+    "bottom": 46,
+    "x": [
+     3,
+     25
+    ]
+   }
+  },
+  {
+   "dir": "west",
+   "pose": "stand",
+   "planted": "both",
+   "feet": {
+    "left": [
+     10,
+     41,
+     7,
+     6
+    ],
+    "right": [
+     17,
+     41,
+     7,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 46
+   },
+   "figure": {
+    "top": 5,
+    "bottom": 46,
+    "x": [
+     5,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "west",
+   "pose": "left",
+   "planted": "left",
+   "feet": {
+    "left": [
+     7,
+     41,
+     9,
+     6
+    ],
+    "right": [
+     16,
+     41,
+     8,
+     5
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 45
+   },
+   "figure": {
+    "top": 5,
+    "bottom": 46,
+    "x": [
+     4,
+     26
+    ]
+   }
+  },
+  {
+   "dir": "west",
+   "pose": "stand",
+   "planted": "left",
+   "feet": {
+    "left": [
+     8,
+     41,
+     6,
+     6
+    ],
+    "right": [
+     15,
+     41,
+     5,
+     2
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 42
+   },
+   "figure": {
+    "top": 1,
+    "bottom": 46,
+    "x": [
+     3,
+     24
+    ]
+   }
+  },
+  {
+   "dir": "west",
+   "pose": "right",
+   "planted": "left",
+   "feet": {
+    "left": [
+     6,
+     41,
+     7,
+     6
+    ],
+    "right": [
+     16,
+     41,
+     5,
+     1
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 41
+   },
+   "figure": {
+    "top": 1,
+    "bottom": 46,
+    "x": [
+     2,
+     24
+    ]
+   }
+  },
+  {
+   "dir": "east",
+   "pose": "stand",
+   "planted": "both",
+   "feet": {
+    "left": [
+     13,
+     44,
+     5,
+     4
+    ],
+    "right": [
+     18,
+     44,
+     4,
+     4
+    ]
+   },
+   "bottom": {
+    "left": 47,
+    "right": 47
+   },
+   "figure": {
+    "top": 0,
+    "bottom": 47,
+    "x": [
+     6,
+     28
+    ]
+   }
+  },
+  {
+   "dir": "east",
+   "pose": "left",
+   "planted": "both",
+   "feet": {
+    "left": [
+     13,
+     44,
+     4,
+     4
+    ],
+    "right": [
+     17,
+     44,
+     4,
+     4
+    ]
+   },
+   "bottom": {
+    "left": 47,
+    "right": 47
+   },
+   "figure": {
+    "top": 0,
+    "bottom": 47,
+    "x": [
+     5,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "east",
+   "pose": "stand",
+   "planted": "both",
+   "feet": {
+    "left": [
+     11,
+     44,
+     4,
+     4
+    ],
+    "right": [
+     15,
+     44,
+     4,
+     4
+    ]
+   },
+   "bottom": {
+    "left": 47,
+    "right": 47
+   },
+   "figure": {
+    "top": 0,
+    "bottom": 47,
+    "x": [
+     4,
+     26
+    ]
+   }
+  },
+  {
+   "dir": "east",
+   "pose": "right",
+   "planted": "both",
+   "feet": {
+    "left": [
+     10,
+     44,
+     5,
+     4
+    ],
+    "right": [
+     15,
+     44,
+     4,
+     4
+    ]
+   },
+   "bottom": {
+    "left": 47,
+    "right": 47
+   },
+   "figure": {
+    "top": 0,
+    "bottom": 47,
+    "x": [
+     3,
+     25
+    ]
+   }
+  },
+  {
+   "dir": "north",
+   "pose": "stand",
+   "planted": "both",
+   "feet": {
+    "left": [
+     10,
+     41,
+     7,
+     6
+    ],
+    "right": [
+     17,
+     41,
+     7,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 46
+   },
+   "figure": {
+    "top": 8,
+    "bottom": 46,
+    "x": [
+     6,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "north",
+   "pose": "left",
+   "planted": "left",
+   "feet": {
+    "left": [
+     9,
+     41,
+     8,
+     6
+    ],
+    "right": [
+     17,
+     41,
+     7,
+     5
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 45
+   },
+   "figure": {
+    "top": 8,
+    "bottom": 46,
+    "x": [
+     5,
+     26
+    ]
+   }
+  },
+  {
+   "dir": "north",
+   "pose": "stand",
+   "planted": "both",
+   "feet": {
+    "left": [
+     8,
+     41,
+     7,
+     6
+    ],
+    "right": [
+     15,
+     41,
+     7,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 46
+   },
+   "figure": {
+    "top": 8,
+    "bottom": 46,
+    "x": [
+     4,
+     25
+    ]
+   }
+  },
+  {
+   "dir": "north",
+   "pose": "right",
+   "planted": "right",
+   "feet": {
+    "left": [
+     7,
+     41,
+     8,
+     5
+    ],
+    "right": [
+     15,
+     41,
+     7,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 45,
+    "right": 46
+   },
+   "figure": {
+    "top": 8,
+    "bottom": 46,
+    "x": [
+     3,
+     24
+    ]
+   }
+  }
+ ]
+}

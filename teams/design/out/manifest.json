@@ -1,0 +1,89 @@
+{
+  "note": "그림 사전. 출처 없는 그림은 화면에 못 올라간다. 좌표는 칸 안 기준(0부터), left/right 는 화면 기준. 2026-09-12 대표 결정으로 캐릭터 키는 64px, 칸은 고정하지 않고 발 가운데 앵커 [centerX, footline] 로 맞춘다. 32×48 로 만든 열 장(out/sprites/*.png 128×192)과 out/feet/ 실측은 시험 기록으로만 남고 화면에 안 올라간다.",
+  "palette": "out/palette.json",
+  "style": "out/style.md",
+  "height": 64,
+  "idle": { "tool": "ChatGPT 이미지 생성", "cell": "그림 크기(여백 자름)", "anchor": "[torsoX, 높이−1]", "dir": "out/sprites64/<이름>.png", "source": "out/gpt64/<이름>-src.png (ChatGPT 저장 1254px) 또는 <이름>-512.png" },
+  "walk": { "tool": "PixelLab (정지 그림을 참고 입력으로)", "sheet": [704, 440], "cell": [88, 88], "cols": 8, "anchor": { "centerX": 44, "footline": 74, "village": [44, 75] }, "rows": "0줄 = 8방향 정지(남·남동·동·북동·북·북서·서·남서), 1줄 남·2줄 동·3줄 북·4줄 서 걷기 8프레임", "use": "걷기 넷만", "dir": "out/sprites64/<이름>-walk.png + <이름>-walk.json", "status": "대표 시험본 40칸 실측으로 확정 (발 최하단 y=74, 머리 위 12~16, x 25~62)" },
+  "torsoBand": "footline−18 .. footline−8 (임시값)",
+  "pipeline": {
+    "idle": "ChatGPT (참고 셋 첨부 + 게임 링크, 자홍 배경, 64px 낱장) → fix.mjs --grid 64 --key ff00ff --palette out/palette.json --despeckle 60 --trim → check.mjs --palette out/palette.json",
+    "walk": "PixelLab (정지 그림 참고, 8방향 정지 1회 + 걷기 방향당 1회) → fix.mjs --palette out/palette.json (흐르면 --cell 88x88 --footline 74 --centerx 44) → check.mjs --cell 88x88 --palette --torsox → feet.mjs → out/feet/<이름>-walk.json → manifest frames"
+  },
+  "refs": ["ref/baram/char_magician.png", "ref/baram/char_thief.png", "ref/dokkaebi/i1540213767.jpg"],
+  "refsNote": "남의 게임 그림은 화풍 참고 입력으로만 썼다. 저장소 밖 teams/design/ref/ 에 있고 결과물에 들어가지 않는다.",
+  "board": "out/screens/cast64-board.png",
+  "opsroom": {
+    "towerTabs": { "doc": "out/opsroom-tower-tabs.md", "file": "out/screens/tower-tabs.png", "size": [1725, 912], "tool": "ChatGPT 이미지 생성", "request": "out/gpt/requests/tower-tabs.json", "refs": [], "status": "2026-09-13 나옴 — 배치 확인용 목업, 화면에 안 올라간다. 확인 셋 맞음. 그림이 틀리게 채운 둘(폰 카드마다 '대표 차례 1' 반복 · 레일 선택 면)은 문서가 정본" },
+    "ui": {
+      "doc": "out/ui-spec.md",
+      "tool": "손으로 짠 SVG(생성 도구 없음) — 도면 1판 out/screens/blueprint-1.svg + 하영 낱말 teams/marketing/out/opsroom-words.md·blueprint-words.md + 하영 2판 teams/marketing/out/opsroom-content-2.md 9절 + 나리 teams/hq/out/화면이-답하는-질문.md + 숫자 벌 out/numbers.md",
+      "refs": ["인터넷 샘플 구도만(페이스북·카카오 프로필 — 프로필 카드), 그림은 안 가져옴"],
+      "files": {
+        "tower": { "file": "out/screens/ui/tower.svg", "size": [1000, 1035], "version": "3판 (하영 9절 1·2·3 + 7절 ①·③)", "who": "헨리" },
+        "team": { "file": "out/screens/ui/team.svg", "size": [440, 720], "version": "2판 (team-person 1판에서 갈라 냄)", "who": "헨리" },
+        "person": { "file": "out/screens/ui/person.svg", "size": [560, 640], "version": "2판 (◂ 대표님이 불렀음 줄, 7절 ⑤)", "who": "헨리" },
+        "approval": { "file": "out/screens/ui/approval.svg", "size": [1000, 650], "version": "1판-b (결재 카드, 7절 ②③ — 본보기 apr_dd13a64c C, 하영 대조 ②)", "who": "헨리" },
+        "profile": { "file": "out/screens/ui/profile.svg", "size": [1000, 520], "version": "1판 (한 줄 내용은 대표 답 뒤)", "who": "헨리" },
+        "report": { "file": "out/screens/ui/report.svg", "size": [1000, 1140], "version": "1판 헨리 → 2판부터 클레멘타인", "who": "헨리·클레멘타인" },
+        "dashboard": { "file": "out/screens/ui/dashboard.svg", "size": [1000, 730], "version": "3판 (하영 글 틀 1판 5절 H1 채움 옅게 · H2 계획표 아직 없어요 · H3 그 팀의 둘 + 1-2 늦음 글자·빈칸 말 · 1-4 펼친 줄, 09-16)", "who": "클레멘타인 · 2판-b·3판 헨리" },
+        "numbers": { "file": "out/screens/ui/numbers.svg", "size": [1000, 640], "version": "2판 (큰 숫자 둘)", "who": "헨리" },
+        "analysis": { "file": "out/screens/ui/analysis.svg", "size": [1000, 740], "version": "1판 (하영 글 틀 1판 3·4절 H4 — 칸 셋 · numbers ⑤⑥ · 위·아래 색 · 회차 네모 겹침 · 값은 4절 실물, 09-16)", "who": "헨리" },
+        "team-person": { "file": "out/screens/ui/team-person.svg", "version": "1판 — 접음, team·person 이 이어받음", "who": "헨리" }
+      },
+      "status": "2026-09-14 M4. 화면에 올라가는 건 개발 M6 이 값을 읽어 그린 것이고 이 SVG 는 시안이다"
+    }
+  },
+  "kenney": {
+    "note": "2판(인형 서울)의 3D 부품. 대표가 09-13 저녁 kenney.nl 에서 내려받아 teams/design/ref/kenney/ 에 풂. 세 세트 다 CC0 1.0 (각 폴더 License.txt — 'License: (Creative Commons Zero, CC0) http://creativecommons.org/publicdomain/zero/1.0/'). 표기 의무 없음, 'Kenney / www.kenney.nl' 크레딧 권장. 실측 out/kenney-parts.md · out/kenney-bbox.json, 수정표 out/kit/parts-plan.md. 마을 탭 폴더로 옮기는 건 B — 그때 server/public/world/assets/LICENSES.md 의 kenney 줄이 실제 파일을 가리키게 된다",
+    "sets": [
+      { "id": "city-kit-commercial", "version": "2.1", "source": "https://kenney.nl/assets/city-kit-commercial", "license": "CC0 1.0", "licenseFile": "teams/design/ref/kenney/city-kit-commercial/License.txt", "files": 219, "models": 41, "colormap": "Models/GLB format/Textures/colormap.png", "use": "골목 빌라(building-l·m·skyscraper-a) · 찻집(building-n) · 단층 가게(building-c/e) · 차양·파라솔" },
+      { "id": "city-kit-suburban", "version": "2.0", "source": "https://kenney.nl/assets/city-kit-suburban", "license": "CC0 1.0", "licenseFile": "teams/design/ref/kenney/city-kit-suburban/License.txt", "files": 216, "models": 40, "colormap": "Models/GLB format/Textures/colormap.png", "use": "울타리·나무·화분·길만. 주택 21채는 안 씀(사람 1.0~1.7배라 채점표 미달)" },
+      { "id": "mini-characters", "version": "1.0", "source": "https://kenney.nl/assets/mini-characters", "license": "CC0 1.0", "licenseFile": "teams/design/ref/kenney/mini-characters/License.txt", "files": 139, "models": 26, "colormap": "Models/GLB format/Textures/colormap.png", "use": "인형 열다섯(몸 열둘 + aid-glasses·aid-cane·aid-sunglasses). 휠체어·기타 aid 는 안 씀" }
+    ]
+  },
+  "kit": {
+    "seoulConcept": { "file": "out/screens/seoul-toy-concept.png", "size": [1536, 1024], "tool": "ChatGPT 이미지 생성 (하네스가 대표 통로로, 09-13 밤)", "refs": "teams/design/ref/samples/style/ (Airbnb·Buck 미니어처, 레고 마을) — 화풍 참고", "status": "인형 서울 방향 시안 — 실물 렌더 아님(개발 M5 가 실물). 헨리 눈: 8줄 8/8, 서울다움 3/4(한글 간판 없음). 화면에 안 올라간다 — out/direction.md 9a" },
+    "dollsLineup": { "file": "out/screens/dolls-lineup.png", "size": [1915, 821], "request": "out/gpt/requests/dolls-lineup.json", "tool": "/design 스킬 (하네스가 대표 통로로, 09-13 R14 21:35)", "refs": "out/screens/seoul-toy-concept.png(승인 시안) + ref/kenney/mini-characters/Previews/ character-male-c·female-a·aid-glasses·aid-cane — 몸 참고", "status": "M2 시안 — 열다섯이 한 줄. 헨리 눈: ① 실루엣 열다섯 다 다름(같은 몸 셋은 안경·지팡이·선글라스로 갈림) ② 옷·머리·살 색 characters.json 표대로(눈대중) ③ 승인 시안과 같은 재질·빛. 흠: 요청 2520×1080 이 아니라 1915×821(내려받기 막힘, 시안이라 둠) · 간격이 오른쪽으로 몰림 · 갓 챙이 몸보다 넓게 그려짐(실물 갓은 parts-plan 치수 0.75) · (14) 노라가 흰머리+지팡이라 할머니로 읽힘(대표 R14 '할머니는 누구야?') — characters.json 에서 안경+금발로 고쳤다, 이 그림은 그 전 것. 실물은 Kenney GLB + colormap 렌더 — 이 그림은 화면에 안 올라간다" },
+    "characters": "out/kit/characters.json (R14 — 자리 열여섯(세라 포함)·몸 열둘·배율 1.39·색·부착물·같은 몸 쌍)",
+    "colormaps": { "dir": "out/kit/colormaps/people/", "count": 17, "_r17": "열일곱째 hq-system(나리) 은 characters.json 에만 있고 색표는 아직 — 같은 명령(colormap-paint.mjs, 나리 손)으로 뽑는다", "size": [512, 512], "how": "Kenney colormap.png 복사 → 몸마다 칸(띠 8×줄 2)을 characters.json 색으로 칠함. 실측 out/kit/colormap-uv.md(클레멘타인 스크립트) → 칸 묶기 colormap-bands.json → 칸 이름 colormap-roles.json(헨리) → tools/pixel/colormap-paint.mjs(클레멘타인, 09-14 09:5x 시스템이 돌림)", "note": "칸 겹침 때문에 넷의 색을 바꿈(댄 바지 검정·헨리 바지 짙은 회색·마크 위아래 한 색·테라 머리·바지 짙은 밤색) — roles.json characterFixes" },
+    "dollsRender": { "file": "out/screens/dolls-lineup-render.png", "size": [1920, 520], "source": "teams/dev/out/shots/r25-dolls-lineup-1920.png (테라, Three.js, 09-14 10:01)", "status": "M2 그림 — 열여섯이 색표 입고 한 줄. 생성 시안(dollsLineup)을 대신한다(대표 09-14 — Kenney 로 가기로 한 것과 반대라 생성·손그림은 접음). 세라 리본만 뒤에 있어 안 보임 → 자리 옮김 요청" },
+    "seraRender": { "file": "out/screens/sera-200.png", "size": [200, 200], "source": "teams/dev/out/shots/r25-sera-200.png", "status": "떠 있는 세라용 정면 200px 투명 — 손그림 SVG 세라는 접음(out/sera-float.md 머리 참고)" },
+    "buildings": "out/kit/buildings.json (M3 2판, R15 09-14 — 항목 열여섯: base·팀 집 다섯·틈 넷·댄의 집·찻집·광장·궁·남산·한강. 부품 파일 열둘은 server/public/world/assets/kenney/ 안, 클레멘타인 셈 R15. 형식은 out/village-file-contract.md 2판)",
+    "buildingColormaps": { "dir": "out/kit/colormaps/", "files": ["commercial.png", "commercial-cafe.png", "suburban.png"], "size": [512, 512], "source": "Kenney city-kit-commercial · city-kit-suburban 원본 colormap.png(CC0)", "how": "실측 out/kit/colormap-uv-commercial.md · colormap-uv-suburban.md(클레멘타인 스크립트) → 칸 이름 out/kit/colormap-roles-buildings.json(헨리, 줄 셋 A·B·C) → tools/kit/colormap.mjs(클레멘타인) — 나리가 09-14 12:34 실행", "colors": "벽 #f4efe4 · 지붕 #7a8797 · 창 #ffd27a · 돌 #6f6d78 · 잎 #6f9a4a · 나무 #8b5a2b · 밝은 돌 #a8a6ae · 놋쇠 #d8b25c(찻집 천만, commercial-cafe) — 전부 buildings.json colors 안", "status": "R15 M3 — 헨리 눈: 세 장 다 제 칸에 제 색. 마크 셈 대기" },
+    "signs": { "dir": "out/kit/signs/", "files": ["marketing.png", "dev.png", "design.png", "finance.png", "hq.png", "cafe.png", "boss.png", "castle.png"], "size": [384, 128], "tool": "tools/kit/sign.mjs(헨리) — 헤드리스 크롬 캔버스, 맥 시스템 한글(Apple SD Gothic Neo 800) → 판·글 두 색으로 스냅. 나리가 09-14 12:34 실행", "spec": "out/kit/signs.json", "text": "마케팅 village-branding.md 1절 간판 문구 칸(자리 이름 — 2절 셋 미정이라 후보 아님 것만): 마케팅·개발·디자인·경영·총괄·찻집·댄의 집·회사", "colors": "목간판 여섯 #4a2c1a/#f4efe4 · 현판 둘 #1b1a1f/#d8b25c — 팔레트 안, 파일마다 정확히 둘", "status": "R15 M3 — 서울다움 ②(한글 간판) 실물. 헨리 눈: 마케팅·댄의 집 확인. 글꼴 파일은 저장소에 없다(그림이 산출물)" },
+    "direction": "out/direction.md (2판 — 인형 마을 3D, 대표 결정 54·55, 09-13 저녁)",
+    "directionPixel": "out/direction-1-pixel.md (1판 도트·직교·빌보드 — 접음, 기록)",
+    "concept": "out/kit/concept.md (도트 판 건물 아홉 — 접음, 기록. concept-2 요청 취소)",
+    "conceptImage": { "file": "out/kit/concept.png", "tool": "ChatGPT 이미지 생성", "request": "out/gpt/requests/concept.json", "refs": ["ref/baram/char_magician.png", "ref/dokkaebi/i1540213767.jpg"], "size": [1920, 1080], "status": "2026-09-13 16시대 나옴 — 대표 통로로 ChatGPT, 요청 파일 그대로, 참고 둘 첨부. 비율·구도 확인용이라 화면에 안 올라가고 팔레트 스냅도 안 한다. 헨리 눈 실측: 구도 맞음, 성벽:사람 약 2:1(목표 2.5), 소품 많음. 마크 R13 REVISE — 요청 파일 규칙대로 다시 뽑는다: 2차 요청 out/gpt/requests/concept-2.json (숫자 그대로, 강조 순서만). 1차는 concept-1.png 로 남긴다 — out/kit/concept.md '나온 것'" }
+  },
+  "sprites": {
+    "boss": { "who": "함동혁(댄) · 대표", "request": "out/gpt/requests/boss.json", "idle": "out/sprites64/boss.png", "idleSource": "out/gpt64/boss-src.png", "idleSize": [38, 62],
+      "walk": "out/sprites64/boss-walk.png", "walkSource": "out/gpt64/boss-pixellab-sheet.png", "walkLayout": "out/gpt64/boss-pixellab-sheet.json", "walkColors": 24, "walkStatus": "PixelLab 시험본 — 8방향 정지 + 남·동·북·서 걷기 8프레임. 40칸 발 최하단 y=74 실측. 마크 판정 대기",
+      "feet": "out/feet/boss-walk.json", "frames": "out/feet/boss-walk.json 의 frames 그대로 (node teams/design/out/feet/merge.mjs 로 옮긴다)",
+      "earlier": [
+        { "file": "out/gpt/boss-gpt-v1.png", "source": "out/gpt/boss-gpt-v1-512.png", "prompt": "out/gpt/boss-prompt.txt", "note": "64px 정지 첫 실물 (2026-09-12). 규격의 기준이 된 그림" },
+        { "file": "out/gpt/boss-gpt-walk.png", "source": "out/gpt/boss-gpt-walk-2048.png", "prompt": "out/gpt/boss-prompt.txt 둘째 절", "note": "ChatGPT 64×64 칸 걷기 시트 첫 실물. PixelLab 이 나쁘면 이 규격으로 간다" },
+        { "file": "out/sprites/boss.png", "source": "out/gpt/boss-1024.png", "feet": "out/feet/boss.json", "note": "32×48 시험본 — 폐기. 남향 줄이 칸마다 1px 왼쪽으로 흐른 기록" }
+      ] },
+    "design-guide": { "who": "헨리 · 디자인 guide", "request": "out/gpt/requests/design-guide.json", "idle": "out/sprites64/design-guide.png", "idleSource": "out/gpt64/design-guide-src.png", "idleSize": [24, 60], "walk": null, "walkStatus": "걷기 없음 — PixelLab 탈락(원문 5), 빌보드는 정지 그림",
+      "earlier": [
+        { "source": "out/gpt/henri-512.png", "request": "out/gpt/requests/henri.json", "note": "64px 낱장 1차. 안경이 눈과 뭉개져 폐기" },
+        { "file": "out/sprites/design-guide-v2.png", "source": "out/gpt/henri-2-512.png", "request": "out/gpt/requests/henri-2.json", "note": "64px 낱장 2차 (옥색 도포 — 팔레트 확정 전)" },
+        { "file": "out/sprites/design-guide.png", "source": "out/gpt/design-guide-1024.png", "feet": "out/feet/design-guide.json", "note": "32×48 시험본 — 폐기. 남향 줄 키 37 로 다른 줄(44)과 달랐다" }
+      ] },
+    "design-ops": { "who": "클레멘타인 · 디자인 ops", "request": "out/gpt/requests/design-ops.json", "idle": "out/sprites64/design-ops.png", "idleSource": "out/gpt64/design-ops-512.png", "walk": null, "walkStatus": "걷기 없음 — PixelLab 탈락(원문 5), 빌보드는 정지 그림", "earlier": [ { "file": "out/sprites/design-ops.png", "source": "out/gpt/design-ops-1024.png", "feet": "out/feet/design-ops.json", "note": "32×48 시험본 — 폐기" } ] },
+    "design-outside": { "who": "마크 · 디자인 outside", "request": "out/gpt/requests/design-outside.json", "idle": "out/sprites64/design-outside.png", "idleSource": "out/gpt64/design-outside-src.png", "walk": null, "walkStatus": "걷기 없음 — PixelLab 탈락(원문 5), 빌보드는 정지 그림", "earlier": [ { "file": "out/sprites/design-outside.png", "source": "out/gpt/design-outside-1024.png", "feet": "out/feet/design-outside.json", "note": "32×48 시험본 — 폐기" } ] },
+    "dev-guide": { "who": "테라 · 개발 guide", "request": "out/gpt/requests/dev-guide.json", "idle": "out/sprites64/dev-guide.png", "idleSource": "out/gpt64/dev-guide-src.png", "walk": null, "walkStatus": "PixelLab 대기", "earlier": [ { "file": "out/sprites/dev-guide.png", "source": "out/gpt/dev-guide-1024.png", "feet": "out/feet/dev-guide.json", "note": "32×48 시험본 — 폐기" } ] },
+    "dev-ops": { "who": "솔라 · 개발 ops", "request": "out/gpt/requests/dev-ops.json", "idle": "out/sprites64/dev-ops.png", "idleSource": "out/gpt64/dev-ops-src.png", "walk": null, "walkStatus": "PixelLab 대기", "earlier": [ { "file": "out/sprites/dev-ops.png", "source": "out/gpt/dev-ops-1024.png", "feet": "out/feet/dev-ops.json", "note": "32×48 시험본 — 폐기" } ] },
+    "dev-outside": { "who": "레오 · 개발 outside", "request": "out/gpt/requests/dev-outside.json", "idle": "out/sprites64/dev-outside.png", "idleSource": "out/gpt64/dev-outside-512.png", "walk": null, "walkStatus": "PixelLab 대기", "earlier": [ { "file": "out/sprites/dev-outside.png", "source": "out/gpt/dev-outside-1024.png", "feet": "out/feet/dev-outside.json", "note": "32×48 시험본 — 폐기" } ] },
+    "hq-chief": { "who": "톰 · 총괄 chief", "request": "out/gpt/requests/hq-chief.json", "idle": "out/sprites64/hq-chief.png", "idleSource": "out/gpt64/hq-chief-src.png", "idleSize": [30, 59], "walk": null, "walkStatus": "걷기 없음 — PixelLab 탈락(원문 5), 빌보드는 정지 그림", "earlier": [ { "file": "out/sprites/hq-chief.png", "source": "out/gpt/hq-chief-1024.png", "feet": "out/feet/hq-chief.json", "note": "32×48 시험본 — 폐기. 남향 줄이 칸마다 1px 왼쪽으로 흐른 기록" } ] },
+    "hq-outside": { "who": "제리 · 총괄 outside", "request": "out/gpt/requests/hq-outside.json", "idle": "out/sprites64/hq-outside.png", "idleSource": "out/gpt64/hq-outside-src.png", "walk": null, "walkStatus": "PixelLab 대기" },
+    "marketing-guide": { "who": "하영 · 마케팅 guide", "request": "out/gpt/requests/marketing-guide.json", "idle": "out/sprites64/marketing-guide.png", "idleSource": "out/gpt64/marketing-guide-src.png", "walk": null, "walkStatus": "PixelLab 대기" },
+    "marketing-review": { "who": "안젤 · 마케팅 review", "request": "out/gpt/requests/marketing-review.json", "idle": "out/sprites64/marketing-review.png", "idleSource": "out/gpt64/marketing-review-src.png", "walk": null, "walkStatus": "PixelLab 대기" },
+    "marketing-outside": { "who": "다니엘 · 마케팅 outside", "request": "out/gpt/requests/marketing-outside.json", "idle": "out/sprites64/marketing-outside.png", "idleSource": "out/gpt64/marketing-outside-src.png", "walk": null, "walkStatus": "PixelLab 대기" },
+    "finance-guide": { "who": "(이름 없음) · 재무 guide", "request": "out/gpt/requests/finance-guide.json", "idle": "out/sprites64/finance-guide.png", "idleSource": "out/gpt64/finance-guide-src.png", "walk": null, "walkStatus": "PixelLab 대기", "earlier": [ { "file": "out/sprites/finance-guide.png", "source": "out/gpt/finance-guide-1024.png", "feet": "out/feet/finance-guide.json", "note": "32×48 시험본 — 폐기" } ] },
+    "finance-review": { "who": "(이름 없음) · 재무 review", "request": "out/gpt/requests/finance-review.json", "idle": "out/sprites64/finance-review.png", "idleSource": "out/gpt64/finance-review-src.png", "walk": null, "walkStatus": "PixelLab 대기", "earlier": [ { "source": "out/gpt/finance-review-1024.png", "note": "32×48 시험본 원본만 있음 — 폐기" } ] },
+    "finance-outside": { "who": "(이름 없음) · 재무 outside", "request": "out/gpt/requests/finance-outside.json", "idle": "out/sprites64/finance-outside.png", "idleSource": "out/gpt64/finance-outside-src.png", "walk": null, "walkStatus": "PixelLab 대기" }
+  }
+}

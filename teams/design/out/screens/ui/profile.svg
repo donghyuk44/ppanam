@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="520" viewBox="0 0 1000 520" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 프로필 카드 시안 1판 — 헨리 09-14, 대표 결정 130. 방에서 썸네일을 누르면 뜨는 정사각 카드(페이스북·카카오 프로필 구도: 위 반은 얼굴, 아래 반은 이름·직책·한 줄·상태). 왼쪽 폰(카드 320) · 가운데 폰 위에 뜬 모습 · 오른쪽 데스크톱(카드 360). 얼굴 자리는 6단계 썸네일(일러스트면 인형 정면 200px). -->
+  <defs><style>
+    .k{font-size:10px;letter-spacing:.12em;fill:#8a8794}
+    .h{font-family:'Gowun Batang','Noto Serif KR',serif;font-size:18px;fill:#1b1a1f}
+    .t{font-size:12.5px;fill:#1b1a1f}.s{font-size:11px;fill:#6f6d78}.m{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#8a8794}
+    .pill{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em}
+  </style>
+  <clipPath id="face"><rect x="0" y="0" width="320" height="160" rx="0"/></clipPath>
+  </defs>
+  <rect width="1000" height="520" fill="#f6f2ea"/>
+
+  <!-- ─── 카드 320 (폰) ─── -->
+  <g transform="translate(24 40)">
+    <text x="0" y="-12" class="k">프로필 카드 — 폰 320×320 · 정사각</text>
+    <rect x="0" y="0" width="320" height="320" rx="16" fill="#ffffff" stroke="#e3ddd0"/>
+    <!-- 위 반: 얼굴 — 직책 색 바탕, 인형 정면 -->
+    <rect x="0" y="0" width="320" height="160" rx="16" fill="#5f8fbf" opacity="0.18"/>
+    <rect x="0" y="80" width="320" height="80" fill="#5f8fbf" opacity="0.18"/>
+    <circle cx="160" cy="92" r="58" fill="#5f8fbf" opacity="0.35"/>
+    <!-- 인형 얼굴 자리표시 (실물은 out/screens/sera-200.png 같은 정면 렌더) -->
+    <circle cx="160" cy="84" r="34" fill="#f3d3b3"/><path d="M126 80 a34 34 0 0 1 68 0 q-8-18-34-18 q-26 0-34 18z" fill="#1b1a1f"/>
+    <circle cx="149" cy="88" r="3" fill="#1b1a1f"/><circle cx="171" cy="88" r="3" fill="#1b1a1f"/><path d="M154 99 q6 5 12 0" fill="none" stroke="#1b1a1f" stroke-width="2" stroke-linecap="round"/>
+    <rect x="132" y="118" width="56" height="32" rx="12" fill="#5f8fbf"/>
+    <text x="304" y="22" text-anchor="end" font-size="16" fill="#6f6d78">×</text>
+    <!-- 아래 반: 글자 넷 -->
+    <text x="20" y="196" class="h">세라</text>
+    <rect x="212" y="180" width="88" height="22" rx="4" fill="none" stroke="#3a8f5c"/><text x="256" y="195" text-anchor="middle" class="pill" fill="#3a8f5c">일하는 중</text>
+    <text x="20" y="216" class="s">비서 · 총괄실</text>
+    <text x="20" y="246" class="t">대표님이 볼 것을 세어서 놓는다.</text>
+    <text x="20" y="266" class="s">지금 — 아침 보고서 정하실 것 셋 추림 · 3분 전에 움직임</text>
+    <line x1="20" y1="284" x2="300" y2="284" stroke="#e3ddd0"/>
+    <text x="20" y="306" class="t" fill="#4b5f9e">방에서 말 걸기 →</text>
+    <text x="300" y="306" text-anchor="end" class="s">사람 카드 보기</text>
+  </g>
+
+  <!-- ─── 폰 위에 뜬 모습 ─── -->
+  <g transform="translate(380 20)">
+    <text x="0" y="8" class="k">방에서 썸네일을 누르면 — 뒤는 어두워지고 카드가 가운데</text>
+    <rect x="0" y="16" width="240" height="470" rx="14" fill="#2a2620"/>
+    <g opacity="0.35">
+      <rect x="10" y="40" width="220" height="30" rx="8" fill="#f4efe4"/>
+      <rect x="10" y="80" width="180" height="42" rx="8" fill="#f4efe4"/>
+      <rect x="50" y="132" width="180" height="42" rx="8" fill="#f4efe4"/>
+      <rect x="10" y="184" width="200" height="42" rx="8" fill="#f4efe4"/>
+      <rect x="10" y="236" width="160" height="42" rx="8" fill="#f4efe4"/>
+      <rect x="10" y="440" width="220" height="30" rx="8" fill="#f4efe4"/>
+    </g>
+    <circle cx="26" cy="101" r="10" fill="#5f8fbf" stroke="#ffffff" stroke-width="2"/>
+    <text x="26" y="98" text-anchor="middle" font-size="8" fill="#ffffff">▲ 누름</text>
+    <!-- 카드 축소판 -->
+    <g transform="translate(20 160) scale(0.625)">
+      <rect x="0" y="0" width="320" height="320" rx="16" fill="#ffffff"/>
+      <rect x="0" y="0" width="320" height="160" rx="16" fill="#5f8fbf" opacity="0.18"/><rect x="0" y="80" width="320" height="80" fill="#5f8fbf" opacity="0.18"/>
+      <circle cx="160" cy="84" r="34" fill="#f3d3b3"/><path d="M126 80 a34 34 0 0 1 68 0 q-8-18-34-18 q-26 0-34 18z" fill="#1b1a1f"/>
+      <rect x="132" y="118" width="56" height="32" rx="12" fill="#5f8fbf"/>
+      <text x="20" y="196" class="h">세라</text><text x="20" y="216" class="s">비서 · 총괄실</text>
+      <text x="20" y="246" class="t">대표님이 볼 것을 세어서 놓는다.</text>
+      <text x="20" y="306" class="t" fill="#4b5f9e">방에서 말 걸기 →</text>
+    </g>
+    <text x="0" y="504" class="s">카드 밖을 누르거나 ×로 닫힘. 카드 안 버튼은 둘뿐.</text>
+  </g>
+
+  <!-- ─── 데스크톱 360 — 같은 칸, 얼굴 왼쪽 ─── -->
+  <g transform="translate(650 40)">
+    <text x="0" y="-12" class="k">데스크톱 — 썸네일 옆에 뜨는 360×220 (같은 칸, 얼굴 왼쪽)</text>
+    <rect x="0" y="0" width="330" height="220" rx="14" fill="#ffffff" stroke="#e3ddd0"/>
+    <rect x="0" y="0" width="120" height="220" rx="14" fill="#4b5f9e" opacity="0.18"/><rect x="60" y="0" width="60" height="220" fill="#4b5f9e" opacity="0.18"/>
+    <circle cx="60" cy="86" r="30" fill="#f3d3b3"/><path d="M30 82 a30 30 0 0 1 60 0 q-6-16-30-16 q-24 0-30 16z" fill="#8b5a2b"/>
+    <rect x="36" y="116" width="48" height="28" rx="10" fill="#4b5f9e"/>
+    <circle cx="51" cy="90" r="6" fill="none" stroke="#5b3a63" stroke-width="1.5"/><circle cx="69" cy="90" r="6" fill="none" stroke="#5b3a63" stroke-width="1.5"/>
+    <text x="136" y="36" class="h">헨리</text>
+    <rect x="236" y="20" width="82" height="22" rx="4" fill="none" stroke="#3a8f5c"/><text x="277" y="35" text-anchor="middle" class="pill" fill="#3a8f5c">일하는 중</text>
+    <text x="136" y="56" class="s">디자인팀장 · 디자인팀</text>
+    <text x="136" y="86" class="t">그림의 기준을 정하고 고른다.</text>
+    <text x="136" y="104" class="s">한 줄 = 하는 일(직책 표 넷째 칸) — 나리 대리 결정 09-15</text>
+    <text x="136" y="130" class="s">지금 — 화면 시안 · 3분 전에 움직임</text>
+    <line x1="136" y1="150" x2="318" y2="150" stroke="#e3ddd0"/>
+    <text x="136" y="176" class="t" fill="#4b5f9e">방에서 말 걸기 →</text>
+    <text x="318" y="176" text-anchor="end" class="s">사람 카드 보기</text>
+    <g class="s">
+      <text x="0" y="262">칸 넷 + 상태 하나 — 얼굴 · 이름 · 직책 · 한 줄(하는 일 — 직책 표 넷째 칸, 하영 글. 소개 줄 아님: 나리 대리 결정 09-15) · 지금(상황판).</text>
+      <text x="0" y="280">얼굴 = 6단계 썸네일(일러스트면 인형 정면, 실사면 증명사진) — 정해지기 전엔 직책 색 원+머리글자.</text>
+      <text x="0" y="298">바탕 띠 = 직책 색 18% — 마을 인형 옷 색과 같은 색. 새 색 없음.</text>
+      <text x="0" y="316">버튼 둘뿐: 방에서 말 걸기(그 사람 이름을 첫머리에 넣은 입력) · 사람 카드 보기(현황).</text>
+      <text x="0" y="334">서버 값: cast(이름·직책·색) + 바이블 열 줄 첫 줄 + people[id].state·doing·lastSignal — 새 값 없음.</text>
+    </g>
+  </g>
+  <text x="988" y="512" text-anchor="end" font-size="9" fill="#a8a6ae">프로필 카드 시안 1판 · 2026-09-14 · 헨리 · 결정 130 · 얼굴은 6단계 뒤</text>
+</svg>

@@ -1,0 +1,21 @@
+{
+  "_note": "한글 간판 여덟 — tools/kit/sign.mjs 가 이 파일을 읽어 out/kit/signs/<id>.png 를 낸다(헨리, 2026-09-14 R15 M3). 글은 마케팅 village-branding.md 1절 간판 문구 칸 — 아직 후보라(2절 2-1·2-2·2-3 미정) 확정 전엔 조건대로 자리 이름: 팀 이름 다섯·찻집·댄의 집·회사. 문패(사람 이름 열넷)는 마케팅 2-1 이 (가)로 정해지면 같은 스크립트로 더 뽑는다 — 지금은 안 뽑는다(컷: 없는 결정을 앞서지 않음). 크기 384×128 = 1.2×0.4 단위(buildings.json plane). 색은 두 가지뿐 — 판(board)·글(ink), 렌더 뒤 픽셀마다 둘 중 가까운 색으로 붙여 안티앨리어싱 회색을 없앤다. 그래서 파일 안 색은 정확히 둘. 글꼴은 맥 시스템 한글(Apple SD Gothic Neo Bold) — 화면에 올라가는 건 글자 모양이 아니라 이 PNG 라 글꼴 파일을 저장소에 안 둔다.",
+  "size": [384, 128],
+  "font": "\"Apple SD Gothic Neo\", \"AppleSDGothicNeo-Bold\", \"Noto Sans KR\", sans-serif",
+  "weight": 800,
+  "fit": { "maxFontPx": 88, "maxWidthRatio": 0.86 },
+  "kinds": {
+    "wood": { "board": "#4a2c1a", "ink": "#f4efe4", "frame": 0, "note": "골목 목간판 — 짙은 나무 판에 크림 글. 크림 벽 위에 걸리니 판이 어두워야 읽힌다" },
+    "plaque": { "board": "#1b1a1f", "ink": "#d8b25c", "frame": 6, "note": "현판 — 검은 판에 놋쇠 글, 테두리 6px. 근정전·댄의 집 한옥" }
+  },
+  "signs": [
+    { "id": "marketing", "text": "마케팅", "kind": "wood", "where": "home.marketing 가운데 채(building-m) 문 위", "source": "village-branding 1절 #1 간판 문구 `마케팅`(자리 이름)" },
+    { "id": "dev", "text": "개발", "kind": "wood", "where": "home.dev 가운데 채(building-l)", "source": "village-branding 1절 #2 `개발`" },
+    { "id": "design", "text": "디자인", "kind": "wood", "where": "home.design 가운데 채(skyscraper-a)", "source": "village-branding 1절 #3 `디자인`" },
+    { "id": "finance", "text": "경영", "kind": "wood", "where": "home.finance 가운데 채(skyscraper-a)", "source": "village-branding 1절 #4 `경영`(state/teams.json 이름 — 재무 아님)" },
+    { "id": "hq", "text": "총괄", "kind": "wood", "where": "home.hq 서쪽 채(building-l)", "source": "village-branding 1절 #5 `총괄`" },
+    { "id": "cafe", "text": "찻집", "kind": "wood", "where": "cafe building-n 문 위, 차양 둘 위", "source": "village-branding 1절 #7 `찻집`(2-2 이름 안 짓는다)" },
+    { "id": "boss", "text": "댄의 집", "kind": "plaque", "where": "home.boss 한옥 남쪽 벽, 문 위 1.75~2.15", "source": "village-branding 1절 #6 `댄의 집`(2-3 자리표시 그대로 — 문패 글자는 대표 몫)" },
+    { "id": "castle", "text": "회사", "kind": "plaque", "where": "castle 광화문 문루 남쪽 면 가운데", "source": "village-branding 1절 #9 `회사`(바이블 6절 2번 — 회사 이름은 없다, 이 두 글자가 간판)" }
+  ]
+}

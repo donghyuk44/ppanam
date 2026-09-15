@@ -1,0 +1,197 @@
+[
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/boss.png",
+  "width": 38,
+  "height": 62,
+  "bottom": 61,
+  "torsoBand": [
+   41,
+   51
+  ],
+  "torsoX": 19,
+  "centerX": 19,
+  "shift": 0
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/design-guide.png",
+  "width": 24,
+  "height": 60,
+  "bottom": 59,
+  "torsoBand": [
+   40,
+   50
+  ],
+  "torsoX": 11,
+  "centerX": 12,
+  "shift": 1
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/design-ops.png",
+  "width": 30,
+  "height": 57,
+  "bottom": 56,
+  "torsoBand": [
+   38,
+   47
+  ],
+  "torsoX": 13,
+  "centerX": 15,
+  "shift": 2
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/design-outside.png",
+  "width": 29,
+  "height": 55,
+  "bottom": 54,
+  "torsoBand": [
+   36,
+   45
+  ],
+  "torsoX": 17,
+  "centerX": 14.5,
+  "shift": -2
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/dev-guide.png",
+  "width": 33,
+  "height": 55,
+  "bottom": 54,
+  "torsoBand": [
+   36,
+   45
+  ],
+  "torsoX": 20,
+  "centerX": 16.5,
+  "shift": -3
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/dev-ops.png",
+  "width": 30,
+  "height": 57,
+  "bottom": 56,
+  "torsoBand": [
+   38,
+   47
+  ],
+  "torsoX": 14,
+  "centerX": 15,
+  "shift": 1
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/dev-outside.png",
+  "width": 28,
+  "height": 57,
+  "bottom": 56,
+  "torsoBand": [
+   38,
+   47
+  ],
+  "torsoX": 15,
+  "centerX": 14,
+  "shift": -1
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/finance-guide.png",
+  "width": 23,
+  "height": 52,
+  "bottom": 51,
+  "torsoBand": [
+   34,
+   43
+  ],
+  "torsoX": 11,
+  "centerX": 11.5,
+  "shift": 1
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/finance-outside.png",
+  "width": 33,
+  "height": 57,
+  "bottom": 56,
+  "torsoBand": [
+   38,
+   47
+  ],
+  "torsoX": 21,
+  "centerX": 16.5,
+  "shift": -4
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/finance-review.png",
+  "width": 30,
+  "height": 62,
+  "bottom": 61,
+  "torsoBand": [
+   41,
+   51
+  ],
+  "torsoX": 15,
+  "centerX": 15,
+  "shift": 0
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/hq-chief.png",
+  "width": 30,
+  "height": 59,
+  "bottom": 58,
+  "torsoBand": [
+   39,
+   49
+  ],
+  "torsoX": 14,
+  "centerX": 15,
+  "shift": 1
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/hq-outside.png",
+  "width": 30,
+  "height": 58,
+  "bottom": 57,
+  "torsoBand": [
+   38,
+   48
+  ],
+  "torsoX": 15,
+  "centerX": 15,
+  "shift": 0
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/marketing-guide.png",
+  "width": 30,
+  "height": 57,
+  "bottom": 56,
+  "torsoBand": [
+   38,
+   47
+  ],
+  "torsoX": 15,
+  "centerX": 15,
+  "shift": 0
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/marketing-outside.png",
+  "width": 28,
+  "height": 57,
+  "bottom": 56,
+  "torsoBand": [
+   38,
+   47
+  ],
+  "torsoX": 13,
+  "centerX": 14,
+  "shift": 1
+ },
+ {
+  "file": "/Users/donghyukham/Documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/marketing-review.png",
+  "width": 26,
+  "height": 60,
+  "bottom": 59,
+  "torsoBand": [
+   40,
+   50
+  ],
+  "torsoX": 13,
+  "centerX": 13,
+  "shift": 0
+ }
+]

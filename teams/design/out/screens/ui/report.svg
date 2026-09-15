@@ -1,0 +1,216 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1140" viewBox="0 0 1000 1140" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 보고서 한 장 시안 1판 — 헨리 09-14 (M4). 나리 '화면이-답하는-질문.md': 보고서는 "어제 하루가 어땠나", 사람이 쓴 글. 결정 80 다섯 절(사이 있었던 일 · 대표님 차례 · 오늘 할 일 · 한마디 · 사이 나온 그림)과 결정 85 ③(대표님 대신 정한 것은 맨 위)을 칸 넷에 앉혔다:
+       ① 오늘 정하실 것 (+ 대신 정한 것) ② 멈춘 것 — 어젯밤 시간 띠 한 장(숲, numbers.md 5절) ③ 팀마다 한 것 한 줄(결정 80 "팀마다 한 줄") + 사이 나온 그림은 그 팀 줄의 작은 네모 → 누르면 세 줄 ④ 오늘 각 방이 먼저 할 일 + 톰의 한마디(글 있는 날만).
+       폰에서 30초. 숫자는 넷(정하실 것 수 · 멈춘 것 수 · 단계 N/M · 회차)뿐, 시계 없음(하영 9절 3 — 날짜는 보고서 이름이라 남긴다). 낱말은 하영 사전. 글의 틀(다섯 절 문장)은 경영팀 몫 — 오면 글자만 바뀌고 칸은 이대로.
+       왼쪽 폰 412 · 오른쪽 데스크톱 한 단(편지는 두 단으로 안 읽는다 — 띠와 그림만 커진다). 값은 GET /api/report(done · next · images · proxy · chief) + 관제탑 ① 과 같은 boss.items + 멈춤 구간 stalls(아직 없음, ui-spec 4절). -->
+  <defs>
+    <style>
+      .k{font-size:10px;letter-spacing:.12em;fill:#8a8794}
+      .h{font-family:'Gowun Batang','Noto Serif KR',serif;font-size:17px;fill:#1b1a1f}
+      .t{font-size:12.5px;fill:#1b1a1f}
+      .s{font-size:11px;fill:#6f6d78}
+      .m{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#8a8794}
+      .card{fill:#ffffff;stroke:#e3ddd0}
+      .bad{fill:#c94a3a}.live{fill:#3a8f5c}
+      .ax{stroke:#e6e0d3;stroke-width:1}
+      .pic{fill:#efe9dd;stroke:#d9d1bf}
+    </style>
+  </defs>
+  <rect width="1000" height="1140" fill="#f6f2ea"/>
+
+  <!-- ─────────── 폰 412 — 여기서 30초 ─────────── -->
+  <g transform="translate(24 20)">
+    <rect x="0" y="0" width="412" height="1100" rx="18" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="34" class="h">보고서 <tspan class="s">(어제 하루)</tspan></text>
+    <text x="396" y="34" text-anchor="end" class="m">9월 14일 아침</text>
+    <text x="16" y="54" class="s">어제 저녁 6시 → 오늘 아침 9시</text>
+    <text x="16" y="69" class="s">톰이 쓰고, 세라가 대표님 말로 고치고, 나리가 숫자를 맞춰 봤어요</text>
+
+    <!-- ① 오늘 정하실 것 — 놋쇠 테두리(관제탑 ③ 과 같은 목록, C 와 물어봄만 — 하영 9절 1). 0 이면 이 칸이 사라지고 "오늘 정하실 것 없어요" 한 줄 -->
+    <text x="16" y="96" class="k">오늘 정하실 것 1</text>
+    <rect x="12" y="104" width="388" height="62" rx="10" class="card" stroke="#d8b25c" stroke-width="1.5"/>
+    <rect x="12" y="104" width="3" height="62" rx="1" fill="#d8b25c"/>
+    <text x="26" y="126" class="t"><tspan font-weight="600">마케팅 · 하영 · 결재 기다림</tspan></text>
+    <text x="26" y="144" class="s">직책 열일곱 — 괄호 후보 가운데 고르기</text>
+    <rect x="308" y="132" width="82" height="26" rx="6" fill="#1b1a1f"/><text x="349" y="149" text-anchor="middle" font-size="11.5" fill="#f4efe4">읽고 답하기</text>
+    <!-- 대신 정한 것 — 결정 85 ③. 수를 안 센다(숫자 넷 밖). 카드 하나 = 대리 결정 하나. 없으면 이 줄도 없다 -->
+    <text x="16" y="186" class="s">톰·제리가 대표님 대신 정했어요 — 되돌리시려면 방에 한마디</text>
+    <rect x="12" y="194" width="388" height="54" rx="10" class="card"/>
+    <rect x="12" y="194" width="3" height="54" rx="1" fill="#8a8794"/>
+    <text x="26" y="214" class="t"><tspan font-weight="600">디자인</tspan> · 계획표 4단계·5단계 자리 바꿈</text>
+    <text x="26" y="231" class="s">"탈락한 그림 다듬기는 멈춤" 그대로 · 새벽 1시 · 둘 다 확인</text>
+    <rect x="308" y="208" width="82" height="26" rx="6" fill="#1b1a1f"/><text x="349" y="225" text-anchor="middle" font-size="11.5" fill="#f4efe4">방으로</text>
+
+    <!-- ② 멈춘 것 — 어젯밤 시간 띠 한 장(숲). 가로 = 저녁 6시 → 아침 9시(15시간, 폰 290px), 팀마다 한 줄(도면 순서), 점 = 낸 것 하나(팀 색), 빨간 점 + 빨간 띠 = 멈춘 구간. 눈금 글자는 양 끝 둘뿐(numbers.md 3절) -->
+    <text x="16" y="280" class="k">막힌 것 1 · 한 것은 점, 멈춤은 빨간 띠</text>
+    <rect x="12" y="288" width="388" height="168" rx="10" class="card"/>
+    <text x="90" y="306" class="m">저녁 6시</text><text x="380" y="306" text-anchor="end" class="m">아침 9시</text>
+    <g class="s">
+      <text x="24" y="328">총괄실</text><line x1="90" y1="324" x2="380" y2="324" class="ax"/>
+      <circle cx="109" cy="324" r="4" fill="#1f5f4f"/><circle cx="196" cy="324" r="4" fill="#1f5f4f"/>
+      <text x="24" y="352">마케팅</text><line x1="90" y1="348" x2="380" y2="348" class="ax"/>
+      <circle cx="129" cy="348" r="4" fill="#2f4f7a"/><circle cx="158" cy="348" r="4" fill="#2f4f7a"/><circle cx="225" cy="348" r="4" fill="#2f4f7a"/><circle cx="264" cy="348" r="4" fill="#2f4f7a"/>
+      <text x="24" y="376">개발</text><line x1="90" y1="372" x2="380" y2="372" class="ax"/>
+      <circle cx="100" cy="372" r="4" fill="#4a5d3a"/><circle cx="167" cy="372" r="4" fill="#4a5d3a"/><circle cx="216" cy="372" r="4" fill="#4a5d3a"/>
+      <rect x="264" y="369.5" width="45" height="5" rx="2.5" class="bad"/><circle cx="264" cy="372" r="4" class="bad"/>
+      <circle cx="322" cy="372" r="4" fill="#4a5d3a"/>
+      <text x="24" y="400">디자인</text><line x1="90" y1="396" x2="380" y2="396" class="ax"/>
+      <circle cx="119" cy="396" r="4" fill="#4b5f9e"/><circle cx="235" cy="396" r="4" fill="#4b5f9e"/><circle cx="283" cy="396" r="4" fill="#4b5f9e"/><circle cx="361" cy="396" r="4" fill="#4b5f9e"/>
+      <text x="24" y="424">경영</text><line x1="90" y1="420" x2="380" y2="420" class="ax"/>
+      <circle cx="148" cy="420" r="4" fill="#6f9a4a"/>
+      <text x="24" y="446">점 = 낸 것 하나 · 빨간 띠 = 멈춰 있던 시간 · 색 = 팀</text>
+    </g>
+    <!-- 멈춘 것 하나 = 카드 하나. 띠 길이 = 멈춘 시간(폰 1분 = 1px, numbers.md 6절). 창 안에서 풀렸으면 "지금은 풀렸어요", 아직이면 관제탑 ① 과 같은 카드 -->
+    <rect x="12" y="464" width="388" height="60" rx="10" class="card"/>
+    <circle cx="30" cy="486" r="4" class="bad"/>
+    <text x="44" y="482" class="t"><tspan font-weight="600">개발 · 테라</tspan> — 유니티 그림, 나리 손 기다림</text>
+    <text x="44" y="499" class="s">새벽 3시 → 5시 20분 · 지금은 풀렸어요</text>
+    <rect x="44" y="508" width="140" height="5" rx="2.5" class="bad"/><text x="192" y="514" class="m">2시간 20분</text>
+
+    <!-- ③ 팀마다 한 것 — 한 줄(결정 80 "팀마다 한 줄"). 도면 순서. 오른쪽 위 진행 막대 N/M(단계), 오른쪽 아래 작은 네모 = 사이 나온 그림(창 안 mtime 의 out/ 그림, 그 팀 것만 · 최대 셋 · 누르면 그림). 누르면 펼친 줄 = 세 줄(한 것 · 멈춘 것 · 검토 결과) — 디자인 줄이 펼친 본보기 -->
+    <text x="16" y="552" class="k">팀마다 한 것 — 누르면 세 줄</text>
+    <g>
+      <rect x="12" y="560" width="388" height="48" rx="10" class="card"/>
+      <text x="26" y="579" class="t"><tspan font-weight="600">총괄실</tspan> <tspan class="s">단계 없음</tspan></text>
+      <text x="26" y="598" class="s">대표님께 올린 것 둘 · 물어본 것 하나</text>
+
+      <rect x="12" y="614" width="388" height="48" rx="10" class="card"/>
+      <text x="26" y="633" class="t"><tspan font-weight="600">마케팅팀</tspan> <tspan class="s">1장 7단계 · 30회차</tspan></text>
+      <rect x="236" y="629" width="90" height="5" rx="2.5" fill="#e6e0d3"/><rect x="236" y="629" width="77" height="5" rx="2.5" class="live"/><text x="334" y="635" class="m">6/7</text>
+      <text x="26" y="652" class="s">관제탑 내용 2판 → 디자인에 넘김</text>
+
+      <rect x="12" y="668" width="388" height="48" rx="10" class="card"/>
+      <text x="26" y="687" class="t"><tspan font-weight="600">개발팀</tspan> <tspan class="s">6단계 · 33회차</tspan></text>
+      <rect x="236" y="683" width="90" height="5" rx="2.5" fill="#e6e0d3"/><rect x="236" y="683" width="56" height="5" rx="2.5" class="live"/><text x="334" y="689" class="m">5/8</text>
+      <text x="26" y="706" class="s">보고서 아래층 문 · 마을 수정 표 맞춤</text>
+      <g transform="translate(372 690)"><rect width="20" height="20" rx="3" class="pic"/><polygon points="3,16 9,8 13,12 15,10 17,16" fill="#8a8794"/><circle cx="14" cy="6" r="1.8" fill="#8a8794"/></g>
+
+      <!-- 디자인 — 펼친 줄(누른 뒤). 위 두 줄은 접힌 줄과 같고, 금 아래 세 줄이 붙는다 -->
+      <rect x="12" y="722" width="388" height="106" rx="10" class="card"/>
+      <text x="26" y="741" class="t"><tspan font-weight="600">디자인팀</tspan> <tspan class="s">3단계 → 4단계 · 16회차</tspan></text>
+      <rect x="236" y="737" width="90" height="5" rx="2.5" fill="#e6e0d3"/><rect x="236" y="737" width="45" height="5" rx="2.5" class="live"/><text x="334" y="743" class="m">3/6</text>
+      <text x="26" y="760" class="s">건물 색표 셋 · 간판 여덟 · 마을 파일 약속 2판</text>
+      <g transform="translate(344 744)"><rect width="20" height="20" rx="3" class="pic"/><polygon points="3,16 9,8 13,12 15,10 17,16" fill="#8a8794"/><circle cx="14" cy="6" r="1.8" fill="#8a8794"/></g>
+      <g transform="translate(372 744)"><rect width="20" height="20" rx="3" class="pic"/><polygon points="3,16 9,8 13,12 15,10 17,16" fill="#8a8794"/><circle cx="14" cy="6" r="1.8" fill="#8a8794"/></g>
+      <line x1="26" y1="770" x2="386" y2="770" class="ax"/>
+      <text x="26" y="786" class="s"><tspan fill="#8a8794">한 것</tspan> — 건물 색표 셋 · 한글 간판 여덟 · 마을 파일 약속 2판</text>
+      <text x="26" y="802" class="s"><tspan fill="#8a8794">막힌 것</tspan> — 없어요</text>
+      <text x="26" y="818" class="s"><tspan fill="#8a8794">검토 결과</tspan> — 통과(마크) · 3단계 마무리, 4단계 시작</text>
+
+      <rect x="12" y="834" width="388" height="48" rx="10" class="card"/>
+      <text x="26" y="853" class="t"><tspan font-weight="600">경영팀</tspan> <tspan class="s">1단계 서고와 사서 · 3회차</tspan></text>
+      <rect x="236" y="849" width="90" height="5" rx="2.5" fill="#e6e0d3"/><text x="334" y="855" class="m">0/1</text>
+      <text x="26" y="872" class="s">이 사이엔 한 일이 없어요.</text>
+    </g>
+
+    <!-- ④ 오늘 — 각 방이 먼저 할 일(progress "다음" 첫 줄, 사람 점 = 자리 색) + 톰의 한마디(chief 글 있는 날만 · 없으면 칸이 여기서 끝난다) -->
+    <text x="16" y="910" class="k">오늘 — 각 방이 먼저 할 일</text>
+    <rect x="12" y="918" width="388" height="118" rx="10" class="card"/>
+    <g class="s">
+      <circle cx="30" cy="935" r="4" fill="#2f6f8f"/><text x="44" y="939"><tspan class="t" font-weight="600">세라</tspan> 직책 후보 답이 오면 화면 낱말 굳히기</text>
+      <circle cx="30" cy="955" r="4" fill="#2f4f7a"/><text x="44" y="959"><tspan class="t" font-weight="600">하영</tspan> 관제탑 내용 2판, 안젤 검토</text>
+      <circle cx="30" cy="975" r="4" fill="#4a5d3a"/><text x="44" y="979"><tspan class="t" font-weight="600">테라</tspan> 유니티 비교 한 장 대표님께</text>
+      <circle cx="30" cy="995" r="4" fill="#4b5f9e"/><text x="44" y="999"><tspan class="t" font-weight="600">헨리</tspan> 보고서·프로필 카드 시안</text>
+      <circle cx="30" cy="1015" r="4" fill="#6f9a4a"/><text x="44" y="1019"><tspan class="t" font-weight="600">유진</tspan> 사서 목차 3판</text>
+    </g>
+    <rect x="12" y="1046" width="3" height="40" rx="1" fill="#8a8794"/>
+    <text x="26" y="1062" class="t">어젯밤엔 대표님 손 없이 다 돌았어요.</text>
+    <text x="26" y="1080" class="t">직책 열일곱만 골라 주시면 화면 낱말이 굳어요. <tspan class="s">— 톰</tspan></text>
+  </g>
+
+  <!-- ─────────── 데스크톱 — 같은 넷, 한 단 ─────────── -->
+  <g transform="translate(470 20)">
+    <rect x="0" y="0" width="506" height="1100" rx="12" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="34" class="h">보고서 <tspan class="s">(어제 하루)</tspan></text>
+    <text x="490" y="34" text-anchor="end" class="m">9월 14일 아침</text>
+    <text x="16" y="54" class="s">어제 저녁 6시 → 오늘 아침 9시</text>
+    <text x="16" y="69" class="s">톰이 쓰고, 세라가 대표님 말로 고치고, 나리가 숫자를 맞춰 봤어요</text>
+
+    <text x="16" y="96" class="k">오늘 정하실 것 1</text>
+    <rect x="12" y="104" width="482" height="62" rx="10" class="card" stroke="#d8b25c" stroke-width="1.5"/>
+    <rect x="12" y="104" width="3" height="62" rx="1" fill="#d8b25c"/>
+    <text x="26" y="126" class="t"><tspan font-weight="600">마케팅 · 하영 · 결재 기다림</tspan></text>
+    <text x="26" y="144" class="s">직책 열일곱 — 괄호 후보 가운데 고르기</text>
+    <rect x="402" y="132" width="82" height="26" rx="6" fill="#1b1a1f"/><text x="443" y="149" text-anchor="middle" font-size="11.5" fill="#f4efe4">읽고 답하기</text>
+    <text x="16" y="186" class="s">톰·제리가 대표님 대신 정했어요 — 되돌리시려면 방에 한마디</text>
+    <rect x="12" y="194" width="482" height="54" rx="10" class="card"/>
+    <rect x="12" y="194" width="3" height="54" rx="1" fill="#8a8794"/>
+    <text x="26" y="214" class="t"><tspan font-weight="600">디자인</tspan> · 계획표 4단계·5단계 자리 바꿈</text>
+    <text x="26" y="231" class="s">"탈락한 그림 다듬기는 멈춤" 그대로 · 새벽 1시 · 톰·제리 둘 다 확인</text>
+    <rect x="402" y="208" width="82" height="26" rx="6" fill="#1b1a1f"/><text x="443" y="225" text-anchor="middle" font-size="11.5" fill="#f4efe4">방으로</text>
+
+    <!-- 띠 370px(2.4분 = 1px). 손을 올리면 점의 한 줄 — 사람 · 무엇 · 언제 -->
+    <text x="16" y="280" class="k">막힌 것 1 · 한 것은 점, 멈춤은 빨간 띠</text>
+    <rect x="12" y="288" width="482" height="168" rx="10" class="card"/>
+    <text x="100" y="306" class="m">저녁 6시</text><text x="470" y="306" text-anchor="end" class="m">아침 9시</text>
+    <g class="s">
+      <text x="24" y="328">총괄실</text><line x1="100" y1="324" x2="470" y2="324" class="ax"/>
+      <circle cx="125" cy="324" r="4" fill="#1f5f4f"/><circle cx="236" cy="324" r="4" fill="#1f5f4f"/>
+      <text x="24" y="352">마케팅</text><line x1="100" y1="348" x2="470" y2="348" class="ax"/>
+      <circle cx="149" cy="348" r="4" fill="#2f4f7a"/><circle cx="186" cy="348" r="4" fill="#2f4f7a"/><circle cx="273" cy="348" r="4" fill="#2f4f7a"/><circle cx="322" cy="348" r="4" fill="#2f4f7a"/>
+      <text x="24" y="376">개발</text><line x1="100" y1="372" x2="470" y2="372" class="ax"/>
+      <circle cx="112" cy="372" r="4" fill="#4a5d3a"/><circle cx="199" cy="372" r="4" fill="#4a5d3a"/><circle cx="260" cy="372" r="4" fill="#4a5d3a"/>
+      <rect x="322" y="369.5" width="58" height="5" rx="2.5" class="bad"/><circle cx="322" cy="372" r="4" class="bad"/>
+      <circle cx="396" cy="372" r="4" fill="#4a5d3a"/>
+      <text x="24" y="400">디자인</text><line x1="100" y1="396" x2="470" y2="396" class="ax"/>
+      <circle cx="137" cy="396" r="4" fill="#4b5f9e"/><circle cx="285" cy="396" r="4" fill="#4b5f9e"/><circle cx="347" cy="396" r="4" fill="#4b5f9e"/><circle cx="445" cy="396" r="4" fill="#4b5f9e"/>
+      <text x="24" y="424">경영</text><line x1="100" y1="420" x2="470" y2="420" class="ax"/>
+      <circle cx="174" cy="420" r="4" fill="#6f9a4a"/>
+      <text x="24" y="446">점 = 낸 것 하나 · 빨간 띠 = 멈춰 있던 시간 · 색 = 팀 · 점에 손을 올리면 한 줄</text>
+    </g>
+    <rect x="12" y="464" width="482" height="60" rx="10" class="card"/>
+    <circle cx="30" cy="486" r="4" class="bad"/>
+    <text x="44" y="482" class="t"><tspan font-weight="600">개발 · 테라</tspan> — 유니티 그림, 나리 손 기다림</text>
+    <text x="44" y="499" class="s">새벽 3시 → 5시 20분 · 지금은 풀렸어요</text>
+    <rect x="44" y="508" width="70" height="5" rx="2.5" class="bad"/><text x="122" y="514" class="m">2시간 20분</text>
+
+    <text x="16" y="552" class="k">팀마다 한 것 — 누르면 세 줄</text>
+    <g>
+      <rect x="12" y="560" width="482" height="48" rx="10" class="card"/>
+      <text x="26" y="579" class="t"><tspan font-weight="600">총괄실</tspan> <tspan class="s">단계 없음</tspan></text>
+      <text x="26" y="598" class="s">대표님께 올린 것 둘 · 물어본 것 하나</text>
+
+      <rect x="12" y="614" width="482" height="48" rx="10" class="card"/>
+      <text x="26" y="633" class="t"><tspan font-weight="600">마케팅팀</tspan> <tspan class="s">1장 7단계 마을 브랜딩 · 30회차</tspan></text>
+      <rect x="300" y="629" width="100" height="5" rx="2.5" fill="#e6e0d3"/><rect x="300" y="629" width="86" height="5" rx="2.5" class="live"/><text x="408" y="635" class="m">6/7</text>
+      <text x="26" y="652" class="s">관제탑 내용 2판 → 디자인에 넘김</text>
+
+      <rect x="12" y="668" width="482" height="48" rx="10" class="card"/>
+      <text x="26" y="687" class="t"><tspan font-weight="600">개발팀</tspan> <tspan class="s">6단계 화면 새로 짜기 · 33회차</tspan></text>
+      <rect x="300" y="683" width="100" height="5" rx="2.5" fill="#e6e0d3"/><rect x="300" y="683" width="63" height="5" rx="2.5" class="live"/><text x="408" y="689" class="m">5/8</text>
+      <text x="26" y="706" class="s">보고서 아래층 문 · 마을 수정 표 맞춤</text>
+      <g transform="translate(458 688)"><rect width="24" height="24" rx="3" class="pic"/><polygon points="4,19 11,9 15,14 18,11 20,19" fill="#8a8794"/><circle cx="17" cy="7" r="2" fill="#8a8794"/></g>
+
+      <rect x="12" y="722" width="482" height="106" rx="10" class="card"/>
+      <text x="26" y="741" class="t"><tspan font-weight="600">디자인팀</tspan> <tspan class="s">3단계 건물 부품 → 4단계 화면 시안 · 16회차</tspan></text>
+      <rect x="300" y="737" width="100" height="5" rx="2.5" fill="#e6e0d3"/><rect x="300" y="737" width="50" height="5" rx="2.5" class="live"/><text x="408" y="743" class="m">3/6</text>
+      <text x="26" y="760" class="s">건물 색표 셋 · 간판 여덟 · 마을 파일 약속 2판</text>
+      <g transform="translate(430 742)"><rect width="24" height="24" rx="3" class="pic"/><polygon points="4,19 11,9 15,14 18,11 20,19" fill="#8a8794"/><circle cx="17" cy="7" r="2" fill="#8a8794"/></g>
+      <g transform="translate(458 742)"><rect width="24" height="24" rx="3" class="pic"/><polygon points="4,19 11,9 15,14 18,11 20,19" fill="#8a8794"/><circle cx="17" cy="7" r="2" fill="#8a8794"/></g>
+      <line x1="26" y1="770" x2="480" y2="770" class="ax"/>
+      <text x="26" y="786" class="s"><tspan fill="#8a8794">한 것</tspan> — 건물 색표 셋 · 한글 간판 여덟 · 마을 파일 약속 2판</text>
+      <text x="26" y="802" class="s"><tspan fill="#8a8794">막힌 것</tspan> — 없어요</text>
+      <text x="26" y="818" class="s"><tspan fill="#8a8794">검토 결과</tspan> — 통과(마크) · 3단계 마무리, 4단계 시작</text>
+
+      <rect x="12" y="834" width="482" height="48" rx="10" class="card"/>
+      <text x="26" y="853" class="t"><tspan font-weight="600">경영팀</tspan> <tspan class="s">1단계 서고와 사서 · 3회차</tspan></text>
+      <rect x="300" y="849" width="100" height="5" rx="2.5" fill="#e6e0d3"/><text x="408" y="855" class="m">0/1</text>
+      <text x="26" y="872" class="s">이 사이엔 한 일이 없어요.</text>
+    </g>
+
+    <text x="16" y="910" class="k">오늘 — 각 방이 먼저 할 일</text>
+    <rect x="12" y="918" width="482" height="118" rx="10" class="card"/>
+    <g class="s">
+      <circle cx="30" cy="935" r="4" fill="#2f6f8f"/><text x="44" y="939"><tspan class="t" font-weight="600">세라</tspan> 직책 후보 답이 오면 화면 낱말 굳히기</text>
+      <circle cx="30" cy="955" r="4" fill="#2f4f7a"/><text x="44" y="959"><tspan class="t" font-weight="600">하영</tspan> 관제탑 내용 2판, 안젤 검토</text>
+      <circle cx="30" cy="975" r="4" fill="#4a5d3a"/><text x="44" y="979"><tspan class="t" font-weight="600">테라</tspan> 유니티 비교 한 장 대표님께</text>
+      <circle cx="30" cy="995" r="4" fill="#4b5f9e"/><text x="44" y="999"><tspan class="t" font-weight="600">헨리</tspan> 보고서·프로필 카드 시안</text>
+      <circle cx="30" cy="1015" r="4" fill="#6f9a4a"/><text x="44" y="1019"><tspan class="t" font-weight="600">유진</tspan> 사서 목차 3판</text>
+    </g>
+    <rect x="12" y="1046" width="3" height="40" rx="1" fill="#8a8794"/>
+    <text x="26" y="1062" class="t">어젯밤엔 대표님 손 없이 다 돌았어요.</text>
+    <text x="26" y="1080" class="t">직책 열일곱만 골라 주시면 화면 낱말이 굳어요. <tspan class="s">— 톰</tspan></text>
+  </g>
+  <!-- 주석 — 프레임 밖(하영 5판 3-5-4) -->
+  <text x="24" y="1132" font-size="11" fill="#6f6d78">시안 메모(화면 글자 아님) — 왼쪽 폰 412 · 오른쪽 데스크톱 1200 폭, 한 단 그대로(편지는 두 단으로 안 읽는다) — 띠와 그림만 커진다. 절 이름은 경영 틀이 오면 그쪽이 정본. 5판 낱말(막힌 것 = 일 · 멈춤 = 사람).</text>
+</svg>

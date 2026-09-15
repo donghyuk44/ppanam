@@ -1,0 +1,178 @@
+{
+  "_note": "칸 이름 — 헨리가 out/kit/colormap-bands.json(클레멘타인 스크립트, 몸 열둘) 을 한 칸씩 읽고 붙인 것. 2026-09-14 새벽. 칸 = {tile(px÷64), row(high=윗줄 py<384 / low=아랫줄)}. 역할: shoes(신발) · skin(피부) · hair(머리) · top(옷 위) · bottom(옷 아래) · accent(장식) · keep(안 칠함 — 눈·이·안경알 같은 것). 칠하는 법: 인형마다 colormap.png 를 복사해 그 몸의 칸을 characters.json 의 colors 로 칠한다 — top→colors.top, bottom→colors.bottom, hair→colors.hair, skin→colors.skin, accent→colors.accent 없으면 colors.top, shoes→#3d3a44 고정, keep→그대로. 칸 하나에 그라데이션이 있으니 칸 전체를 한 색으로 채운다(밝기 차이는 빛이 낸다). 같은 칸이 두 역할이면 conflicts 에 적었다 — 그 몸은 앞 역할 색으로 간다.",
+  "tileGrid": { "tileWidth": 64, "rows": { "high": [256, 383], "low": [384, 511] }, "size": 512 },
+  "bodies": {
+    "female-a": {
+      "who": ["finance-guide"],
+      "roles": {
+        "shoes": [{ "tile": 4, "row": "low" }],
+        "skin": [{ "tile": 6, "row": "low" }, { "tile": 7, "row": "low" }],
+        "top": [{ "tile": 5, "row": "high" }, { "tile": 7, "row": "high" }],
+        "bottom": [],
+        "hair": [{ "tile": 0, "row": "low" }],
+        "accent": [{ "tile": 5, "row": "low" }, { "tile": 3, "row": "low" }]
+      },
+      "notes": "원피스 몸 — 옷 위·아래 한 색(top). 5·high 원피스, 7·high 소매. 5·low 허리띠, 3·low 목 장식 → accent. 얼굴·손 6·low, 다리 7·low. 눈은 머리 칸(0·low) 안에 같이 있어 머리색이 된다"
+    },
+    "female-b": {
+      "who": ["design-ops", "hq-secretary"],
+      "roles": {
+        "shoes": [{ "tile": 4, "row": "low" }, { "tile": 0, "row": "low" }],
+        "skin": [{ "tile": 7, "row": "low" }],
+        "top": [{ "tile": 2, "row": "high" }],
+        "bottom": [{ "tile": 7, "row": "high" }],
+        "hair": [{ "tile": 5, "row": "low" }],
+        "accent": [{ "tile": 2, "row": "high" }],
+        "keep": []
+      },
+      "notes": "2·high 상의(노랑)와 머리끈이 같은 칸 → 머리끈은 top 색. 7·high 치마/바지 → bottom(클레멘타인은 #c96f3b, 세라는 #f4efe4). 0·low 는 다리(스타킹)+눈 → shoes 색(검정)이라 눈도 검정 — 맞다. 5·low 땋은 머리 → hair",
+      "conflicts": [{ "tile": 2, "row": "high", "roles": ["top", "accent"], "goes": "top" }]
+    },
+    "female-c": {
+      "who": ["marketing-review", "finance-review"],
+      "roles": {
+        "shoes": [{ "tile": 7, "row": "low" }, { "tile": 1, "row": "low" }],
+        "skin": [{ "tile": 5, "row": "low" }],
+        "top": [{ "tile": 5, "row": "high" }],
+        "bottom": [{ "tile": 4, "row": "low" }],
+        "hair": [{ "tile": 1, "row": "low" }],
+        "accent": [{ "tile": 4, "row": "high" }],
+        "keep": [{ "tile": 0, "row": "low" }]
+      },
+      "notes": "5·high 재킷 → top. 4·low 흰 셔츠+바지(y .04~.34) → bottom(흰). 5·low 얼굴·팔·다리 → skin. 1·low 는 머리(head)이면서 부츠(body y .09~.18) → hair 색이 이긴다(부츠가 머리색). 4·high 벨트+머리 장식 → accent. 0·low 눈 → keep",
+      "conflicts": [{ "tile": 1, "row": "low", "roles": ["hair", "shoes"], "goes": "hair" }, { "tile": 7, "row": "low", "roles": ["shoes"], "goes": "shoes", "note": "이 몸에선 7·low 가 신발 밑(y 0~.02)뿐" }]
+    },
+    "female-d": {
+      "who": ["marketing-guide"],
+      "roles": {
+        "shoes": [{ "tile": 0, "row": "low" }],
+        "skin": [{ "tile": 7, "row": "low" }],
+        "top": [{ "tile": 1, "row": "low" }],
+        "bottom": [],
+        "hair": [{ "tile": 5, "row": "low" }],
+        "accent": [],
+        "keep": [{ "tile": 4, "row": "low" }]
+      },
+      "notes": "1·low 코트/원피스(y .04~.37) → top, 옷 아래 없음. 0·low 부츠+눈 → 검정. 4·low 칼라(body)+입(head) → keep(흰). 5·low 머리 → hair",
+      "conflicts": [{ "tile": 0, "row": "low", "roles": ["shoes", "eyes"], "goes": "shoes(검정)" }]
+    },
+    "female-e": {
+      "who": ["dev-guide"],
+      "roles": {
+        "shoes": [{ "tile": 3, "row": "low" }],
+        "skin": [{ "tile": 7, "row": "low" }],
+        "top": [{ "tile": 5, "row": "high" }],
+        "bottom": [{ "tile": 0, "row": "low" }],
+        "hair": [{ "tile": 0, "row": "low" }],
+        "accent": [{ "tile": 5, "row": "low" }],
+        "keep": [{ "tile": 4, "row": "low" }]
+      },
+      "notes": "5·high 조끼 → top. 4·low 흰 셔츠(y .03~.37) → keep(흰). 3·low 신발+단추 → shoes. 5·low 벨트 → accent. **겹침** — 0·low 가 바지(body y .03~.18)이면서 머리+눈(head y .29~.72): 한 색이라 테라의 바지 = 머리색. 그래서 테라 머리는 짙은 밤색 #4a2c1a 로(characters.json 고침), 바지도 그 색",
+      "conflicts": [{ "tile": 0, "row": "low", "roles": ["hair", "bottom", "eyes"], "goes": "hair" }]
+    },
+    "female-f": {
+      "who": ["dev-ops"],
+      "roles": {
+        "shoes": [{ "tile": 4, "row": "low" }, { "tile": 7, "row": "high" }],
+        "skin": [{ "tile": 7, "row": "low" }, { "tile": 6, "row": "low" }],
+        "top": [{ "tile": 2, "row": "high" }],
+        "bottom": [{ "tile": 5, "row": "high" }],
+        "hair": [{ "tile": 0, "row": "low" }, { "tile": 5, "row": "low" }],
+        "accent": [{ "tile": 1, "row": "low" }, { "tile": 3, "row": "low" }],
+        "keep": []
+      },
+      "notes": "2·high 상의 → top. 5·high 바지 → bottom. 7·high 다리 아래(y .03~.09) 부츠 → shoes. 0·low 는 몸 y .18~.38(긴 머리가 등으로 내려온 것)+눈 → hair. 5·low 머리 앞(head y .44~.67) → hair. 6·low 얼굴 → skin. 1·low 벨트·3·low 목 장식 → accent. 7·high 가 head y .48~.51 에도 12면 — 눈썹/머리핀, 신발색이 되지만 작다"
+    },
+    "male-a": {
+      "who": ["hq-chief", "hq-outside"],
+      "roles": {
+        "shoes": [{ "tile": 2, "row": "high" }, { "tile": 4, "row": "low" }],
+        "skin": [{ "tile": 6, "row": "low" }],
+        "top": [{ "tile": 1, "row": "high" }],
+        "bottom": [{ "tile": 5, "row": "high" }],
+        "hair": [{ "tile": 0, "row": "low" }],
+        "accent": [{ "tile": 5, "row": "low" }],
+        "keep": [{ "tile": 3, "row": "low" }, { "tile": 4, "row": "low" }]
+      },
+      "notes": "모자 달린 몸. 1·high 상의 → top. 5·high 바지 → bottom. 2·high 부츠(y .02~.08) → shoes. 5·low 벨트 → accent. 모자 = head 3·low(챙)+4·low(몸) → keep(밝은 회색·흰) — 팀 색 모자를 원하면 3·low 를 top 으로. 4·low 는 body 밑창(y 0~.02)이기도 해 keep 이 맞다. 0·low 머리+눈 → hair",
+      "conflicts": [{ "tile": 4, "row": "low", "roles": ["shoes", "keep"], "goes": "keep" }]
+    },
+    "male-b": {
+      "who": ["dev-outside"],
+      "roles": {
+        "shoes": [{ "tile": 5, "row": "low" }],
+        "skin": [{ "tile": 7, "row": "low" }, { "tile": 6, "row": "low" }],
+        "top": [{ "tile": 4, "row": "high" }],
+        "bottom": [{ "tile": 5, "row": "high" }],
+        "hair": [{ "tile": 5, "row": "low" }],
+        "accent": [{ "tile": 3, "row": "low" }],
+        "keep": [{ "tile": 0, "row": "low" }]
+      },
+      "notes": "4·high 상의 → top. 5·high 바지 → bottom. **겹침** — 5·low 가 부츠+벨트(body y .03~.22)이면서 머리+수염(head y .26~.54) → hair 가 이긴다(레오 검정 부츠, 맞다). 7·low 신발 밑+손, 6·low 목 → skin. 3·low 안경/눈썹 → accent. 0·low 눈 → keep",
+      "conflicts": [{ "tile": 5, "row": "low", "roles": ["hair", "shoes"], "goes": "hair" }]
+    },
+    "male-c": {
+      "who": ["boss"],
+      "roles": {
+        "shoes": [{ "tile": 1, "row": "low" }],
+        "skin": [{ "tile": 7, "row": "low" }],
+        "top": [{ "tile": 5, "row": "high" }],
+        "bottom": [{ "tile": 0, "row": "low" }],
+        "hair": [{ "tile": 5, "row": "low" }],
+        "accent": [{ "tile": 2, "row": "high" }],
+        "keep": []
+      },
+      "notes": "5·high 재킷(body)+모자(head y .61~.79) → top(남색 — 모자도 남색, 갓을 위에 얹으니 그대로 둬도 됨). 0·low 는 body 옷 안쪽·바지(y .03~.35)+head 눈·머리 뒤(y .40~.66) → 한 색. 댄은 바지 = 검정(bottom #1b1a1f 로 characters.json 고침) — 눈도 검정이라 맞다. 2·high 조끼·모자 띠 → accent(금 #8a7320). 5·low 머리·수염 → hair. 1·low 신발 → shoes",
+      "conflicts": [{ "tile": 0, "row": "low", "roles": ["bottom", "eyes", "hair-back"], "goes": "bottom(검정)" }]
+    },
+    "male-d": {
+      "who": ["design-outside"],
+      "roles": {
+        "shoes": [],
+        "skin": [{ "tile": 7, "row": "low" }],
+        "top": [{ "tile": 0, "row": "low" }],
+        "bottom": [],
+        "hair": [{ "tile": 5, "row": "low" }],
+        "accent": [{ "tile": 4, "row": "high" }],
+        "keep": [{ "tile": 4, "row": "low" }]
+      },
+      "notes": "0·low 가 옷 전체+신발(body y 0~.37, 1116면)+눈 → top 한 색(마크 #6b4a2f 로 위·아래·신발·눈까지). 4·high 넥타이 → accent. 4·low 흰 셔츠 → keep. 5·low 머리 → hair",
+      "conflicts": [{ "tile": 0, "row": "low", "roles": ["top", "bottom", "shoes", "eyes"], "goes": "top" }]
+    },
+    "male-e": {
+      "who": ["design-guide"],
+      "roles": {
+        "shoes": [{ "tile": 1, "row": "low" }],
+        "skin": [{ "tile": 7, "row": "low" }],
+        "top": [{ "tile": 2, "row": "high" }],
+        "bottom": [{ "tile": 0, "row": "low" }],
+        "hair": [{ "tile": 6, "row": "low" }],
+        "accent": [{ "tile": 3, "row": "low" }],
+        "keep": [{ "tile": 4, "row": "low" }]
+      },
+      "notes": "2·high 코트 → top. 4·low 흰 셔츠(+안경알) → keep. 0·low 바지(body)+눈(head) → bottom 인데 눈이 같이 칠해지니 흰 바지는 못 한다 — 헨리 바지 = 짙은 회색 #3d3a44(bottom 고침). 3·low 안경테 → accent(#5b3a63 세조대 색). 6·low 머리 → hair. 1·low 신발 → shoes",
+      "conflicts": [{ "tile": 0, "row": "low", "roles": ["bottom", "eyes"], "goes": "bottom(#3d3a44)" }]
+    },
+    "male-f": {
+      "who": ["marketing-outside", "finance-outside"],
+      "roles": {
+        "shoes": [],
+        "skin": [{ "tile": 7, "row": "low" }, { "tile": 5, "row": "low" }],
+        "top": [{ "tile": 1, "row": "high" }],
+        "bottom": [{ "tile": 1, "row": "low" }],
+        "hair": [{ "tile": 0, "row": "low" }],
+        "accent": [{ "tile": 0, "row": "low" }],
+        "keep": []
+      },
+      "notes": "1·high 상의 → top. 1·low 바지+신발(y 0~.24) → bottom 한 색. 5·low 팔·다리(body y .03~.36)+얼굴(head) → skin, 7·low 손 → skin. 0·low 벨트(body y .12~.23)+머리·눈(head) → hair 색 벨트. 신발은 바지색",
+      "conflicts": [{ "tile": 0, "row": "low", "roles": ["hair", "accent"], "goes": "hair" }]
+    }
+  },
+  "characterFixes": {
+    "_note": "칸 겹침 때문에 characters.json 에서 바꾼 값 — 헨리 09-14",
+    "dev-guide": { "hair": "#4a2c1a", "why": "female-e 0·low = 바지+머리 한 칸. 밝은 밤색이면 바지가 밝은 밤색이 된다" },
+    "boss": { "bottom": "#1b1a1f", "why": "male-c 0·low = 바지+눈 한 칸. 흰 바지면 눈이 희어진다" },
+    "design-guide": { "bottom": "#3d3a44", "why": "male-e 0·low = 바지+눈 한 칸" },
+    "design-outside": { "bottom": "#6b4a2f", "why": "male-d 0·low = 옷 전체 한 칸 — 위·아래 한 색" }
+  }
+}

@@ -1,0 +1,506 @@
+{
+ "file": "teams/design/out/sprites/finance-guide.png",
+ "cell": [
+  32,
+  48
+ ],
+ "footline": 46,
+ "frames": [
+  {
+   "dir": "south",
+   "pose": "stand",
+   "planted": "both",
+   "feet": {
+    "left": [
+     4,
+     41,
+     10,
+     6
+    ],
+    "right": [
+     14,
+     41,
+     10,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 46
+   },
+   "figure": {
+    "top": 5,
+    "bottom": 46,
+    "x": [
+     4,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "south",
+   "pose": "left",
+   "planted": "right",
+   "feet": {
+    "left": [
+     4,
+     41,
+     4,
+     3
+    ],
+    "right": [
+     9,
+     41,
+     14,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 43,
+    "right": 46
+   },
+   "figure": {
+    "top": 4,
+    "bottom": 46,
+    "x": [
+     4,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "south",
+   "pose": "stand",
+   "planted": "both",
+   "feet": {
+    "left": [
+     4,
+     41,
+     10,
+     6
+    ],
+    "right": [
+     14,
+     41,
+     10,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 46
+   },
+   "figure": {
+    "top": 5,
+    "bottom": 46,
+    "x": [
+     4,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "south",
+   "pose": "right",
+   "planted": "right",
+   "feet": {
+    "left": [
+     4,
+     41,
+     4,
+     3
+    ],
+    "right": [
+     9,
+     41,
+     14,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 43,
+    "right": 46
+   },
+   "figure": {
+    "top": 4,
+    "bottom": 46,
+    "x": [
+     4,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "west",
+   "pose": "stand",
+   "planted": "both",
+   "feet": {
+    "left": [
+     9,
+     41,
+     7,
+     6
+    ],
+    "right": [
+     16,
+     41,
+     6,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 46
+   },
+   "figure": {
+    "top": 4,
+    "bottom": 46,
+    "x": [
+     3,
+     28
+    ]
+   }
+  },
+  {
+   "dir": "west",
+   "pose": "left",
+   "planted": "left",
+   "feet": {
+    "left": [
+     5,
+     41,
+     8,
+     6
+    ],
+    "right": [
+     13,
+     41,
+     8,
+     5
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 45
+   },
+   "figure": {
+    "top": 4,
+    "bottom": 46,
+    "x": [
+     3,
+     28
+    ]
+   }
+  },
+  {
+   "dir": "west",
+   "pose": "stand",
+   "planted": "both",
+   "feet": {
+    "left": [
+     9,
+     41,
+     7,
+     6
+    ],
+    "right": [
+     16,
+     41,
+     6,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 46
+   },
+   "figure": {
+    "top": 4,
+    "bottom": 46,
+    "x": [
+     3,
+     28
+    ]
+   }
+  },
+  {
+   "dir": "west",
+   "pose": "right",
+   "planted": "left",
+   "feet": {
+    "left": [
+     6,
+     41,
+     8,
+     6
+    ],
+    "right": [
+     14,
+     41,
+     8,
+     5
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 45
+   },
+   "figure": {
+    "top": 4,
+    "bottom": 46,
+    "x": [
+     4,
+     28
+    ]
+   }
+  },
+  {
+   "dir": "east",
+   "pose": "stand",
+   "planted": "left",
+   "feet": {
+    "left": [
+     10,
+     41,
+     7,
+     6
+    ],
+    "right": [
+     17,
+     41,
+     6,
+     5
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 45
+   },
+   "figure": {
+    "top": 4,
+    "bottom": 46,
+    "x": [
+     4,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "east",
+   "pose": "left",
+   "planted": "right",
+   "feet": {
+    "left": [
+     10,
+     41,
+     9,
+     5
+    ],
+    "right": [
+     19,
+     41,
+     8,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 45,
+    "right": 46
+   },
+   "figure": {
+    "top": 4,
+    "bottom": 46,
+    "x": [
+     4,
+     28
+    ]
+   }
+  },
+  {
+   "dir": "east",
+   "pose": "stand",
+   "planted": "both",
+   "feet": {
+    "left": [
+     9,
+     41,
+     7,
+     6
+    ],
+    "right": [
+     16,
+     41,
+     7,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 46
+   },
+   "figure": {
+    "top": 4,
+    "bottom": 46,
+    "x": [
+     4,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "east",
+   "pose": "right",
+   "planted": "right",
+   "feet": {
+    "left": [
+     10,
+     41,
+     9,
+     5
+    ],
+    "right": [
+     19,
+     41,
+     8,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 45,
+    "right": 46
+   },
+   "figure": {
+    "top": 4,
+    "bottom": 46,
+    "x": [
+     4,
+     28
+    ]
+   }
+  },
+  {
+   "dir": "north",
+   "pose": "stand",
+   "planted": "left",
+   "feet": {
+    "left": [
+     10,
+     41,
+     6,
+     6
+    ],
+    "right": [
+     16,
+     41,
+     5,
+     5
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 45
+   },
+   "figure": {
+    "top": 5,
+    "bottom": 46,
+    "x": [
+     5,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "north",
+   "pose": "left",
+   "planted": "left",
+   "feet": {
+    "left": [
+     10,
+     41,
+     12,
+     6
+    ],
+    "right": [
+     25,
+     41,
+     2,
+     1
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 41
+   },
+   "figure": {
+    "top": 5,
+    "bottom": 46,
+    "x": [
+     4,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "north",
+   "pose": "stand",
+   "planted": "left",
+   "feet": {
+    "left": [
+     10,
+     41,
+     6,
+     6
+    ],
+    "right": [
+     16,
+     41,
+     5,
+     5
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 45
+   },
+   "figure": {
+    "top": 5,
+    "bottom": 46,
+    "x": [
+     4,
+     27
+    ]
+   }
+  },
+  {
+   "dir": "north",
+   "pose": "right",
+   "planted": "both",
+   "feet": {
+    "left": [
+     9,
+     41,
+     10,
+     6
+    ],
+    "right": [
+     19,
+     41,
+     9,
+     6
+    ]
+   },
+   "bottom": {
+    "left": 46,
+    "right": 46
+   },
+   "figure": {
+    "top": 6,
+    "bottom": 46,
+    "x": [
+     4,
+     27
+    ]
+   }
+  }
+ ]
+}

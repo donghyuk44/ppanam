@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1150" viewBox="0 0 1000 1150" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 현황(관제탑) 첫 화면 시안 3판 — 헨리 09-14. 나리 '화면이-답하는-질문.md'(톰·제리 B 통과) 순서: ① 뭐가 막혔나 ② 누가 뭘 했나 ③ 내 차례 ④ 팀(상황판 네 칸은 팀 줄의 펼친 줄). 막힌 것이 스크롤 없이 보인다. 낱말은 하영. 왼쪽 폰 412 · 오른쪽 데스크톱 두 단. 자기 통계 줄 0.
+       2판-b: ① 막힌 카드에 멈춘 띠(길이 = 멈춘 시간). ④ 진행 막대·사람 점·알약 색 작은 점. 자는 numbers.md 6절.
+       3판 (09-14 오후, 하영 2판 9절 — 안젤 판정 뒤 정본, req_162309ee): 시계 뺌(9절 3) · ② "더 보기" 만, 어제는 보고서(9절 2) · ③ 등급 말 뺌, C 와 물어봄만(9절 1, 서버 boss.items 도) · ③ 물어봄 카드에 선택지 버튼 둘(7절 ①) · ③ 눌렀다 → 됐다 한 줄이 카드 자리에 남는다(7절 ③) · 결재 카드는 ui/approval.svg(7절 ②) · 사람 카드 "대표님이 불렀음 → 받았다" 는 ui/person.svg(7절 ⑤). -->
+  <defs>
+    <style>
+      .k{font-size:10px;letter-spacing:.12em;fill:#8a8794}
+      .h{font-family:'Gowun Batang','Noto Serif KR',serif;font-size:17px;fill:#1b1a1f}
+      .t{font-size:12.5px;fill:#1b1a1f}
+      .s{font-size:11px;fill:#6f6d78}
+      .m{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#8a8794}
+      .pill{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em}
+      .card{fill:#ffffff;stroke:#e3ddd0}
+      .bad{fill:#c94a3a}.live{fill:#3a8f5c}
+    </style>
+  </defs>
+  <rect width="1000" height="1150" fill="#f6f2ea"/>
+
+  <!-- ─────────── 폰 412 ─────────── -->
+  <g transform="translate(24 20)">
+    <rect x="0" y="0" width="412" height="990" rx="18" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="34" class="h">현황</text>
+
+    <!-- ① 뭐가 막혔나 — 맨 위, 스크롤 없이. 빨간 점 + 멈춘 띠(길이 = 멈춘 분 × 1px, 한 시간 = 60px) — numbers.md 6절. 글자만이면 통과 아님 -->
+    <text x="16" y="62" class="k">뭐가 막혔나 2</text>
+    <rect x="12" y="70" width="388" height="60" rx="10" class="card"/>
+    <circle cx="30" cy="92" r="4" class="bad"/>
+    <text x="44" y="88" class="t"><tspan font-weight="600">디자인 · 마크</tspan> — 외부 감사 계정 한도, 20일까지</text>
+    <text x="44" y="105" class="s">4단계 검토가 못 끝난다 · 낼 것은 다 있음</text>
+    <rect x="44" y="114" width="120" height="5" rx="2.5" class="bad"/><text x="172" y="120" class="m">2시간째</text>
+    <rect x="12" y="136" width="388" height="60" rx="10" class="card"/>
+    <circle cx="30" cy="158" r="4" class="bad"/>
+    <text x="44" y="154" class="t"><tspan font-weight="600">개발 · 테라</tspan> — 유니티 그림, 나리 손 기다림</text>
+    <text x="44" y="171" class="s">비교 한 장이 못 나간다</text>
+    <rect x="44" y="180" width="40" height="5" rx="2.5" class="bad"/><text x="92" y="186" class="m">40분째</text>
+
+    <!-- ② 누가 뭘 했나 -->
+    <text x="16" y="214" class="k">누가 뭘 했나 · 오늘</text>
+    <rect x="12" y="222" width="388" height="236" rx="10" class="card"/>
+    <g class="t">
+      <circle cx="30" cy="246" r="5" fill="#4b5f9e"/><text x="44" y="250"><tspan font-weight="600">헨리</tspan> 인형 열여섯 색표 · 그림 두 장 대표님께</text><text x="396" y="250" text-anchor="end" class="m">1시간 전</text>
+      <circle cx="30" cy="276" r="5" fill="#4a5d3a"/><text x="44" y="280"><tspan font-weight="600">테라</tspan> 마을 빛·재질 다섯 값 넣음</text><text x="396" y="280" text-anchor="end" class="m">1시간 전</text>
+      <circle cx="30" cy="306" r="5" fill="#2f4f7a"/><text x="44" y="310"><tspan font-weight="600">하영</tspan> 7단계 마을 브랜딩 2판 → 디자인에 넘김</text><text x="396" y="310" text-anchor="end" class="m">2시간 전</text>
+      <circle cx="30" cy="336" r="5" fill="#c96f3b"/><text x="44" y="340"><tspan font-weight="600">클레멘타인</tspan> 색표 스크립트 셋</text><text x="396" y="340" text-anchor="end" class="m">2시간 전</text>
+      <circle cx="30" cy="366" r="5" fill="#2f4f7a"/><text x="44" y="370"><tspan font-weight="600">유진</tspan> 사서 목차 — 마크가 읽을 것</text><text x="396" y="370" text-anchor="end" class="m">3시간 전</text>
+      <circle cx="30" cy="396" r="5" fill="#1f5f4f"/><text x="44" y="400"><tspan font-weight="600">톰</tspan> 도면 1판 결재 올림</text><text x="396" y="400" text-anchor="end" class="m">6시간 전</text>
+      <text x="44" y="436" class="s">더 보기</text>
+    </g>
+
+    <!-- ③ 내 차례 — 대표님이 보실 것. C 와 물어봄만(9절 1) — 등급 말 없음. 결재 카드는 "읽고 답하기" 로(ui/approval.svg). 물어봄은 선택지가 둘이면 버튼 둘(7절 ①). 누른 것은 사라지지 않고 "됐어요" 한 줄로 남는다(7절 ③) -->
+    <text x="16" y="490" class="k">대표님이 보실 것 2</text>
+    <rect x="12" y="498" width="388" height="62" rx="10" class="card" stroke="#d8b25c" stroke-width="1.5"/>
+    <rect x="12" y="498" width="3" height="62" rx="1" fill="#d8b25c"/>
+    <text x="26" y="520" class="t"><tspan font-weight="600">마케팅</tspan> · 하영 · 결재 기다림</text>
+    <text x="26" y="538" class="s">직책 열일곱 — 괄호 후보 가운데 고르기</text>
+    <rect x="308" y="526" width="82" height="26" rx="6" fill="#1b1a1f"/><text x="349" y="543" text-anchor="middle" font-size="11.5" fill="#f4efe4">읽고 답하기</text>
+    <rect x="12" y="568" width="388" height="84" rx="10" class="card" stroke="#d8b25c" stroke-width="1.5"/>
+    <rect x="12" y="568" width="3" height="84" rx="1" fill="#d8b25c"/>
+    <text x="26" y="590" class="t"><tspan font-weight="600">총괄실</tspan> · 세라 · 대표님께 물어봄 · 3분 전</text>
+    <text x="26" y="608" class="s">"외부 감사 계정 — 크레딧을 살까요, 20일까지 기다릴까요"</text>
+    <rect x="26" y="620" width="72" height="26" rx="6" fill="#1b1a1f"/><text x="62" y="637" text-anchor="middle" font-size="11.5" fill="#f4efe4">살까요</text>
+    <rect x="106" y="620" width="90" height="26" rx="6" fill="#1b1a1f"/><text x="151" y="637" text-anchor="middle" font-size="11.5" fill="#f4efe4">기다릴까요</text>
+    <text x="390" y="637" text-anchor="end" class="s">다른 말로 → 방으로</text>
+    <rect x="12" y="660" width="388" height="30" rx="10" class="card"/>
+    <circle cx="30" cy="675" r="4" class="live"/>
+    <text x="44" y="679" class="s">됐어요 — 도면 1판 확인, 디자인에 전해졌어요 · 아침 8:41</text>
+
+    <!-- ④ 팀 — 도면 순서. 한 줄 = 팀 · 단계 · 사람 점. 누르면 펼친 줄 = 상황판 네 칸(하는 것·막힌 것·대표 차례·다음) -->
+    <text x="16" y="716" class="k">팀 — 누르면 하는 것 · 막힌 것 · 대표님이 보실 것 · 다음</text>
+    <g transform="translate(0 56)">
+      <rect x="12" y="668" width="388" height="44" rx="10" class="card"/>
+      <text x="26" y="686" class="t"><tspan font-weight="600">총괄실</tspan></text><text x="26" y="702" class="s">단계 없음</text>
+      <circle cx="330" cy="690" r="7" fill="#1f5f4f"/><circle cx="352" cy="690" r="7" fill="#7a3b52"/><circle cx="374" cy="690" r="7" fill="#5f8fbf"/>
+      <circle cx="335" cy="695" r="2.5" class="live"/><circle cx="379" cy="695" r="2.5" class="live"/>
+
+      <rect x="12" y="718" width="388" height="44" rx="10" class="card"/>
+      <text x="26" y="736" class="t"><tspan font-weight="600">마케팅팀</tspan></text><text x="26" y="752" class="s">1장 7단계 마을 브랜딩 · 30회차</text>
+      <rect x="196" y="741" width="90" height="5" rx="2.5" fill="#e6e0d3"/><rect x="196" y="741" width="77" height="5" rx="2.5" fill="#3a8f5c"/><text x="292" y="747" class="m">6/7</text>
+      <circle cx="330" cy="740" r="7" fill="#2f4f7a"/><circle cx="352" cy="740" r="7" fill="#a8541f"/><circle cx="374" cy="740" r="7" fill="#5b3a63"/>
+      <circle cx="335" cy="745" r="2.5" class="live"/>
+
+      <rect x="12" y="768" width="388" height="44" rx="10" class="card"/>
+      <text x="26" y="786" class="t"><tspan font-weight="600">개발팀</tspan></text><text x="26" y="802" class="s">6단계 화면 새로 짜기 · 33회차</text>
+      <rect x="196" y="791" width="90" height="5" rx="2.5" fill="#e6e0d3"/><rect x="196" y="791" width="56" height="5" rx="2.5" fill="#3a8f5c"/><text x="292" y="797" class="m">5/8</text>
+      <circle cx="330" cy="790" r="7" fill="#4a5d3a"/><circle cx="352" cy="790" r="7" fill="#2f6b7a"/><circle cx="374" cy="790" r="7" fill="#9c3b2f"/>
+      <circle cx="335" cy="795" r="2.5" class="bad"/>
+
+      <rect x="12" y="818" width="388" height="44" rx="10" class="card"/>
+      <text x="26" y="836" class="t"><tspan font-weight="600">디자인팀</tspan></text><text x="26" y="852" class="s">4단계 화면 시안 · 16회차 · 검토 기다림</text>
+      <rect x="196" y="841" width="90" height="5" rx="2.5" fill="#e6e0d3"/><rect x="196" y="841" width="45" height="5" rx="2.5" fill="#3a8f5c"/><text x="292" y="847" class="m">3/6</text>
+      <circle cx="330" cy="840" r="7" fill="#4b5f9e"/><circle cx="352" cy="840" r="7" fill="#c96f3b"/><circle cx="374" cy="840" r="7" fill="#6b4a2f"/>
+      <circle cx="335" cy="845" r="2.5" class="live"/><circle cx="357" cy="845" r="2.5" class="live"/><circle cx="379" cy="845" r="2.5" class="bad"/>
+
+      <rect x="12" y="868" width="388" height="36" rx="10" class="card"/>
+      <text x="26" y="890" class="t"><tspan font-weight="600">경영팀</tspan> <tspan class="s">단계 없음</tspan></text>
+      <circle cx="330" cy="886" r="7" fill="#6f9a4a"/><circle cx="352" cy="886" r="7" fill="#a8541f"/><circle cx="374" cy="886" r="7" fill="#5b3a63"/>
+    </g>
+  </g>
+
+  <!-- ─────────── 데스크톱 — 같은 넷, 두 단 ─────────── -->
+  <g transform="translate(470 20)">
+    <rect x="0" y="0" width="506" height="990" rx="12" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="34" class="h">현황</text>
+    <!-- 왼쪽 단: 막힌 것 → 내 차례 -->
+    <text x="16" y="62" class="k">뭐가 막혔나 2</text>
+    <rect x="12" y="70" width="236" height="50" rx="10" class="card"/><circle cx="28" cy="90" r="4" class="bad"/><text x="40" y="91" class="t" font-weight="600">디자인 · 마크</text><text x="40" y="106" class="s">외부 감사 계정 한도</text><rect x="152" y="101" width="40" height="5" rx="2.5" class="bad"/><text x="198" y="107" class="m">2시간째</text>
+    <rect x="12" y="126" width="236" height="50" rx="10" class="card"/><circle cx="28" cy="146" r="4" class="bad"/><text x="40" y="147" class="t" font-weight="600">개발 · 테라</text><text x="40" y="162" class="s">유니티 그림 기다림</text><rect x="152" y="157" width="14" height="5" rx="2.5" class="bad"/><text x="198" y="163" class="m">40분째</text>
+    <text x="16" y="206" class="k">대표님이 보실 것 2</text>
+    <rect x="12" y="214" width="236" height="56" rx="10" class="card" stroke="#d8b25c" stroke-width="1.5"/><text x="24" y="234" class="t" font-weight="600">마케팅 · 하영 · 결재</text><text x="24" y="252" class="s">직책 열일곱 — 후보 고르기</text>
+    <rect x="12" y="276" width="236" height="80" rx="10" class="card" stroke="#d8b25c" stroke-width="1.5"/><text x="24" y="296" class="t" font-weight="600">총괄실 · 세라 · 대표님께 물어봄</text><text x="24" y="314" class="s">외부 감사 계정 — 살까요, 기다릴까요</text>
+    <rect x="24" y="324" width="60" height="24" rx="6" fill="#1b1a1f"/><text x="54" y="340" text-anchor="middle" font-size="11" fill="#f4efe4">살까요</text>
+    <rect x="92" y="324" width="80" height="24" rx="6" fill="#1b1a1f"/><text x="132" y="340" text-anchor="middle" font-size="11" fill="#f4efe4">기다릴까요</text>
+    <rect x="12" y="362" width="236" height="28" rx="10" class="card"/><circle cx="28" cy="376" r="4" class="live"/><text x="40" y="380" class="s">됐어요 — 도면 1판 · 아침 8:41</text>
+    <!-- 오른쪽 단: 누가 뭘 했나 -->
+    <text x="264" y="62" class="k">누가 뭘 했나 · 오늘</text>
+    <rect x="260" y="70" width="234" height="262" rx="10" class="card"/>
+    <g class="s">
+      <circle cx="276" cy="92" r="4" fill="#4b5f9e"/><text x="288" y="96"><tspan class="t" font-weight="600">헨리</tspan> 색표·그림 둘</text><text x="486" y="96" text-anchor="end" class="m">1시간 전</text>
+      <circle cx="276" cy="120" r="4" fill="#4a5d3a"/><text x="288" y="124"><tspan class="t" font-weight="600">테라</tspan> 마을 빛·재질</text><text x="486" y="124" text-anchor="end" class="m">1시간 전</text>
+      <circle cx="276" cy="148" r="4" fill="#2f4f7a"/><text x="288" y="152"><tspan class="t" font-weight="600">하영</tspan> 브랜딩 2판 넘김</text><text x="486" y="152" text-anchor="end" class="m">2시간 전</text>
+      <circle cx="276" cy="176" r="4" fill="#c96f3b"/><text x="288" y="180"><tspan class="t" font-weight="600">클레멘타인</tspan> 색표 스크립트</text><text x="486" y="180" text-anchor="end" class="m">2시간 전</text>
+      <circle cx="276" cy="204" r="4" fill="#2f4f7a"/><text x="288" y="208"><tspan class="t" font-weight="600">유진</tspan> 사서 목차</text><text x="486" y="208" text-anchor="end" class="m">3시간 전</text>
+      <circle cx="276" cy="232" r="4" fill="#1f5f4f"/><text x="288" y="236"><tspan class="t" font-weight="600">톰</tspan> 도면 결재 올림</text><text x="486" y="236" text-anchor="end" class="m">6시간 전</text>
+      <text x="288" y="318">더 보기</text>
+    </g>
+    <!-- 아래: 팀 다섯 한 줄씩 -->
+    <text x="16" y="414" class="k">팀 — 누르면 하는 것 · 막힌 것 · 대표님이 보실 것 · 다음</text>
+    <g transform="translate(0 52)">
+      <rect x="12" y="370" width="482" height="40" rx="10" class="card"/><text x="24" y="394" class="t" font-weight="600">총괄실 <tspan class="s" font-weight="400">단계 없음</tspan></text><circle cx="440" cy="390" r="6" fill="#1f5f4f"/><circle cx="460" cy="390" r="6" fill="#7a3b52"/><circle cx="480" cy="390" r="6" fill="#5f8fbf"/>
+      <rect x="12" y="416" width="482" height="40" rx="10" class="card"/><text x="24" y="440" class="t" font-weight="600">마케팅팀 <tspan class="s" font-weight="400">1장 7단계 마을 브랜딩 · 30회차</tspan></text><rect x="300" y="437" width="100" height="5" rx="2.5" fill="#e6e0d3"/><rect x="300" y="437" width="86" height="5" rx="2.5" fill="#3a8f5c"/><text x="408" y="443" class="m">6/7</text><circle cx="440" cy="436" r="6" fill="#2f4f7a"/><circle cx="460" cy="436" r="6" fill="#a8541f"/><circle cx="480" cy="436" r="6" fill="#5b3a63"/>
+      <rect x="12" y="462" width="482" height="40" rx="10" class="card"/><text x="24" y="486" class="t" font-weight="600">개발팀 <tspan class="s" font-weight="400">6단계 화면 새로 짜기 · 33회차</tspan></text><rect x="300" y="483" width="100" height="5" rx="2.5" fill="#e6e0d3"/><rect x="300" y="483" width="62" height="5" rx="2.5" fill="#3a8f5c"/><text x="408" y="489" class="m">5/8</text><circle cx="440" cy="482" r="6" fill="#4a5d3a"/><circle cx="460" cy="482" r="6" fill="#2f6b7a"/><circle cx="480" cy="482" r="6" fill="#9c3b2f"/>
+      <!-- 펼친 줄 본보기 — 디자인팀을 누른 상태: 상황판 네 칸 그 자리에서 -->
+      <rect x="12" y="508" width="482" height="118" rx="10" class="card" stroke="#1b1a1f" stroke-width="1.5"/><text x="24" y="532" class="t" font-weight="600">디자인팀 <tspan class="s" font-weight="400">4단계 화면 시안 · 16회차 · 검토 기다림</tspan></text><rect x="300" y="529" width="100" height="5" rx="2.5" fill="#e6e0d3"/><rect x="300" y="529" width="50" height="5" rx="2.5" fill="#3a8f5c"/><text x="408" y="535" class="m">3/6</text><circle cx="440" cy="528" r="6" fill="#4b5f9e"/><circle cx="460" cy="528" r="6" fill="#c96f3b"/><circle cx="480" cy="528" r="6" fill="#6b4a2f"/>
+      <g class="s"><text x="24" y="556"><tspan class="k">하는 것</tspan>  헨리 관제탑 3판 · 클레멘타인 보고서·대시보드</text><text x="24" y="574"><tspan class="k">막힌 것</tspan>  <tspan fill="#c94a3a">외부 감사 계정 한도 — 4단계 검토</tspan></text><text x="24" y="592"><tspan class="k">대표님이 보실 것</tspan>  없어요</text><text x="24" y="610"><tspan class="k">다음</tspan>  현황 3판 → 검토 결과</text></g>
+      <rect x="12" y="632" width="482" height="40" rx="10" class="card"/><text x="24" y="656" class="t" font-weight="600">경영팀 <tspan class="s" font-weight="400">단계 없음</tspan></text><circle cx="440" cy="652" r="6" fill="#6f9a4a"/><circle cx="460" cy="652" r="6" fill="#a8541f"/><circle cx="480" cy="652" r="6" fill="#5b3a63"/>
+    </g>
+    <!-- 읽는 법 -->
+  </g>
+
+  <!-- 읽는 법 — 주석. 프레임 밖(하영 5판 3-5-4: 화면 글자가 아니라 시안 메모). 테라가 지을 때 이 글자는 안 짓는다 -->
+  <g class="s" transform="translate(24 1034)">
+    <text x="0" y="0">읽는 법(시안 메모 — 화면 글자 아님) — 위에서 아래로 넷뿐: 막힌 것 → 한 것 → 대표님이 보실 것 → 팀. 없으면 그 칸이 사라진다. 막힌 것은 스크롤 없이.</text>
+    <text x="0" y="18">팀 줄을 누르면 그 자리에서 펼쳐진다(상황판 네 칸, 글자 그대로). 한 번 더 누르면 카드 — 두 번이면 닿는다. 시계 없음 — 어제는 보고서.</text>
+    <text x="0" y="36">사람 점 = 직책 색(마을 인형과 같은 색). 점 옆 작은 점: 초록 = 일하는 중 · 빨강 = 멈춤. 막힌 것의 빨간 띠 = 멈춘 시간(폰 1분 = 1px, 데스크톱 2분 = 1px).</text>
+    <text x="0" y="54">숫자는 넷뿐 — 막힌 것 수 · 보실 것 수 · 단계 N/M · 회차. 발언 수·대화 수·검토 결과 수는 없다.</text>
+    <text x="0" y="72">보실 것은 대표님이 정할 것(C)과 물어봄만 — 총괄이 보는 것(B)은 안 뜬다. 물어봄은 선택지가 곧 버튼. 누른 것은 "됐어요" 한 줄로 남는다.</text>
+    <text x="0" y="90">왼쪽 폰 412 · 오른쪽 데스크톱 1200 폭(같은 칸 넷이 두 단으로). 탭 이름·직책은 결정 136 으로 확정(현황·총괄실). 시각은 우리 시각. 색은 임시(작전실 토큰으로). 피그마 허용 오면 옮긴다.</text>
+  </g>
+  <text x="988" y="1142" text-anchor="end" font-size="9" fill="#a8a6ae">현황 첫 화면 시안 3판 · 2026-09-14 · 헨리 · 나리 '화면이 답하는 질문' 순서 + 도면 1판 + 하영 낱말 2판 9절 · 결정 92·105·100·46·52</text>
+</svg>

@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="730" viewBox="0 0 1000 730" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 대시보드 2판 — 클레멘타인 09-14(1판 헨리). 나리 '화면이 답하는 질문': 대시보드 = "앞으로 언제 뭐가 되나". 다섯 팀 예정이 한 화면(통과 조건). 지난 것은 안 보인다 — 지금 선의 오른쪽만. 그림은 numbers.md 의 앞날 띠. 왼쪽 폰 412 · 오른쪽 데스크톱.
+       opsroom-content-2.md 9절 4 두 가지: ① 칸마다 담당 둘 — 결정 128 "언제 어디서 누가". 칸(예정 상자) 오른쪽 위·아래 모서리에 작은 점 둘(자리 색, cast.json) = 그 칸을 실제로 만드는 두 사람. 팀 이름 옆 색 점과는 다르다(그건 팀, 이건 사람) ② "대표가 정해야 열리는 것" 카드 목록을 뺐다 — 점선 칸이 이미 "대표가 정한 뒤"라 적어 같은 것을 두 번 보여줬다(안젤 R33 지적, req_162309ee).
+       세다가 걸린 것 — 마케팅 안젤과 경영 노라가 cast.json 에서 같은 색(#a8541f)이다. 두 사람이 다른 줄(마케팅·경영)에 떨어져 있어 바로 옆에서는 안 겹친다 — 나리 대리 결정(09-15 밤)으로 그대로 두고 나란히 설 때만 다시 본다. 유진 색은 잎 초록 #6f9a4a 로 확정(놋쇠 임시 방편은 끝) — 경영 담당 점도 이 색 그대로.
+       3판(09-16 헨리, 하영 글 틀 1판 teams/marketing/out/screen-text-frames.md 5절 H1~H3 + 1-2·1-4): 상태 넷 = running 채움 · planned 채움 옅게(timebox 를 셀 수 있는 잡힌 예정) · gated 점선(셀 수 없는 것 — "대표님이 정한 뒤" / "{무엇} 뒤") · blocked 빨강. 빈칸 말 둘(계획표 아직 없어요 · 다음 단계 아직 없어요)은 대표 문이 아니다. 늦음 글자는 단계 번호로("6단계 40분 늦음" — 무엇이 늦었는지는 서버가 모른다). 점 둘 = 그 팀의 둘(다른 회사 뺀 둘, 팀장 먼저 — cast.json). -->
+  <defs><style>
+    .k{font-size:10px;letter-spacing:.12em;fill:#8a8794}
+    .h{font-family:'Gowun Batang','Noto Serif KR',serif;font-size:17px;fill:#1b1a1f}
+    .t{font-size:12.5px;fill:#1b1a1f}.s{font-size:11px;fill:#6f6d78}.m{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#8a8794}
+    .card{fill:#ffffff;stroke:#e3ddd0}
+  </style></defs>
+  <rect width="1000" height="730" fill="#f6f2ea"/>
+
+  <!-- ─── 폰 ─── -->
+  <g transform="translate(24 20)">
+    <rect x="0" y="0" width="412" height="560" rx="18" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="34" class="h">앞으로 <tspan class="s">— 언제 뭐가 되나</tspan></text>
+    <!-- 시간 머리: 오늘 · 내일 · 모레 · 이번 주 -->
+    <g class="m"><text x="132" y="60">오늘</text><text x="200" y="60">내일</text><text x="268" y="60">모레</text><text x="336" y="60">이번 주</text></g>
+    <line x1="128" y1="66" x2="128" y2="420" stroke="#1b1a1f" stroke-dasharray="3 3"/><text x="118" y="430" text-anchor="end" class="m">지금</text>
+    <g stroke="#eeeae0"><line x1="196" y1="66" x2="196" y2="420"/><line x1="264" y1="66" x2="264" y2="420"/><line x1="332" y1="66" x2="332" y2="420"/><line x1="400" y1="66" x2="400" y2="420"/></g>
+
+    <!-- 팀 줄 다섯 — 잡힌 예정 채움(지금 짙게 · 다음 옅게), 셀 수 없는 것 점선, 늦은 것 빨강 -->
+    <!-- 담당 점 둘 = 자리 색 + 머리글자(하영 대조 ③ — 결정 128 "누가", 대표는 색을 안 외운다). 그 팀의 둘 — cast.json 에서 다른 회사 뺀 둘, 팀장 먼저(하영 글 틀 1-3). 지름 12, 글자 7.5 -->
+    <g>
+      <text x="16" y="92" class="t" font-weight="600">총괄실</text><text x="16" y="106" class="s">단계 없음</text>
+      <rect x="128" y="80" width="140" height="22" rx="6" fill="none" stroke="#a8a6ae" stroke-dasharray="4 3"/><text x="136" y="95" class="s">계획표 아직 없어요</text>
+      <circle cx="264" cy="86" r="6" fill="#1f5f4f"/><text x="264" y="88.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">톰</text><circle cx="264" cy="98" r="6" fill="#2f6f8f"/><text x="264" y="100.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">세</text>
+    </g>
+    <g>
+      <text x="16" y="164" class="t" font-weight="600">마케팅팀</text><text x="16" y="178" class="s">7단계 마을 브랜딩</text>
+      <rect x="128" y="150" width="68" height="22" rx="6" fill="#2f4f7a" opacity="0.85"/><text x="134" y="165" font-size="10.5" fill="#f4efe4">7단계</text>
+      <circle cx="192" cy="156" r="6" fill="#2f4f7a" stroke="#fff"/><text x="192" y="158.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">하</text><circle cx="192" cy="168" r="6" fill="#a8541f" stroke="#fff"/><text x="192" y="170.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">안</text>
+      <rect x="200" y="150" width="200" height="22" rx="6" fill="none" stroke="#2f4f7a" stroke-dasharray="4 3"/><text x="206" y="165" class="s">8단계 — 대표님이 정한 뒤</text>
+      <circle cx="396" cy="156" r="6" fill="#2f4f7a"/><text x="396" y="158.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">하</text><circle cx="396" cy="168" r="6" fill="#a8541f"/><text x="396" y="170.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">안</text>
+    </g>
+    <g>
+      <text x="16" y="236" class="t" font-weight="600">개발팀</text><text x="16" y="250" class="s">6단계 화면 새로 짜기</text>
+      <rect x="128" y="222" width="136" height="22" rx="6" fill="#4a5d3a" opacity="0.85"/><text x="134" y="237" font-size="10.5" fill="#f4efe4">6단계 · 모레까지</text>
+      <circle cx="260" cy="228" r="6" fill="#4a5d3a" stroke="#fff"/><text x="260" y="230.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">테</text><circle cx="260" cy="240" r="6" fill="#2f6b7a" stroke="#fff"/><text x="260" y="242.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">솔</text>
+      <!-- H1: 7단계는 timebox 를 셀 수 있는 잡힌 예정 → 채움 옅게(planned). 8단계는 폰 눈금 밖(다음 주) — 데스크톱에만 -->
+      <rect x="268" y="222" width="132" height="22" rx="6" fill="#4a5d3a" opacity="0.35"/><text x="274" y="237" font-size="10.5" fill="#1b1a1f">7단계 · 20일까지</text>
+      <circle cx="396" cy="228" r="6" fill="#4a5d3a" stroke="#fff"/><text x="396" y="230.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">테</text><circle cx="396" cy="240" r="6" fill="#2f6b7a" stroke="#fff"/><text x="396" y="242.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">솔</text>
+      <rect x="128" y="248" width="40" height="6" rx="3" fill="#c94a3a"/><text x="172" y="254" class="s" fill="#c94a3a">6단계 40분 늦음</text>
+    </g>
+    <g>
+      <text x="16" y="308" class="t" font-weight="600">디자인팀</text><text x="16" y="322" class="s">4단계 검토 기다림</text>
+      <rect x="128" y="294" width="204" height="22" rx="6" fill="#c94a3a" opacity="0.25" stroke="#c94a3a"/><text x="134" y="309" font-size="10.5" fill="#c94a3a">4단계 — 20일까지 못 끝남(계정 한도)</text>
+      <circle cx="328" cy="300" r="6" fill="#4b5f9e"/><text x="328" y="302.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">헨</text><circle cx="328" cy="312" r="6" fill="#c96f3b"/><text x="328" y="314.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">클</text>
+      <rect x="336" y="294" width="64" height="22" rx="6" fill="none" stroke="#4b5f9e" stroke-dasharray="4 3"/><text x="342" y="309" class="s">5단계</text>
+      <circle cx="396" cy="300" r="6" fill="#4b5f9e"/><text x="396" y="302.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">헨</text><circle cx="396" cy="312" r="6" fill="#c96f3b"/><text x="396" y="314.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">클</text>
+      <!-- 점선 칸을 누른 펼친 줄(하영 1-4 gated) — 계획표 원문은 사람 글, 그대로 -->
+      <text x="128" y="336" class="s">계획표에 적힌 조건 — "대표 방향 뒤 2 라운드"</text>
+    </g>
+    <g>
+      <text x="16" y="392" class="t" font-weight="600">경영팀</text><text x="16" y="406" class="s">단계 없음</text>
+      <rect x="128" y="380" width="140" height="22" rx="6" fill="none" stroke="#a8a6ae" stroke-dasharray="4 3"/><text x="136" y="395" class="s">다음 단계 아직 없어요</text>
+      <circle cx="264" cy="386" r="6" fill="#6f9a4a"/><text x="264" y="388.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">유</text><circle cx="264" cy="398" r="6" fill="#a8541f"/><text x="264" y="400.5" text-anchor="middle" font-size="7.5" fill="#f4efe4">노</text>
+    </g>
+    <text x="16" y="470" class="s">채움 = 잡힌 예정 · 점선 = 미정 · 빨강 = 늦음/멈춤. 지난 것은 여기 없어요 — 현황에 있어요.</text>
+    <text x="16" y="486" class="s">칸 오른쪽 점 둘 = 그 팀의 둘(머리글자 · 직책 색).</text>
+  </g>
+
+  <!-- ─── 데스크톱 — 같은 다섯 줄, 가로 넓게 ─── -->
+  <g transform="translate(470 20)">
+    <rect x="0" y="0" width="506" height="560" rx="12" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <text x="16" y="34" class="h">앞으로</text>
+    <g class="m"><text x="132" y="60">오늘</text><text x="204" y="60">내일</text><text x="276" y="60">모레</text><text x="348" y="60">이번 주</text><text x="420" y="60">다음 주</text></g>
+    <line x1="128" y1="66" x2="128" y2="420" stroke="#1b1a1f" stroke-dasharray="3 3"/>
+    <g stroke="#eeeae0"><line x1="200" y1="66" x2="200" y2="420"/><line x1="272" y1="66" x2="272" y2="420"/><line x1="344" y1="66" x2="344" y2="420"/><line x1="416" y1="66" x2="416" y2="420"/><line x1="488" y1="66" x2="488" y2="420"/></g>
+    <g>
+      <text x="16" y="92" class="t" font-weight="600">총괄실</text><rect x="128" y="80" width="150" height="20" rx="6" fill="none" stroke="#a8a6ae" stroke-dasharray="4 3"/><text x="134" y="94" class="s">계획표 아직 없어요</text>
+      <circle cx="274" cy="85.5" r="5.5" fill="#1f5f4f"/><text x="274" y="88" text-anchor="middle" font-size="7" fill="#f4efe4">톰</text><circle cx="274" cy="96.5" r="5.5" fill="#2f6f8f"/><text x="274" y="99" text-anchor="middle" font-size="7" fill="#f4efe4">세</text>
+      <text x="16" y="158" class="t" font-weight="600">마케팅팀</text><rect x="128" y="146" width="70" height="20" rx="6" fill="#2f4f7a" opacity="0.85"/><text x="134" y="160" font-size="10.5" fill="#f4efe4">7단계</text><rect x="202" y="146" width="286" height="20" rx="6" fill="none" stroke="#2f4f7a" stroke-dasharray="4 3"/><text x="208" y="160" class="s">8단계 — 대표님이 정한 뒤</text>
+      <circle cx="194" cy="151.5" r="5.5" fill="#2f4f7a" stroke="#fff"/><text x="194" y="154" text-anchor="middle" font-size="7" fill="#f4efe4">하</text><circle cx="194" cy="162.5" r="5.5" fill="#a8541f" stroke="#fff"/><text x="194" y="165" text-anchor="middle" font-size="7" fill="#f4efe4">안</text>
+      <circle cx="484" cy="151.5" r="5.5" fill="#2f4f7a"/><text x="484" y="154" text-anchor="middle" font-size="7" fill="#f4efe4">하</text><circle cx="484" cy="162.5" r="5.5" fill="#a8541f"/><text x="484" y="165" text-anchor="middle" font-size="7" fill="#f4efe4">안</text>
+      <text x="16" y="224" class="t" font-weight="600">개발팀</text><rect x="128" y="212" width="140" height="20" rx="6" fill="#4a5d3a" opacity="0.85"/><text x="134" y="226" font-size="10.5" fill="#f4efe4">6단계 · 모레까지</text><rect x="272" y="212" width="140" height="20" rx="6" fill="#4a5d3a" opacity="0.35"/><text x="278" y="226" font-size="10.5" fill="#1b1a1f">7단계 · 20일까지</text><rect x="416" y="212" width="72" height="20" rx="6" fill="#4a5d3a" opacity="0.35"/><text x="422" y="226" font-size="10.5" fill="#1b1a1f">24일까지</text><rect x="128" y="236" width="40" height="5" rx="2.5" fill="#c94a3a"/><text x="174" y="242" class="s" fill="#c94a3a">6단계 40분 늦음</text>
+      <circle cx="264" cy="217.5" r="5.5" fill="#4a5d3a" stroke="#fff"/><text x="264" y="220" text-anchor="middle" font-size="7" fill="#f4efe4">테</text><circle cx="264" cy="228.5" r="5.5" fill="#2f6b7a" stroke="#fff"/><text x="264" y="231" text-anchor="middle" font-size="7" fill="#f4efe4">솔</text>
+      <circle cx="408" cy="217.5" r="5.5" fill="#4a5d3a" stroke="#fff"/><text x="408" y="220" text-anchor="middle" font-size="7" fill="#f4efe4">테</text><circle cx="408" cy="228.5" r="5.5" fill="#2f6b7a" stroke="#fff"/><text x="408" y="231" text-anchor="middle" font-size="7" fill="#f4efe4">솔</text>
+      <circle cx="484" cy="217.5" r="5.5" fill="#4a5d3a" stroke="#fff"/><text x="484" y="220" text-anchor="middle" font-size="7" fill="#f4efe4">테</text><circle cx="484" cy="228.5" r="5.5" fill="#2f6b7a" stroke="#fff"/><text x="484" y="231" text-anchor="middle" font-size="7" fill="#f4efe4">솔</text>
+      <text x="16" y="290" class="t" font-weight="600">디자인팀</text><rect x="128" y="278" width="212" height="20" rx="6" fill="#c94a3a" opacity="0.25" stroke="#c94a3a"/><text x="134" y="292" font-size="10.5" fill="#c94a3a">4단계 — 20일까지</text><rect x="344" y="278" width="140" height="20" rx="6" fill="none" stroke="#4b5f9e" stroke-dasharray="4 3"/><text x="350" y="292" class="s">5단계 — 대표님이 정한 뒤</text>
+      <circle cx="336" cy="283.5" r="5.5" fill="#4b5f9e"/><text x="336" y="286" text-anchor="middle" font-size="7" fill="#f4efe4">헨</text><circle cx="336" cy="294.5" r="5.5" fill="#c96f3b"/><text x="336" y="297" text-anchor="middle" font-size="7" fill="#f4efe4">클</text>
+      <circle cx="480" cy="283.5" r="5.5" fill="#4b5f9e"/><text x="480" y="286" text-anchor="middle" font-size="7" fill="#f4efe4">헨</text><circle cx="480" cy="294.5" r="5.5" fill="#c96f3b"/><text x="480" y="297" text-anchor="middle" font-size="7" fill="#f4efe4">클</text>
+      <text x="16" y="372" class="t" font-weight="600">경영팀</text><rect x="128" y="360" width="216" height="20" rx="6" fill="none" stroke="#a8a6ae" stroke-dasharray="4 3"/><text x="134" y="374" class="s">다음 단계 아직 없어요</text>
+      <circle cx="340" cy="365.5" r="5.5" fill="#6f9a4a"/><text x="340" y="368" text-anchor="middle" font-size="7" fill="#f4efe4">유</text><circle cx="340" cy="376.5" r="5.5" fill="#a8541f"/><text x="340" y="379" text-anchor="middle" font-size="7" fill="#f4efe4">노</text>
+    </g>
+  </g>
+
+  <!-- 읽는 법 — 주석. 프레임 밖(하영 5판 3-5-4: 화면 글자가 아니라 시안 메모). 테라가 지을 때 이 글자는 안 짓는다 -->
+  <g class="s" transform="translate(24 604)">
+    <text x="0" y="0">읽는 법(시안 메모 — 화면 글자 아님) — 왼쪽 폰 412 · 오른쪽 데스크톱 1200 폭(2주까지 한눈에). 줄 = 팀(도면 순서), 가로 = 앞으로의 시간. 칸 하나 = 단계 하나.</text>
+    <text x="0" y="18">상태 넷 — 채움 = 지금 단계 · 채움 옅게 = 잡힌 예정(timebox 를 셀 수 있음) · 점선 = 셀 수 없는 것("대표님이 정한 뒤" / "{무엇} 뒤") · 빨강 = 늦음/멈춤("N단계 N분 늦음", 멈춘 시간은 뺀 것).</text>
+    <text x="0" y="36">누르면 그 자리에서 왜(펼친 줄 — 시작 때 · 회차 평균 × N회차 → 끝 / 계획표에 적힌 조건) → 한 번 더 = 계획표 카드. 지난 것은 없다 — 현황과 안 겹치게(나리 규칙).</text>
+    <text x="0" y="54">예정 시각은 계획표 timebox × 회차 길이에서 개발이 계산, 손으로 안 적는다. 빈칸 말 둘 — 계획표 파일이 없으면 "계획표 아직 없어요", 남은 단계가 없으면 "다음 단계 아직 없어요". 대표 문이 아니다.</text>
+    <text x="0" y="72">칸 오른쪽 점 둘 = 그 팀의 둘(머리글자 · 직책 색, 결정 128 "누가") — cast.json 에서 다른 회사 뺀 둘, 팀장 먼저. 시계 없음(9절 3). 글자는 하영 글 틀 1판(screen-text-frames.md 1절) · 사전 6판 6절.</text>
+    <text x="0" y="94" class="k">서버 값 — teams[].stages[{ n, title, status(running·planned·gated·blocked), plannedFrom, plannedTo, late, blockedWhy, gate, owners[2] }] · roundMs — 계약 334~338행 + owners</text>
+  </g>
+  <text x="988" y="722" text-anchor="end" font-size="9" fill="#a8a6ae">대시보드 3판 · 2026-09-16 · 1판 헨리 · 2판 클레멘타인(담당 둘, 목록 뺌) · 2판-b 헨리(시계 뺌 · 머리글자 · 디자인 4단계) · 3판 헨리(하영 글 틀 1판 5절 H1~H3 + 늦음 글자·빈칸 말·펼친 줄) · 결정 128</text>
+</svg>

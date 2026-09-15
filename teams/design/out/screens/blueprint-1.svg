@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 우리 구조 도면 1판 — 모양 헨리 · 낱말 하영(teams/marketing/out/blueprint-words.md) · 대표 원문 결정 100·102·103·98. 넷 겹 + 가로줄 둘 + 세로줄 둘. 피그마 허용 전 SVG. -->
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1b1a1f"/></marker>
+    <marker id="al" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#b7ab92"/></marker>
+    <marker id="ad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#3d3a44"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8a7320"/></marker>
+  </defs>
+  <rect width="1920" height="1080" fill="#f6f2ea"/>
+
+  <!-- ── 맨 위 · 꿈 (대표가 채운 칸, 결정 103) — 네 줄: 꿈 · 목표 · 지금 · 다음 ── -->
+  <rect x="360" y="40" width="1320" height="176" rx="12" fill="#ffffff" stroke="#1b1a1f" stroke-width="2"/>
+  <rect x="366" y="46" width="1308" height="164" rx="9" fill="none" stroke="#1b1a1f" stroke-width="1"/>
+  <text x="384" y="80" font-size="11" fill="#6f6d78">꿈</text>
+  <text x="1020" y="82" text-anchor="middle" font-family="'Gowun Batang','Noto Serif KR',serif" font-size="26" fill="#1b1a1f">세상을 변화시킬 서비스, 플랫폼을 만들고 운영하는 것</text>
+  <text x="384" y="118" font-size="11" fill="#6f6d78">목표</text>
+  <text x="1020" y="119" text-anchor="middle" font-size="17" fill="#3d3a44">트립튜드 및 함동혁이 만들고 싶은 서비스의 개발 · 배포 · 운영</text>
+  <rect x="372" y="134" width="3" height="30" fill="#3a8f5c"/>
+  <text x="384" y="154" font-size="11" fill="#3a8f5c">지금</text>
+  <text x="1020" y="155" text-anchor="middle" font-size="15" fill="#1b1a1f">모든 팀원이 함께 일하고 소통하고 꿈꿀 수 있는 세상을 완성한다 — 우리가 같이 일하는 법 (이름은 새로 정한다)</text>
+  <text x="384" y="190" font-size="11" fill="#6f6d78">다음</text>
+  <text x="1020" y="191" text-anchor="middle" font-size="13" fill="#6f6d78">이게 서면 대표가 트립튜드를 배정한다</text>
+
+  <!-- ── 세로줄 둘 (결정 98) — 왼쪽 통로: 위로는 추려서(세라), 아래로는 그대로(톰) ── -->
+  <circle cx="150" cy="128" r="30" fill="#8a7320"/>
+  <text x="150" y="133" text-anchor="middle" font-size="14" fill="#f4efe4" font-weight="600">댄</text>
+  <text x="150" y="176" text-anchor="middle" font-size="12" fill="#3d3a44">대표</text>
+  <line x1="188" y1="128" x2="352" y2="128" stroke="#1b1a1f" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="270" y="118" text-anchor="middle" font-size="11" fill="#6f6d78">정한다</text>
+  <line x1="124" y1="166" x2="124" y2="884" stroke="#8a7320" stroke-width="1.5" marker-end="url(#ag)"/>
+  <text x="112" y="530" transform="rotate(-90 112 530)" text-anchor="middle" font-size="11" fill="#8a7320">대표의 말 — 원문 그대로 내려간다 (톰)</text>
+  <line x1="176" y1="884" x2="176" y2="166" stroke="#8a7320" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#ag)"/>
+  <text x="192" y="530" transform="rotate(-90 192 530)" text-anchor="middle" font-size="11" fill="#8a7320">대표에게 가는 것 — 방의 말 중 대표가 알아야 할 것만 세라가 추려 올라간다</text>
+
+  <!-- ── 1겹 · 팀 기둥 다섯 (x 226 · 566 · 906 · 1246 · 1586, 폭 310) ── -->
+  <g id="col-hq">
+    <rect x="226" y="262" width="310" height="720" rx="10" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <rect x="226" y="262" width="310" height="36" rx="10" fill="#1f5f4f" fill-opacity="0.12"/>
+    <text x="381" y="286" text-anchor="middle" font-size="15" font-weight="600" fill="#1b1a1f">비서실 <tspan font-size="11" font-weight="400" fill="#6f6d78">(후보 — 대표가 고른다)</tspan></text>
+    <text x="381" y="320" text-anchor="middle" font-size="11" fill="#3d3a44">팀 목표 — 대표의 말을 나누고, 원문과 맞추고, 대표가 볼 것을 추린다</text>
+    <rect x="238" y="340" width="286" height="52" rx="8" fill="none" stroke="#a8a6ae" stroke-dasharray="5 4"/>
+    <text x="381" y="371" text-anchor="middle" font-size="12" fill="#6f6d78">단계 — 아직 적히지 않음</text>
+  </g>
+  <g id="col-marketing">
+    <rect x="566" y="262" width="310" height="720" rx="10" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <rect x="566" y="262" width="310" height="36" rx="10" fill="#2f4f7a" fill-opacity="0.12"/>
+    <text x="721" y="286" text-anchor="middle" font-size="15" font-weight="600" fill="#1b1a1f">마케팅팀</text>
+    <text x="721" y="320" text-anchor="middle" font-size="11" fill="#3d3a44">팀 목표 — 우리 모두가 한 세계를 같은 문장으로 안다</text>
+    <text x="578" y="336" font-size="9" fill="#a8a6ae">1장 · 설정집</text>
+    <rect x="578" y="340" width="286" height="44" rx="8" fill="#e6e0d3" stroke="#d9d1bf"/><text x="590" y="367" font-size="12" fill="#3d3a44">1단계 실사</text>
+    <rect x="578" y="392" width="286" height="44" rx="8" fill="#e6e0d3" stroke="#d9d1bf"/><text x="590" y="419" font-size="12" fill="#3d3a44">2단계 세계관</text>
+    <rect x="578" y="444" width="286" height="44" rx="8" fill="#e6e0d3" stroke="#d9d1bf"/><text x="590" y="471" font-size="12" fill="#3d3a44">3단계 사람들의 내력</text>
+    <rect x="578" y="496" width="286" height="44" rx="8" fill="#e6e0d3" stroke="#d9d1bf"/><text x="590" y="523" font-size="12" fill="#3d3a44">4단계 관계도</text>
+    <rect x="578" y="548" width="286" height="44" rx="8" fill="#e6e0d3" stroke="#d9d1bf"/><text x="590" y="575" font-size="12" fill="#3d3a44">5단계 캐릭터 설정 다시 쓰기</text>
+    <rect x="578" y="600" width="286" height="44" rx="8" fill="#e6e0d3" stroke="#d9d1bf"/><text x="590" y="627" font-size="12" fill="#3d3a44">6단계 화면의 말</text>
+    <rect x="578" y="652" width="286" height="44" rx="8" fill="#ffffff" stroke="#1b1a1f" stroke-width="2"/><rect x="578" y="652" width="3" height="44" fill="#3a8f5c"/><text x="590" y="679" font-size="12" font-weight="600" fill="#1b1a1f">7단계 마을 브랜딩 — 지금</text>
+    <g><rect x="816" y="667" width="12" height="12" rx="2" fill="none" stroke="#3a8f5c" stroke-width="1.5"/><rect x="832" y="667" width="12" height="12" rx="2" fill="none" stroke="#a8a6ae"/><rect x="848" y="667" width="12" height="12" rx="2" fill="none" stroke="#a8a6ae"/></g>
+    <text x="856" y="712" text-anchor="end" font-size="9" fill="#a8a6ae">작은 네모 = 회차</text>
+  </g>
+  <g id="col-dev">
+    <rect x="906" y="262" width="310" height="720" rx="10" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <rect x="906" y="262" width="310" height="36" rx="10" fill="#4a5d3a" fill-opacity="0.12"/>
+    <text x="1061" y="286" text-anchor="middle" font-size="15" font-weight="600" fill="#1b1a1f">개발팀</text>
+    <text x="1061" y="320" text-anchor="middle" font-size="11" fill="#3d3a44">팀 목표 — 대표가 자리를 비워도 팀이 스스로 달리고, 30초에 무엇이 막혔는지 안다</text>
+    <rect x="918" y="340" width="286" height="44" rx="8" fill="#e6e0d3" stroke="#d9d1bf"/><text x="930" y="367" font-size="12" fill="#3d3a44">1단계 인격 이음</text>
+    <rect x="918" y="392" width="286" height="44" rx="8" fill="#e6e0d3" stroke="#d9d1bf"/><text x="930" y="419" font-size="12" fill="#3d3a44">2단계 팀 / 개인 화면</text>
+    <rect x="918" y="444" width="286" height="44" rx="8" fill="#e6e0d3" stroke="#d9d1bf"/><text x="930" y="471" font-size="12" fill="#3d3a44">3단계 승인 흐름 실물</text>
+    <rect x="918" y="496" width="286" height="44" rx="8" fill="#e6e0d3" stroke="#d9d1bf"/><text x="930" y="523" font-size="12" fill="#3d3a44">4단계 상황판 · 용어 · 이어 열기</text>
+    <rect x="918" y="548" width="286" height="44" rx="8" fill="#e6e0d3" stroke="#d9d1bf"/><text x="930" y="575" font-size="12" fill="#3d3a44">5단계 첫 화면 — 미니어처 서울</text>
+    <rect x="918" y="600" width="286" height="44" rx="8" fill="#ffffff" stroke="#1b1a1f" stroke-width="2"/><rect x="918" y="600" width="3" height="44" fill="#3a8f5c"/><text x="930" y="627" font-size="12" font-weight="600" fill="#1b1a1f">6단계 화면 새로 짜기 — 지금</text>
+    <g><rect x="1156" y="615" width="12" height="12" rx="2" fill="none" stroke="#3a8f5c" stroke-width="1.5"/><rect x="1172" y="615" width="12" height="12" rx="2" fill="none" stroke="#a8a6ae"/><rect x="1188" y="615" width="12" height="12" rx="2" fill="none" stroke="#a8a6ae"/></g>
+    <rect x="918" y="652" width="286" height="44" rx="8" fill="none" stroke="#a8a6ae" stroke-dasharray="5 4"/><text x="930" y="679" font-size="12" fill="#6f6d78">7단계 기억 3층 마감</text>
+    <rect x="918" y="704" width="286" height="44" rx="8" fill="none" stroke="#a8a6ae" stroke-dasharray="5 4"/><text x="930" y="731" font-size="12" fill="#6f6d78">8단계 실패 수습</text>
+  </g>
+  <g id="col-design">
+    <rect x="1246" y="262" width="310" height="720" rx="10" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <rect x="1246" y="262" width="310" height="36" rx="10" fill="#4b5f9e" fill-opacity="0.12"/>
+    <text x="1401" y="286" text-anchor="middle" font-size="15" font-weight="600" fill="#1b1a1f">디자인팀</text>
+    <text x="1401" y="320" text-anchor="middle" font-size="11" fill="#3d3a44">팀 목표 — 미니어처 서울 첫 화면 하나가 우리 부품으로 선다</text>
+    <rect x="1258" y="340" width="286" height="44" rx="8" fill="#e6e0d3" stroke="#d9d1bf"/><text x="1270" y="367" font-size="12" fill="#3d3a44">1단계 그림 방향과 부품 밑그림</text>
+    <rect x="1258" y="392" width="286" height="44" rx="8" fill="#ffffff" stroke="#1b1a1f" stroke-width="2"/><rect x="1258" y="392" width="3" height="44" fill="#3a8f5c"/><text x="1270" y="419" font-size="12" font-weight="600" fill="#1b1a1f">2단계 인형 — 사람마다 하나 — 지금</text>
+    <g><rect x="1496" y="407" width="12" height="12" rx="2" fill="#8a8794"/><rect x="1512" y="407" width="12" height="12" rx="2" fill="none" stroke="#3a8f5c" stroke-width="1.5"/><rect x="1528" y="407" width="12" height="12" rx="2" fill="none" stroke="#a8a6ae"/></g>
+    <rect x="1258" y="444" width="286" height="44" rx="8" fill="none" stroke="#a8a6ae" stroke-dasharray="5 4"/><text x="1270" y="471" font-size="12" fill="#6f6d78">3단계 건물 부품 실물</text>
+    <rect x="1258" y="496" width="286" height="44" rx="8" fill="none" stroke="#a8a6ae" stroke-dasharray="5 4"/><text x="1270" y="523" font-size="12" fill="#6f6d78">4단계 첫 화면 맞춤</text>
+  </g>
+  <g id="col-finance">
+    <rect x="1586" y="262" width="310" height="720" rx="10" fill="#fbf9f4" stroke="#d9d1bf"/>
+    <rect x="1586" y="262" width="310" height="36" rx="10" fill="#d8b25c" fill-opacity="0.18"/>
+    <text x="1741" y="286" text-anchor="middle" font-size="15" font-weight="600" fill="#1b1a1f">경영팀</text>
+    <text x="1741" y="320" text-anchor="middle" font-size="11" fill="#3d3a44">팀 목표 — 아직 적히지 않음</text>
+    <rect x="1598" y="340" width="286" height="44" rx="8" fill="none" stroke="#a8a6ae" stroke-dasharray="5 4"/>
+    <text x="1741" y="367" text-anchor="middle" font-size="12" fill="#6f6d78">단계 — 아직 적히지 않음</text>
+  </g>
+
+  <!-- 읽는 법 (오른쪽 위 작은 글) -->
+  <g font-size="10" fill="#6f6d78">
+    <text x="1236" y="258">채움 = 끝난 단계 · 굵은 테두리 = 지금 · 점선 = 남은 단계 · 작은 네모 = 회차 (단계를 쪼개 각자 가져가 끝내는 것)</text>
+  </g>
+  <g font-size="10" fill="#6f6d78">
+    <text x="214" y="290" transform="rotate(-90 214 290)" text-anchor="middle">팀</text>
+    <text x="214" y="520" transform="rotate(-90 214 520)" text-anchor="middle">단계 → 회차</text>
+    <text x="214" y="880" transform="rotate(-90 214 880)" text-anchor="middle">사람</text>
+  </g>
+
+  <!-- ── 가로줄 ① 팀 ↔ 팀 서로 돕는다 — 요청 블록이 실물. 열린 블록 있는 쌍만 진하게 ── -->
+  <g stroke="#b7ab92" stroke-width="1.5">
+    <line x1="536" y1="790" x2="566" y2="790" marker-start="url(#al)" marker-end="url(#al)"/>
+    <line x1="1216" y1="790" x2="1246" y2="790" marker-start="url(#al)" marker-end="url(#al)"/>
+    <line x1="1556" y1="790" x2="1586" y2="790" marker-start="url(#al)" marker-end="url(#al)"/>
+  </g>
+  <line x1="876" y1="790" x2="906" y2="790" stroke="#3d3a44" stroke-width="2" marker-start="url(#ad)" marker-end="url(#ad)"/>
+  <rect x="873" y="796" width="36" height="16" rx="4" fill="#ffffff" stroke="#3d3a44"/><text x="891" y="808" text-anchor="middle" font-size="9" fill="#3d3a44">요청</text>
+  <path d="M721 784 C 830 730, 1292 730, 1401 784" fill="none" stroke="#3d3a44" stroke-width="2" marker-start="url(#ad)" marker-end="url(#ad)"/>
+  <rect x="1043" y="734" width="36" height="16" rx="4" fill="#ffffff" stroke="#3d3a44"/><text x="1061" y="746" text-anchor="middle" font-size="9" fill="#3d3a44">요청</text>
+  <text x="1061" y="828" text-anchor="middle" font-size="11" fill="#3d3a44">서로 돕는다 — 한 팀이 다른 팀에 부탁하고 톰이 옆에서 본다. 지금 열린 것: 마케팅 ↔ 개발 · 마케팅 ↔ 디자인</text>
+
+  <!-- ── 3겹 · 사람 (원 = 자리 색, 마을 칩과 같은 모양) + 옆에서 봐 준다 ── -->
+  <g id="people-hq">
+    <circle cx="301" cy="900" r="20" fill="#1f5f4f"/><text x="301" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">톰</text><text x="301" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">톰</text><text x="301" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(실장)</text>
+    <circle cx="381" cy="900" r="20" fill="#7a3b52"/><text x="381" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">제</text><text x="381" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">제리</text><text x="381" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(감사 · 다른 회사)</text>
+    <circle cx="461" cy="900" r="20" fill="#5f8fbf"/><text x="461" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">세</text><text x="461" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">세라</text><text x="461" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">비서</text>
+    <line x1="323" y1="880" x2="359" y2="880" stroke="#3d3a44" stroke-width="1.2" marker-start="url(#ad)" marker-end="url(#ad)"/>
+  </g>
+  <g id="people-marketing">
+    <circle cx="641" cy="900" r="20" fill="#2f4f7a"/><text x="641" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">하</text><text x="641" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">하영</text><text x="641" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(팀장)</text>
+    <circle cx="721" cy="900" r="20" fill="#a8541f"/><text x="721" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">안</text><text x="721" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">안젤</text><text x="721" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(감사)</text>
+    <circle cx="801" cy="900" r="20" fill="#5b3a63"/><text x="801" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">다</text><text x="801" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">다니엘</text><text x="801" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(외부 감사)</text>
+    <line x1="663" y1="880" x2="699" y2="880" stroke="#3d3a44" stroke-width="1.2" marker-start="url(#ad)" marker-end="url(#ad)"/>
+    <line x1="743" y1="880" x2="779" y2="880" stroke="#3d3a44" stroke-width="1.2" marker-start="url(#ad)" marker-end="url(#ad)"/>
+  </g>
+  <g id="people-dev">
+    <circle cx="981" cy="900" r="20" fill="#4a5d3a"/><text x="981" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">테</text><text x="981" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">테라</text><text x="981" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(팀장)</text>
+    <circle cx="1061" cy="900" r="20" fill="#2f6b7a"/><text x="1061" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">솔</text><text x="1061" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">솔라</text><text x="1061" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(운영 담당)</text>
+    <circle cx="1141" cy="900" r="20" fill="#9c3b2f"/><text x="1141" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">레</text><text x="1141" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">레오</text><text x="1141" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(외부 감사)</text>
+    <line x1="1083" y1="880" x2="1119" y2="880" stroke="#3d3a44" stroke-width="1.2" marker-start="url(#ad)" marker-end="url(#ad)"/>
+  </g>
+  <g id="people-design">
+    <circle cx="1321" cy="900" r="20" fill="#4b5f9e"/><text x="1321" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">헨</text><text x="1321" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">헨리</text><text x="1321" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(팀장)</text>
+    <circle cx="1401" cy="900" r="20" fill="#c96f3b"/><text x="1401" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">클</text><text x="1401" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">클레멘타인</text><text x="1401" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(디자이너)</text>
+    <circle cx="1481" cy="900" r="20" fill="#6b4a2f"/><text x="1481" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">마</text><text x="1481" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">마크</text><text x="1481" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(외부 감사)</text>
+    <line x1="1423" y1="880" x2="1459" y2="880" stroke="#3d3a44" stroke-width="1.2" marker-start="url(#ad)" marker-end="url(#ad)"/>
+  </g>
+  <g id="people-finance">
+    <circle cx="1661" cy="900" r="20" fill="#d8b25c"/><text x="1661" y="905" text-anchor="middle" font-size="12" fill="#1b1a1f">유</text><text x="1661" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">유진</text><text x="1661" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(팀장)</text>
+    <circle cx="1741" cy="900" r="20" fill="#a8541f"/><text x="1741" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">노</text><text x="1741" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">노라</text><text x="1741" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(감사)</text>
+    <circle cx="1821" cy="900" r="20" fill="#5b3a63"/><text x="1821" y="905" text-anchor="middle" font-size="12" fill="#f4efe4">빅</text><text x="1821" y="932" text-anchor="middle" font-size="11" fill="#1b1a1f">빅터</text><text x="1821" y="946" text-anchor="middle" font-size="9" fill="#6f6d78">(외부 감사)</text>
+    <line x1="1683" y1="880" x2="1719" y2="880" stroke="#3d3a44" stroke-width="1.2" marker-start="url(#ad)" marker-end="url(#ad)"/>
+    <line x1="1763" y1="880" x2="1799" y2="880" stroke="#3d3a44" stroke-width="1.2" marker-start="url(#ad)" marker-end="url(#ad)"/>
+  </g>
+  <text x="1061" y="972" text-anchor="middle" font-size="11" fill="#3d3a44">옆에서 봐 준다 — 감사는 위에서 내려오지 않는다. 같은 방에서 같은 물건을 본다 (짧은 양쪽 화살표). 직책은 괄호 = 후보, 대표가 고른다</text>
+
+  <!-- ── 가로줄 ② 사람 ↔ 사람 가족처럼 챙긴다 — 끊기지 않는 물결 하나 ── -->
+  <path d="M100 1030 q 30 -14 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0 t 60 0" fill="none" stroke="#d8b25c" stroke-width="2"/>
+  <text x="1061" y="1062" text-anchor="middle" font-size="11" fill="#3d3a44">가족처럼 챙긴다 — 규칙이 아니라 캐릭터가 만드는 선이라 칸이 없고 끊기지 않는다 ("일곱 번이면 싸운 게 아니라 꼼꼼했던 거야" · "미안, 12분")</text>
+
+  <rect x="1236" y="222" width="660" height="26" rx="6" fill="#ffffff" stroke="#c94a3a"/>
+  <text x="1566" y="240" text-anchor="middle" font-size="12" font-weight="600" fill="#c94a3a">2026-09-14 새벽 기준 · 손으로 그린 한 장 — 회차가 돌면 단계 칸은 어긋난다. 정본은 팀 계획표 파일</text>
+  <text x="1896" y="1072" text-anchor="end" font-size="9" fill="#a8a6ae">구조 도면 1판 · 2026-09-14 · 모양 헨리 · 낱말 하영 · 대표 원문 결정 100·102·103·98 · 괄호 = 대표가 아직 안 고른 말 · 비서실·경영팀 칸이 빈 건 그림 탓이 아니라 아직 계획표가 없어서다</text>
+</svg>

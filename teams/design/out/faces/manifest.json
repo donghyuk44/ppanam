@@ -1,0 +1,33 @@
+{
+  "_note": "얼굴 썸네일 열일곱 — 6단계(대표 결정 129·131). 그린 게 아니라 마을 인형(out/kit/characters.json + 색표 out/kit/colormaps/people/)을 /world/lineup.html 로 정면 200px 찍은 것. 규격 out/faces/spec.md. 2판 = head=1(테라 fd3301c, 어깨선 = 몸 높이 36% · 위 여백 6% · 정사각형). 1판(전신, 02:16~02:17)은 덮어씀. 찍은 손: 나리(헨리·클레멘타인·테라 세션은 lineup-shot 이 승인에 막혔다). manifest 는 헨리 09-16.",
+  "size": [200, 200],
+  "transparent": true,
+  "front": true,
+  "head": true,
+  "command": "node tools/lineup-shot.mjs teams/design/out/faces/<자리>.png \"only=<자리>&size=200&transparent=1&front=1&head=1\" 200 200",
+  "tool": "tools/lineup-shot.mjs → server/public/world/lineup.html (three.js, Kenney mini-characters CC0 + 우리 색표)",
+  "shotBy": "나리",
+  "shotAt": "2026-09-16 02:56~02:57 (우리 시각) · 포트 9623, boss 는 9624 · hq-system 은 04:2x",
+  "faceRule": "facePx(어깨선~꼭대기) 120/200 이상 — spec.md 1절",
+  "faces": {
+    "boss":              { "name": "댄",       "file": "boss.png",              "facePx": 141, "note": "갓 챙 때문에 꼭대기가 1.4 — 그래도 120 넘음", "line": null },
+    "hq-chief":          { "name": "톰",       "file": "hq-chief.png",          "facePx": 183, "line": null },
+    "hq-outside":        { "name": "제리",     "file": "hq-outside.png",        "facePx": 183, "line": null },
+    "hq-secretary":      { "name": "세라",     "file": "hq-secretary.png",      "facePx": 183, "line": null },
+    "hq-system":         { "name": "나리",     "file": "hq-system.png",         "facePx": 183, "note": "열일곱째 — characters.json 167행 + parts.json(테라 b36e8e9) 뒤 04:2x 찍음(포트 다름). 색표 hq-system.png 04:20. 나리 한 줄은 '붙일 것 없음'이었으나 같은 몸(female-b)엔 부착물이 붙어야 하는 규칙(마크 M2 조건)이라 안경 — characters.json silhouette 에 근거", "line": "머리는 짙은 갈색, 붙일 것은 없음 — 밤에 깨어 있는 사람이라 요란한 게 안 어울려요 (→ 머리 #4a2c1a · 안경)" },
+    "design-guide":      { "name": "헨리",     "file": "design-guide.png",      "facePx": 183, "line": null },
+    "design-ops":        { "name": "클레멘타인", "file": "design-ops.png",       "facePx": 183, "line": null },
+    "design-outside":    { "name": "마크",     "file": "design-outside.png",    "facePx": 183, "line": null },
+    "dev-guide":         { "name": "테라",     "file": "dev-guide.png",         "facePx": 183, "line": null },
+    "dev-ops":           { "name": "솔라",     "file": "dev-ops.png",           "facePx": 183, "line": null },
+    "dev-outside":       { "name": "레오",     "file": "dev-outside.png",       "facePx": 183, "line": null },
+    "marketing-guide":   { "name": "하영",     "file": "marketing-guide.png",   "facePx": 183, "line": null },
+    "marketing-review":  { "name": "안젤",     "file": "marketing-review.png",  "facePx": 183, "line": null },
+    "marketing-outside": { "name": "다니엘",   "file": "marketing-outside.png", "facePx": 183, "line": null },
+    "finance-guide":     { "name": "유진",     "file": "finance-guide.png",     "facePx": 183, "note": "옷 잎 초록 #6f9a4a(나리 대리 결정 09-15) — 색표 finance-guide.png 22:08 판", "line": null },
+    "finance-review":    { "name": "노라",     "file": "finance-review.png",    "facePx": 183, "line": null },
+    "finance-outside":   { "name": "빅터",     "file": "finance-outside.png",   "facePx": 183, "line": null }
+  },
+  "lines": "각자 원하는 얼굴 한 줄(spec.md 3절) — 말이 오면 line 에 적고 characters.json 을 고쳐 그 자리만 다시 찍는다. 말이 없으면 null = 지금 인형 그대로",
+  "risk": "얼굴은 지금 인형(characters.json) 기준 — 대표님이 아침에 마을 방향을 되돌리시면 열일곱 다시 찍는다(한 장에 명령 하나)"
+}
