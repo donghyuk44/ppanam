@@ -82,8 +82,9 @@ body {
   height: 100dvh;
 }
 .app > .approvals { grid-column: 1 / -1; grid-row: 1; }
-/* 나머지는 둘째 줄에 — 승인 블록이 숨겨져(display:none) 첫 줄이 비어도 자동 배치가 거기로 올라가지 않게. */
-.rail, .room, .tower, .dashboard, .analysis, .world, .side { grid-row: 2; }
+/* 나머지는 둘째 줄에 — 승인 블록이 숨겨져(display:none) 첫 줄이 비어도 자동 배치가 거기로 올라가지 않게.
+   .report 가 빠져 1280 에서 보고서가 첫 줄 왼쪽 224px 기둥에 눌렸다(나리 점검-0916 3-1 ①, 09-14 .dashboard 와 같은 빠짐 — 폰 쪽 1020줄엔 있었다). */
+.rail, .room, .tower, .dashboard, .report, .analysis, .world, .side { grid-row: 2; }
 
 /* ══ 왼쪽 · 팀 레일 ══ */
 
