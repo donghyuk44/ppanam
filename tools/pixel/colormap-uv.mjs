@@ -1,15 +1,18 @@
 // Kenney mini-characters 의 colormap.png 512×512 에서, OBJ 의 vt(UV) 가 실제로 어느 픽셀을 가리키는지 잰다.
 // 옷·머리·피부 중 어느 띠인지는 색상값(hex)과 몸통 대비 y 높이(0=발밑, 1=정수리)로 사람이 읽는다 — 스크립트는 재기만 한다.
 //
-//   node tools/pixel/colormap-uv.mjs <colormap.png> <obj…>
+//   node tools/pixel/colormap-uv.mjs <colormap.png> <obj…> [--out=<path>]
 //
-// 출력은 markdown — obj 파일마다 g 그룹(body-mesh/head-mesh)별 스와치 목록.
+// 출력은 markdown(기본 out/kit/colormap-uv.md) — obj 파일마다 g 그룹(body-mesh/head-mesh 등)별 스와치 목록.
 import fs from 'node:fs';
 import path from 'node:path';
 import { decodePNG } from './png.mjs';
 
-const [pngFile, ...objFiles] = process.argv.slice(2);
-if (!pngFile || !objFiles.length) { console.log('사용법: colormap-uv.mjs <colormap.png> <obj…>'); process.exit(2); }
+const rawArgs = process.argv.slice(2);
+const outArg = rawArgs.find((a) => a.startsWith('--out='));
+const outFile = outArg ? outArg.slice('--out='.length) : 'out/kit/colormap-uv.md';
+const [pngFile, ...objFiles] = rawArgs.filter((a) => a !== outArg);
+if (!pngFile || !objFiles.length) { console.log('사용법: colormap-uv.mjs <colormap.png> <obj…> [--out=<path>]'); process.exit(2); }
 
 const png = decodePNG(fs.readFileSync(pngFile));
 const hex = (r, g, b) => '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
@@ -65,5 +68,5 @@ for (const objFile of objFiles) {
   }
 }
 
-fs.writeFileSync('out/kit/colormap-uv.md', lines.join('\n'));
-console.log(`out/kit/colormap-uv.md 씀 — obj ${objFiles.length}개`);
+fs.writeFileSync(outFile, lines.join('\n'));
+console.log(`${outFile} 씀 — obj ${objFiles.length}개`);
