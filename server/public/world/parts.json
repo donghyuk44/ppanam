@@ -48,6 +48,7 @@
     "hq-chief":          { "name": "톰",       "model": "character-male-a.glb",   "sourceHeight": 0.6713, "colormap": null, "prop": null },
     "hq-outside":        { "name": "제리",     "model": "character-male-a.glb",   "sourceHeight": 0.6713, "colormap": null, "prop": { "kind": "kenney", "file": "aid-glasses.glb" } },
     "hq-secretary":      { "name": "세라",     "model": "character-female-b.glb", "sourceHeight": 0.7234, "colormap": null, "prop": { "kind": "custom", "id": "ribbon" } },
+    "hq-system":         { "name": "나리",     "model": "character-female-b.glb", "sourceHeight": 0.7234, "colormap": null, "prop": { "kind": "kenney", "file": "aid-glasses.glb" } },
     "design-guide":      { "name": "헨리",     "model": "character-male-e.glb",   "sourceHeight": 0.676,  "colormap": null, "prop": null },
     "design-ops":        { "name": "클레멘타인", "model": "character-female-b.glb", "sourceHeight": 0.7234, "colormap": null, "prop": null },
     "design-outside":    { "name": "마크",     "model": "character-male-d.glb",   "sourceHeight": 0.7218, "colormap": null, "prop": null },
