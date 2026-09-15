@@ -953,6 +953,7 @@ button.dash__row:hover b { text-decoration: underline; }
 .an__stack { position: relative; flex: none; width: calc(12px + (var(--n, 1) - 1) * 5px); height: calc(12px + (var(--n, 1) - 1) * 3px); }
 .an__stack i { position: absolute; left: calc(var(--i, 0) * 5px); top: calc(var(--i, 0) * 3px); width: 12px; height: 12px; border-radius: 2px; background: var(--ink-4); }
 .an__stack i[data-k="bad"] { background: var(--bad); }
+.an__stack b { position: absolute; left: 100%; bottom: 0; margin-left: 4px; font-size: 11px; color: var(--ink-4); }
 @media (min-width: 1180px) { .an__body { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-content: start; } .an__body > .an__card:first-child { grid-column: 1 / -1; } }
 
 .tiles { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }

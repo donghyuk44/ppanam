@@ -2301,11 +2301,13 @@ async function loadAnalysis() {
   if (!r || r.error) return;
   renderAnalysis(r);
 }
-const nthWord = (n) => (['', '첫', '두', '세', '네', '다섯', '여섯', '일곱', '여덟', '아홉', '열'][n] ?? `${n}`) + ' 번째';
-/** 회차 네모를 같은 자리에 겹친다(numbers ③ · 시안 ③) — 세 번째부터 빨강. */
+const nthWord = (n) => { const w = ['', '첫', '두', '세', '네', '다섯', '여섯', '일곱', '여덟', '아홉', '열'][n]; return w ? `${w} 번째` : `${n}번째`; };   // 열까지는 말로(시안 "세 번째"), 그 뒤는 "18번째"
+/** 회차 네모를 같은 자리에 겹친다(numbers ③ · 시안 ③) — 세 번째부터 빨강. 네모 수 = 값(나리 R29: 열둘에서 자르니 18·13·11 계단이 같은 높이였다) — 마흔 넘으면 마지막에 … */
 function stackBoxes(n) {
-  const s = el('span', 'an__stack'); s.style.setProperty('--n', String(n));
-  for (let i = 0; i < Math.min(n, 12); i++) { const b = el('i'); b.style.setProperty('--i', String(i)); if (i >= 2) b.dataset.k = 'bad'; s.appendChild(b); }
+  const shown = Math.min(n, 40);
+  const s = el('span', 'an__stack'); s.style.setProperty('--n', String(shown)); s.title = `${n}번`;
+  for (let i = 0; i < shown; i++) { const b = el('i'); b.style.setProperty('--i', String(i)); if (i >= 2) b.dataset.k = 'bad'; s.appendChild(b); }
+  if (n > shown) s.appendChild(el('b', null, '…'));
   return s;
 }
 function anCard(head) { const c = el('section', 'an__card'); c.appendChild(el('div', 'dash__k', head)); return c; }
@@ -2382,7 +2384,10 @@ function renderAnalysis(r) {
   for (const p of repeats) {
     const box = el('span', 'an__rep');
     box.appendChild(stackBoxes(p.nth));
-    const where = p.kind === 'card' ? p.at.map((ts) => clockWord(ts)).join(' · ') : `${p.at[0]}회차부터 ${p.at[p.at.length - 1]}회차`;
+    // 회차가 이어지면 "13회차부터 20회차", 사이가 비면 "2회차부터 20회차 사이 18회차에 걸쳐"(나리 R29 — 개발 1단계는 9회차가 2단계였다, 이어진 것처럼 읽히면 열아홉으로 센다)
+    const first = p.at[0], last = p.at[p.at.length - 1];
+    const contiguous = p.kind === 'round' && last - first + 1 === p.at.length;
+    const where = p.kind === 'card' ? p.at.map((ts) => clockWord(ts)).join(' · ') : contiguous ? `${first}회차부터 ${last}회차` : `${first}회차부터 ${last}회차 사이 ${p.at.length}회차에 걸쳐`;
     const text = el('span', 'an__sentence', `${nameOf(p.team)} ${p.what} — ${where}, 같은 자리에서 ${nthWord(p.nth)}${p.passed ? '에 통과' : ''}`);
     if (p.nth >= 3) text.dataset.k = 'bad';
     box.appendChild(text);
