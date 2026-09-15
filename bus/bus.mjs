@@ -1920,6 +1920,70 @@ export function ownersOf(cast, { owner = 'guide' } = {}) {
   return ordered.map((k) => ({ actor: k, name: agents[k].name ?? k, initial: agents[k].initial ?? String(agents[k].name ?? k).slice(0, 1), color: agents[k].color ?? null }));
 }
 
+/* ── 분석 = "왜 자꾸 이렇게 되나"(나리 정본 · 헨리 분석 1판 analysis.svg · 하영 화면 글 틀 1판 3절, 9단계 ③). 숫자는 늘 둘이 나란히 — 하나짜리는 이 화면 말이 아니다.
+ * 셋 다 순수 — check 가 돌린다. 값은 approvals.jsonl · rounds.jsonl · pauses.json 에서만(하영 3-3), 손으로 안 적는다. 서버 값: analysis.stuck · slowed · repeats(시안 113행). ── */
+/** ① 어디서 자꾸 막히나(틀 ㄴ 팀끼리 견줌) — 돌려보낸 결재: 팀마다 올린 카드 수 중 돌려보냄(REVISE)을 한 번이라도 받은 카드 수. 튀는 팀 하나(비율 최대, 0 이면 없음)만 worst. */
+export function stuckOf(approvals, teamIds) {
+  const rows = teamIds.map((team) => {
+    const mine = (approvals ?? []).filter((r) => r.team === team && r.kind !== 'void' && r.status !== 'void');
+    const sent = mine.filter((r) => (r.decisions ?? []).some((d) => d.decision === 'REVISE'));
+    return { team, what: '돌려보낸 결재', total: mine.length, count: sent.length, ids: sent.map((r) => ({ id: r.id, what: r.what, ts: r.ts })), worst: false };
+  });
+  let worst = null;
+  for (const r of rows) if (r.count && (!worst || r.count / r.total > worst.count / worst.total)) worst = r;
+  if (worst) worst.worst = true;
+  return rows;
+}
+/** 회차 길이(멈춤 뺀 ms) — 시험 회차(1분 미만·일주일 넘음)는 뺀다. 닫힌 것만, 회차 번호 순. */
+export function roundLensOf(rounds, pauses = []) {
+  return (rounds ?? []).filter((r) => r.startedAt && r.endedAt)
+    .map((r) => ({ round: r.round, milestone: r.milestone ?? null, verdict: r.verdict ?? null, startedAt: r.startedAt, endedAt: r.endedAt, ms: Date.parse(r.endedAt) - Date.parse(r.startedAt) - pausedMs(r.startedAt, r.endedAt, pauses), pausedMs: pausedMs(r.startedAt, r.endedAt, pauses) }))
+    .filter((r) => Number.isFinite(r.ms) && r.ms >= ROUND_MIN_MS && r.ms <= ROUND_MAX_MS)
+    .sort((a, b) => (a.round ?? 0) - (b.round ?? 0));
+}
+/** ② 무엇이 느려졌나(틀 ㄱ 시간으로 견줌) — 팀마다 지난 회차 → 이번 회차 길이. dir: bad(길어짐) · good(짧아짐) · same. 회차가 둘 안 되는 팀은 없다(빈칸 말은 화면이). */
+export function slowedOf(roundsByTeam, pauses = []) {
+  const out = [];
+  for (const [team, rounds] of Object.entries(roundsByTeam ?? {})) {
+    const lens = roundLensOf(rounds, pauses);
+    if (lens.length < 2) continue;
+    const prev = lens[lens.length - 2], cur = lens[lens.length - 1];
+    out.push({ team, what: '회차 길이', prev: prev.ms, cur: cur.ms, pausedMs: cur.pausedMs, prevRound: prev.round, curRound: cur.round, curStartedAt: cur.startedAt, dir: cur.ms > prev.ms ? 'bad' : cur.ms < prev.ms ? 'good' : 'same' });
+  }
+  return out.sort((a, b) => (b.cur / Math.max(1, b.prev)) - (a.cur / Math.max(1, a.prev)));   // 제일 나빠진 것 먼저, 제일 좋아진 것 마지막
+}
+/** 같은 카드 — "(2차 …)"·"(… 고침)" 꼬리를 뗀 이름이 같으면 같은 자리(하영 3-3). */
+export const cardBase = (what) => String(what ?? '').replace(/\s*\((?:\d+차|[^()]*고침)[^()]*\)\s*$/, '').trim();
+/** ③ 같은 일이 몇 번째인가(틀 ㄷ) — 같은 카드를 다시 올린 것 · 같은 단계를 여러 회차 돈 것. nth ≥ 2 만, 많은 것 먼저. passed: 마지막 것이 통과했나. */
+export function repeatsOf(approvals, roundsByTeam) {
+  const out = [];
+  const groups = new Map();
+  for (const r of approvals ?? []) {
+    if (r.status === 'void') continue;
+    const key = `${r.team}|${cardBase(r.what)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  }
+  for (const [key, list] of groups) {
+    if (list.length < 2) continue;
+    list.sort((a, b) => String(a.ts).localeCompare(String(b.ts)));
+    const last = list[list.length - 1];
+    out.push({ team: key.split('|')[0], kind: 'card', what: cardBase(last.what), at: list.map((r) => r.ts), ids: list.map((r) => r.id), nth: list.length, passed: last.status === 'passed' });
+  }
+  for (const [team, rounds] of Object.entries(roundsByTeam ?? {})) {
+    const byMs = new Map();
+    for (const r of (rounds ?? []).filter((x) => x.endedAt && x.milestone != null).sort((a, b) => (a.round ?? 0) - (b.round ?? 0))) {
+      if (!byMs.has(r.milestone)) byMs.set(r.milestone, []);
+      byMs.get(r.milestone).push(r);
+    }
+    for (const [milestone, list] of byMs) {
+      if (list.length < 2) continue;
+      out.push({ team, kind: 'round', what: `${milestone}단계`, milestone, at: list.map((r) => r.round), nth: list.length, passed: list[list.length - 1].verdict === 'PASS' });
+    }
+  }
+  return out.sort((a, b) => b.nth - a.nth || String(b.at[b.at.length - 1]).localeCompare(String(a.at[a.at.length - 1])));
+}
+
 /**
  * 예정 작업 표(plan-table.md, 톰)의 '팀별 단계' 절을 서버가 roadmap 에서 만든다(톰 결정 09-14: "손으로 세는 건 썩는다"). 톰이 쓰는 건 위(대표님이 물으신 것)·아래(대표님 손에 있는 것) 둘뿐.
  * 순수 — check 가 돌린다. 세는 숫자 없음(헨리) — 단계 번호·낱말·시각만. 시각은 우리 시각(서울).

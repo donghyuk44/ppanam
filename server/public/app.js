@@ -7,7 +7,7 @@ import * as World from '/world/world.js';
 import { toolLabel, toolPhrase, baseName, ga } from '/toollabel.js';
 import { findOutPaths, linkOutPaths } from '/outlink.js';
 import { notificationsOf, blockedOf, pausedMs } from '/notify.js';
-import { dayWord, timeWord, spanWord } from '/when.js';
+import { dayWord, timeWord, clockWord, spanWord } from '/when.js';
 import { parseMention } from '/mention.js';
 
 const $ = (id) => document.getElementById(id);
@@ -817,9 +817,9 @@ function connect() {
       if (view === 'dashboard') loadDashboard();
       if (view === 'report') loadReport();   // 안 바뀌었으면 loadReport 안에서 다시 안 그린다(펼친 팀 줄이 닫히지 않게)
       // 분석은 값이 실제로 움직였을 때만 다시 불러온다. 250ms 마다 받아올 이유가 없다.
-      if (view === 'analysis') {
-        const s = summaries[active] ?? {};
-        if (`${s.round}:${s.logCount}:${s.phase}` !== anMark) loadAnalysis();
+      if (view === 'analysis') {   // 다섯 팀 회차·상태·결재 수가 움직였을 때만(loadAnalysis 의 mark 와 같은 식)
+        const mark = teams.map((t) => `${summaries[t.id]?.round}:${summaries[t.id]?.phase}`).join('|') + `|${approvals.length}`;
+        if (mark !== anMark) loadAnalysis();
       }
       return;
     }
@@ -2290,188 +2290,106 @@ function renderReport(r) {
 
 let anMark = '';
 
+/* ── 분석 = "왜 자꾸 이렇게 되나" — 헨리 분석 1판(analysis.svg, 09-16) · 하영 화면 글 틀 1판 3절 · 나리 정본 41~44행. 9단계 ③.
+ * 다섯 팀을 같은 자로, 칸 셋 — ① 어디서 자꾸 막히나(틀 ㄴ: 돌려보낸 결재 — {팀} a건 중 b, 팀마다 같은 자 띠, 튀는 팀만 빨강) ② 무엇이 느려졌나(틀 ㄱ: 회차 길이 — 지난 → 이번, 위·아래 색)
+ * ③ 같은 일이 몇 번째인가(틀 ㄷ: 회차 네모를 같은 자리에 겹침, 세 번째부터 빨강). 숫자는 늘 둘이 나란히 — 옛 타일(끝난 회차 N · 통과 N · 대화 기록 N)은 자기 통계·하나짜리라 안 온다(나리 R29 실측 ①③).
+ * 세 겹: 그림 + 문장 → 누르면 그 자리에서 펼친 줄(어느 카드·어느 회차) → 결재 카드 / 방. 값은 /api/analysis?all=1 — 서버(bus.stuckOf·slowedOf·repeatsOf 순수)가 approvals·rounds·pauses 에서 센다. ── */
 async function loadAnalysis() {
-  if (!active) return;
-  const s = summaries[active] ?? {};
-  anMark = `${s.round}:${s.logCount}:${s.phase}`;
-  const t = teams.find((x) => x.id === active);
-  $('anTitle').textContent = `분석 — ${t?.name ?? active}`;
-  const r = await fetch(`/api/analysis?team=${encodeURIComponent(active)}`).then((x) => x.json());
-  if (r.error) return;
+  const mark = teams.map((t) => `${summaries[t.id]?.round}:${summaries[t.id]?.phase}`).join('|') + `|${approvals.length}`;
+  anMark = mark;
+  const r = await fetch('/api/analysis?all=1').then((x) => x.json()).catch(() => null);
+  if (!r || r.error) return;
   renderAnalysis(r);
 }
-
-function tile(k, v, note) {
-  const n = el('div', 'tile');
-  n.appendChild(el('div', 'tile__k', k));
-  n.appendChild(el('div', 'tile__v', v));
-  if (note) n.appendChild(el('div', 'tile__n', note));
-  return n;
+const nthWord = (n) => (['', '첫', '두', '세', '네', '다섯', '여섯', '일곱', '여덟', '아홉', '열'][n] ?? `${n}`) + ' 번째';
+/** 회차 네모를 같은 자리에 겹친다(numbers ③ · 시안 ③) — 세 번째부터 빨강. */
+function stackBoxes(n) {
+  const s = el('span', 'an__stack'); s.style.setProperty('--n', String(n));
+  for (let i = 0; i < Math.min(n, 12); i++) { const b = el('i'); b.style.setProperty('--i', String(i)); if (i >= 2) b.dataset.k = 'bad'; s.appendChild(b); }
+  return s;
 }
-
-function panel(title) {
-  const p = el('section', 'panel');
-  p.appendChild(el('h2', null, title));
-  return p;
+function anCard(head) { const c = el('section', 'an__card'); c.appendChild(el('div', 'dash__k', head)); return c; }
+const anOpen = new Set();   // 펼친 줄 — "칸:열쇠"
+function anRow(key, node, whyLines) {
+  const row = el('button', 'an__row'); row.type = 'button'; row.dataset.open = anOpen.has(key) ? '1' : '0';
+  row.appendChild(node);
+  row.addEventListener('click', () => { if (anOpen.has(key)) anOpen.delete(key); else anOpen.add(key); loadAnalysis(); });
+  const wrap = el('div', 'an__rowwrap'); wrap.appendChild(row);
+  if (anOpen.has(key) && whyLines?.length) { const w = el('div', 'an__why'); for (const l of whyLines) w.appendChild(l); wrap.appendChild(w); }
+  return wrap;
 }
-
-/* 분석 첫 층 — 다섯 팀을 같은 자로(하영 화면 글 틀 3-1 "어디서 자꾸 막히나" · 헨리 numbers.md 1절 ⑤ 작은 그림 다섯: 팀마다 진행 막대 + 시간 띠 한 줄, 같은 자·같은 크기).
- * 나리 정본 조건(화면이-답하는-질문.md): 첫 층에 그림이 최소 하나 — 글자만이면 통과가 아니다(9단계 ③). 강조는 numbers ⑥ — 막힌 팀만 빨간 띠, 나머지 회색·팀 색.
- * 문장 틀·칸 셋(3-2)은 헨리 분석 시안(H4) 뒤 — 여기는 그림 한 층만 먼저 세운다. 밑의 옛 표는 그때 빠진다. */
-function analysisPicture() {
-  const sec = el('section', 'an__pic');
-  sec.appendChild(el('div', 'dash__k', '어디서 자꾸 막히나 — 다섯 팀 같은 자'));
-  const now = Date.now(), day0 = dayStartSeoulMs(now);
-  loadDone();
-  const today = done.items.filter((it) => new Date(it.ts).getTime() >= day0 && it.by !== 'boss');
-  for (const t of teams.filter((x) => x.id !== 'sera')) {
-    const s = summaries[t.id] ?? {};
-    const office = t.kind === 'office';
-    const row = el('div', 'an__team'); row.dataset.team = t.id;
-    const head = el('span', 'an__teamhead');
-    const dot = el('span', 'dot'); dot.style.background = teamColor(t.id); head.appendChild(dot);
-    head.appendChild(el('b', null, roomWord(t)));
-    if (!office) {
-      const total = s.milestonesTotal ?? 0;
-      head.appendChild(progressBar(s.milestonesDone ?? 0, total, teamColor(t.id)));
-      head.appendChild(el('span', 'dash__stage', total ? `${s.milestonesDone ?? 0}/${total}` : '단계 없음'));
-    }
-    row.appendChild(head);
-    // 시간 띠 — 오늘 한 것 = 사람 색 점, 대표님께 물어봄 = 빨간 점, 멈춘 구간(검토에서 멈춤) = 빨간 띠. 현황 ④ 와 같은 자
-    const marks = today.filter((it) => it.team === t.id).map((it) => ({ at: new Date(it.ts).getTime(), color: it.by ? seatColor(t.id, it.by) : teamColor(t.id), title: `${it.name ?? t.name} · ${it.text} · ${hhmm(it.ts)}` }));
-    if (s.bossCall?.ts) marks.push({ at: new Date(s.bossCall.ts).getTime(), kind: 'bad', title: `대표님께 물어봄 · ${hhmm(s.bossCall.ts)}` });
-    const spans = s.phase === 'blocked' ? [{ from: Math.max(day0, new Date(s.lastAt ?? now).getTime()), to: now }] : [];
-    row.appendChild(timeBand(day0, now, marks, spans));
-    const said = [`오늘 한 것 ${marks.filter((m) => m.kind !== 'bad').length}`, s.phase === 'blocked' ? `검토에서 멈춤 ${forShort(now - new Date(s.lastAt ?? now).getTime())}` : null].filter(Boolean).join(' · ');
-    const note = el('span', 'an__teamnote', said); if (s.phase === 'blocked') note.dataset.k = 'bad';
-    row.appendChild(note);
-    sec.appendChild(row);
-  }
-  sec.appendChild(el('div', 'panel__note', '막대 = 끝난 단계 / 전체 · 띠 = 오늘(우리 시각) · 점 = 한 것 · 빨간 띠 = 검토에서 멈춤'));
-  return sec;
+/** 결재 카드 문 — 대기 중이면 카드 팝업, 아니면 그 방으로(카드는 관제탑 결재 줄에만 산다). */
+function cardLine(teamId, id, what, ts) {
+  const b = el('button', 'an__line'); b.type = 'button';
+  b.textContent = `${id} · ${String(what ?? '').slice(0, 60)}${ts ? ` · ${timeWord(ts, Date.now())}` : ''}`;
+  b.addEventListener('click', async () => { const r = approvals.find((a) => a.id === id); if (r) openApprovalPop(r); else { await selectTeam(teamId); setView('room'); } });
+  return b;
 }
 
 function renderAnalysis(r) {
   const body = $('anBody');
   body.replaceChildren();
-  const st = r.stats, agents = r.cast?.agents ?? {};
+  const now = Date.parse(r.now ?? '') || Date.now();
+  const teamOf = (id) => teams.find((t) => t.id === id);
+  const nameOf = (id) => { const t = teamOf(id); return t ? roomWord(t) : id; };
 
-  // 첫 층 — 그림(다섯 팀 같은 자). 이 밑은 옛 표(5판 3-4 타일·회차 기록) — 분석 시안(헨리 H4)이 오면 문장 틀 셋으로 바뀐다
-  body.appendChild(analysisPicture());
-
-  // 한눈에
-  const tiles = el('div', 'tiles');
-  // 글자는 하영 사전 3-4 그대로 — 회차·단계·계획표·목표·검토 결과(통과·다시·멈춤)·낸 것. 폴더 경로·영어 약자는 화면에 안 나온다.
-  const VERDICT_WORD = { PASS: '통과', REVISE: '다시', FAIL: '멈춤' };
-  tiles.appendChild(tile('끝난 회차', String(st.roundsDone), st.roundsDone ? `평균 다시 ${st.attemptAvg}번` : '아직 없음'));
-  tiles.appendChild(tile('통과', String(st.verdicts.PASS), `다시 ${st.verdicts.REVISE} · 멈춤 ${st.verdicts.FAIL}`));
-  tiles.appendChild(tile('단계',
-    `${r.summary.milestonesDone ?? 0} / ${r.summary.milestonesTotal ?? 0}`,
-    r.roadmap.destination ? '목표 있음' : '계획표 없음'));
-  tiles.appendChild(tile('대화 기록', String(st.logCount), st.lastAt ? `마지막 ${ago(st.lastAt)}` : '비어 있음'));
-  tiles.appendChild(tile('낸 것', String(r.out.length), r.out.length ? '' : '아직 없음'));
-  body.appendChild(tiles);
-
-  // 회차 기록 — rounds.jsonl 이 이걸 위해 있는 색인이다
-  const rp = panel('회차 기록');
-  if (r.rounds.length) {
-    const tb = el('table', 'tbl');
-    const hr = el('tr');
-    for (const [h, c] of [['회차', 'num'], ['단계', 'num'], ['검토 결과', ''], ['주제', 'wrap'], ['다시', 'num'], ['건수', 'num']]) {
-      hr.appendChild(el('th', c, h));
-    }
-    tb.appendChild(hr);
-    for (const x of r.rounds) {
-      const tr = el('tr');
-      tr.appendChild(el('td', 'num', `${x.round}회차`));
-      tr.appendChild(el('td', 'num', x.milestone ? String(x.milestone) : '—'));
-      const vd = el('td', 'nw');
-      if (x.verdict) { const g = el('span', 'vtag', VERDICT_WORD[x.verdict] ?? x.verdict); g.dataset.v = x.verdict; vd.appendChild(g); }
-      else vd.appendChild(el('span', 'tcard__quiet', '검토 결과 없음'));
-      tr.appendChild(vd);
-      tr.appendChild(el('td', 'wrap', x.topic || x.summary || '—'));
-      tr.appendChild(el('td', 'num', x.attempts ? `${x.attempts}번째` : '0'));
-      tr.appendChild(el('td', 'num', String(x.eventCount ?? 0)));
-      tb.appendChild(tr);
-    }
-    rp.appendChild(tb);
-  } else {
-    rp.appendChild(el('div', 'panel__note', '끝난 회차가 없어요. 회차를 마치면 여기에 한 줄씩 쌓여요.'));
+  // ① 어디서 자꾸 막히나 — 돌려보낸 결재: {팀} a건 중 b(다섯 팀 다, 같은 순서). 팀마다 같은 자(1건 = 같은 길이) — 옅은 띠 = 올린 결재, 짙은 띠 = 돌려보낸 것, 튀는 팀만 빨강(numbers ⑥)
+  const c1 = anCard('어디서 자꾸 막히나');
+  const stuck = r.stuck ?? [];
+  const maxTotal = Math.max(1, ...stuck.map((s) => s.total));
+  const sent = el('div', 'an__sentence');
+  sent.append('돌려보낸 결재 — ');
+  stuck.forEach((s, i) => { const t = el('span', null, `${nameOf(s.team)} ${s.total}건 중 ${s.count}`); if (s.worst) t.dataset.k = 'bad'; sent.appendChild(t); if (i < stuck.length - 1) sent.append(' · '); });
+  c1.appendChild(sent);
+  for (const s of stuck) {
+    const line = el('span', 'an__bandrow');
+    const nm = el('span', 'an__team', nameOf(s.team)); if (s.worst) nm.dataset.k = 'bad'; line.appendChild(nm);
+    const band = el('span', 'an__band');
+    const all = el('i', 'an__band--all'); all.style.width = `${Math.round((s.total / maxTotal) * 100)}%`; all.style.background = teamColor(s.team); band.appendChild(all);
+    const cnt = el('i', 'an__band--sent'); cnt.style.width = `${Math.round((s.count / maxTotal) * 100)}%`; cnt.style.background = s.worst ? 'var(--bad)' : teamColor(s.team); band.appendChild(cnt);
+    line.appendChild(band);
+    const m = el('span', 'an__m', `${s.total}건 중 ${s.count}`); if (s.worst) m.dataset.k = 'bad'; line.appendChild(m);
+    c1.appendChild(anRow(`stuck:${s.team}`, line, s.ids.map((c) => cardLine(s.team, c.id, c.what, c.ts))));
   }
-  body.appendChild(rp);
+  body.appendChild(c1);
 
-  // 누가 얼마나 말했나
-  const sp = panel('누가 얼마나 말했나');
-  const total = Object.values(st.byActor).reduce((a, b) => a + b, 0);
-  if (total) {
-    const bars = el('div', 'bars');
-    for (const [id, n] of Object.entries(st.byActor).sort((a, b) => b[1] - a[1])) {
-      const a = agents[id] ?? { ...FALLBACK, name: id };
-      const row = el('div', 'bars__row');
-      row.appendChild(el('div', null, a.name ?? id));
-      const bar = el('div', 'bar2');
-      const fill = el('i');
-      fill.style.width = `${Math.round((n / total) * 100)}%`;
-      fill.style.background = a.color ?? FALLBACK.color;
-      bar.appendChild(fill);
-      row.appendChild(bar);
-      row.appendChild(el('div', 'bars__n', String(n)));
-      bars.appendChild(row);
+  // ② 무엇이 느려졌나 — 회차 길이: 지난 회차 → 이번 회차. 제일 나빠진 팀(빨강)과 제일 좋아진 팀(초록) — 시안은 둘. 지난 = 회색, 이번 = 위·아래 색, 같은 자
+  const c2 = anCard('무엇이 느려졌나');
+  const slowed = r.slowed ?? [];
+  const picks = [];
+  const worse = slowed.find((s) => s.dir === 'bad'), better = [...slowed].reverse().find((s) => s.dir === 'good');
+  if (worse) picks.push(worse); if (better && better !== worse) picks.push(better);
+  if (!picks.length && slowed[0]) picks.push(slowed[0]);
+  if (!picks.length) c2.appendChild(el('div', 'panel__note', '견줄 회차가 아직 없어요 — 회차 둘이 끝나면 떠요'));
+  const maxMs = Math.max(1, ...picks.flatMap((s) => [s.prev, s.cur]));
+  for (const s of picks) {
+    const box = el('span', 'an__pair');
+    const text = el('span', 'an__sentence', `${nameOf(s.team)} 회차 길이 — 지난 회차 ${spanWord(s.prev)} → 이번 회차 ${spanWord(s.cur)}`); text.dataset.k = s.dir; box.appendChild(text);
+    for (const [label, ms, k] of [['지난', s.prev, 'same'], ['이번', s.cur, s.dir]]) {
+      const l = el('span', 'an__bar'); l.appendChild(el('span', 'an__m', label));
+      const bar = el('i'); bar.style.width = `${Math.max(2, Math.round((ms / maxMs) * 100))}%`; bar.dataset.k = k; l.appendChild(bar); box.appendChild(l);
     }
-    sp.appendChild(bars);
-    sp.appendChild(el('div', 'panel__note', `막대는 말한 것 ${total}건이에요. 파일을 열고 고친 것 ${st.tools}건은 말이 아니라서 안 넣었어요.`));
-  } else {
-    sp.appendChild(el('div', 'panel__note', '아직 한 말이 없어요.'));
+    if (s.pausedMs > 0) box.appendChild(el('span', 'an__note', `멈춘 ${spanWord(s.pausedMs)}은 뺐어요`));
+    const why = [el('span', 'an__line', `${s.prevRound}회차 → ${s.curRound}회차 · 이번 회차 ${timeWord(s.curStartedAt, now)} 시작`)];
+    c2.appendChild(anRow(`slowed:${s.team}`, box, why));
   }
-  body.appendChild(sp);
+  body.appendChild(c2);
 
-  // 단계
-  const mp = panel('단계');
-  if (r.roadmap.destination) {
-    const d = el('div', 'dest');
-    d.appendChild(el('div', 'dest__k', '목표'));
-    d.appendChild(el('div', 'dest__v', r.roadmap.destination));
-    mp.appendChild(d);
+  // ③ 같은 일이 몇 번째인가 — 같은 카드를 다시 올린 것 · 같은 단계를 여러 회차 돈 것. 회차 네모를 같은 자리에 겹침 — 세 번째부터 빨강(반박 세 번 = FAIL 과 같은 자). 많은 것 셋
+  const c3 = anCard('같은 일이 몇 번째인가');
+  const repeats = (r.repeats ?? []).slice(0, 3);
+  if (!repeats.length) c3.appendChild(el('div', 'panel__note', '같은 자리를 두 번 간 일이 없어요'));
+  for (const p of repeats) {
+    const box = el('span', 'an__rep');
+    box.appendChild(stackBoxes(p.nth));
+    const where = p.kind === 'card' ? p.at.map((ts) => clockWord(ts)).join(' · ') : `${p.at[0]}회차부터 ${p.at[p.at.length - 1]}회차`;
+    const text = el('span', 'an__sentence', `${nameOf(p.team)} ${p.what} — ${where}, 같은 자리에서 ${nthWord(p.nth)}${p.passed ? '에 통과' : ''}`);
+    if (p.nth >= 3) text.dataset.k = 'bad';
+    box.appendChild(text);
+    const why = p.kind === 'card' ? p.ids.map((id, i) => cardLine(p.team, id, p.what, p.at[i])) : [el('span', 'an__line', `${p.at.map((n) => `${n}회차`).join(' · ')}`)];
+    c3.appendChild(anRow(`rep:${p.team}:${p.what}`, box, why));
   }
-  if (r.roadmap.milestones?.length) {
-    const list = el('div', 'ms');
-    for (const m of r.roadmap.milestones) {
-      const row = el('div', `ms__row${m.status === 'wait' ? ' wait' : ''}`);
-      row.appendChild(el('div', `ms__n ${m.status ?? ''}`.trim(), String(m.n)));
-      const t2 = el('div', 'ms__t');
-      t2.appendChild(el('div', 'ms__title', m.title));
-      if (m.deliverable) t2.appendChild(el('div', 'ms__out', m.deliverable));
-      row.appendChild(t2);
-      list.appendChild(row);
-    }
-    mp.appendChild(list);
-  } else {
-    mp.appendChild(el('div', 'panel__note', '계획표가 아직 없어요.'));
-  }
-  body.appendChild(mp);
-
-  // 낸 것 — 통과 조건은 완료율이 아니라 제출 가능한 물건이다
-  const op = panel('낸 것');
-  if (r.out.length) {
-    const tb = el('table', 'tbl');
-    const hr = el('tr');
-    hr.appendChild(el('th', 'wrap', '파일'));
-    hr.appendChild(el('th', 'num', '크기'));
-    hr.appendChild(el('th', 'num', '마지막'));
-    tb.appendChild(hr);
-    for (const f of r.out) {
-      const tr = el('tr');
-      tr.appendChild(el('td', 'wrap', f.name));
-      tr.appendChild(el('td', 'num', f.size < 1024 ? `${f.size}B` : `${Math.round(f.size / 1024)}KB`));
-      tr.appendChild(el('td', 'num', ago(f.at)));
-      tb.appendChild(tr);
-    }
-    op.appendChild(tb);
-  } else {
-    op.appendChild(el('div', 'panel__note',
-      '아직 없어요. 회차는 완료율이 아니라 낸 것으로 끝나요.'));
-  }
-  body.appendChild(op);
+  body.appendChild(c3);
 }
 
 /* ── 시작 ── */

@@ -397,6 +397,14 @@ const server = http.createServer((req, res) => {
   }
 
   // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.
+  // 분석 = "왜 자꾸 이렇게 되나"(헨리 분석 1판 analysis.svg · 하영 화면 글 틀 3절, 9단계 ③) — 다섯 팀을 같은 자로. 값은 approvals·rounds·pauses 에서만(bus.stuckOf·slowedOf·repeatsOf 순수).
+  if (url.pathname === '/api/analysis' && url.searchParams.get('all') === '1') {
+    const ids = listTeams().filter((t) => t.id !== 'sera').map((t) => t.id);
+    const roundsByTeam = Object.fromEntries(ids.filter((id) => !isOffice(id)).map((id) => [id, listRounds(id)]));
+    const approvals = listApprovals({});
+    const pauses = bus.readPauses();
+    return json(res, 200, { now: new Date().toISOString(), teams: ids, stuck: bus.stuckOf(approvals, ids), slowed: bus.slowedOf(roundsByTeam, pauses), repeats: bus.repeatsOf(approvals, roundsByTeam) });
+  }
   if (url.pathname === '/api/analysis') {
     if (!teamExists(team)) return json(res, 404, { error: '그런 팀이 없습니다.' });
 

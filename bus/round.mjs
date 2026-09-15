@@ -509,6 +509,39 @@ switch (cmd) {
         const toHqDone = foldRequest([{ ...open, id: 'req_00000001', from: F, to: C }, { kind: 'done', ts: at(3), by: C, text: 'a' }, { kind: 'ack', ts: at(4), by: F, text: '' }]);
         const hqOk = lineError(toHq, 'done', C) === null && lineError(toHq, 'goal', C) === null && lineError(toHq, 'ack', C) !== null && lineError(fromHq, 'ack', C) === null && lineError(fromHq, 'done', C) !== null
           && lineError(toHqDone, 'confirm', C) === null && toHqDone.status === 'acked';
+        // 분석 셋(헨리 분석 1판 · 하영 글 틀 3절, 9단계 ③) — stuckOf 돌려보낸 결재(카드 하나에 REVISE 둘이어도 하나, 튀는 팀 하나) · slowedOf 지난→이번(멈춤 뺌, 시험 회차 뺌) · repeatsOf 같은 카드·같은 단계
+        {
+          const { stuckOf, slowedOf, repeatsOf, cardBase } = await import('./bus.mjs');
+          const ap = [
+            { id: 'a1', team: 'design', what: '계획표 2~4단계 재편', ts: at(1), status: 'passed', decisions: [{ by: 'chief', decision: 'REVISE' }] },
+            { id: 'a2', team: 'design', what: '계획표 2~4단계 재편 (2차, 톰 REVISE 반영)', ts: at(2), status: 'passed', decisions: [{ by: 'outside', decision: 'REVISE' }, { by: 'chief', decision: 'REVISE' }] },
+            { id: 'a3', team: 'design', what: '계획표 2~4단계 재편 (3차, 제리 REVISE 반영)', ts: at(3), status: 'passed', decisions: [{ by: 'chief', decision: 'PASS' }, { by: 'outside', decision: 'PASS' }] },
+            { id: 'a4', team: 'dev', what: '로드맵 교체', ts: at(4), status: 'void', decisions: [] },
+            { id: 'a5', team: 'dev', what: '로드맵 교체 (apr_a4 고침)', ts: at(5), status: 'passed', decisions: [{ by: 'boss', decision: 'PASS' }] },
+            { id: 'a6', team: 'dev', what: '푸시', ts: at(6), status: 'pending', decisions: [] },
+          ];
+          const st = stuckOf(ap, ['hq', 'marketing', 'dev', 'design', 'finance']);
+          const d = st.find((x) => x.team === 'design'), v = st.find((x) => x.team === 'dev');
+          const stOk = st.length === 5 && d.total === 3 && d.count === 2 && d.worst === true && d.ids.map((x) => x.id).join(',') === 'a1,a2' && v.total === 2 && v.count === 0 && v.worst === false && st.filter((x) => x.worst).length === 1
+            && cardBase('계획표 2~4단계 재편 (2차, 톰 REVISE 반영)') === '계획표 2~4단계 재편' && cardBase('로드맵 교체 (apr_a4 고침)') === '로드맵 교체' && cardBase('푸시') === '푸시';
+          const rb = { dev: [
+            { round: 24, milestone: 6, verdict: 'PASS', startedAt: '2026-09-13T14:46:11Z', endedAt: '2026-09-13T16:50:55Z' },
+            { round: 25, milestone: 6, verdict: 'PASS', startedAt: '2026-09-13T16:51:33Z', endedAt: '2026-09-15T12:32:01Z' },
+            { round: 26, milestone: 7, verdict: null, startedAt: '2026-09-15T12:33:06Z', endedAt: '2026-09-15T12:33:06.500Z' } ],   // 0.5초 시험 회차 — 뺀다
+          design: [{ round: 11, milestone: 1, verdict: null, startedAt: '2026-09-12T10:00:00Z', endedAt: '2026-09-12T11:00:00Z' }, { round: 12, milestone: 1, verdict: 'PASS', startedAt: '2026-09-12T11:00:00Z', endedAt: '2026-09-12T11:30:00Z' }],
+          finance: [{ round: 1, milestone: 1, verdict: null, startedAt: '2026-09-01T06:31:46Z', endedAt: '2026-09-13T03:49:52Z' }] };
+          const pz2 = [{ from: '2026-09-14T04:35:00Z', to: '2026-09-15T12:13:00Z' }];   // 31시간 38분
+          const sl = slowedOf(rb, pz2);
+          const sdev = sl.find((x) => x.team === 'dev'), sdes = sl.find((x) => x.team === 'design');
+          const slOk = sl.length === 2 && sdev.dir === 'bad' && sdev.prevRound === 24 && sdev.curRound === 25 && Math.round(sdev.prev / 60_000) === 125 && Math.round(sdev.cur / 60_000) === 722 && Math.round(sdev.pausedMs / 60_000) === 1898
+            && sdes.dir === 'good' && sl[0] === sdev && !sl.find((x) => x.team === 'finance');
+          const rp2 = repeatsOf(ap, rb);
+          const card = rp2.find((x) => x.kind === 'card'), rnd = rp2.find((x) => x.kind === 'round' && x.team === 'design'), rdev = rp2.find((x) => x.kind === 'round' && x.team === 'dev');
+          const rpOk = rp2.length === 3 && card.team === 'design' && card.what === '계획표 2~4단계 재편' && card.nth === 3 && card.passed === true && card.ids.join(',') === 'a1,a2,a3'
+            && rnd.what === '1단계' && rnd.nth === 2 && rnd.at.join(',') === '11,12' && rnd.passed === true && rdev.what === '6단계' && rdev.at.join(',') === '24,25' && rp2[0] === card
+            && !rp2.find((x) => x.what === '로드맵 교체') && repeatsOf([], {}).length === 0 && slowedOf({}, []).length === 0;
+          out.push(['분석 셋(stuckOf·slowedOf·repeatsOf)', stOk && slOk && rpOk ? '✓ 돌려보낸 결재 3건 중 2·튀는 팀 하나·무효 뺌 · 지난 2시간 5분→이번 12시간 2분(멈춤 31시간 38분 뺌)·시험 회차 뺌·회차 하나면 없음 · 같은 카드 세 번째에 통과·같은 단계 두 회차' : '✗ ' + JSON.stringify({ stOk, st, slOk, sl, rpOk, rp2 })]);
+        }
         out.push(['총괄실 부탁은 톰이 닫는다(9단계 ④)', hqOk ? '✓ 받는 부탁 done·goal·confirm 톰 · 보내는 부탁 ack 톰 · 남의 자리 줄은 그대로 거부' : '✗ ' + JSON.stringify({ d: lineError(toHq, 'done', C), a: lineError(fromHq, 'ack', C), c: lineError(toHqDone, 'confirm', C), st: toHqDone.status })]);
       }
       // 판정 대상 문구 (솔라 R21) — 빈 문구·플래그 모양은 서버로 가기 전에 거부. `--help` 가 대상이 됐던 R20 사고.
