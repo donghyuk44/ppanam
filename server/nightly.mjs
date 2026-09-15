@@ -14,8 +14,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ROOT, listTeams, roomRules, isOffice, readLog, listRounds, listApprovals, readProgress, readState, readCast, paths, emit, appendJournal, quiet } from '../bus/bus.mjs';
+import { ROOT, listTeams, roomRules, isOffice, readLog, listRounds, listApprovals, readProgress, readState, readCast, paths, emit, appendJournal, quiet, readDelegation } from '../bus/bus.mjs';
 import { nightlyOf, nightlyHqOf, proxyLinesOf, nightlyJournalPrompt, dayKeySeoul, dayStartOf } from '../bus/nightly.mjs';
+import { bossOk, NOT_YET } from './public/bosswords.js';
 
 const STORE = path.join(ROOT, 'state', 'nightly.json');
 const JOURNAL_TIMEOUT = Number(process.env.PPANAM_JOURNAL_TIMEOUT || 3 * 60_000);
@@ -115,3 +116,131 @@ export async function runNightly({ now = Date.now(), session = null } = {}) {
 
 /** 어제 날짜 열쇠 — 서버 틱과 `round.mjs nightly` 미리보기가 같은 식으로 센다. */
 export const yesterdayKey = (now = Date.now()) => dayKeySeoul(dayStartOf(dayKeySeoul(now)) - 1);
+
+// ── 아침 한 장 (M4 · 결정 140 ④ · 경영 req_e27af3c5, 유진 틀 teams/finance/out/daily-template.md) ──────────────
+//
+// 자정 마감과 짝 — 자정은 "지난 하루", 이건 "지난 아침(06:30) 이후". 같은 겹침·중복 방지 뼈대를 그대로 본떴다:
+//   시각이 지났으면 하루 한 번만, 파일이 있으면(파일이 진실) 안 쓴다. 다만 손 글을 밀어내지 않는다 —
+//   그날 파일이 이미 있으면(사람이 먼저 썼다) `<날짜>-자동.md` 로 내고 총괄실에 알린다(유진 틀 2절 끝).
+//
+// 내용은 서버가 가진 재료만: rounds.jsonl PASS · progress.json(blocked·boss·done) · 대기 C 카드 · 대리 결정 로그.
+// 사람 말 한 줄(결정 140, server/public/bosswords.js bossOk)에 안 맞는 재료는 지어 쓰지 않고 NOT_YET 으로 낸다 —
+// 자동이 "사람 말을 만들어내는" 게 아니라 "이미 사람이 사람 말로 써 둔 것만 고른다"가 이 장의 계약이다.
+
+const MORNING_OFFSET_MS = 6.5 * 3600_000;   // 06:30 — 우리 시각 그날 0시로부터
+const dailyDir = () => path.join(paths('hq').out, 'daily');
+const dailyFileOf = (day) => path.join(dailyDir(), `${day}.md`);
+const dailyAutoFileOf = (day) => path.join(dailyDir(), `${day}-자동.md`);
+const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
+
+/** 오늘 06:30(KST) 이 지났으면 그 날짜, 아직이면 null — `yesterdayKey` 의 짝(저긴 지난 자정, 여긴 지난 06:30). */
+export function morningDueDay(now = Date.now()) {
+  const day = dayKeySeoul(now);
+  return now >= dayStartOf(day) + MORNING_OFFSET_MS ? day : null;
+}
+
+/** 대표 화면에 낼 수 있으면 그 줄, 아니면 null(자에 안 맞음 — 지어 쓰지 않는다). */
+const line = (s) => { const v = String(s ?? '').trim(); return v && bossOk(v) ? v : null; };
+
+/**
+ * 아침 한 장 — 팀당 한 줄 셋(된 것 · 막힌 것 · 대표님 손) + 조건부 대리 결정. 읽기만, 쓰지 않는다.
+ * @param day    'YYYY-MM-DD'(우리 시각) — 창은 그 전날 06:30 ≤ ts < 그날 06:30
+ * @returns { day, md, counts: { blocked, boss }, skipped: [{ team, text }] }  skipped = 자에 안 맞아 뺀 재료(규칙 4, 팀 방에 알릴 것)
+ */
+export function buildMorning(day, { now = Date.now() } = {}) {
+  const end = dayStartOf(day) + MORNING_OFFSET_MS, start = end - 86_400_000;
+  const inWin = (ts) => { const t = Date.parse(ts ?? ''); return Number.isFinite(t) && t >= start && t < end; };
+  const teams = rooms();
+  const delegating = !!readDelegation(now);   // 위임 중이면 C 카드 줄은 안 낸다(유진 틀 2절 표 4행) — 톰·제리가 대리한다
+  const skipped = [];
+
+  const doneLines = teams.map((t) => {
+    const owner = roomRules(t.id).owner;
+    const name = readCast(t.id).agents?.[owner]?.name ?? t.name;
+    const rs = [...listRounds(t.id)].filter((r) => r.verdict === 'PASS' && inWin(r.endedAt)).sort((a, b) => Date.parse(a.endedAt) - Date.parse(b.endedAt));
+    const raw = rs.at(-1)?.topic ?? (readProgress(t.id)?.done ?? [])[0] ?? null;
+    if (!raw) return `- ${t.name} · 어제는 낸 게 없어요`;
+    const ok = line(raw);
+    if (!ok) skipped.push({ team: t.id, text: raw });
+    return ok ? `- ${name} · ${ok}` : `- ${t.name} · ${NOT_YET}`;
+  });
+
+  const blockedLines = teams.flatMap((t) => (readProgress(t.id)?.blocked ?? []).map((b) => {
+    const ok = line(b);
+    if (!ok) { skipped.push({ team: t.id, text: b }); return null; }
+    return `- ${t.name} · ${ok}`;
+  }).filter(Boolean));
+
+  const bossLines = teams.flatMap((t) => {
+    const board = (readProgress(t.id)?.boss ?? []).map((b) => { const ok = line(b); if (!ok) skipped.push({ team: t.id, text: b }); return ok ? `- ${t.name} · ${ok}` : null; }).filter(Boolean);
+    const cards = delegating ? [] : listApprovals({ team: t.id, status: 'pending' }).filter((r) => r.grade === 'C').map((r) => {
+      const title = bossOk(r.boss) ? r.boss : r.what;
+      const ok = line(title);
+      return ok ? `- ${t.name} · ${ok}` : null;
+    }).filter(Boolean);
+    return [...cards, ...board];
+  });
+
+  // 대표님 대신 정한 것 — proxy-decisions.md 에서 이 창 안 줄만. 원문은 결정 번호·카드 id 를 담아 자를 못 넘는다(성격상 늘 그렇다) —
+  // 지어 쓰지 않고 누가 정했는지만 밝히고 NOT_YET 으로 낸다(유진 틀 규칙 "그 줄은 빼고 …", 여기선 사람 표시는 남긴다).
+  let proxyMd = ''; try { proxyMd = fs.readFileSync(path.join(paths('hq').out, 'proxy-decisions.md'), 'utf8'); } catch { /* 없던 세계 */ }
+  const proxyLines = proxyMd.split('\n').filter((l) => l.startsWith('- ')).flatMap((l) => {
+    const m = l.match(/^- (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})/);
+    if (!m) return [];
+    const t = Date.parse(`${m[1]}T${m[2]}:00+09:00`);
+    if (!Number.isFinite(t) || t < start || t >= end) return [];
+    const who = (l.match(/(나리|톰|제리)\s*(?:대리|위임)/g) ?? []).at(-1)?.match(/나리|톰|제리/)?.[0] ?? '나리';
+    return [`- ${who} · ${NOT_YET}`];
+  });
+
+  const wd = WEEKDAY[new Date(`${day}T00:00:00+09:00`).getUTCDay()];
+  const md = [
+    `# 아침 한 장 — ${day}`,
+    `${wd}요일 아침 여섯 시 반 기준 · 서버가 상황판에서 만듦`, '',
+    ...(proxyLines.length ? ['## 대표님 대신 정한 것', '', ...proxyLines, '되돌리시려면 방에 한마디.', ''] : []),
+    '## 된 것', '', ...doneLines, '',
+    `## 막힌 것 ${blockedLines.length}`, '', ...(blockedLines.length ? blockedLines : []), '',
+    `## 대표님 손 ${bossLines.length}`, '', ...(bossLines.length ? bossLines : []), '',
+  ].join('\n');
+  return { day, md, counts: { blocked: blockedLines.length, boss: bossLines.length }, skipped };
+}
+
+let morningRunning = false;
+let morningClosedFor = null;   // 이 프로세스가 이미 쓴 날 — 틱마다 파일을 안 열게
+let morningRetryAt = 0;
+
+/**
+ * 틱마다. 오늘 06:30(우리 시각) 이 지났고 아직 안 썼으면 쓴다. 겹치지 않는다. 자정 마감과 같은 스위치(state/nightly.json.on)를 쓴다 —
+ * 나리 결정(09-15, 위임 136): "코드는 두되 켜지 않는다" 는 자정만이 아니라 서버가 자동으로 내는 장 전체에 건 스위치다.
+ * @param session  자리 채우기용(runNightly 와 자리 맞춤) — 정적 요약이라 실제로는 안 부른다.
+ */
+export async function runMorning({ now = Date.now(), session = null } = {}) {
+  const day = morningDueDay(now);
+  if (!day || morningRunning || morningClosedFor === day || now < morningRetryAt) return null;
+  if (!nightlyOn()) return null;
+  const file = dailyFileOf(day);
+  let target = file, auto = false;
+  if (fs.existsSync(file)) { target = dailyAutoFileOf(day); auto = true; if (fs.existsSync(target)) { morningClosedFor = day; return null; } }
+  morningRunning = true;
+  try {
+    const out = buildMorning(day, { now });
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, out.md);
+    writeStore({ ...readStore(), morning: { day, at: new Date(now).toISOString(), auto, blocked: out.counts.blocked, boss: out.counts.boss } });
+    morningClosedFor = day;
+
+    for (const s of out.skipped) emit(s.team, { actor: 'system', type: 'note', text: `아침 한 장 자에 안 맞아 뺀 줄 — 다시 쓰면 다음 장에 실립니다: ${s.text}`.slice(0, 200) });
+    emit('hq', {
+      actor: 'system', type: 'note',
+      text: `아침 한 장 ${day} — 막힌 것 ${out.counts.blocked} · 대표님 손 ${out.counts.boss} · ${rel(target)}${auto ? ' (손 글이 있어 자동 판을 따로 냄)' : ''}`,
+      meta: { morning: { day, file: rel(target), auto, blocked: out.counts.blocked, boss: out.counts.boss } },
+    });
+    return { day, file: rel(target), auto, ...out.counts };
+  } catch (e) {
+    morningRetryAt = now + RETRY_MS;
+    try { emit('hq', { actor: 'system', type: 'note', text: `아침 한 장 ${day} 을 쓰지 못했습니다 — ${String(e.message).slice(0, 200)}. 10분 뒤 다시 봅니다.` }); } catch { /* 삼킨다 */ }
+    return null;
+  } finally {
+    morningRunning = false;
+  }
+}
