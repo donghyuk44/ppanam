@@ -1450,6 +1450,21 @@ export function resumeRound(team, { text = null, proxy = null } = {}) {
 export const isPassLine = (text) => /^\(패스\)/.test(String(text ?? '').trim());
 
 /**
+ * 말투 표본 발언 id 모음 (결정 44 ②③) — 참고 인물·표본 다섯 줄을 고르는 라운드에서, 표본 안에 여러 사람을
+ * 부르며 묻는 문장이 실제 호명·질문으로 읽혀 종·막힘에 섰다(레오 R26 `evt_54daf02c54`·`evt_6c39d2149f`,
+ * 나리 09-15 R27 보고서 "막힌 것"). 표본 문구만으로는 가려낼 수 없어서(둘째 판은 "기계 같음 검사" 글자도 없다) —
+ * 옮긴 사람이 `note meta.sampleIds` 로 표시하면(blocked/resumed·proxyAnswer 와 같은 선) 그 발언만 호명·종·막힘 계산에서 뺀다.
+ * 대화록은 고치지 않는다 — 새 note 로 정정만 붙인다.
+ */
+export function sampleIdsOf(log) {
+  const s = new Set();
+  for (const e of log) {
+    if (e.type === 'note' && Array.isArray(e.meta?.sampleIds)) for (const id of e.meta.sampleIds) s.add(id);
+  }
+  return s;
+}
+
+/**
  * 이 라운드에서 대표에게 결정을 청했는데 그 뒤 대표가 말하지 않은 발언 — 화면의 종(호명 배지). 뒤에서 앞으로, round_start 까지만.
  * 순수 — teamSummary·peopleOf·자정 마감(nightlyOf)이 같은 함수로 센다(한 군데는 전부가 아니다). 대표 말·대리 답(결정 85)이 뒤에 있으면 답한 것.
  * 물은 사람이 그 뒤 다시 말했으면 그 물음은 지나간 것 — 답이 다른 길로 왔든 넘어갔든, 마지막 호명 발언이 답 끝난 뒤에도 서 있었다(나리 결정 ①, 09-15).
@@ -1462,9 +1477,11 @@ export function bossCallOf(log, cast, { progress = null } = {}) {
   if (Array.isArray(progress?.boss) && progress.boss.length === 0) return null;
   let answered = false;
   const spokeAgain = new Set();   // 그 뒤에 다시 말한 사람
+  const sampleIds = sampleIdsOf(log);   // 말투 표본 발언 — 실제 호명이 아니다
   for (let i = log.length - 1; i >= 0; i--) {
     const e = log[i];
     if (e.type === 'round_start') break;
+    if (sampleIds.has(e.id)) continue;
     if (e.type === 'message' && e.actor === 'boss') answered = true;
     if (e.type === 'note' && e.meta?.proxyAnswer) answered = true;   // 톰·제리의 대리 답(결정 85)도 답이다
     if (answered || e.type !== 'message' || e.actor === 'boss' || e.actor === 'system') continue;
@@ -1568,6 +1585,7 @@ export function peopleOf(log, cast, { now = Date.now(), progress = null } = {}) 
   const boss = { lastSaidAt: null, lastText: null, todaySay: 0, todayDecisions: 0 };
   const unsaid = new Set([...ids, 'boss']);   // 마지막 발언을 아직 못 찾은 자리
   const spokeAgain = new Set();               // 이 라운드에서 그 뒤에 다시 말한 사람 — bossCallOf 와 같은 선(나리 결정 ①)
+  const sampleIds = sampleIdsOf(log);         // 말투 표본 발언 — 실제 호명이 아니다
 
   let inRound = true, bossAnswered = false;
   for (let i = log.length - 1; i >= 0; i--) {
@@ -1606,7 +1624,7 @@ export function peopleOf(log, cast, { now = Date.now(), progress = null } = {}) 
     }
     // 이 라운드에서 대표에게 결정을 청했는데 그 뒤 대표가 말하지 않았다 — teamSummary.bossCall(bossCallOf)과 같은 판별(결정 52), 인용문만 더한다.
     // 그 사람이 그 뒤 다시 말했으면 지나간 물음(나리 결정 ①) — 마지막 말만 물음일 수 있다.
-    if (inRound && !bossAnswered && !boardEmpty && !p.bossCall && e.type === 'message' && !spokeAgain.has(e.actor) && asksBoss(e.text, agents)) {
+    if (inRound && !bossAnswered && !boardEmpty && !p.bossCall && e.type === 'message' && !sampleIds.has(e.id) && !spokeAgain.has(e.actor) && asksBoss(e.text, agents)) {
       p.bossCall = { id: e.id, ts, text: bossParagraph(e.text, agents).replace(/\s+/g, ' ').trim().slice(0, 80) };   // 인용은 대표에게 한 그 문단(나리 09-15)
     }
     if (inRound && e.type === 'message') spokeAgain.add(e.actor);
@@ -1639,10 +1657,12 @@ export function workStateOf(p, phase, now = Date.now()) {
  */
 export function bossNotesOf(log, cast, { now = Date.now(), limit = 30 } = {}) {
   const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+  const sampleIds = sampleIdsOf(log);   // 말투 표본 발언 — 대표에게 한 말이 아니다
   const out = [];
   for (let i = log.length - 1; i >= 0 && out.length < limit; i--) {
     const e = log[i];
     if (new Date(e.ts ?? 0).getTime() < dayStart.getTime()) break;
+    if (sampleIds.has(e.id)) continue;
     if (e.type !== 'message' || e.actor === 'boss' || e.actor === 'system' || !callsBoss(e.text, cast)) continue;
     const text = String(e.text ?? '').replace(/\s+/g, ' ').trim();
     out.push({ id: e.id, ts: e.ts, by: e.actor, text: text.slice(0, 160), ask: asksBoss(e.text, cast) });
@@ -1835,9 +1855,11 @@ export function blockedSpansOf(log, cast, { team = null, since = null, until = n
   const ms = (ts) => new Date(ts ?? 0).getTime();
   const one = (t, n) => String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
   const spans = [];
+  const sampleIds = sampleIdsOf(log);   // 말투 표본 발언 — 실제 막힘·물음이 아니다
   let fail = null;   // 열린 FAIL 구간
   let ask = null;    // 열린 물음 구간
   for (const e of log) {
+    if (sampleIds.has(e.id)) continue;
     if (e.type === 'note' && e.meta?.blocked) { if (!fail) fail = { team, kind: 'fail', from: e.ts, to: null, text: one(e.text, 120), by: null, ref: e.id }; continue; }
     if (e.type === 'note' && e.meta?.resumed) { if (fail) { fail.to = e.ts; spans.push(fail); fail = null; } continue; }
     // 라운드가 닫히거나 새로 열리면 그 라운드의 막힘·물음은 거기서 끝난다(라운드 닫힘이 곧 풀림 — 마케팅 '반박 3회' 가 사흘째 열린 채 섰다, 나리 09-15). teamSummary 와 같은 선

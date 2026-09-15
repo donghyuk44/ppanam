@@ -411,6 +411,14 @@ switch (cmd) {
       const bsOk = bsKinds === 'fail:1:3,ask:4:6,ask:7:8,ask:9:open' && bs[1].text === '대표님, 유니티로 갈까요?' && bs[1].by === 'guide' && bs[0].by === null && bsWin === 'fail:closed,ask:closed'
         && bsPzKinds === 'fail:1:2,ask:7:8,ask:9:9.5';
       out.push(['멈춰 있던 구간(blockedSpansOf)', bsOk ? '✓ FAIL 구간 · 물음→대표 답 · 라운드 바뀌면 닫힘 · 창과 겹치는 것만 · 멈춘 구간은 잘라냄 · 인용은 대표 문단' : '✗ ' + JSON.stringify({ bsKinds, bsWin, bsPzKinds })]);
+      // 말투 표본은 물음이 아니다(솔라, 나리 09-15 R27 보고서 "막힌 것 2" — 레오 표본 다섯 줄이 evt_54daf02c54·evt_6c39d2149f 로 종·막힘에 섰다).
+      // 표본 글자만으로는 못 가려서(둘째 판은 "기계 같음 검사" 글자도 없다) — note meta.sampleIds 로 표시(sampleIdsOf, bossCallOf·peopleOf·bossNotesOf 도 같은 선).
+      const sampleLog = [
+        { id: 'sp1', ts: at(1), actor: 'guide', type: 'message', text: '대표님, 표본입니다 — 정해 주세요.' },
+        { id: 'sp2', ts: at(2), actor: 'system', type: 'note', text: '정정 — sp1 은 말투 표본', meta: { sampleIds: ['sp1'] } },
+      ];
+      const spanSample = blockedSpansOf(sampleLog, pcast, { team: 'dev', since: at(0), until: at(10), now: Date.parse(at(10)) });
+      out.push(['말투 표본은 물음이 아니다(나리 09-15)', spanSample.length === 0 ? '✓ note meta.sampleIds 로 표시된 발언은 asksBoss 라도 구간을 안 연다' : '✗ ' + JSON.stringify(spanSample)]);
       // 대표에게 한 그 문단(bossParagraph) — "헨리, 셌어…" 넷째 문단이 "대표님, 한 줄요 — …?" 였는데 첫 줄이 대표 차례로 섰다(나리 09-15)
       const bp = bossParagraph('헨리, 셌어. 낱말 사전 밖 말 0.\n\n걸리는 거 하나 — 메모야?\n\n대표님, 한 줄요 — 유진 색이 겹쳐요. 계속 쓸까요?\n\n클레멘타인 끝.', pcast);
       const bp2 = bossParagraph('솔라, 됐어.\n\n대표님, 올렸습니다.', pcast);
