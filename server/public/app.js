@@ -1358,9 +1358,10 @@ function renderTowerAll(grid) {
     for (const p of people) {
       const line = el('div', 'bands__row');
       const lab = el('span', 'bands__who'); const d = el('span', 'dot'); d.style.background = seatColor(p.team, p.by); lab.appendChild(d); lab.append(p.name); line.appendChild(lab);
+      // 수는 글자로 안 적는다 — '오늘 한 것 N' 은 M2 에서 뺀 자기 통계(하영 req_0964bae9 · 내용 2판 9절 5). 길이만, 손 올리면 한 줄
       const cell = el('span', 'bands__bar');
       const bar = progressBar(p.items.length, max, seatColor(p.team, p.by)); bar.title = `${p.name} · 오늘 ${p.items.length}건`; bar.style.width = 'min(100%, 160px)';
-      cell.appendChild(bar); cell.appendChild(el('span', 'bands__n', String(p.items.length)));
+      cell.appendChild(bar);
       line.appendChild(cell);
       bands.appendChild(line);
     }
