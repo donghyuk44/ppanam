@@ -2022,10 +2022,12 @@ function loadDashboardBand(r) {
     }
     row.appendChild(lane); band.appendChild(row);
   }
-  const bg = r.bossGates ?? [];
-  gates.appendChild(el('div', 'gates__k', `대표가 정해야 열리는 것 ${bg.length}`));
-  if (!bg.length) gates.appendChild(el('div', 'tcard__quiet', '지금 정하실 것 없어요.'));
-  for (const g of bg) { const c = el('div', 'gates__card'); c.appendChild(el('b', null, teams.find((t) => t.id === g.team)?.name ?? g.team)); c.append(' ' + g.what); gates.appendChild(c); }
+  // 대표 답이 있어야 열리는 단계만(gated) — 결재·상황판 대표 차례는 관제탑 '내 차례' 에 있다(같은 것을 두 군데 두지 않는다, 톰 req_2749e30e). 없으면 칸이 사라진다.
+  const bg = (r.bossGates ?? []).filter((g) => g.kind === 'stage');
+  if (bg.length) {
+    gates.appendChild(el('div', 'gates__k', `대표 답이 있어야 열리는 단계 ${bg.length}`));
+    for (const g of bg) { const c = el('div', 'gates__card'); c.appendChild(el('b', null, teams.find((t) => t.id === g.team)?.name ?? g.team)); c.append(' ' + g.what); gates.appendChild(c); }
+  }
 }
 
 async function loadDashboard() {

@@ -323,10 +323,10 @@ const server = http.createServer((req, res) => {
     const now = Date.now();
     const order = ['sera', 'marketing', 'dev', 'design', 'finance'];   // 도면 순서 — 비서실 먼저(헨리 시안)
     const rows = listTeams().filter((t) => t.id !== 'hq').sort((a, b) => (order.indexOf(a.id) + 1 || 99) - (order.indexOf(b.id) + 1 || 99));
-    const bossGates = listApprovals({ status: 'pending' }).filter((r) => r.grade === 'C').map((r) => ({ kind: 'approval', team: r.team, what: r.what, id: r.id }));
+    // bossGates 는 gated 단계뿐 — C 승인·상황판 boss[] 는 관제탑 ③ 내 차례의 목록이라 여기 또 두면 '같은 것을 두 군데' 다(톰 req_2749e30e). 앞(대시보드)엔 "대표 답이 있어야 열리는 단계" 만.
+    const bossGates = [];
     const teamsOut = rows.map((t) => {
       const plan = bus.plansOf({ roadmap: readRoadmap(t.id), state: isOffice(t.id) ? { phase: 'idle' } : readState(t.id), rounds: isOffice(t.id) ? [] : listRounds(t.id), progress: bus.readProgress(t.id), now, pauses: bus.readPauses() });
-      for (const b of bus.readProgress(t.id)?.boss ?? []) bossGates.push({ kind: 'progress', team: t.id, what: b, id: null });
       for (const s of plan.stages) if (s.status === 'gated') bossGates.push({ kind: 'stage', team: t.id, what: `${s.n != null ? s.n + '단계 ' : ''}${s.title} — ${s.gate}`, id: s.n });
       const color = readCast(t.id).agents?.[bus.roomRules(t.id).owner]?.color ?? null;
       return { id: t.id, name: t.name, room: t.room, color, ...plan };
