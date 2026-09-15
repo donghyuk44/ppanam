@@ -399,7 +399,8 @@ export function startVerdict(team, target) {
   if (!steps.length) throw new Error('이 방에는 감사역이 없습니다.');
   r.round = state.round;
   r.flow = { target: String(target ?? '').trim() || '이번 라운드 산출물', steps, i: 0, asked: 0, skipped: outsideWhy && out ? ['outside'] : [], reason: outsideWhy };
-  emit(team, { actor: 'system', type: 'note', text: `판정 시작 — ${r.flow.target}. ${steps.map((s) => nameOf(team, s)).join(' → ')} 순서.`, meta: { verdictFlow: 'start', steps, skipped: r.flow.skipped, reason: outsideWhy } });
+  // meta.target — 판정 대상 글 그대로. 닫을 때 bus.artifactsOf 가 여기서 out/ 경로를 읽어 산출물이 비었는지 본다(8단계).
+  emit(team, { actor: 'system', type: 'note', text: `판정 시작 — ${r.flow.target}. ${steps.map((s) => nameOf(team, s)).join(' → ')} 순서.`, meta: { verdictFlow: 'start', steps, skipped: r.flow.skipped, reason: outsideWhy, target: r.flow.target } });
   if (out && outsideWhy) {
     const why = outsideWhy === 'suspended' ? `중단 중 — ${out.suspended} 복귀 예정` : outsideWhy === 'not-foreign' ? `자리 엔진이 ${out.model ?? '없음'} 이라 외부 감사가 아님` : '자리 없음';
     emit(team, { actor: 'system', type: 'note', text: `외부 감사 없이 판정합니다 — ${nameOf(team, 'outside')} ${why}. 이 라운드는 기록에 '외부 감사 안 봄' 으로 남고, 돌아오면 다시 봅니다 (결정 118).`, meta: { verdictFlow: 'skip', skipped: ['outside'], reason: outsideWhy } });

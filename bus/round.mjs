@@ -190,6 +190,13 @@ switch (cmd) {
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(paths(T).roadmap, JSON.stringify({ milestones: [{ n: 1, title: '시험', status: 'now' }, { n: 2, title: '둘', status: 'wait' }] }));
     const refuses = (fn, want) => { try { fn(); return '✗ 통과됨 (거부돼야 함)'; } catch (e) { return e.message.includes(want) ? '✓ 거부' : `✗ 다른 이유로 거부: ${e.message}`; } };
+    // 산출물 하나(8단계 조건 5) — 파일을 쓰고 훅이 남기는 모양의 도구 줄(절대 경로)을 남긴다. PASS 로 닫는 자리마다 이게 있어야 한다.
+    const artifact = (name = '물건.md', body = '내용 한 줄\n') => {
+      const abs = path.join(dir, 'out', name);
+      fs.mkdirSync(path.dirname(abs), { recursive: true }); fs.writeFileSync(abs, body);
+      emit(T, { actor: 'ops', type: 'tool', text: abs, meta: { tool: 'Write' } });   // guide 가 아니다 — 아래 생존 알림 시험이 guide 의 마지막 도구 줄을 본다
+      return abs;
+    };
     const out = [];
     try {
       startRound(T, { topic: '가드', milestone: 1 });
@@ -199,8 +206,29 @@ switch (cmd) {
       recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: '됐다' });
       out.push(['PASS 카드만, 완료 note 없이', refuses(() => endRound(T, { verdict: 'PASS' }), '완료 note 가 없습니다')]);
       emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass' } });
+      // 부분 성공은 통과가 아니다(8단계) — 카드·note 는 다 맞는데 물건이 없다 → 거부, 0바이트 → 거부, 판정 대상 글의 경로가 없는 파일 → 거부, 채우면 닫힌다.
+      {
+        const { artifactPathsIn, artifactsOf } = await import('./bus.mjs');
+        const pp = artifactPathsIn('산출물 out/m8-failures.md · teams/hq/out/화면이-답하는-질문.md(맨 밑) · 그림 out/shots/r28-412.png. out/ 폴더와 out/kit/co… 는 안 셈 · HEAD 9b89715');
+        const ppWant = pp.join('|') === 'out/m8-failures.md|teams/hq/out/화면이-답하는-질문.md|out/shots/r28-412.png';
+        const none = refuses(() => endRound(T, { verdict: 'PASS' }), '산출물이 없습니다');
+        const empty = artifact('빈것.md', '');
+        const zero = refuses(() => endRound(T, { verdict: 'PASS' }), '0바이트');
+        fs.writeFileSync(empty, '이제 채움\n');
+        emit(T, { actor: 'system', type: 'note', text: '판정 시작 — out/없는것.md', meta: { verdictFlow: 'start', steps: ['outside'], target: 'out/없는것.md 를 봐라' } });
+        const missing = refuses(() => endRound(T, { verdict: 'PASS' }), '없는것.md(없음)');
+        fs.writeFileSync(path.join(dir, 'out', '없는것.md'), '있다\n');
+        const seen = artifactsOf(T, readLog(T).filter((e) => e.round === readState(T).round)).paths;
+        const seenWant = seen.length === 2 && seen.every((a) => a.bytes > 0) && ['out/빈것.md', 'out/없는것.md'].every((p) => seen.some((a) => a.path === p));
+        out.push(['부분 성공은 통과 아님(8단계)', ppWant && none === '✓ 거부' && zero === '✓ 거부' && missing === '✓ 거부' && seenWant ? '✓ 경로 뽑기 셋(확장자 없는 것 제외) · 물건 없음 거부 · 0바이트 거부 · 판정 대상의 없는 경로 거부 · 채우면 둘 다 크기 있음' : '✗ ' + JSON.stringify({ pp, none, zero, missing, seen })]);
+      }
       let ok = false; try { endRound(T, { verdict: 'PASS' }); ok = true; } catch (e) { out.push(['정식 흐름', `✗ ${e.message}`]); }
-      if (ok) out.push(['정식 흐름 → 닫힘 + 로드맵 pass', readRoadmap(T).milestones[0].status === 'pass' && readState(T).phase === 'idle' ? '✓' : '✗ 로드맵이 pass 가 아님']);
+      if (ok) {
+        const row = listRounds(T).find((x) => x.round === 1);
+        const ms = readLog(T).find((e) => e.type === 'milestone' && e.round === 1);
+        const artWant = row?.artifacts?.length === 2 && ms?.meta?.artifacts?.length === 2 && row.artifacts.every((a) => a.bytes > 0);
+        out.push(['정식 흐름 → 닫힘 + 로드맵 pass', readRoadmap(T).milestones[0].status === 'pass' && readState(T).phase === 'idle' && artWant ? '✓ + 행·milestone 이벤트에 artifacts 둘' : '✗ ' + JSON.stringify({ status: readRoadmap(T).milestones[0].status, phase: readState(T).phase, row: row?.artifacts, ms: ms?.meta?.artifacts })]);
+      }
       // 닫힌 고리(대표 실측 09-14) — PASS 로 닫히며 다음 마일스톤이 있으면 서버가 "다음 마일스톤 착수" B 요청을 올린다(autoOpen). 진짜 큐에 남지 않게 바로 무효 처리.
       {
         const auto = listApprovals({ team: T, status: 'pending' }).filter((r) => r.action?.type === 'milestone');
@@ -693,6 +721,7 @@ switch (cmd) {
         // review 만 PASS → 거부. 중단 적으면 통과, 행에 outsideAudited:false · why 'suspended'
         fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, review: { name: '검수', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
         startRound(T, { milestone: 2, topic: '중단 시험' });
+        artifact();
         recordVerdict(T, { actor: 'review', verdict: 'PASS', text: '내부 됐다' });
         emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['review'], skipped: [], reason: null } });
         const refused = refuses(() => endRound(T, { verdict: 'PASS' }), '외부감사');
@@ -718,6 +747,7 @@ switch (cmd) {
         ]).size === 1;
         fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, review: { name: '검수', model: 'claude' }, outside: { name: '레오', model: 'claude' }, boss: { name: '댄', model: null } } }));
         startRound(T, { milestone: 2, topic: '자기 판정 시험' });
+        artifact();
         emit(T, { actor: 'review', type: 'tool', text: '고침', meta: { tool: 'Edit' } });
         recordVerdict(T, { actor: 'review', verdict: 'PASS', text: '내가 고치고 내가 됐다' });
         emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['review'], skipped: [], reason: null } });

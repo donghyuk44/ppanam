@@ -1216,7 +1216,53 @@ export function endRefusal(team, { verdict = null } = {}) {
     const name = readCast(team).agents?.[lastActor]?.name ?? lastActor;
     return `${name} 가 이 라운드에 직접 고쳤습니다(Edit·Write) — 만든 사람이 판정하지 않습니다 (CLAUDE.md). 다른 사람이 봐야 닫을 수 있습니다.`;
   }
+  // 부분 성공은 통과가 아니다(8단계 실패 수습) — 판정 카드는 PASS 인데 물건이 없거나 비어 있으면 닫지 못한다.
+  const art = artifactsOf(team, events);
+  if (!art.paths.length) return `판정은 PASS 인데 이 라운드의 산출물이 없습니다 — 판정 대상 글에 out/ 경로가 없고 teams/${team}/out/ 에 이 라운드에 쓴 파일도 없습니다. 산출물은 파일로 남깁니다 (CLAUDE.md).`;
+  const bad = art.paths.filter((a) => a.bytes === null || a.bytes === 0);
+  if (bad.length) return `판정은 PASS 인데 산출물이 비었습니다 — ${bad.map((a) => `${a.path}(${a.bytes === null ? '없음' : '0바이트'})`).join(' · ')}. 부분 성공은 통과가 아닙니다. 파일을 채우거나, 판정 대상 글의 경로가 줄임말이면 실제 경로로 적어 다시 판정을 받으세요.`;
   return null;
+}
+
+/**
+ * 이 라운드의 산출물(8단계) — 판정 시작 note 의 meta.target 에 적힌 out/ 경로 + 이 라운드 도구 줄이 teams/<팀>/out/ 밑에 쓴 파일.
+ * 경로마다 크기를 잰다(없으면 null). 순수한 부분(글에서 경로 뽑기)은 artifactPathsIn — round.mjs check 가 돌려본다.
+ * @returns { paths: [{ path, bytes }] } — path 는 방 기준(out/…), 다른 방 것이면 teams/<팀>/out/…
+ */
+export function artifactsOf(team, events) {
+  const outDir = path.join(paths(team).dir, 'out');
+  const found = new Map();   // 절대 경로 → 표시 경로
+  const show = (abs) => abs.startsWith(outDir + path.sep) ? path.relative(paths(team).dir, abs) : path.relative(ROOT, abs);
+  for (const e of events) {
+    if (e.type === 'note' && e.meta?.verdictFlow === 'start') {
+      for (const p of artifactPathsIn(e.meta.target ?? e.text)) {
+        const abs = p.startsWith('teams/') ? path.join(ROOT, p) : path.join(paths(team).dir, p);
+        found.set(abs, show(abs));
+      }
+    }
+    if (e.type === 'tool' && ['Edit', 'Write', 'NotebookEdit'].includes(e.meta?.tool)) {
+      // 훅이 남긴 절대 경로 — 서버가 다른 체크아웃(worktree)에서 돌아도 맞게 `/teams/<팀>/out/` 뒤만 쓴다
+      const i = String(e.text ?? '').indexOf(`/teams/${team}/out/`);
+      if (i >= 0) { const abs = path.join(outDir, String(e.text).slice(i + `/teams/${team}/out/`.length)); found.set(abs, show(abs)); }
+    }
+  }
+  const out = [];
+  for (const [abs, p] of found) {
+    let bytes = null;
+    try { const st = fs.statSync(abs); bytes = st.isFile() ? st.size : null; } catch { /* 없음 */ }
+    out.push({ path: p, bytes });
+  }
+  return { paths: out };
+}
+/** 글에서 out/ 경로를 뽑는다 — `out/a.md` · `teams/dev/out/shots/x.png`. 확장자가 있는 것만(폴더·말 조각은 안 센다), 끝의 문장 부호는 뗀다. 순수. */
+export function artifactPathsIn(text) {
+  const out = new Set();
+  const re = /(?:teams\/[\w-]+\/)?out\/[^\s·,，、;:()（）「」『』"'“”‘’\[\]<>]+/g;
+  for (const m of String(text ?? '').matchAll(re)) {
+    const p = m[0].replace(/[.。!?…]+$/, '');
+    if (/\.[A-Za-z0-9]{1,8}$/.test(p)) out.add(p);
+  }
+  return [...out];
 }
 
 /** 이 라운드에 파일을 고친(Edit·Write·NotebookEdit) 자리들 — 그 자리의 판정 카드는 "만든 사람이 판정" 이 된다(대표 지시, R25). 순수 함수. */
@@ -1276,12 +1322,13 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
   const { auditors, outsideAudited } = auditorsOf(roundEvents);
   const outsideSeat = readCast(team).agents?.outside ?? null;
   const outsideWhy = outsideAudited ? null : !outsideSeat ? 'no-seat' : outsideSeat.suspended ? 'suspended' : !isForeign(outsideSeat.model) ? 'not-foreign' : 'no-card';
+  const artifacts = artifactsOf(team, roundEvents).paths;   // 무엇을 냈나(8단계) — PASS 면 endRefusal 이 이미 비어 있지 않음을 봤다
 
   // PASS 로 닫혔으면 이 마일스톤은 끝났다 — 사실 기록. 다음 것을 now 로 옮기는 것은 B 승인의 일이다.
   if (String(verdict ?? '').toUpperCase() === 'PASS' && state.milestone) {
     if (setMilestoneStatus(team, state.milestone, 'pass')) {
       emit(team, { type: 'milestone', actor: 'system', text: `마일스톤 ${state.milestone} 통과 — 로드맵에 pass 로 기록${outsideAudited ? '' : ' (외부 감사 없이 — ' + outsideWhy + ')'}`,
-        meta: { index: state.milestone, auditors, outsideAudited, ...(outsideWhy ? { outsideWhy } : {}) } });
+        meta: { index: state.milestone, auditors, outsideAudited, ...(outsideWhy ? { outsideWhy } : {}), artifacts } });
       // 닫힌 고리(대표 실측 09-14 — 마케팅이 6단계 통과 뒤 여섯 시간 섰다): now 가 없으면 startRound 가 B 승인을 요구하는데, B 를 올리려면 차례가,
       // 차례는 라운드가 있어야 온다. 닫는 이 순간이 "다음이 뭔지" 아는 유일한 때라 **여기서 B 요청을 자동으로 올린다.** 문(톰·제리)은 그대로다.
       // 통과하면 서버가 now 로 옮기고 라운드까지 연다(autoOpen — notifier.applyAction). 같은 방에 이미 착수 요청이 떠 있으면 또 안 올린다.
@@ -1317,6 +1364,7 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
     endedAt: new Date().toISOString(),
     // 누가 봤나(결정 118 ①) — 라운드당 한 줄이라 "외부 감사 없이 통과한 단계" 를 한 번에 뽑는다
     auditors, outsideAudited, ...(outsideWhy ? { outsideWhy } : {}),
+    artifacts,   // 무엇을 냈나(8단계) — 경로와 크기
   }) + '\n');
 
   // 외부감사도 이 방의 참여자라 자기 세션을 갖는다. 라운드가 끝나면 같이 비운다 —

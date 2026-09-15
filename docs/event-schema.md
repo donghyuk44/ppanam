@@ -784,13 +784,18 @@ codex 를 부르기 전에 `note` 로 거부된다.
 
 ### 라운드를 PASS 로 닫는 조건
 
-만든 사람이 스스로 통과시키지 못하게 `endRound` 가 본다 (`endRefusal`). 네 가지가 다 맞아야 `-v PASS` 가 된다.
+만든 사람이 스스로 통과시키지 못하게 `endRound` 가 본다 (`endRefusal`). 다섯 가지가 다 맞아야 `-v PASS` 가 된다.
 
 1. 이 라운드에 `stale` 아닌 판정 카드가 있다.
 2. 그중 마지막 카드가 `PASS` 다. 마지막이 `REVISE`·`FAIL` 이면 거부.
 3. 그 카드 뒤에 사회자의 판정 완료 `note`(`meta.verdictFlow: 'pass'`)가 있다 — 판정은 `/verdict` 흐름으로 받는다.
 4. **카드의 자리를 본다**(결정 118 ②) — 외부감사 자리가 다른 회사 엔진이고 중단(`suspended`)이 아니면 **그의 PASS 카드**가 있어야 한다. 전엔 안 봐서
    review 자리가 있는 방은 내부감사 클로드 혼자 단계를 넘길 수 있었다. 중단이면 없이 닫히되 기록에 남는다(아래).
+5. **산출물이 비어 있지 않다**(8단계 실패 수습 — "부분 성공이 통과로 위장되지 않는다"). 판정은 PASS 인데 물건이 없는 라운드를 막는다. `bus.artifactsOf` 가
+   둘을 모은다 — ⓐ 판정 시작 `note` 의 `meta.target`(판정 대상 글)에 적힌 `out/…` 경로(확장자 있는 것만 · `teams/<팀>/out/…` 도 그 방 것으로) ⓑ 이 라운드의
+   도구 줄(`type: tool`, `meta.tool` 이 `Edit`·`Write`·`NotebookEdit`)이 `teams/<팀>/out/` 밑에 쓴 파일. 모은 경로마다 **있고 0바이트가 아니어야** 한다 —
+   하나라도 없거나 비었으면 거부(`산출물이 비었습니다 — …`), 하나도 안 모이면 거부(`이 라운드의 산출물이 없습니다`). 판정 대상 글의 줄임말 경로
+   (`shots/a/b-412.png` 처럼 하나로 셋을 뜻하는 것)는 실제 경로로 적는다 — 거부되면 그 경로가 메시지에 나온다. `teams/<팀>/out/` 밖 경로(코드·docs)는 안 센다.
 
 거부되면 방에 `note`(`meta.endRefused`)가 남고 서버는 `409 { refused: true }` 를 돌려준다. 서버는 닫기를 미루기(202) 전에
 먼저 본다. 통과한 `PASS` 는 로드맵의 그 마일스톤을 `pass` 로 옮긴다 — R3·R6·R8 의 "마일스톤 1 통과"(2026-09-12)는
@@ -798,6 +803,8 @@ codex 를 부르기 전에 `note` 로 거부된다.
 **누가 봤나가 기록에 남는다**(결정 118 ①): `milestone` 이벤트 `meta` 와 `rounds.jsonl` 행에 `auditors: [{ actor, verdict, sha, engine, ts }]`(이 라운드의 stale 아닌 카드,
 자리당 마지막 하나 — `bus.auditorsOf`) · `outsideAudited: true|false` · 없으면 `outsideWhy`(`suspended` · `not-foreign` · `no-seat` · `no-card`). 판정 카드 `meta.engine` 은
 답한 엔진(`codex · gpt-5.1` · `gemini · …` · `claude`). 라운드당 한 줄이라 "외부 감사 없이 통과한 단계" 를 한 번에 뽑는다 — 20일에 codex 가 돌아오면 그것만 다시 본다.
+**무엇을 냈나도 남는다**(8단계): 같은 두 자리에 `artifacts: [{ path, bytes }]` — 조건 5 가 본 파일들(방 기준 상대 경로 `out/…`). 판정 시작 `note` 는 `meta.target` 에
+판정 대상 글을 그대로 싣는다(전엔 `text` 에만 섞여 있었다).
 
 ### 라운드를 닫는 정본은 서버다
 
