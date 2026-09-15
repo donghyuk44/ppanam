@@ -151,13 +151,15 @@ body {
 
 .crew { display: flex; gap: 5px; align-items: center; }
 .chip {
-  width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
   font-family: 'Gowun Batang', serif; font-size: 13px; color: #fdfbf7;
 }
 .chip { position: relative; }
-/* 얼굴 썸네일(out/faces, 200×200 투명) — 크기는 그대로 두고 img 만 채운다. overflow:hidden 을 .chip 에 안 주는 건
- * 아래 상태 점(::after)이 오른쪽 아래로 2px 튀어나와 있어서다(자르면 점이 잘린다) — img 쪽만 모서리를 깎는다.
- * 색은 손 안 댐: chip.style.background(자리 색)가 얼굴 사진의 투명한 테두리 자리에 그대로 비쳐 나온다. */
+/* 09-16 낮 — 원형으로(대표 08:2x, 화풍을 반실사 초상으로 바꾸며 "칩은 32px 원형 자르기"). 정사각형
+ * 모양(결정 129·130)은 인형 그림 기준이었다 — 초상으로 넘어가는 지금부터는 원이 정본, 이전 값은 폐기.
+ * 얼굴(out/faces 512, 채팅 칩은 32) — 크기는 자리마다 그대로 두고 img 만 채운다. overflow:hidden 을 .chip 에
+ * 안 주는 건 아래 상태 점(::after)이 오른쪽 아래로 2px 튀어나와 있어서다(자르면 점이 잘린다) — img 쪽만 원으로 깎는다.
+ * 색은 손 안 댐: chip.style.background(자리 색)가 사진의 투명한 테두리 자리에 그대로 비쳐 나온다. */
 .chip img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
 .chip[data-state]::after {
   content: ''; position: absolute; right: -2px; bottom: -2px; width: 8px; height: 8px; border-radius: 50%;
