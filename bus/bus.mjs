@@ -111,6 +111,33 @@ export const isQuietRelay = (text) => String(text ?? '').startsWith(RELAY_QUIET)
 export const TURN_VERDICT = '⟦판정 요청⟧';
 export const TURN_JOURNAL = '⟦일지⟧';
 /**
+ * 판정 차례의 지시문 — 클로드 자리(server/conductor.mjs)와 codex·gemini 자리(bus/outside.mjs)가 같은 글을 받는다.
+ * 대표 07:2x "했다 ≠ 완성 퀄리티 — 공격적 적대적 비판이 없고 수박 겉핥기"(점검-0916 3-9): 감사는 먼저 **떨어뜨릴 이유 셋**을 적고 각각 반박한 뒤에만 PASS.
+ * 첫 줄은 여전히 판정 한 낱말(훅 규약) — 모양이 안 맞는 PASS 는 recordVerdict 가 REVISE 로 되돌린다(passShapeError).
+ */
+export const verdictInstruction = (target, guideName = null) => `${TURN_VERDICT} ${target}
+판정 대상: ${target}${guideName ? ` (만든 사람: ${guideName})` : ''}. 산출물을 열어라 — 화면이면 사진(412·1280), 문서면 대표가 읽을 그대로, 코드면 돌린 로그. 못 열면 첫 줄에 "못 열었다 — 판정 아님" 이라 적고 PASS·REVISE 를 쓰지 마라.
+먼저 떨어뜨릴 이유 셋을 찾아라 — 대표가 원한 퀄리티에서(시안과 같은가 · 30초 안에 할 일이 보이나 · 폰·PC 둘 다 · 하네스 낱말 0 · 못 씀 0 · 원래 요구와 실제 결과가 같은가). 카드 글자와 대조하는 건 이유가 아니다. 셋을 각각 한 줄로 반박할 수 있을 때만 PASS, 하나라도 서면 REVISE.
+답의 모양(이 순서 그대로):
+PASS 또는 REVISE 한 단어
+떨어뜨릴 이유 1: … — 반박: …
+떨어뜨릴 이유 2: … — 반박: …
+떨어뜨릴 이유 3: … — 반박: …
+그다음 근거(경로·줄 번호·돌린 로그). "빠진 것 0건 · 더해진 것 0건" 같은 정형문은 판정이 아니다 — 서버가 REVISE 로 되돌린다. 같은 지적을 다시 내지 마라 — 새 근거가 없으면 PASS. 통과 기준은 완벽함이 아니라 이번 마일스톤의 산출물 조건이다.`;
+/**
+ * PASS 카드의 모양 검사(점검-0916 3-9, R31 ⑦) — 정형문("빠진 것 0건 · 더해진 것 0건 …")이거나 "떨어뜨릴 이유 1~3 … 반박" 줄이 셋 안 되면 그 글.
+ * 밤새 외부감사 PASS 60건 중 31건이 같은 정형문이었다. 순수 — check 가 돌린다. null 이면 모양이 맞다.
+ */
+export function passShapeError(text) {
+  const s = String(text ?? '');
+  if (/빠진 것\s*0\s*건/.test(s) && /더해진 것\s*0\s*건/.test(s)) return '정형문("빠진 것 0건 · 더해진 것 0건")은 판정이 아니다';
+  const reasons = s.split('\n').filter((l) => /^\s*(?:[-*·]\s*)?떨어뜨릴 이유\s*[1-3]/.test(l));
+  const rebutted = reasons.filter((l) => /반박/.test(l));
+  if (reasons.length < 3) return `떨어뜨릴 이유가 ${reasons.length}개 — 셋을 적고 각각 반박한 뒤에만 PASS`;
+  if (rebutted.length < 3) return `떨어뜨릴 이유 셋 중 반박이 ${rebutted.length}개 — 셋 다 한 줄로 반박해야 PASS`;
+  return null;
+}
+/**
  * 일지 차례의 지시문 — 클로드 자리(server/session.mjs journalAll)와 codex 자리(bus/outside.mjs --turn journal)가 같은 문장을 받는다.
  * 첫 문장은 "나는 …" 한 줄 — 일지는 정체성의 연결고리라(대표 지시 2026-09-13) 마을 카드가 그 한 줄을 "어제" 로 보여준다(결정 13).
  * 둘이 다른 문장을 받으면 codex 자리의 일지에만 그 줄이 없다 (M1 인격 이음, 2026-09-13).
@@ -359,7 +386,7 @@ export function listApprovals({ team = null, status = null } = {}) {
       const r = byId.get(l.id);
       if (!r || r.status !== 'pending') continue;
       r.decisions.push(l);
-      const needs = APPROVAL_GRADES[r.grade]?.needs ?? [];
+      const needs = needsOf(r);   // 작은 B 는 톰 하나로 닫힌다
       if (l.decision === 'REVISE') { r.status = 'revised'; r.decidedAt = l.ts; }
       else if (needs.every((who) => r.decisions.some((d) => d.by === who && d.decision === 'PASS'))) {
         r.status = 'passed'; r.decidedAt = l.ts;
@@ -372,10 +399,18 @@ export function listApprovals({ team = null, status = null } = {}) {
   return out;
 }
 
-export function requestApproval(team, { by = 'guide', grade, what, detail = '', action = null, files = [] }) {
+/**
+ * 누가 판정하나 — 등급의 needs. **작은 B**(`small`, 재시작·문구 한 줄·임시 파일 태그 — 실행 대상 없는 B)는 톰 혼자, 제리 대조 생략
+ * (나리 점검-0916 3-9 "감사 무게 나누기": 밤 99건 중 재시작 카드 15장에도 톰+제리 둘 다 대조라 큰 것에 힘이 안 남았다). 순수 — check 가 돌린다.
+ */
+export const needsOf = (r) => (r?.grade === 'B' && r?.small ? ['chief'] : APPROVAL_GRADES[r?.grade]?.needs ?? []);
+
+export function requestApproval(team, { by = 'guide', grade, what, detail = '', action = null, files = [], small = false }) {
   const g = String(grade || '').toUpperCase();
   if (!APPROVAL_GRADES[g]) throw new Error(`등급은 A / B / C 중 하나여야 합니다.`);
   if (!what?.trim()) throw new Error('무엇을 승인받을지가 비어 있습니다.');
+  // 작은 B 는 실행 대상(푸시·착수·로드맵·요청 블록)이 없는 B 만 — 그런 건 톰 혼자 보면 된다. 대상이 있으면 큰 것이다.
+  if (small && (g !== 'B' || action)) throw new Error(`작은 B(--small) 는 실행 대상 없는 B 만입니다 — 재시작·문구 한 줄·임시 파일 태그. ${g !== 'B' ? `등급 ${g} 는 안 됩니다.` : `--push·--next·--roadmap·--to 는 큰 것입니다.`}`);
   // 카드에 붙일 산출물 — teams/<팀>/out/ 기준 상대 경로. 요청 시 있어야 한다 (대표 결정 36).
   const outs = (files ?? []).map((f) => String(f).trim().replace(/^out\//, '')).filter(Boolean);
   for (const f of outs) {
@@ -396,13 +431,14 @@ export function requestApproval(team, { by = 'guide', grade, what, detail = '', 
     // 자유 텍스트를 정규식으로 훑어 "푸시인가"를 짐작하지 않는다 (레오 감사, 2026-09-02).
     ...(action ? { action } : {}),
     ...(outs.length ? { files: outs } : {}),
+    ...(small ? { small: true } : {}),
   };
   // 방에도 남긴다 — 화면에서 가장 약한 줄이지만, 나중에 "언제 요청했나"를 찾을 수 있어야 한다.
   // 그 줄의 id 를 레코드에 박아 카드의 "방에서 보기" 가 요청자 원문으로 건너간다 (결정 20-2).
   const ev = emit(team, {
     actor: by, type: 'note',
-    text: `승인 요청 [${g}] ${rec.what}${g === 'A' ? ' — 자동 통과' : ''}`,
-    meta: { approval: rec.id, grade: g },
+    text: `승인 요청 [${g}${small ? '·작은' : ''}] ${rec.what}${g === 'A' ? ' — 자동 통과' : small ? ' — 톰 혼자 봄' : ''}`,
+    meta: { approval: rec.id, grade: g, ...(small ? { small: true } : {}) },
   });
   rec.note = ev.id;
   appendApproval(rec);
@@ -509,8 +545,8 @@ export function decideApproval(id, { by, decision, reason = '', team = null, pro
   if (r.status !== 'pending') throw new Error(`이미 끝난 요청입니다 (${r.status}).`);
   const d = String(decision || '').toUpperCase();
   if (!['PASS', 'REVISE'].includes(d)) throw new Error('판정은 PASS 또는 REVISE 입니다.');
-  const needs = APPROVAL_GRADES[r.grade].needs;
-  if (!needs.includes(by)) throw new Error(`등급 ${r.grade} 는 ${needs.join('·')} 이(가) 판정합니다. '${by}' 는 아닙니다.`);
+  const needs = needsOf(r);
+  if (!needs.includes(by)) throw new Error(`등급 ${r.grade}${r.small ? '(작은)' : ''} 는 ${needs.join('·')} 이(가) 판정합니다. '${by}' 는 아닙니다.${r.small && by === 'outside' ? ' 작은 B 는 제리 대조를 생략합니다(점검-0916 3-9).' : ''}`);
   // B 의 chief·outside 는 총괄실 사람이다 — 톰과 제리. 'outside' 라는 자리 이름은 방마다 있어서
   // 개발팀의 레오가 제리 몫의 대조를 기록할 수 있었다 (Fable 감사가 격리 실행으로 뚫었다, 2026-09-02).
   // 판정하는 프로세스가 자기 방을 같이 대야 한다. 대표(boss)는 방이 없다.
@@ -1608,11 +1644,15 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
   let attempt = state.attempt || 0;
   let final = v;
   let counted = null;   // REVISE 만 — 반박으로 셌나 (결정 84)
+  // 모양이 안 맞는 PASS(정형문 · 떨어뜨릴 이유 셋 없음)는 REVISE 로 되돌린다(점검-0916 3-9 ⑦) — 반박으로 세지 않고 반박 횟수도 안 건드린다.
+  // 판정 흐름(conductor.onFlowEvent)은 meta.shape 를 보고 그 자리에 한 번 더 묻는다. 총괄실(제리 대조)은 안 본다 — 그건 결재 대조지 물건 감사가 아니다.
+  const shape = v === 'PASS' && !isOffice(team) ? passShapeError(text) : null;
+  if (shape) final = 'REVISE';
 
   // 반박 카운터는 마일스톤의 것이다. 총괄실은 라운드가 없어 리셋될 길이 없는데
   // 제리의 대조 REVISE 가 여기 쌓여 총괄실이 대표 호출로 잠길 뻔했다 (Fable 감사, 2026-09-02).
   // 총괄실의 REVISE 는 그냥 REVISE 다 — 세지 않는다.
-  if (!isOffice(team)) {
+  if (!isOffice(team) && !shape) {
     if (v === 'REVISE') {
       // 받아들여 고친 지적은 반박이 아니다 (결정 84) — 이 라운드의 앞 REVISE 와 견줘 갈린 것(같은 sha 로 다시 · 같은 지적)만 센다.
       const prev = readLog(team).filter((e) => e.round === state.round && e.type === 'verdict' && e.meta?.verdict === 'REVISE' && !e.meta?.stale).at(-1) ?? null;
@@ -1632,8 +1672,12 @@ export function recordVerdict(team, { actor, verdict, text, target = 'guide', ro
   const rec = emit(team, {
     type: 'verdict', actor, text,
     // sha — 감사가 본 커밋(감사 시작 때의 HEAD). B 푸시의 문이 이 값을 대조한다 (결정 63). counted — REVISE 가 반박으로 셌나 (결정 84).
-    meta: { verdict: final, target, attempt, max: MAX_ATTEMPTS, sha: seen, ...(counted === null ? {} : { counted }), ...(eng ? { engine: eng } : {}) },
+    meta: { verdict: final, target, attempt, max: MAX_ATTEMPTS, sha: seen, ...(counted === null ? {} : { counted }), ...(eng ? { engine: eng } : {}), ...(shape ? { shape, said: v } : {}) },
   });
+  if (shape) {
+    const who = readCast(team).agents?.[actor]?.name ?? actor;
+    emit(team, { type: 'note', actor: 'system', text: `${who}의 PASS 를 REVISE 로 되돌립니다 — ${shape}(대표 07:2x, 점검-0916 3-9). 떨어뜨릴 이유 셋과 반박을 적어 다시 판정하세요.`, meta: { verdictShape: shape, actor } });
+  }
 
   if (final === 'FAIL' && !isOffice(team)) {
     emit(team, {

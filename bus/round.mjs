@@ -23,7 +23,7 @@ import {
   addressees, callsBoss, asksBoss, bossParagraph, bossCallOf, bossNotesOf, doneOf, blockedSpansOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
   mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, delegationActive, overdue, setMilestoneStatus,
-  roomRules, allowedIn, plansOf, timeboxRounds, DEFAULT_ROUND_MS, stageTable, swapSection, pausedMs, roundLengthMs,
+  roomRules, allowedIn, plansOf, timeboxRounds, DEFAULT_ROUND_MS, stageTable, swapSection, pausedMs, roundLengthMs, needsOf, requestApproval,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -208,6 +208,8 @@ switch (cmd) {
     process.env.PPANAM_APPROVALS_PATH = path.join(dir, 'approvals.jsonl');
     fs.writeFileSync(paths(T).roadmap, JSON.stringify({ milestones: [{ n: 1, title: '시험', status: 'now' }, { n: 2, title: '둘', status: 'wait' }] }));
     const refuses = (fn, want) => { try { fn(); return '✗ 통과됨 (거부돼야 함)'; } catch (e) { return e.message.includes(want) ? '✓ 거부' : `✗ 다른 이유로 거부: ${e.message}`; } };
+    // PASS 카드는 떨어뜨릴 이유 셋과 반박이 있어야 PASS 로 남는다(점검-0916 3-9 ⑦, bus.passShapeError) — 아래 PASS 들은 이 모양으로 낸다.
+    const shaped = (t) => `${t}\n떨어뜨릴 이유 1: 산출물이 빈가 — 반박: 열어 보니 내용 있음\n떨어뜨릴 이유 2: 조건과 다른가 — 반박: 조건 그대로\n떨어뜨릴 이유 3: 폰에서 깨지나 — 반박: 412 확인`;
     // 산출물 하나(8단계 조건 5) — 파일을 쓰고 훅이 남기는 모양의 도구 줄(절대 경로)을 남긴다. PASS 로 닫는 자리마다 이게 있어야 한다.
     const artifact = (name = '물건.md', body = '내용 한 줄\n') => {
       const abs = path.join(dir, 'out', name);
@@ -221,7 +223,16 @@ switch (cmd) {
       out.push(['카드 없이 end -v PASS', refuses(() => endRound(T, { verdict: 'PASS' }), '판정 카드가 있어야')]);
       recordVerdict(T, { actor: 'outside', verdict: 'REVISE', text: '근거 없음' });
       out.push(['REVISE 뒤 end -v PASS', refuses(() => endRound(T, { verdict: 'PASS' }), '마지막 판정이 REVISE')]);
-      recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: '됐다' });
+      // 정형문 PASS 는 서버가 REVISE 로 되돌린다(점검 3-9 ⑦) — 카드는 REVISE·meta.shape·said:PASS, 반박으로 안 세고(counted 없음) 횟수도 그대로, 방에 note 한 줄.
+      {
+        const a0 = readState(T).attempt || 0;
+        const boiler = recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: '빠진 것 0건 · 더해진 것 0건 · 잘못 간 것 0건 · 뒤집힌 것 0건. 통과입니다.' });
+        const noted = readLog(T).some((e) => e.type === 'note' && e.meta?.verdictShape && e.text.includes('REVISE 로 되돌립니다'));
+        const bWant = boiler.meta.verdict === 'REVISE' && /정형문/.test(boiler.meta.shape ?? '') && boiler.meta.said === 'PASS' && boiler.meta.counted === undefined && (readState(T).attempt || 0) === a0 && noted
+          && refuses(() => endRound(T, { verdict: 'PASS' }), '마지막 판정이 REVISE') === '✓ 거부';
+        out.push(['정형문 PASS → REVISE 되돌림(점검 3-9)', bWant ? '✓ REVISE 카드 · shape · said PASS · 반박 안 셈 · note · 그걸로 못 닫음' : '✗ ' + JSON.stringify({ meta: boiler.meta, a0, a1: readState(T).attempt, noted })]);
+      }
+      recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: shaped('됐다') });
       out.push(['PASS 카드만, 완료 note 없이', refuses(() => endRound(T, { verdict: 'PASS' }), '완료 note 가 없습니다')]);
       emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass' } });
       // 부분 성공은 통과가 아니다(8단계) — 카드·note 는 다 맞는데 물건이 없다 → 거부, 0바이트 → 거부, 판정 대상 글의 경로가 없는 파일 → 거부, 채우면 닫힌다.
@@ -297,12 +308,12 @@ switch (cmd) {
         out.push(['푸시 문(결정 63)', gWant ? '✓ 카드 없음·REVISE·sha 없음·다른 sha·내부감사만 거부, stale 무시' : '✗ ' + JSON.stringify(g)]);
         // 실제 카드에 HEAD sha 가 박히고, 그 카드로 문이 열린다.
         startRound(T, { milestone: 2 });
-        const card = recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: '봤다' });
+        const card = recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: shaped('봤다') });
         const live = card.meta.sha && /^[0-9a-f]{40}$/.test(card.meta.sha) && pushGateError(readLog(T).filter((e) => e.round === readState(T).round), card.meta.sha) === null
           && pushGateError(readLog(T).filter((e) => e.round === readState(T).round), B)?.includes('다시 감사');
         out.push(['판정 카드에 HEAD sha', live ? `✓ ${card.meta.sha.slice(0, 8)} · 그 sha 로 열림, 다른 sha 거부` : '✗ ' + JSON.stringify(card.meta)]);
         // 감사가 본 sha 를 부르는 쪽이 넘기면 그것이 찍힌다 — 감사 도중 커밋이 들어와도 안 본 HEAD 가 PASS 로 찍히지 않는다 (레오 REVISE, R22).
-        const seenCard = recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: '시작 때 본 것', sha: B });
+        const seenCard = recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: shaped('시작 때 본 것'), sha: B });
         const ctxNow = readLog(T).filter((e) => e.round === readState(T).round);
         out.push(['카드 sha 는 감사 시작 때 것', seenCard.meta.sha === B && pushGateError(ctxNow, B) === null && pushGateError(ctxNow, card.meta.sha)?.includes('다시 감사') ? '✓ 넘긴 sha 로 찍힘 · 지금 HEAD 는 거부' : '✗ ' + JSON.stringify(seenCard.meta)]);
         endRound(T, { summary: '문 시험 닫음' });
@@ -654,6 +665,26 @@ switch (cmd) {
         const { asksVerdict, AUTO_VERDICT_MS } = await import('../server/conductor.mjs');
         const av = [asksVerdict('레오, 산출물 out/m9-status.md 판정 부탁해요'), asksVerdict('마크, 판정해 주세요 — 얼굴 열일곱'), asksVerdict('레오, 이거 돌려봤어요?'), asksVerdict(''), asksVerdict(null)];
         out.push(['말로 부른 판정(asksVerdict)', av.join(',') === 'true,true,false,false,false' && AUTO_VERDICT_MS === 10 * 60_000 ? '✓ 판정 낱말이면 참 · 호명만이면 거짓 · 빈 글 거짓 · 기본 10분' : '✗ ' + JSON.stringify({ av, AUTO_VERDICT_MS })]);
+        // 작은 B(점검-0916 3-9 감사 무게 나누기) — needsOf: 작은 B 는 톰 혼자, 보통 B 는 톰+제리, C 는 대표. 요청은 실행 대상 있는 B·C 에 --small 을 거부(임시 큐라 진짜 큐에 안 남는다).
+        const nd = [needsOf({ grade: 'B', small: true }), needsOf({ grade: 'B' }), needsOf({ grade: 'C', small: true }), needsOf({ grade: 'A' })].map((x) => x.join('+'));
+        const smallC = refuses(() => requestApproval(T, { grade: 'C', what: '작은 C', small: true }), '작은 B');
+        const smallPush = refuses(() => requestApproval(T, { grade: 'B', what: '작은 푸시', small: true, action: { type: 'restart' } }), '큰 것');
+        let smallOk = null; try { smallOk = requestApproval(T, { grade: 'B', what: '재시작 — 시험', small: true }); } catch (e) { smallOk = { err: e.message }; }
+        const smallWant = nd.join(' / ') === 'chief / chief+outside / boss / ' && smallC === '✓ 거부' && smallPush === '✓ 거부' && smallOk?.small === true && needsOf(smallOk).join() === 'chief';
+        if (smallOk?.id) voidApproval(smallOk.id, '자가 시험');
+        // PASS 모양(점검 3-9 ⑦) — 정형문·이유 셋 없음·반박 없음은 되돌리고, 모양이 맞으면 null. 지시문(bus.verdictInstruction)에 그 모양이 적혀 있다.
+        const { passShapeError, verdictInstruction } = await import('./bus.mjs');
+        const ps = [
+          passShapeError('빠진 것 0건 · 더해진 것 0건 · 잘못 간 것 0건 · 뒤집힌 것 0건. 통과입니다.'),
+          passShapeError('봤습니다. 좋아요.'),
+          passShapeError('떨어뜨릴 이유 1: a — 반박: b\n떨어뜨릴 이유 2: c\n떨어뜨릴 이유 3: e — 반박: f'),
+          passShapeError(shaped('됐다')),
+        ];
+        const vi = verdictInstruction('out/x.md', '테라');
+        const psWant = /정형문/.test(ps[0]) && /0개/.test(ps[1]) && /반박이 2개/.test(ps[2]) && ps[3] === null
+          && vi.startsWith('⟦판정 요청⟧ out/x.md') && vi.includes('만든 사람: 테라') && vi.includes('떨어뜨릴 이유 1:') && vi.includes('못 열었다 — 판정 아님');
+        out.push(['PASS 모양(점검 3-9 — 떨어뜨릴 이유 셋)', psWant ? '✓ 정형문 되돌림 · 이유 0개 · 반박 2개 되돌림 · 셋+반박이면 통과 · 지시문에 모양·만든 사람·못 열면 판정 아님' : '✗ ' + JSON.stringify({ ps, vi: vi.slice(0, 120) })]);
+        out.push(['작은 B(점검 3-9 감사 무게)', smallWant ? '✓ 작은 B = 톰 혼자 · 보통 B = 톰+제리 · C 는 대표 · C·실행 대상에 --small 거부 · 레코드 small:true' : '✗ ' + JSON.stringify({ nd, smallC, smallPush, smallOk })]);
       }
       // 자리의 엔진·모델·추론 강도 (결정 69) — 순수 castChangeError 가 거르고, updateCastAgent 가 임시 방 cast.json 에 쓴다. 엔진 바꾸기는 아직 거부(같은 값은 통과).
       {
@@ -818,7 +849,7 @@ switch (cmd) {
         fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, review: { name: '검수', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
         startRound(T, { milestone: 2, topic: '중단 시험' });
         artifact();
-        recordVerdict(T, { actor: 'review', verdict: 'PASS', text: '내부 됐다' });
+        recordVerdict(T, { actor: 'review', verdict: 'PASS', text: shaped('내부 됐다') });
         emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['review'], skipped: [], reason: null } });
         const refused = refuses(() => endRound(T, { verdict: 'PASS' }), '외부감사');
         const sus = updateCastAgent(T, 'outside', { suspended: '2026-09-20' });
@@ -845,11 +876,11 @@ switch (cmd) {
         startRound(T, { milestone: 2, topic: '자기 판정 시험' });
         artifact();
         emit(T, { actor: 'review', type: 'tool', text: '고침', meta: { tool: 'Edit' } });
-        recordVerdict(T, { actor: 'review', verdict: 'PASS', text: '내가 고치고 내가 됐다' });
+        recordVerdict(T, { actor: 'review', verdict: 'PASS', text: shaped('내가 고치고 내가 됐다') });
         emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['review'], skipped: [], reason: null } });
         const selfRefused = refuses(() => endRound(T, { verdict: 'PASS' }), '만든 사람');
         // 회복 — 안 고친 다른 자리(outside)가 새로 PASS 를 내면 그게 마지막 판정이 되어 중단 없이도 닫힌다
-        recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: '내가 봤다' });
+        recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: shaped('내가 봤다') });
         emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['review', 'outside'], skipped: [], reason: null } });
         let closed2 = null; try { endRound(T, { verdict: 'PASS' }); closed2 = true; } catch (e) { closed2 = e.message; }
         fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
@@ -879,11 +910,11 @@ switch (cmd) {
         artifact();   // ops 가 out/물건.md 를 씀
         emit(T, { actor: 'guide', type: 'tool', text: '/a/b/app.js', meta: { tool: 'Edit' } });   // 아래 생존 알림 시험이 guide 의 마지막 도구 줄(app.js)을 본다
         emit(T, { actor: 'ops', type: 'tool', text: `${ROOT}/server/y.mjs`, meta: { tool: 'Edit' } });
-        recordVerdict(T, { actor: 'ops', verdict: 'PASS', text: '테라 것 봤다' });
+        recordVerdict(T, { actor: 'ops', verdict: 'PASS', text: shaped('테라 것 봤다') });
         emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['ops'], skipped: [], reason: null } });
         const unseen = refuses(() => endRound(T, { verdict: 'PASS' }), '외부감사');   // 레오가 외부라 먼저 그 문에 걸린다
         const selfWhy = selfPassError(readLog(T).filter((e) => e.round === readState(T).round), readCast(T).agents);
-        recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: '둘 다 봤다' });
+        recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: shaped('둘 다 봤다') });
         emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['ops', 'outside'], skipped: [], reason: null } });
         let closed3 = null; try { endRound(T, { verdict: 'PASS' }); closed3 = readState(T).auditor === null && readState(T).phase === 'idle'; } catch (e) { closed3 = e.message; }
         // 같은 파일을 둘이 고치면 — 순수 함수로

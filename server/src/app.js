@@ -1303,12 +1303,12 @@ function approvalCard(r) {
     // 누가 판정했고 누가 남았나 — 이름으로. 그리고 총괄실이 이 요청을 들었는가.
     const hq = summaries.hq?.cast ?? {};
     const nameOf = (id) => hq[id]?.name ?? id;
-    const need = (grades[r.grade]?.needs ?? []);
+    const need = r.small ? ['chief'] : (grades[r.grade]?.needs ?? []);   // 작은 B 는 톰 혼자(bus.needsOf 와 같은 규칙, 점검-0916 3-9)
     const VERDICT_WORD = { PASS: '통과', REVISE: '다시', FAIL: '멈춤' };   // 하영 1절
     const done = r.decisions.map((x) => `${nameOf(x.by)} ${VERDICT_WORD[x.decision] ?? x.decision}`).join(' · ');
     const left = need.filter((w) => !r.decisions.some((x) => x.by === w)).map(nameOf).join('·');
     const heard = told[r.id]?.requested ? '총괄실에 알렸어요' : '총괄실에 곧 알려요';
-    card.appendChild(el('span', 'apr__wait', `${done ? done + ' · ' : ''}${left ? left + ' 답 기다림' : ''} · ${heard}`));
+    card.appendChild(el('span', 'apr__wait', `${r.small ? '작은 것 — 톰 혼자 봐요 · ' : ''}${done ? done + ' · ' : ''}${left ? left + ' 답 기다림' : ''} · ${heard}`));
   }
   return card;
 }

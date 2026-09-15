@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { ga, eul } from './public/toollabel.js';
 
@@ -220,8 +220,8 @@ function unheard(team, actor, { fromRound = null } = {}) {
   return { lines: lines.slice(-HEAR_LINES), last };
 }
 
-/** 판정 차례의 지시문. ⟦판정 요청⟧ 마커를 훅이 보고 첫 줄을 판정으로 남긴다 — 모든 엔진이 같은 규약. */
-const VERDICT_INSTRUCTION = (target, guideName) => `${TURN_VERDICT} ${target}\n판정 대상: ${target} (만든 사람: ${guideName}). 산출물 파일을 열어 확인해라. 첫 줄에 PASS 또는 REVISE 한 단어만, 그다음 줄부터 근거(경로·줄 번호). 같은 지적을 다시 내지 마라 — 새 근거가 없으면 PASS. 통과 기준은 완벽함이 아니라 이번 마일스톤의 산출물 조건이다.`;
+/** 판정 차례의 지시문. ⟦판정 요청⟧ 마커를 훅이 보고 첫 줄을 판정으로 남긴다 — 모든 엔진이 같은 규약. 글은 bus.verdictInstruction 하나(outside.mjs 도 같은 것) — 떨어뜨릴 이유 셋 먼저(점검-0916 3-9 ⑥). */
+const VERDICT_INSTRUCTION = (target, guideName) => verdictInstruction(target, guideName);
 
 const INSTRUCTION = {
   called: '방에서 너에게 한 말이다. 상대 이름으로 시작해 네 말투로 한두 문장 — 사람에게 말하듯, 보고서·목록 말고. 판정이 아니다 — 첫 줄에 PASS·REVISE 를 쓰지 마라. 남길 말이 없으면 (패스) 한 마디만.',
@@ -514,6 +514,13 @@ function onFlowEvent(team, e) {
     // 옛 라운드의 늦은 답이다(recordVerdict 가 stale 로 찍음). 이 흐름은 지금 라운드의 것이라 그 카드로 진행하면
     // 지난 라운드의 PASS 가 이번 판정 완료 note 를 만든다 (레오 감사, 2026-09-13). 세지 않고 계속 기다린다.
     if (e.meta?.stale) { note(team, `${nameOf(team, e.actor)}의 옛 라운드 판정(stale)은 이번 판정 흐름에 세지 않습니다 — 계속 기다립니다.`); return; }
+    // 모양이 안 맞아 서버가 REVISE 로 되돌린 PASS(meta.shape, 점검-0916 3-9) — 실무를 부르지 않고 그 자리에 한 번 더 묻는다. 두 번째도 그러면 흐름을 놓는다.
+    if (e.meta?.shape) {
+      if (f.asked < 1) { f.asked += 1; f.since = Date.now(); persist(team); enqueue(team, e.actor, 'verdict'); return; }
+      r.flow = null; f.waiting = null; persist(team);
+      emit(team, { actor: 'system', type: 'note', text: `${ga(nameOf(team, e.actor))} 두 번 물어도 떨어뜨릴 이유 셋 없이 PASS 를 냈습니다. 판정 흐름을 멈춥니다 — 다시 부르세요 (node bus/round.mjs verdict).`, meta: { verdictFlow: 'abort', reason: 'shape' } });
+      return;
+    }
     const v = e.meta?.verdict;
     f.waiting = null;
     if (v === 'PASS' && f.i + 1 < f.steps.length) { f.i += 1; askStep(team); return; }

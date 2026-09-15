@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
-  ROOT, requestApproval, decideApproval, voidApproval, listApprovals, APPROVAL_GRADES,
+  ROOT, requestApproval, decideApproval, voidApproval, listApprovals, APPROVAL_GRADES, needsOf,
   defaultTeam, teamExists, listTeams, readCast, readRoadmap, paths, isOffice, pushAction, roomRules,
 } from './bus.mjs';
 import { untilOf } from './requests.mjs';
@@ -68,7 +68,7 @@ const me = whoAmI();
 /* ── 인자 ── */
 
 const argv = process.argv.slice(2);
-const o = { team: null, mode: null, grade: null, id: null, as: null, decision: null, detail: '', all: false, push: false, next: false, roadmap: null, out: [], to: null, why: '', due: null, untilMilestone: false };
+const o = { team: null, mode: null, grade: null, id: null, as: null, decision: null, detail: '', all: false, push: false, next: false, roadmap: null, out: [], to: null, why: '', due: null, untilMilestone: false, small: false };
 const words = [];
 
 for (let i = 0; i < argv.length; i++) {
@@ -85,6 +85,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--why') o.why = argv[++i];
   else if (a === '--due') o.due = argv[++i];
   else if (a === '--until-milestone') o.untilMilestone = true;
+  else if (a === '--small') o.small = true;
   else if (a === '--out') o.out.push(...String(argv[++i] ?? '').split(',').map((f) => f.trim()).filter(Boolean));
   else if (a === '--list' || a === '-l') o.mode = 'list';
   else if (a === '--all') o.all = true;
@@ -106,6 +107,8 @@ function usage() {
                  --until-milestone 이면 지금 마일스톤이 닫힐 때까지 여는 공동 프로젝트(결정 47). 그 뒤는 node bus/request.mjs
       --out      카드에 붙일 산출물 — teams/<팀>/out/ 안의 경로, 쉼표로 여럿. 그림은 카드 안에 뜨고 md 는 펼쳐 읽는다.
                  --detail 에 적힌 out/… 경로도 같이 붙는다.
+      --small    작은 B — 재시작·문구 한 줄·임시 파일 태그처럼 실행 대상 없는 것. 톰 혼자 보면 닫힌다(제리 대조 생략, 점검-0916 3-9).
+                 --push·--next·--roadmap·--to 와는 같이 못 쓴다 — 그건 큰 것.
   --decide <id> --as <chief|outside|boss> <PASS|REVISE> "<이유>"
   --list [--all]        대기 중인 것 (--all 이면 전부)
   --show <id>
@@ -190,10 +193,11 @@ if (o.mode === 'request') {
     action = { type: 'roadmap', file };
   }
   let r;
-  try { r = requestApproval(team, { by, grade: o.grade, what, detail: o.detail, action, files: o.out }); }
+  try { r = requestApproval(team, { by, grade: o.grade, what, detail: o.detail, action, files: o.out, small: o.small }); }
   catch (e) { console.error('오류: ' + e.message); process.exit(1); }
 
   console.log(fmt(r));
+  if (r.small) console.log('작은 B — 톰 혼자 보면 닫힙니다(제리 대조 생략, 점검-0916 3-9). 작은 게 아니라고 보면 톰이 돌려보냅니다.');
   if (action?.type === 'push') console.log(`푸시 대상: ${action.remote}/${action.branch} @ ${action.sha.slice(0, 8)} — 이 커밋을 통과시키는 것입니다.`);
   if (action?.type === 'milestone') console.log(`착수 대상: 마일스톤 ${action.n}${action.title ? ' ' + action.title : ''} — 통과하면 서버가 now 로 옮깁니다.`);
   if (action?.type === 'roadmap') console.log(`교체 대상: out/${action.file} — 통과하면 서버가 roadmap.json 으로 옮깁니다.`);
@@ -222,7 +226,7 @@ if (o.mode === 'decide') {
   if (r.status !== 'pending') {
     console.log(`${r.status === 'passed' ? '통과' : '반려'}입니다. 서버가 ${r.team} 팀에 들려줍니다.`);
   } else {
-    const left = APPROVAL_GRADES[r.grade].needs.filter((w) => !r.decisions.some((d) => d.by === w));
+    const left = needsOf(r).filter((w) => !r.decisions.some((d) => d.by === w));
     console.log(`아직 ${left.map((w) => nameOf(r.team, w)).join('·')} 판정이 남았습니다.`);
   }
   process.exit(0);

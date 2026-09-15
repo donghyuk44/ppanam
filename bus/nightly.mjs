@@ -3,7 +3,7 @@
 // 여기는 **순수 함수**만 — 파일을 안 읽고 세션을 모른다. round.mjs check 가 돌린다. 파일을 읽고 쓰고 톰을 깨우는 것은 server/nightly.mjs.
 // doneOf·blockedOf 와 같은 경계: 평평한 재료(대화록·rounds·승인·상황판·round.json)를 받아 글 한 장과 "대표 손이 필요한 것" 목록을 낸다.
 
-import { SEOUL_OFFSET_MS, MAX_ATTEMPTS, APPROVAL_GRADES, TURN_JOURNAL, bossCallOf, bossParagraph } from './bus.mjs';
+import { SEOUL_OFFSET_MS, MAX_ATTEMPTS, needsOf, TURN_JOURNAL, bossCallOf, bossParagraph } from './bus.mjs';
 
 /** 우리 시각 'YYYY-MM-DD'. */
 export const dayKeySeoul = (ms = Date.now()) => new Date(ms + SEOUL_OFFSET_MS).toISOString().slice(0, 10);
@@ -52,7 +52,7 @@ export function nightlyOf({ team, name = team, day, log = [], rounds = [], appro
   const as = approvals.filter((r) => inWin(r.ts) || inWin(r.decidedAt) || (r.decisions ?? []).some((d) => inWin(d.ts))).sort((a, b) => String(a.ts).localeCompare(String(b.ts)))
     .map((r) => {
       const who = (r.decisions ?? []).map((d) => `${nameOf(d.by)} ${d.decision}`).join(' · ');
-      const left = (APPROVAL_GRADES[r.grade]?.needs ?? []).filter((w) => !(r.decisions ?? []).some((d) => d.by === w)).map((w) => JUDGE_NAME[w] ?? w);
+      const left = needsOf(r).filter((w) => !(r.decisions ?? []).some((d) => d.by === w)).map((w) => JUDGE_NAME[w] ?? w);
       const turn = r.status !== 'pending' ? '' : r.grade === 'C' ? '대표 차례' : `${left.join('·') || '톰·제리'} 차례`;
       return `- ${r.id} [${r.grade}] ${oneLine(r.what, 70)} — ${APPROVAL_WORD[r.status] ?? r.status}${turn ? ` (${turn})` : ''}${who ? ` (${who})` : ''}`;
     });

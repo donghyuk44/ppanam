@@ -26,7 +26,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readLog, readCast, readState, appendJournal,
-  defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, headSha, codexModelOf, codexArgs,
+  defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, verdictInstruction, headSha, codexModelOf, codexArgs,
   markOutsideRunning, clearOutsideRunning, outsideCooldown, setOutsideCooldown, parseUsageLimit, geminiModelOf, isForeign, fallbackOf, engineName, agyArgs, parseAgy, withRetry,
 } from './bus.mjs';
 // 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
@@ -354,8 +354,8 @@ function splitVerdict(text) {
   return { verdict: null, body: text };
 }
 
-/** 판정 차례. 첫 줄 PASS/REVISE 규약 — 클로드 자리와 같다. */
-const VERDICT_TURN = (target) => `⟦판정 요청⟧ ${target}\n판정 대상: ${target}. 산출물 파일을 열어 확인해라. 첫 줄에 PASS 또는 REVISE 한 단어만, 그다음 줄부터 근거(경로·줄 번호). 같은 지적을 다시 내지 마라 — 새 근거가 없으면 PASS.`;
+/** 판정 차례. 첫 줄 PASS/REVISE 규약 — 클로드 자리와 같다. 글은 bus.verdictInstruction 하나 — 떨어뜨릴 이유 셋 먼저(점검-0916 3-9 ⑥). */
+const VERDICT_TURN = (target) => verdictInstruction(target);
 /** 일지 차례. 답은 대화록이 아니라 journal/outside.md 에 간다. 지시문은 클로드 자리와 같은 것(bus.mjs journalPrompt) — 첫 문장 "나는 …". */
 const JOURNAL_TURN = journalPrompt;
 

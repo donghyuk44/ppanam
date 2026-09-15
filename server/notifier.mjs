@@ -28,7 +28,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   listApprovals, readCast, readState, writeState, readRoadmap, isOffice, quiet, emit, paths, setMilestoneStatus,
-  proxyCandidates, requestApproval, decideApproval, resumeRound, startRound, APPROVAL_GRADES, readDelegation, delegationTag, teamExists,
+  proxyCandidates, requestApproval, decideApproval, resumeRound, startRound, APPROVAL_GRADES, needsOf, readDelegation, delegationTag, teamExists,
 } from '../bus/bus.mjs';
 
 // 다시 부르기(R25) — 총괄실에 한 번 넣고 답이 없으면 30분마다, 세 번까지. 그 뒤엔 요청한 방에 한 줄 남기고 사람 몫.
@@ -68,15 +68,16 @@ function nameOf(team, actor) {
 function requestText(r) {
   const who = nameOf(r.team, r.by);
   const a = r.action;
-  return `승인 요청 ${r.id} [등급 B] — ${r.team} 팀 ${who}: ${r.what}` +
+  return `승인 요청 ${r.id} [등급 B${r.small ? ' · 작은' : ''}] — ${r.team} 팀 ${who}: ${r.what}` +
+    (r.small ? '\n작은 B — 재시작·문구·임시 파일 같은 것. 톰 혼자 보면 닫힌다, 제리 대조는 생략(점검-0916 3-9). 작은 게 아니면 REVISE 로 돌려보내 큰 카드로 다시 올리게.' : '') +
     (r.detail ? `\n상세: ${r.detail}` : '') +
     (a?.type === 'push' ? `\n대상: ${a.remote ?? 'origin'}/${a.branch} @ ${String(a.sha).slice(0, 8)} — 통과하면 서버가 정확히 이 커밋을 민다` : '') +
     (a?.type === 'milestone' ? `\n대상: 마일스톤 ${a.n} 착수 — 통과하면 서버가 로드맵의 now 를 옮긴다` : '') +
     (a?.type === 'request' ? `\n대상: ${a.to.team}/${a.to.actor} 에게 요청 블록${a.mode === 'milestone' ? ` (마일스톤 ${a.until?.milestone ?? '?'} 끝까지 — 공동 프로젝트)` : ''}${a.why ? ` · 왜: ${a.why}` : ''}${a.due ? ` · 기한: ${a.due}` : ''} — 통과하면 서버가 블록을 열고 너는 감시자로 들어간다(결정 51: 목표 한 줄 node bus/request.mjs --goal <id> "…")` : '') +
     (a?.type === 'proxy' ? `\n대리 결정 (결정 85 — 대표가 10분 넘게 답이 없다): ${a.kind === 'approval' ? `C 승인 ${a.ref} 를 대표 대신 통과시킬까` : a.kind === 'unblock' ? `${a.team} 방의 FAIL 을 대표 대신 풀까` : `${a.team} 방의 물음에 대표 대신 답할까 — 답은 너의 PASS 이유에 적어라, 그 글이 그 방에 '대리 결정' 으로 남는다`}. 둘 다 PASS 여야 실행되고 하나라도 REVISE 면 대표를 기다린다. 돈·바깥으로 나가는 건 여기 안 온다.` : '') +
-    `\n\n판정하세요. 마일스톤 조건을 채웠는지, 컷리스트를 안 넘었는지 보고 결정하고, 제리에게 원문 대조를 시키세요.` +
+    `\n\n판정하세요. 마일스톤 조건을 채웠는지, 컷리스트를 안 넘었는지 보고 결정하${r.small ? '세요.' : '고, 제리에게 원문 대조를 시키세요.'}` +
     `\n  node bus/approve.mjs --decide ${r.id} --as chief PASS|REVISE "이유"` +
-    `\n  node bus/outside.mjs --team hq --ask "승인 요청 ${r.id} 대조: ${r.what}"`;
+    (r.small ? '' : `\n  node bus/outside.mjs --team hq --ask "승인 요청 ${r.id} 대조: ${r.what}"`);
 }
 
 function decidedText(r) {
@@ -335,7 +336,7 @@ export function runNotifier({ send = (team, text) => session.send(team, quiet(te
     // (a-2) 다시 부르기 — 한 번 넣고 답이 안 오면 영원히 대기였다(하네스 실측 R25: 제리 호출이 300초에 죽은 뒤 셋이 대표 화면 맨 위에 붙박이).
     // 아직 안 답한 판정자가 있고 마지막으로 넣은 지 REASK_MS 가 지났으면 그 사람 이름을 불러 다시 넣는다. 최대 REASK_MAX 번 — 그 뒤엔 방에 한 줄 남기고 사람 몫.
     if (r.grade === 'B' && r.status === 'pending' && t.requested) {
-      const need = (APPROVAL_GRADES[r.grade]?.needs ?? []).filter((w) => !r.decisions?.some((d) => d.by === w));
+      const need = needsOf(r).filter((w) => !r.decisions?.some((d) => d.by === w));
       const lastAsk = new Date(t.reasked ?? t.requested).getTime();
       if (need.length && Date.now() - lastAsk > REASK_MS) {
         const n = (t.reaskCount ?? 0) + 1;
