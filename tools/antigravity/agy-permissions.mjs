@@ -15,22 +15,28 @@ import os from 'node:os';
 const FILE = path.join(os.homedir(), '.gemini', 'antigravity-cli', 'settings.json');
 export const ALLOW = [
   'read_file(*)',
-  'command(cat)', 'command(head)', 'command(tail)', 'command(sed -n)', 'command(grep)', 'command(rg)', 'command(ls)', 'command(wc)', 'command(find)', 'command(stat)', 'command(file)',
-  'command(git diff)', 'command(git log)', 'command(git show)', 'command(git status)', 'command(git rev-parse)', 'command(git ls-files)',
-  'command(node --check)', 'command(node bus/round.mjs check)', 'command(node bus/round.mjs status)',
+  'command(cat)', 'command(head)', 'command(tail)', 'command(sed -n)', 'command(grep)', 'command(rg)', 'command(ls)', 'command(wc)', 'command(find)', 'command(stat)', 'command(file)', 'command(jq)',
+  'command(git diff)', 'command(git diff --stat)', 'command(git log)', 'command(git show)', 'command(git status)', 'command(git rev-parse)', 'command(git ls-files)',
+  'command(node --check)', 'command(node --test)', 'command(node bus/round.mjs check)', 'command(node bus/round.mjs status)',
+  // 감사가 물건을 연다(점검-0916 3-9) — 화면 사진과 책장 조회. 둘 다 읽기(사진은 out/shots/ 에 쓰지만 저장소 코드는 안 건드린다).
+  'command(node tools/screen-shot.mjs)', 'command(node tools/library.mjs)',
 ];
 export const DENY = [
   'write_file(*)',
   'command(rm)', 'command(mv)', 'command(cp)', 'command(git push)', 'command(git commit)', 'command(git add)', 'command(git reset)', 'command(git checkout)', 'command(git rebase)',
   'command(npm)', 'command(npx)', 'command(curl)', 'command(pkill)', 'command(kill)',
-  'unsandboxed(*)',
 ];
+/**
+ * 있던 설정에서 빼는 규칙. `unsandboxed(*)` 는 09-14 에 넣었는데 Deny > Allow 라 **모든 명령**이 "Matches user-configured deny rule" 로 거부됐다 —
+ * 외부감사 넷의 도구 이벤트가 0 이던 진짜 원인(나리 실측 09-16: 그림은 읽고 명령은 전부 거부). 나리가 ~/.gemini 에서 손으로 뺐고, 다시 돌려도 안 들어가게 여기서도 뺀다.
+ */
+export const DROP = ['unsandboxed(*)'];
 
-/** 순수 — 있던 설정에 우리 규칙을 합친다. 중복은 하나, 있던 것은 남긴다. round.mjs check 가 돌린다. */
+/** 순수 — 있던 설정에 우리 규칙을 합친다. 중복은 하나, 있던 것은 남긴다(DROP 만 뺀다). round.mjs check 가 돌린다. */
 export function mergePermissions(settings) {
   const s = settings && typeof settings === 'object' ? { ...settings } : {};
   const p = { ...(s.permissions ?? {}) };
-  const uniq = (a) => [...new Set(a.filter(Boolean))];
+  const uniq = (a) => [...new Set(a.filter(Boolean))].filter((x) => !DROP.includes(x));
   p.allow = uniq([...(p.allow ?? []), ...ALLOW]);
   p.deny = uniq([...(p.deny ?? []), ...DENY]);
   s.permissions = p;
