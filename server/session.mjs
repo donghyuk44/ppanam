@@ -680,7 +680,9 @@ function maybeFinishClose(team) {
 
 /** 닫힘 note 한 줄 — 바로 닫든 미뤄 닫든 같은 글. --next 로 이어 열렸으면(또는 못 열었으면) 그것도 여기에. */
 export function closedText(r) {
-  let s = `라운드 ${r.round} 닫힘 — 일지 ${r.journaled}편. 세션 컨텍스트를 비웠습니다.`;
+  let s = `라운드 ${r.round} 닫힘 — 일지 ${r.journaled}편. ` + (r.contextCleared
+    ? '마일스톤이 끝나 세션 컨텍스트를 비웠습니다.'
+    : '같은 단계 안이라 세션은 그대로 이어집니다.');
   if (r.next) s += ` 라운드 ${r.next.round} 을 이어 엽니다 · 마일스톤 ${r.next.milestone}${r.next.topic ? ' — ' + r.next.topic : ''} (--next).`;
   else if (r.nextError) s += ` 닫았지만 다음 라운드를 열지 못했습니다 — ${r.nextError}`;
   return s;
@@ -699,10 +701,17 @@ export async function closeRound(team, opts = {}) {
   if (closingNow.has(team)) throw new Error('이미 닫는 중입니다.');
   closingNow.add(team);
   try {
+    const milestone = state.milestone;
     const journaled = await journalAll(team, state.round);
     const n = endRound(team, opts);
-    reset(team);
-    const out = { round: n, journaled };
+    // 세션은 회차마다 안 버린다 — 마일스톤이 이번에 실제로 pass 로 닫혔을 때만 비운다(나리 판단 09-16:
+    // CLAUDE.md "AI 컨텍스트를 라운드마다 비운다"는 매 턴 읽는 범위 — briefOf·journalOf 가 이번 라운드로
+    // 좁혀 읽는 것 — 를 말한 것이지 프로세스를 죽이라는 뜻이 아니었다. 같은 단계 안에서 회차만 넘어가면
+    // (자동 이어열기 포함) 세션이 그대로 살아 다음 회차를 받는다 — 밤새 22번 죽었다 살아난 게 토큰 소모
+    // 1위였다. endRound 의 반환값은 그대로 두고(다른 호출부가 많다) 로드맵을 다시 읽어 같은 판정을 한다.
+    const milestonePassed = milestone != null && (readRoadmap(team).milestones ?? []).some((m) => m.n === milestone && m.status === 'pass');
+    if (milestonePassed) reset(team);
+    const out = { round: n, journaled, contextCleared: milestonePassed };
     // --next (결정 25): 닫은 그 자리에서 다음 라운드를 연다 — 여는 손이 없어 방이 멈추던 일. PASS 로 닫아 now 가 없으면
     // startRound 가 거부한다(다음 착수는 B) — 그건 note 로만 남기고 닫힘은 그대로다.
     if (opts.next) {

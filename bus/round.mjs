@@ -596,18 +596,37 @@ switch (cmd) {
         const nWant = noNow.startsWith('✓') && s.round === before + 1 && s.milestone === 2 && readState(T).phase === 'running'
           && okText.includes(`라운드 ${s.round} 을 이어 엽니다 · 마일스톤 2 — 이어 열기`) && badText.includes('다음 라운드를 열지 못했습니다');
         out.push(['닫으면서 이어 열기(--next)', nWant ? `✓ now 없으면 B 거부 · 번호 주면 R${before}→R${s.round} · note 글 둘` : '✗ ' + JSON.stringify({ noNow, s, okText, badText })]);
-        // 라운드가 닫히면 codex 세션 칸을 비운다 — 외부감사(`방`)와 codex 로 바뀐 자리(`방:자리`, 결정 69 ①) 둘 다. `방` 만 지우면 codex 실무의
-        // 세션이 다음 라운드로 이어진다(레오 REVISE R23 · 솔라 "고아 세션"). 진짜 저장소에 _check 칸 둘을 심고 닫은 뒤 없어졌는지 본다.
+        // codex 세션 칸(외부감사 `방`, codex 로 바뀐 자리 `방:자리` — 결정 69 ①)은 마일스톤이 실제로 pass 로
+        // 닫힐 때만 비운다 — 클로드 자리(session.mjs reset)와 같은 규칙(나리 판단 09-16, t2-tension.md 해결:
+        // "라운드마다 비운다"는 읽는 범위지 세션을 죽이라는 뜻이 아니었다). 그냥 닫히면(verdict 없음) 그대로
+        // 두고, PASS 로 마일스톤이 끝나면 비운다 — `방` 만 지우면 codex 실무의 세션이 이어진다(레오 REVISE R23).
         const osPath = path.join(ROOT, 'state', 'outside-sessions.json');
         const osBefore = fs.existsSync(osPath) ? fs.readFileSync(osPath, 'utf8') : null;
-        const seeded = { ...(osBefore ? JSON.parse(osBefore) : {}), [T]: { id: 'x1', lastSeen: null }, [`${T}:guide`]: { id: 'x2', lastSeen: null }, [`${T}x`]: { id: 'x3', lastSeen: null } };
-        fs.mkdirSync(path.dirname(osPath), { recursive: true }); fs.writeFileSync(osPath, JSON.stringify(seeded, null, 2) + '\n');
+        const seedOs = () => {
+          const cur = fs.existsSync(osPath) ? JSON.parse(fs.readFileSync(osPath, 'utf8')) : {};
+          const seeded = { ...cur, [T]: { id: 'x1', lastSeen: null }, [`${T}:guide`]: { id: 'x2', lastSeen: null }, [`${T}x`]: { id: 'x3', lastSeen: null } };
+          fs.mkdirSync(path.dirname(osPath), { recursive: true }); fs.writeFileSync(osPath, JSON.stringify(seeded, null, 2) + '\n');
+        };
+        // ① 그냥 닫기 — 마일스톤 2 는 아직 now, PASS 가 아니다. 아무것도 안 비운다(같은 단계 안이라 세션이 이어진다).
+        seedOs();
         endRound(T, { summary: '이어 열기 시험 닫음' });
-        const osAfter = JSON.parse(fs.readFileSync(osPath, 'utf8'));
-        const swept = !(T in osAfter) && !(`${T}:guide` in osAfter) && (`${T}x` in osAfter);
-        delete osAfter[`${T}x`];
-        if (osBefore == null) fs.rmSync(osPath, { force: true }); else fs.writeFileSync(osPath, JSON.stringify(osAfter, null, 2) + '\n');
-        out.push(['닫히면 codex 칸 비움(방·방:자리)', swept ? '✓ 방 · 방:guide 지움 · 다른 방(방x)은 그대로' : '✗ ' + JSON.stringify(Object.keys(osAfter).filter((k) => k.startsWith(T)))]);
+        const osNoPass = JSON.parse(fs.readFileSync(osPath, 'utf8'));
+        const notSwept = (T in osNoPass) && (`${T}:guide` in osNoPass) && (`${T}x` in osNoPass);
+        // ② 마일스톤 2 를 실제로 PASS 로 닫는다 — 이번엔 비운다. ①은 로드맵의 마일스톤 2 가 'now' 가 아니라서
+        // (여기 시험 로드맵은 milestone 1 만 now 로 시작한다) 자동 이어열기가 안 걸렸다 — 그래서 새로 연다.
+        if (readState(T).phase === 'idle') startRound(T, { milestone: 2, topic: 'PASS 시험' });
+        seedOs();
+        recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: shaped('이어 열기 마일스톤 봤다') });
+        emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass' } });
+        artifact('이어열기물건.md', '내용\n');
+        endRound(T, { verdict: 'PASS', summary: '마일스톤 2 닫음' });
+        const osPass = JSON.parse(fs.readFileSync(osPath, 'utf8'));
+        const swept = !(T in osPass) && !(`${T}:guide` in osPass) && (`${T}x` in osPass);
+        delete osPass[`${T}x`];
+        if (osBefore == null) fs.rmSync(osPath, { force: true }); else fs.writeFileSync(osPath, JSON.stringify(osPass, null, 2) + '\n');
+        out.push(['codex 칸 비움 — 마일스톤 pass 때만(T2)', notSwept && swept
+          ? '✓ 그냥 닫기는 안 비움(같은 단계 이어짐) · 마일스톤 PASS 로 닫히면 방·방:guide 비움, 다른 방(방x)은 그대로'
+          : '✗ ' + JSON.stringify({ notSwept, osNoPass: Object.keys(osNoPass).filter((k) => k.startsWith(T)), osPass: Object.keys(osPass).filter((k) => k.startsWith(T)) })]);
       }
       // 같은 단계면 회차 자동 이어열기(나리 실측 09-16 — 세 방이 45~95분씩 서서 손으로 다섯 번 열었다) — endRound 뒤에도
       // 그 마일스톤이 로드맵에서 여전히 now 면 승인 없이 바로 startRound. 이미 pass 면(사람이 번호로 재개한 것) 자동으로 안 잇는다.
