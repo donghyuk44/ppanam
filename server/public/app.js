@@ -2095,10 +2095,11 @@ function loadDashboardBand(r) {
     }
     row.appendChild(lane); band.appendChild(row);
   }
-  // 대표 답이 있어야 열리는 단계만(gated) — 결재·상황판 대표 차례는 관제탑 '내 차례' 에 있다(같은 것을 두 군데 두지 않는다, 톰 req_2749e30e). 없으면 칸이 사라진다.
+  // gated 단계만 — 결재·상황판 대표 차례는 관제탑 '내 차례' 에 있다(같은 것을 두 군데 두지 않는다, 톰 req_2749e30e). 없으면 칸이 사라진다.
+  // 머리 글자는 하영 사전 4절 "대표님이 여실 단계"(09-15 23:57 — 전엔 사전 밖 말 '대표 답이 있어야 열리는 단계' 였다, R26 어긋남 다섯 중 마지막).
   const bg = (r.bossGates ?? []).filter((g) => g.kind === 'stage');
   if (bg.length) {
-    gates.appendChild(el('div', 'gates__k', `대표 답이 있어야 열리는 단계 ${bg.length}`));
+    gates.appendChild(el('div', 'gates__k', `대표님이 여실 단계 ${bg.length}`));
     for (const g of bg) { const c = el('div', 'gates__card'); c.appendChild(el('b', null, teams.find((t) => t.id === g.team)?.name ?? g.team)); c.append(' ' + g.what); gates.appendChild(c); }
   }
 }
