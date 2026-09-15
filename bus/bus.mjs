@@ -331,17 +331,20 @@ export const APPROVAL_GRADES = {
   B: { label: '총괄', needs: ['chief', 'outside'], desc: '방향 안의 일 — 원격 푸시 · 다음 마일스톤 착수 · 팀 사이 요청 · 세션 재시작 · 마일스톤 순서 조정 · 인격 파일 재생성 · 화면 문구 · 브랜딩 글' },
   C: { label: '대표', needs: ['boss'],             desc: '방향만 — 로드맵 목적지 변경 · 컷 리스트 · 비용 상한 · 외부 발송 · 본책 병합' },
 };
-export const APPROVALS_PATH = path.join(ROOT, 'state', 'approvals.jsonl');
+const APPROVALS_DEFAULT = path.join(ROOT, 'state', 'approvals.jsonl');
+/** 큐 파일. `round.mjs check` 가 PPANAM_APPROVALS_PATH 로 임시 방 안의 파일을 준다 — 자가 시험의 _check 요청·무효 줄이 진짜 큐에 쌓이지 않게
+ *  (R31 까지 209줄, 나리 점검-0916 3-4). 부를 때마다 읽는다 — check 는 import 뒤에 env 를 정한다. */
+export const approvalsPath = () => process.env.PPANAM_APPROVALS_PATH || APPROVALS_DEFAULT;
 
 function appendApproval(line) {
-  fs.mkdirSync(path.dirname(APPROVALS_PATH), { recursive: true });
-  fs.appendFileSync(APPROVALS_PATH, JSON.stringify(line) + '\n');
+  fs.mkdirSync(path.dirname(approvalsPath()), { recursive: true });
+  fs.appendFileSync(approvalsPath(), JSON.stringify(line) + '\n');
 }
 
 /** 요청과 판정 줄을 접어서 요청 하나당 상태 하나로 만든다. */
 export function listApprovals({ team = null, status = null } = {}) {
   const byId = new Map();
-  for (const l of readJSONLCached(APPROVALS_PATH)) {
+  for (const l of readJSONLCached(approvalsPath())) {
     if (l.kind === 'request') {
       byId.set(l.id, { ...l, decisions: [], status: l.grade === 'A' ? 'passed' : 'pending', decidedAt: l.grade === 'A' ? l.ts : null });
       continue;

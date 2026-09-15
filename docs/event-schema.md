@@ -585,7 +585,9 @@ M6(화면이-답하는-질문.md, 톰·제리 B): **화면 자리 ① 은 없앤
 ## 6. 승인 큐 — 대표가 없어도 팀이 달린다
 
 `state/approvals.jsonl`. 대화록과 같이 **append-only** 다. 요청 한 줄, 판정 한 줄씩 쌓이고
-읽을 때 접는다 (`bus/bus.mjs` 의 `listApprovals()`).
+읽을 때 접는다 (`bus/bus.mjs` 의 `listApprovals()`). 경로는 `bus.approvalsPath()` — `round.mjs check` 만 `PPANAM_APPROVALS_PATH` 로
+임시 방(`teams/_check/approvals.jsonl`) 을 주어 자가 시험의 요청·무효 줄이 진짜 큐에 안 쌓인다(R31 전엔 209줄이 쌓였다, 나리 점검-0916 3-4).
+서버·CLI 는 그 env 를 쓰지 않는다.
 
 | 등급 | 무엇 | 누가 승인 | 대기 중이면 |
 | --- | --- | --- | --- |

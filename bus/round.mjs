@@ -202,6 +202,10 @@ switch (cmd) {
     const dir = paths(T).dir;
     fs.rmSync(dir, { recursive: true, force: true });
     fs.mkdirSync(dir, { recursive: true });
+    // 승인 큐도 임시 방 안에 — 자가 시험의 요청·무효 줄이 state/approvals.jsonl 에 안 쌓인다(bus.approvalsPath, 나리 점검-0916 3-4). 방을 지울 때 같이 사라진다.
+    const realQueueSize = () => { try { return fs.statSync(path.join(ROOT, 'state', 'approvals.jsonl')).size; } catch { return 0; } };
+    const realQ0 = realQueueSize();
+    process.env.PPANAM_APPROVALS_PATH = path.join(dir, 'approvals.jsonl');
     fs.writeFileSync(paths(T).roadmap, JSON.stringify({ milestones: [{ n: 1, title: '시험', status: 'now' }, { n: 2, title: '둘', status: 'wait' }] }));
     const refuses = (fn, want) => { try { fn(); return '✗ 통과됨 (거부돼야 함)'; } catch (e) { return e.message.includes(want) ? '✓ 거부' : `✗ 다른 이유로 거부: ${e.message}`; } };
     // 산출물 하나(8단계 조건 5) — 파일을 쓰고 훅이 남기는 모양의 도구 줄(절대 경로)을 남긴다. PASS 로 닫는 자리마다 이게 있어야 한다.
@@ -1330,6 +1334,9 @@ switch (cmd) {
         }
       }
     } finally {
+      // 진짜 큐는 한 줄도 안 늘었어야 한다 — 임시 방의 approvals.jsonl 이 받았다(위 env). 방과 함께 지운다.
+      const tmpQ = process.env.PPANAM_APPROVALS_PATH; let tmpLines = 0; try { tmpLines = fs.readFileSync(tmpQ, 'utf8').split('\n').filter(Boolean).length; } catch {}
+      out.push(['check 의 요청은 진짜 큐에 안 남음', realQueueSize() === realQ0 && tmpLines > 0 ? `✓ state/approvals.jsonl ${realQ0}바이트 그대로 · 임시 큐 ${tmpLines}줄은 방과 함께 지움` : '✗ ' + JSON.stringify({ before: realQ0, after: realQueueSize(), tmpLines })]);
       fs.rmSync(dir, { recursive: true, force: true });
     }
     for (const [name, r] of out) console.log(`${r.startsWith('✓') ? '✓' : '✗'}  ${name.padEnd(28)} ${r}`);
