@@ -29,6 +29,7 @@ import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues, ex
 import * as world from './world.mjs';
 import { startInfra } from './infra.mjs';
 import * as gemini from './gemini.mjs';
+import { bossOk, NOT_YET } from './public/bosswords.js';
 
 const PORT = Number(process.env.PORT || 4321);
 // 밑바닥 넷(서버·codex·세션·디스크) — 2분마다 재서 값만 넘긴다(결정 92 "막힌 것" 의 infra, M6 준비). 첫 재기 전엔 null — 안 잰 것은 막힘이 아니다.
@@ -394,6 +395,38 @@ const server = http.createServer((req, res) => {
         guide: readCast(t.id).agents?.[t.kind === 'office' ? 'chief' : 'guide']?.name ?? null };
     });
     return json(res, 200, { since: new Date(since).toISOString(), until: new Date(until).toISOString(), done: doneBy, next, images, proxy, chief, chiefFile: chief ? `hq/out/daily/${dayKey}.md` : null, nightly, blocked, teams: teamRows });
+  }
+
+  // 카드 재료 (작업 C5) — 팀 하나의 상황판 넷(doing·done·blocked·boss) + 결재 큐(대기 중) + 회차(round·milestone·phase) + 로드맵의 지금 마일스톤 제목.
+  // 이 문장들은 그대로 화면에 나갈 수 있어 대표 화면 사람 말 검사(결정 140)를 거친다 — app.js bossLine·bossTitle 과 같은 규칙, 다만 여기는 API 라 펼침 없이 안 맞는 줄은 NOT_YET 으로 바꿔 낸다.
+  // 시각은 그대로 ISO 문자열(우리 시각 변환은 화면 몫) — bus.mjs 가 이미 그렇게 저장한다.
+  const cardMatch = url.pathname.match(/^\/api\/card\/([^/]+)$/);
+  if (cardMatch) {
+    const t = decodeURIComponent(cardMatch[1]);
+    if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
+    const line = (s) => { const v = String(s ?? '').trim(); return v ? (bossOk(v) ? v : NOT_YET) : null; };
+    const lines = (arr) => (arr ?? []).map(line).filter(Boolean);
+
+    const p = readProgress(t);   // 이 파일 위쪽 readProgress — bus.readProgress 에 fresh 를 얹은 것(다른 라우트와 같은 것을 쓴다)
+    const progress = { doing: lines(p?.doing), done: lines(p?.done), blocked: lines(p?.blocked), boss: lines(p?.boss), at: p?.at ?? null, fresh: p?.fresh ?? null };
+
+    // 결재 큐 — 대기 중인 것만. 제목은 화면의 bossTitle 과 같은 규칙: --boss 한 줄이 자에 맞으면 그것, 아니면 원문.
+    const approvals = listApprovals({ team: t, status: 'pending' }).map((r) => {
+      const title = bossOk(r.boss) ? r.boss : r.what;
+      return { id: r.id, grade: r.grade, title: line(title), at: r.ts };
+    });
+
+    const state = readState(t);
+    const roadmap = readRoadmap(t);
+    const milestone = roadmap.milestones?.find((m) => m.n === state.milestone) ?? null;
+
+    return json(res, 200, {
+      team: t,
+      progress,
+      approvals,
+      round: { round: state.round ?? 0, milestone: state.milestone ?? 0, phase: state.phase ?? 'idle' },
+      milestoneTitle: milestone?.title ?? null,
+    });
   }
 
   // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.
