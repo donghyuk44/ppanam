@@ -1401,8 +1401,12 @@ function renderTowerAll(grid) {
   const byPerson = new Map();
   for (const it of today) {
     if (!it.by) continue;   // 사람이 없는 한 것(라운드 닫힘·마일스톤·부탁 닫힘) — 아래 여섯 줄엔 남는다
-    if (!byPerson.has(it.by)) byPerson.set(it.by, { team: it.team, by: it.by, name: it.name ?? it.by, items: [] });
-    byPerson.get(it.by).items.push(it);
+    // 열쇠는 **사람** — 자리 이름만 쓰면 하영·테라(둘 다 guide)가 한 줄로 합쳐진다(나리 실측 22:57: 테라가 사라짐). 총괄실 사람(톰·세라·나리, 승인 판정의 제리)은
+    // 어느 방 일이든 한 사람이라 hq 로, 나머지는 방:자리.
+    const home = ['chief', 'secretary', 'system'].includes(it.by) || (it.by === 'outside' && (it.kind === 'decision' || it.kind === 'proxy')) ? 'hq' : it.team;
+    const k = `${home}:${it.by}`;
+    if (!byPerson.has(k)) byPerson.set(k, { team: home, by: it.by, name: it.name ?? it.by, items: [] });
+    byPerson.get(k).items.push(it);
   }
   if (byPerson.size) {
     const bands = el('div', 'bands');
