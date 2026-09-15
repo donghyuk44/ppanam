@@ -275,7 +275,7 @@ M3 데이터 전까지 빈 상태 문구). 마지막에 본 탭은 브라우저�
 | `kind` | 어디서 | `text` | `mine` (대표 손이 필요한가) | `target` |
 | --- | --- | --- | --- | --- |
 | `boss` 대표 차례(빨강) | 팀 요약 `bossCall`(결정을 청했는데 답 없음, 8절) + `people[by].bossCall.text` | 그 말 앞머리 80자 | 예. 위임 중엔 돈·바깥·`.claude` 물음(`bossCall.forbidden` = `proxyForbidden`)만 | 그 방, 그 말풍선 |
-| `approval` 승인 대기 | `approvals` 대기 중 C(대표 판단)·B(톰·제리) | `승인 [C] what` · `승인 [B] what — 톰·제리 차례` | C 만. 위임 중엔 대리 못 하는 C(`proxyable:false` — 서버가 `proxyEligible` 로 잰 것)만. B 는 아니오 | 관제탑 요청·승인 카드 |
+| `approval` 승인 대기 | `approvals` 대기 중 C(대표 판단)·B(톰·제리) | 대표 몫(`mine`)은 한 장씩 `what · 10분 안`(대리 못 하는 돈·바깥은 `what · 대표님만`). 나머지(B, 위임 중 대리될 C)는 **한 항목** `톰·제리가 보는 중 N건`(`id: approval:theirs`, `name: 톰·제리`, `team: hq`) — 원문째 늘어놓지 않는다, 배지와 같은 잣대(나리 usability-0916 U4) | C 만. 위임 중엔 대리 못 하는 C(`proxyable:false` — 서버가 `proxyEligible` 로 잰 것)만. 접힌 항목은 아니오 | 관제탑 맨 위 결재 띠(접힌 항목은 띠의 "톰·제리가 보는 중" 줄을 편다) |
 | `blocked` 막힘 | 팀 요약 `needsBoss`(`blocked`·`attempts`·`silent`) | 이유 한 줄(`BOSS_WHY`) | 예. 위임 중엔 아니오(톰·제리가 푼다) | 그 방 |
 | `report` 보고 | `bossNotes[]` 중 `ask` 아닌 것(오늘) | 그 말 앞머리 160자 | 아니오 — 읽을 것이지 누를 것이 아니다 | 그 방, 그 말풍선 |
 

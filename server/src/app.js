@@ -119,7 +119,8 @@ function bubble(text, team = active) {
     const [kind, content] = blocks[Number(i)];
     return `<details class="bub__fold"><summary>${kind} 보기</summary><pre>${escapeHtml(content)}</pre></details>`;
   });
-  n.innerHTML = mentionHtml + html.trim();
+  // 호명을 떼어 낸 뒤엔 앞 공백을 남긴다 — trim() 이 "톰, 코드" 의 쉼표 뒤 공백을 먹어 "톰,코드" 로 붙었다(나리 usability-0916 U6).
+  n.innerHTML = mentionHtml + (mentionHtml ? html.trimEnd() : html.trim());
   // 그림은 말풍선 안에, md·글은 눌러 펼쳐 읽게. 여섯 개까지 — 나머지는 링크로 족하다.
   for (const f of findOutPaths(body, team).filter((f) => f.kind !== 'file').slice(0, 6)) n.appendChild(outFileNode(f));
   return n;
@@ -311,7 +312,10 @@ function renderBellMenu() {
       markRead([it.id]); closeBell();
       const t = it.target ?? {};
       // 승인 카드는 모든 탭 맨 위(#approvals)에 떠 있다 — 관제탑 첫 화면으로 가면 보인다.
-      if (t.view === 'tower') { setView('tower'); setTowerTab(t.approval ? 'all' : 'asks'); }
+      if (t.view === 'tower') {
+        if (it.kind === 'approval' && !t.approval) { theirsOpen = true; renderApprovals(); }   // "톰·제리가 보는 중 N건" — 띠의 접힌 줄을 편다(U3·U4)
+        setView('tower'); setTowerTab(it.kind === 'approval' ? 'all' : 'asks');
+      }
       else jumpTo(t.team, t.event ?? null);
     });
     m.appendChild(row);
@@ -1174,13 +1178,20 @@ function approvalHead(r) {
   const who = (summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by;
   return `${who} · ${t?.name ?? r.team} · 결재 기다림 · ${ago(r.ts)}`;
 }
+let theirsOpen = false;   // 띠의 "톰·제리가 보는 중 N건" 줄을 폈나 — 새로 그릴 때도 유지, 그 카드가 다 빠지면 다시 접힘
 function renderApprovals() {
   const box = $('approvals');
   box.replaceChildren();
   if (!approvals.length && !decidedLines.length) { box.hidden = true; return; }
   box.hidden = false;
-  box.appendChild(el('div', 'approvals__k', approvals.length ? `결재 ${approvals.length}건` : '결재'));
-  for (const r of approvals) {
+  // 대표 손이 필요한 카드(C — 위임 중엔 돈·바깥만)만 한 줄씩. B 와 위임 중 대리될 C 는 "톰·제리가 보는 중 N건" 한 줄로 접는다 —
+  // 배지와 같은 잣대(나리 usability-0916 U3: 톰·제리 몫 B 카드가 대표 첫 화면 맨 위 190~270px 를 먹고 배지 0 과 다른 말을 했다).
+  const dg = delegated(delegation);
+  const mine = approvals.filter((r) => r.grade === 'C' && (!dg || r.proxyable === false));
+  const theirs = approvals.filter((r) => !mine.includes(r));
+  if (!theirs.length) theirsOpen = false;
+  box.appendChild(el('div', 'approvals__k', mine.length ? `결재 ${mine.length}건` : '결재'));
+  const line = (r) => {
     const row = el('button', 'apr apr--line'); row.type = 'button';
     const head = el('span', 'apr__head');
     const g = el('span', 'apr__g', GRADE_WORD[r.grade] ?? r.grade); g.dataset.g = r.grade; g.title = grades[r.grade]?.desc ?? '';
@@ -1188,9 +1199,18 @@ function renderApprovals() {
     head.appendChild(el('span', 'apr__team', approvalHead(r)));
     row.appendChild(head);
     row.appendChild(el('span', 'apr__what', r.what));
-    row.appendChild(el('span', 'apr__go', r.grade === 'C' ? '읽고 답하기' : '읽기'));
+    row.appendChild(el('span', 'apr__go', mine.includes(r) ? '읽고 답하기' : '읽기'));
     row.addEventListener('click', () => openApprovalPop(r));
-    box.appendChild(row);
+    return row;
+  };
+  for (const r of mine) box.appendChild(line(r));
+  if (theirs.length) {
+    const fold = el('button', 'apr apr--fold'); fold.type = 'button'; fold.setAttribute('aria-expanded', String(theirsOpen));
+    fold.appendChild(el('span', 'apr__what', `톰·제리가 보는 중 ${theirs.length}건`));
+    fold.appendChild(el('span', 'apr__go', theirsOpen ? '접기' : '보기'));
+    fold.addEventListener('click', () => { theirsOpen = !theirsOpen; renderApprovals(); });
+    box.appendChild(fold);
+    if (theirsOpen) for (const r of theirs) box.appendChild(line(r));
   }
   for (const d of decidedLines) box.appendChild(el('div', 'apr apr--done', d.text));
 }

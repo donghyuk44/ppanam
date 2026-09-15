@@ -57,11 +57,21 @@ export function notificationsOf({ teams = [], summaries = {}, approvals = [] } =
     }
   }
   // 승인 대기 — C 는 대표(위임 중엔 대리 못 하는 돈·바깥만), B 는 톰·제리 몫이라 패널엔 두되 숫자엔 안 든다.
+  // 패널도 배지와 같은 잣대(나리 usability-0916 U4): 대표 손이 필요한 카드(mine)만 한 줄씩 — 무엇 · 누가(name) · 언제까지(10분 안 / 대표님만).
+  // 나머지(B, 위임 중 대리될 C)는 원문째 늘어놓지 않고 "톰·제리가 보는 중 N건" 한 줄로 접는다 — 누르면 결재 띠로(첫 화면 띠도 같은 한 줄, U3).
+  const theirs = [];
   for (const r of approvals) {
     if (r.grade !== 'C' && r.grade !== 'B') continue;
-    const c = r.grade === 'C';
-    items.push({ id: `approval:${r.id}`, kind: 'approval', team: r.team, by: r.by, name: nameOf(r.team, r.by), mine: c && (!dg || r.proxyable === false),
-      text: `승인 [${r.grade}] ${oneLine(r.what, 120)}${c ? '' : ' — 톰·제리 차례'}`, ts: r.ts, thumb: firstImage(r.what, r.team), target: { view: 'tower', team: r.team, approval: r.id } });
+    const mine = r.grade === 'C' && (!dg || r.proxyable === false);
+    if (!mine) { theirs.push(r); continue; }
+    const until = r.proxyable === false ? ' · 대표님만' : ' · 10분 안';   // 대리 못 하는 돈·바깥은 대표만, 나머지는 10분 지나면 톰·제리(결정 85)
+    items.push({ id: `approval:${r.id}`, kind: 'approval', team: r.team, by: r.by, name: nameOf(r.team, r.by), mine: true,
+      text: `${oneLine(r.what, 100)}${until}`, ts: r.ts, thumb: firstImage(r.what, r.team), target: { view: 'tower', team: r.team, approval: r.id } });
+  }
+  if (theirs.length) {
+    const office = byTeam.has('hq') ? 'hq' : theirs[0].team;   // 보는 사람은 총괄실
+    items.push({ id: 'approval:theirs', kind: 'approval', team: office, by: null, name: '톰·제리', mine: false,
+      text: `톰·제리가 보는 중 ${theirs.length}건`, ts: theirs.map((r) => r.ts).sort().at(-1) ?? null, thumb: null, target: { view: 'tower', team: office, approval: null } });
   }
 
   const rank = (k) => { const i = KIND_ORDER.indexOf(k); return i < 0 ? KIND_ORDER.length : i; };

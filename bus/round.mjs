@@ -931,11 +931,12 @@ switch (cmd) {
         const n1 = notificationsOf({ teams: nTeams, summaries: nSum, approvals: nApr });
         const order = n1.items.map((it) => it.id).join(',');
         const n2 = notificationsOf({ teams: nTeams, summaries: nSum, approvals: nApr }, { read: new Set(['boss:e1', 'approval:apr_1', 'blocked:design']) });
-        const nWant = order === 'boss:e1,approval:apr_2,approval:apr_1,blocked:design,report:e5,report:e0' && n1.unread === 3 && n1.urgent
+        // B 카드는 원문째가 아니라 "톰·제리가 보는 중 N건" 한 줄로 접힘(나리 usability-0916 U3·U4), 대표 몫 C 는 무엇 · 언제까지(10분 안 / 대표님만).
+        const nWant = order === 'boss:e1,approval:theirs,approval:apr_1,blocked:design,report:e5,report:e0' && n1.unread === 3 && n1.urgent
           && n1.items[5].thumb === '/out/dev/shots/a.png' && n1.items[4].thumb === null && n1.items[0].name === '테라' && n1.items[3].text.includes('멈춤')
-          && n1.items[1].text.endsWith('톰·제리 차례') && n1.items.map((i) => +i.mine).join('') === '101100'
+          && n1.items[1].text === '톰·제리가 보는 중 1건' && n1.items[2].text === '로드맵 교체 · 10분 안' && n1.items.map((i) => +i.mine).join('') === '101100'
           && n2.unread === 0 && !n2.urgent && n2.items.filter((i) => i.unread).length === 3;
-        out.push(['알림 목록(결정 68 · 나리 ②)', nWant ? '✓ 종류 순 6건 · B 는 패널만(톰·제리 차례) · ask 제외 · 썸네일 · 숫자는 mine 셋 · 읽음 뒤 0·urgent 꺼짐(안 읽은 보고·B 셋은 숫자 밖)' : '✗ ' + JSON.stringify({ order, unread: n1.unread, urgent: n1.urgent, mine: n1.items.map((i) => i.mine), n2: [n2.unread, n2.urgent] })]);
+        out.push(['알림 목록(결정 68 · 나리 ② · U3·U4)', nWant ? '✓ 종류 순 6건 · B 는 "톰·제리가 보는 중 1건" 한 줄 · C 는 무엇 · 10분 안 · ask 제외 · 썸네일 · 숫자는 mine 셋 · 읽음 뒤 0·urgent 꺼짐(안 읽은 보고·접힌 줄 셋은 숫자 밖)' : '✗ ' + JSON.stringify({ order, unread: n1.unread, urgent: n1.urgent, texts: n1.items.map((i) => i.text), mine: n1.items.map((i) => i.mine), n2: [n2.unread, n2.urgent] })]);
         // 위임 중(결정 136)엔 돈·바깥만 대표 손 — 대리 가능한 C·물음·FAIL 은 숫자 밖. until 지나면 평소대로. 돈 C(proxyable:false)·돈 물음(forbidden) 은 위임 중에도 센다.
         const dgOn = { to: 'system', until: '2026-09-16T01:00:00Z', decision: 136 }, dgNow = Date.parse('2026-09-15T14:00:00Z');
         const dApr = [...nApr, { id: 'apr_3', grade: 'C', team: 'dev', by: 'guide', what: '유료 결제 허용', ts: '2026-09-13T08:00:00Z', proxyable: false }];
