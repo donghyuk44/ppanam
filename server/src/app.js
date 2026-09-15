@@ -1064,7 +1064,8 @@ $('scrim').addEventListener('click', () => openSide(false));
 /* ══ 화면 전환 ══ */
 
 let view = 'room';
-const VIEWS = new Set(['room', 'tower', 'dashboard', 'report', 'analysis', 'world']);
+// 속 이름은 그대로, 탭 글자만 표준어(카드-체계-0916 4절, 나리 R32): room=채팅 · tower=대시보드 · dashboard=타임라인 · report=리포트(둘째 탭 analysis) · settings=설정 · world=마을(숨김)
+const VIEWS = new Set(['room', 'tower', 'dashboard', 'report', 'analysis', 'settings', 'world']);
 
 // 주소에 팀과 화면을 함께 남긴다 (#marketing/tower). 새로고침해도, 뒤로 가도 보던 곳으로 돌아온다.
 // 우리가 쓴 해시는 되읽지 않는다 — 안 그러면 화면을 바꿀 때마다 한 번 더 바꾸려 든다.
@@ -1091,21 +1092,95 @@ function setView(v) {
   view = v;
   app.dataset.view = v;
   syncHash();
+  const shown = v === 'analysis' ? 'report' : v;   // 분석은 리포트의 둘째 탭 — 위 줄에선 리포트 단추가 켜진다
   for (const b of $('views').querySelectorAll('button')) {
-    b.setAttribute('aria-current', String(b.dataset.view === v));
-    // 마을 탭은 숨겨 두고(index.html hidden — 대표 09-16 '마을은 최최최최후'), 주소(#팀/world)로 한 번 열면 그 뒤로 보인다.
+    b.setAttribute('aria-current', String(b.dataset.view === shown));
+    // 마을 탭은 숨겨 두고(index.html hidden — 대표 09-16 '마을은 최최최최후'), 설정의 숨김 링크나 주소(#팀/world)로 한 번 열면 그 뒤로 보인다.
     if (v === 'world' && b.dataset.view === 'world') b.hidden = false;
   }
+  for (const b of document.querySelectorAll('#repTabs button, #anTabs button')) b.setAttribute('aria-current', String(b.dataset.view === v));
   if (v === 'tower') renderTower();
   if (v === 'dashboard') loadDashboard();
   if (v === 'report') loadReport({ force: true });
   if (v === 'analysis') loadAnalysis();
+  if (v === 'settings') loadSettings();
   // 마을은 열려 있을 때만 그린다. 닫히면 rAF 를 멈춘다 — 관람은 공짜여야 한다.
   if (v === 'world') World.open({ teams, jump: jumpTo }).catch(() => {}); else World.close();
 }
 
-for (const b of $('views').querySelectorAll('button')) {
+for (const b of document.querySelectorAll('#views button, #repTabs button, #anTabs button')) {
   b.addEventListener('click', () => setView(b.dataset.view));
+}
+
+/* ══ 설정 — 권한 현황 · 낱말 사전 · 인격 파일 목록 · 숨김 화면(마을) (나리 R32, 카드-체계-0916 4절) ══ */
+
+/** md 를 아주 얕게 DOM 으로 — 제목(#)·표(|)·문단만. 링크·굵게는 안 푼다(글자 그대로, textContent 라 안전). 설정 탭의 나리 표·하영 사전을 읽기 좋게 놓는 용도. */
+function mdLite(text) {
+  const box = el('div', 'set__md');
+  let table = null, para = [];
+  const flushPara = () => { if (para.length) { box.appendChild(el('p', null, para.join(' '))); para = []; } };
+  const flushTable = () => { if (table) { box.appendChild(table); table = null; } };
+  for (const raw of String(text ?? '').split('\n')) {
+    const line = raw.trimEnd();
+    if (line.trim().startsWith('|')) {
+      flushPara();
+      const cells = line.split('|').slice(1, -1).map((c) => c.trim());
+      if (cells.every((c) => /^:?-+:?$/.test(c))) continue;   // 구분 줄
+      if (!table) { table = el('table'); table.dataset.head = '0'; }
+      const tr = el('tr');
+      for (const c of cells) tr.appendChild(el(table.dataset.head === '0' ? 'th' : 'td', null, c.replace(/\*\*|`/g, '')));
+      table.appendChild(tr); table.dataset.head = '1';
+      continue;
+    }
+    flushTable();
+    const h = line.match(/^(#{1,6})\s+(.*)$/);
+    if (h) { flushPara(); box.appendChild(el('h3', null, h[2].replace(/\*\*|`/g, ''))); continue; }
+    if (!line.trim()) { flushPara(); continue; }
+    para.push(line.replace(/^[-*]\s+/, '· ').replace(/\*\*|`/g, ''));
+  }
+  flushPara(); flushTable();
+  return box;
+}
+/** 파일 하나를 접힘 안에 — 열 때 한 번 읽는다(outFileNode 와 같은 버릇). */
+function mdFold(label, url) {
+  const d = el('details', 'set__fold');
+  d.appendChild(el('summary', null, label));
+  const body = el('div'); d.appendChild(body);
+  d.addEventListener('toggle', async () => {
+    if (!d.open || body.dataset.loaded) return;
+    body.dataset.loaded = '1'; body.textContent = '불러오는 중…';
+    try { const r = await fetch(url); body.replaceChildren(r.ok ? mdLite(await r.text()) : el('p', null, `읽지 못했어요 (${r.status})`)); }
+    catch (e) { body.textContent = `읽지 못했어요 — ${e.message}`; }
+  });
+  return d;
+}
+async function loadSettings() {
+  const body = $('setBody');
+  body.replaceChildren();
+  // ① 권한 현황 — 나리 표(teams/hq/out/권한-현황-0916.md)를 그대로. 바꾸는 손은 대표(settings.json)라 여기선 읽기만.
+  body.appendChild(el('div', 'set__k', '권한 — 자리마다 되는 것 · 막힌 것'));
+  const perm = el('div'); body.appendChild(perm); perm.textContent = '불러오는 중…';
+  fetch('/out/hq/' + encodeURIComponent('권한-현황-0916.md')).then(async (r) => { perm.replaceChildren(r.ok ? mdLite(await r.text()) : el('p', null, '권한 표를 아직 못 읽어요 — teams/hq/out/권한-현황-0916.md')); }).catch(() => { perm.textContent = '권한 표를 아직 못 읽어요'; });
+  // ② 낱말 사전 — 하영(teams/marketing/out/opsroom-words.md). 길어서 접힘.
+  body.appendChild(el('div', 'set__k', '낱말 — 화면에 쓰는 말과 뜻'));
+  body.appendChild(mdFold('낱말 사전 펼치기 (하영)', '/out/marketing/opsroom-words.md'));
+  // ③ 인격 파일 — 팀 · 이름 · 직책 · 파일 자리. 파일은 서버가 안 내준다(out/ 만) — 자리만 적는다.
+  body.appendChild(el('div', 'set__k', '인격 — 자리마다 파일 하나'));
+  const ul = el('ul', 'set__list');
+  for (const t of teams) {
+    const cast = summaries[t.id]?.cast ?? {};
+    for (const [seat, a] of Object.entries(cast)) {
+      if (seat === 'boss') continue;
+      const li = el('li'); li.append(`${t.name} · ${a.name ?? seat}${a.title ? ' · ' + a.title : ''} `);
+      li.appendChild(el('code', null, `teams/${t.id}/${seat}.md`));
+      ul.appendChild(li);
+    }
+  }
+  body.appendChild(ul);
+  // ④ 숨김 화면 — 마을은 탭에서 뺐다(대표 09-16 '마을은 최최최최후'). 여기 링크로만.
+  const hid = el('p', 'set__hidden');
+  const a = el('a', null, '숨김 화면 — 마을 열기'); a.href = `#${active ?? 'hq'}/world`; hid.append('마을은 아직 손볼 게 많아 탭에서 뺐어요. ', a);
+  body.appendChild(hid);
 }
 
 /* ══ 관제탑 ══ */

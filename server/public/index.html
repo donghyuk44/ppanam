@@ -40,13 +40,16 @@
       <span class="rail__sub">작전실</span>
     </div>
     <nav class="views" id="views" aria-label="화면">
-      <!-- 탭 이름은 하영 사전 0-1 확정(결정 136 · apr_ee0c16a2): 작전실→팀 방 · 관제탑→현황 · 대시보드→앞으로. 분석·마을은 그대로. 세계 이름(위 작전실)은 아직 -->
-      <button type="button" data-view="room">팀 방</button>
-      <button type="button" data-view="tower">현황</button>
-      <button type="button" data-view="dashboard">앞으로</button>
-      <button type="button" data-view="report">보고서</button>
-      <button type="button" data-view="analysis">분석</button>
-      <!-- 마을 탭은 대표 화면에서 숨긴다(대표 09-16 07:2x '마을은 최최최최후', 나리 R32) — 오류가 많아 대표가 보면 안 된다. 주소(#팀/world)로 열면 그때 보인다(app.js setView). -->
+      <!-- 탭 다섯은 표준어(대표 09-16 07:4x "어디 회사나 서비스나 플랫폼에서 이런 단어를 사용하냐" → 카드-체계-0916 4절 · 사전 0-3, 나리 R32). 속 이름(data-view·주소)은 그대로 —
+           room=채팅 · tower=대시보드 · dashboard=타임라인 · report=리포트(둘째 탭이 analysis) · settings=설정. 옛 이름(팀 방·현황·앞으로·보고서·분석)은 사전 0-1 에 남는다. -->
+      <button type="button" data-view="room">채팅</button>
+      <button type="button" data-view="tower">대시보드</button>
+      <button type="button" data-view="dashboard">타임라인</button>
+      <button type="button" data-view="report">리포트</button>
+      <button type="button" data-view="settings">설정</button>
+      <!-- 분석은 리포트 안 둘째 탭(리포트 머리의 repTabs) — 단추는 숨기고 주소·aria-current 는 리포트 단추가 받는다(app.js setView). -->
+      <button type="button" data-view="analysis" hidden>분석</button>
+      <!-- 마을 탭은 대표 화면에서 숨긴다(대표 09-16 07:2x '마을은 최최최최후', 나리 R32) — 오류가 많아 대표가 보면 안 된다. 설정 맨 아래 '숨김 화면' 링크나 주소(#팀/world)로 열면 그때 보인다(app.js setView). -->
       <button type="button" data-view="world" hidden>마을</button>
     </nav>
     <nav class="rail__list" id="teams" aria-label="팀"></nav>
@@ -121,11 +124,11 @@
   <!-- 관제탑: 네 팀을 한 화면에. 서브 탭 넷 — 전체(첫 화면) · 팀(카드 다섯) · 개인(열넷 + 대표) · 요청(팀 사이 요청, M3) — 결정 40·50 -->
   <section class="tower" id="tower">
     <header class="tower__head">
-      <h1>현황 <span class="dash__sub">— 지금 무슨 일이 벌어지고 있나</span></h1>
+      <h1>대시보드 <span class="dash__sub">— 지금 무슨 일이 벌어지고 있나</span></h1>
       <p>위에서 아래로 넷 — 뭐가 막혔나 · 누가 뭘 했나 · 내 차례 · 팀. 없으면 그 칸은 안 떠요.</p>
     </header>
     <!-- 서브탭 글자는 하영 사전(도면 1판 셋째 겹 "사람", 팀↔팀 줄 "요청"). "전체" 와 위 탭 이름 셋은 대표가 0-1 을 고를 때까지 지금 이름 -->
-    <nav class="tabs" id="towerTabs" aria-label="현황 탭">
+    <nav class="tabs" id="towerTabs" aria-label="대시보드 탭">
       <button type="button" data-tab="all">전체</button>
       <button type="button" data-tab="teams">팀<i class="tabs__n" hidden></i></button>
       <button type="button" data-tab="people">사람<i class="tabs__n" hidden></i></button>
@@ -137,9 +140,9 @@
   <!-- 대시보드 = "앞으로 언제 뭐가 되나"(나리 정본 · 헨리 시안 1판 dashboard.svg · 결정 128). 위 = 앞날 띠(팀 다섯 줄, 지금 선 오른쪽만) + 대표 답이 있어야 열리는 단계(gated 만 — 결재·대표 차례는 관제탑 ③), 아래 = 1판 예정 작업 표(plan-table.md) -->
   <section class="dashboard" id="dashboard">
     <header class="tower__head">
-      <h1>앞으로 <span class="dash__sub">— 언제 뭐가 되나</span></h1>
-      <!-- 범례 두 줄 — 하영 5판 337행 그대로 · 둘째 줄은 화면 글 틀 1-5(5판 338행에서 뒷말 뺌 — 다섯 줄 중 셋이 둘 다 만든다) -->
-      <p>채움 = 잡힌 예정 · 점선 = 미정 · 빨강 = 늦음/멈춤. 지난 것은 여기 없어요 — 현황에 있어요.<br>칸 오른쪽 점 둘 = 그 팀의 둘(머리글자 · 직책 색).</p>
+      <h1>타임라인 <span class="dash__sub">— 언제 뭐가 되나</span></h1>
+      <!-- 범례 두 줄 — 하영 5판 337행 그대로 · 둘째 줄은 화면 글 틀 1-5(5판 338행에서 뒷말 뺌 — 다섯 줄 중 셋이 둘 다 만든다). 줄기 × 작은 일 표(작업보드-0916)는 34회차 -->
+      <p>채움 = 잡힌 예정 · 점선 = 미정 · 빨강 = 늦음/멈춤. 지난 것은 여기 없어요 — 대시보드에 있어요.<br>칸 오른쪽 점 둘 = 그 팀의 둘(머리글자 · 직책 색).</p>
     </header>
     <div class="dash__body">
       <div class="band" id="dashBand"></div>
@@ -149,22 +152,40 @@
   </section>
 
   <!-- 보고서 = "어제 하루가 어땠나"(나리 정본 · 헨리 report 1판 · 결정 80·81). 절은 다섯 — 정하실 것 · 대신 정한 것 · 막힌 것(띠) · 팀마다 한 것 · 오늘 각 방이 먼저 할 일 + 한마디. 절 이름은 경영 틀이 오면 그쪽(5판 3-5-5) -->
+  <!-- 리포트 탭은 둘 — 한 장(아침·저녁, 첫째) · 분석(둘째). 둘 다 같은 서브탭 줄(repTabs·anTabs)을 머리에 달고, 속 화면(report·analysis)은 그대로(나리 R32) -->
   <section class="report" id="report">
     <header class="tower__head">
-      <h1>보고서 <span class="dash__sub">(어제 하루)</span> <span class="rep__date" id="repDate"></span></h1>
+      <h1>리포트 <span class="dash__sub">(어제 하루)</span> <span class="rep__date" id="repDate"></span></h1>
       <p id="repWindow">어제 저녁 6시 → 오늘 아침 9시</p>
     </header>
+    <nav class="tabs" id="repTabs" aria-label="리포트 탭">
+      <button type="button" data-view="report" aria-current="true">한 장</button>
+      <button type="button" data-view="analysis">분석</button>
+    </nav>
     <div class="dash__body" id="repBody"></div>
   </section>
 
-  <!-- 분석: 팀 하나를 깊게 -->
+  <!-- 분석: 팀 하나를 깊게 — 리포트의 둘째 탭 -->
   <section class="analysis" id="analysis">
     <header class="tower__head">
       <!-- 분석 1판(헨리 analysis.svg) — 다섯 팀을 같은 자로, 칸 셋. 나리 정본 "왜 자꾸 이렇게 되나" -->
-      <h1 id="anTitle">분석 <span class="dash__sub">— 왜 자꾸 이렇게 되나</span></h1>
+      <h1 id="anTitle">리포트 <span class="dash__sub">— 왜 자꾸 이렇게 되나</span></h1>
       <p>숫자는 늘 둘이 나란히 — 지난 → 이번 · N건 중 M · 같은 자리에서 N번째.</p>
     </header>
+    <nav class="tabs" id="anTabs" aria-label="리포트 탭">
+      <button type="button" data-view="report">한 장</button>
+      <button type="button" data-view="analysis" aria-current="true">분석</button>
+    </nav>
     <div class="an__body" id="anBody"></div>
+  </section>
+
+  <!-- 설정 — 권한 현황(나리 표 그대로) · 낱말 사전(하영) · 인격 파일 목록. 마을은 맨 아래 '숨김 화면' 링크로만(나리 R32, 카드-체계-0916 4절) -->
+  <section class="settings" id="settings">
+    <header class="tower__head">
+      <h1>설정 <span class="dash__sub">— 권한 · 낱말 · 인격</span></h1>
+      <p>여기는 읽기만 해요. 바꾸는 건 파일에서 — 권한은 대표님, 낱말은 하영, 인격은 각 팀.</p>
+    </header>
+    <div class="dash__body" id="setBody"></div>
   </section>
 
   <!-- 마을: 도트 마을에서 캐릭터와 말풍선으로 본다 -->

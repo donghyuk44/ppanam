@@ -84,7 +84,7 @@ body {
 .app > .approvals { grid-column: 1 / -1; grid-row: 1; }
 /* 나머지는 둘째 줄에 — 승인 블록이 숨겨져(display:none) 첫 줄이 비어도 자동 배치가 거기로 올라가지 않게.
    .report 가 빠져 1280 에서 보고서가 첫 줄 왼쪽 224px 기둥에 눌렸다(나리 점검-0916 3-1 ①, 09-14 .dashboard 와 같은 빠짐 — 폰 쪽 1020줄엔 있었다). */
-.rail, .room, .tower, .dashboard, .report, .analysis, .world, .side { grid-row: 2; }
+.rail, .room, .tower, .dashboard, .report, .analysis, .settings, .world, .side { grid-row: 2; }
 
 /* ══ 왼쪽 · 팀 레일 ══ */
 
@@ -567,16 +567,32 @@ body {
   font-weight: 500;
 }
 
-.tower, .analysis, .dashboard, .report { display: none; flex-direction: column; min-height: 0; background: var(--ground); }
+.tower, .analysis, .dashboard, .report, .settings { display: none; flex-direction: column; min-height: 0; background: var(--ground); }
 .app[data-view="tower"] .tower,
 .app[data-view="analysis"] .analysis,
 .app[data-view="report"] .report,
+.app[data-view="settings"] .settings,
 .app[data-view="dashboard"] .dashboard { display: flex; }
 .app[data-view="tower"] .room, .app[data-view="tower"] .side,
 .app[data-view="analysis"] .room, .app[data-view="analysis"] .side,
 .app[data-view="report"] .room, .app[data-view="report"] .side,
+.app[data-view="settings"] .room, .app[data-view="settings"] .side,
 .app[data-view="dashboard"] .room, .app[data-view="dashboard"] .side { display: none; }
-.app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"], .app[data-view="report"] { grid-template-columns: 224px minmax(0, 1fr); }
+.app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"], .app[data-view="report"], .app[data-view="settings"] { grid-template-columns: 224px minmax(0, 1fr); }
+/* 리포트 둘째 탭(분석)과 설정 — 서브탭 줄은 현황 탭(.tabs)과 같은 부품. 설정 본문은 표 하나·접힘 둘·목록 하나 */
+.report .tabs, .analysis .tabs { margin: 0 20px 6px; }
+.set__k { font-size: 12px; color: var(--ink-3); margin: 14px 0 6px; }
+.set__md h3 { font-size: 13px; margin: 10px 0 4px; }
+.set__md p { margin: 4px 0; font-size: 12.5px; color: var(--ink-2); }
+.set__md table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin: 4px 0 8px; }
+.set__md th, .set__md td { text-align: left; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line-2); vertical-align: top; overflow-wrap: anywhere; }
+.set__md th { color: var(--ink-3); font-weight: 500; }
+.set__fold summary { cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
+.set__list { margin: 0; padding-left: 0; list-style: none; font-size: 12.5px; }
+.set__list li { padding: 3px 0; border-bottom: 1px dashed var(--line-2); }
+.set__list code { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-3); }
+.set__hidden { margin-top: 22px; font-size: 12px; color: var(--ink-4); }
+.set__hidden a { color: var(--ink-4); }
 
 .dash__body { padding: 16px 22px; overflow: auto; }
 .dash__sub { font-size: 12px; color: var(--ink-4); font-weight: 400; }
@@ -1016,7 +1032,7 @@ button.dash__row:hover b { text-decoration: underline; }
 
 @media (max-width: 1179px) {
   .app { grid-template-columns: 210px minmax(0, 1fr); }
-  .app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"], .app[data-view="report"] { grid-template-columns: 210px minmax(0, 1fr); }
+  .app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"], .app[data-view="report"], .app[data-view="settings"] { grid-template-columns: 210px minmax(0, 1fr); }
   .iconbtn { display: grid; }
   .side {
     position: fixed; top: 0; right: 0; bottom: 0; width: min(320px, 86vw);
@@ -1030,11 +1046,11 @@ button.dash__row:hover b { text-decoration: underline; }
 /* 한 단: 폰. 팀은 위쪽 가로 띠로 접힌다. */
 @media (max-width: 819px) {
   .app,
-  .app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"], .app[data-view="report"] {
+  .app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"], .app[data-view="report"], .app[data-view="settings"] {
     grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr);
   }
   .rail { grid-row: 2; }
-  .room, .tower, .dashboard, .report, .analysis, .world { grid-row: 3; }   /* 대시보드(결정 128)·보고서도 — 컴퓨터 86줄과 같은 빠짐이 폰에서 또 나지 않게 */
+  .room, .tower, .dashboard, .report, .analysis, .settings, .world { grid-row: 3; }   /* 대시보드(결정 128)·보고서도 — 컴퓨터 86줄과 같은 빠짐이 폰에서 또 나지 않게 */
   .approvals { margin: 8px 10px 0; padding: 10px 12px; }
   .rail { flex-direction: row; border-right: none; border-bottom: 1px solid var(--line); min-width: 0; }
   .rail__head { display: none; }
