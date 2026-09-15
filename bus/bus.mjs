@@ -1529,7 +1529,7 @@ export function auditorsOf(events) {
   return { auditors, outsideAudited: auditors.some((a) => a.actor === 'outside' && a.verdict === 'PASS') };
 }
 
-export function endRound(team, { verdict = null, summary = null } = {}) {
+export function endRound(team, { verdict = null, summary = null, next = null } = {}) {
   assertEndable(team, { verdict });
   const state = readState(team);
 
@@ -1548,8 +1548,10 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
   const artifacts = artifactsOf(team, roundEvents).paths;   // 무엇을 냈나(8단계) — PASS 면 endRefusal 이 이미 비어 있지 않음을 봤다
 
   // PASS 로 닫혔으면 이 마일스톤은 끝났다 — 사실 기록. 다음 것을 now 로 옮기는 것은 B 승인의 일이다.
+  let milestonePassed = false;
   if (String(verdict ?? '').toUpperCase() === 'PASS' && state.milestone) {
     if (setMilestoneStatus(team, state.milestone, 'pass')) {
+      milestonePassed = true;
       emit(team, { type: 'milestone', actor: 'system', text: `마일스톤 ${state.milestone} 통과 — 로드맵에 pass 로 기록${outsideAudited ? '' : ' (외부 감사 없이 — ' + outsideWhy + ')'}`,
         meta: { index: state.milestone, auditors, outsideAudited, ...(outsideWhy ? { outsideWhy } : {}), artifacts } });
       // 닫힌 고리(대표 실측 09-14 — 마케팅이 6단계 통과 뒤 여섯 시간 섰다): now 가 없으면 startRound 가 B 승인을 요구하는데, B 를 올리려면 차례가,
@@ -1606,6 +1608,22 @@ export function endRound(team, { verdict = null, summary = null } = {}) {
   } catch { /* 파일이 없으면 열린 세션도 없다 */ }
 
   writeState(team, { phase: 'idle', endedAt: new Date().toISOString(), auditor: null });
+
+  // 같은 단계면 다음 회차를 자동으로 열어 차례가 끊기지 않게 한다(나리 실측 09-16 — 세 방이 45~95분씩 서서 손으로 다섯 번 열었다).
+  // 마일스톤이 이번에 pass 로 끝났으면(milestonePassed) 다음 단계는 B 승인이 정한다 — 여기서는 안 연다(위 블록이 이미 그 문을 연다).
+  // next 가 있으면(--next, 결정 25) 부른 쪽이 바로 이어 연다 — 여기서 먼저 열면 그쪽 startRound 가 "이미 열려 있다" 로 던진다.
+  if (!milestonePassed && !next && state.milestone) {
+    const stillOpen = (readRoadmap(team).milestones ?? []).some((m) => m.n === state.milestone && m.status === 'now');
+    if (stillOpen) {
+      try {
+        const st = startRound(team, { topic: state.topic ?? null });
+        emit(team, { type: 'note', actor: 'system', text: `같은 단계라 라운드 ${st.round} 을 이어서 엽니다.`, meta: { autoContinue: true } });
+      } catch (e) {
+        emit(team, { type: 'note', actor: 'system', text: `다음 회차를 자동으로 열지 못했습니다 — ${String(e.message).slice(0, 120)}. node bus/round.mjs start 로 여세요.` });
+      }
+    }
+  }
+
   return state.round;
 }
 

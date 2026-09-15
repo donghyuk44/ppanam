@@ -134,7 +134,7 @@ switch (cmd) {
     }
     // 서버가 없다. 직접 닫는다 — 세션 컨텍스트는 다음에 서버가 뜰 때 정리된다.
     try {
-      const n = endRound(team, { verdict: o.verdict, summary });
+      const n = endRound(team, { verdict: o.verdict, summary, next });
       console.log(`[${team}] 라운드 ${n} 종료${o.verdict ? ' · ' + o.verdict : ''} (서버 없이 직접 닫음)`);
       console.log('대화록은 그대로 남습니다. 다음 라운드부터 AI 컨텍스트만 새로 시작합니다.');
       if (next) {
@@ -603,6 +603,35 @@ switch (cmd) {
         delete osAfter[`${T}x`];
         if (osBefore == null) fs.rmSync(osPath, { force: true }); else fs.writeFileSync(osPath, JSON.stringify(osAfter, null, 2) + '\n');
         out.push(['닫히면 codex 칸 비움(방·방:자리)', swept ? '✓ 방 · 방:guide 지움 · 다른 방(방x)은 그대로' : '✗ ' + JSON.stringify(Object.keys(osAfter).filter((k) => k.startsWith(T)))]);
+      }
+      // 같은 단계면 회차 자동 이어열기(나리 실측 09-16 — 세 방이 45~95분씩 서서 손으로 다섯 번 열었다) — endRound 뒤에도
+      // 그 마일스톤이 로드맵에서 여전히 now 면 승인 없이 바로 startRound. 이미 pass 면(사람이 번호로 재개한 것) 자동으로 안 잇는다.
+      // --next 로 부른 쪽이 바로 이을 참이면(endRound({ next })) 여기서 먼저 안 열어 그쪽 startRound 와 안 겹친다.
+      {
+        setMilestoneStatus(T, 2, 'now');
+        if (readState(T).phase !== 'idle') endRound(T, { summary: '자동 이어열기 전 닫음' });
+        const before2 = startRound(T, { milestone: 2, topic: '자동' }).round;
+        endRound(T, { summary: '중간에 세워 둠' });   // verdict 없음 — milestone 은 그대로 now
+        const after2 = readState(T);
+        const autoOk = after2.phase === 'running' && after2.round === before2 + 1 && after2.milestone === 2;
+        setMilestoneStatus(T, 2, 'pass');   // 다음 시험 전에 닫는다 — pass 로 둬야 이 닫기 자체가 또 자동으로 안 이음
+        endRound(T, { summary: '자동 이어열기 확인 뒤 닫음' });
+
+        startRound(T, { milestone: 2, topic: '수동 재개' });
+        endRound(T, { summary: '수동 재개 닫음' });   // 이미 pass — 자동으로 안 이음
+        const noAutoOk = readState(T).phase === 'idle';
+
+        setMilestoneStatus(T, 2, 'now');
+        startRound(T, { milestone: 2, topic: '넥스트' });
+        let nextErr = null;
+        try { endRound(T, { summary: '넥스트 닫음', next: { milestone: 2, topic: null, auditor: null } }); } catch (e) { nextErr = e.message; }
+        const withNextOk = nextErr === null && readState(T).phase === 'idle';
+        if (readState(T).phase !== 'idle') endRound(T, { summary: '뒷정리' });
+        setMilestoneStatus(T, 2, 'wait');   // 원래대로 — 안 그러면 뒤따르는 시험들이 이 자동 이어열기에 걸린다
+
+        out.push(['같은 단계면 회차 자동 이어열기', autoOk && noAutoOk && withNextOk
+          ? `✓ now 면 승인 없이 이어 R${before2}→R${before2 + 1} · 이미 pass 면 사람 몫 그대로 · next 부르면 안 겹침`
+          : '✗ ' + JSON.stringify({ autoOk, noAutoOk, withNextOk, after2 })]);
       }
       // 닫히는 중 쌓인 차례는 다음 라운드로 (결정 25) — 호명·제3자만 넘기고 판정·침묵·점심은 버린다. 순수 함수 pickCarry.
       const { pickCarry, staleCalls, mergeCarry } = await import('../server/conductor.mjs');
