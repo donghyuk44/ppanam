@@ -364,7 +364,7 @@ function renderHead() {
   input.disabled = false;
   const ownerName = cast.agents?.guide?.name ?? '팀장';   // 그 방 실무(guide) 이름 — "실무" 는 없어지는 말(하영 0-2)
   input.placeholder = office
-    ? '톰에게 말하기'
+    ? `${who(owner).name}에게 말하기`   // 총괄실은 톰, 비서실은 세라(나리 실측 09-15: 비서실도 '톰에게' 였다)
     : blocked
       ? '답을 적으면 회차가 이어져요'
       : open ? `${ownerName}에게 말하기` : '말하면 회차가 시작돼요 — 첫 줄이 주제가 돼요';
@@ -1872,7 +1872,7 @@ function renderTowerTeams(grid) {
     box.autocomplete = 'off';
     box.dataset.team = t.id;
     box.value = draft[t.id] ?? '';
-    box.placeholder = office ? '톰에게 말하기' : s.phase === 'blocked' ? '답을 적으면 회차가 이어져요' : running ? `${agents.guide?.name ?? '팀장'}에게 말하기` : '이번 회차에서 뭘 하나요';
+    box.placeholder = office ? `${agents[t.owner ?? 'chief']?.name ?? '톰'}에게 말하기` : s.phase === 'blocked' ? '답을 적으면 회차가 이어져요' : running ? `${agents.guide?.name ?? '팀장'}에게 말하기` : '이번 회차에서 뭘 하나요';
     box.addEventListener('input', () => { draft[t.id] = box.value; });
 
     const fail = (m) => { err.textContent = m; err.hidden = false; };
