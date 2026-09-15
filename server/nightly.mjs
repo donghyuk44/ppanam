@@ -21,6 +21,12 @@ const STORE = path.join(ROOT, 'state', 'nightly.json');
 const JOURNAL_TIMEOUT = Number(process.env.PPANAM_JOURNAL_TIMEOUT || 3 * 60_000);
 const readStore = () => { try { return JSON.parse(fs.readFileSync(STORE, 'utf8')); } catch { return {}; } };
 const writeStore = (s) => { fs.mkdirSync(path.dirname(STORE), { recursive: true }); fs.writeFileSync(STORE, JSON.stringify(s, null, 2) + '\n'); };
+let onCheckedAt = 0, onCache = false;
+/** 스위치 — state/nightly.json 의 on === true. 틱마다(250ms) 파일을 안 열게 10초에 한 번만 본다. */
+export function nightlyOn(now = Date.now()) {
+  if (now - onCheckedAt > 10_000) { onCheckedAt = now; onCache = readStore().on === true; }
+  return onCache;
+}
 
 /** 마감할 방 — 팀 방 전부. 비서실(speakers 규칙)은 대화록이 보고뿐이라 뺀다. 총괄실은 팀 장이 아니라 대표 장이다. */
 const rooms = () => listTeams().filter((t) => !isOffice(t.id) && !roomRules(t.id).speakers);
@@ -64,6 +70,9 @@ const RETRY_MS = 10 * 60_000;
 export async function runNightly({ now = Date.now(), session = null } = {}) {
   const day = dayKeySeoul(dayStartOf(dayKeySeoul(now)) - 1);   // 오늘 0시 직전 = 어제
   if (running || closedFor === day || now < retryAt) return null;
+  // 기본은 꺼짐 — 나리 결정(09-15, 위임 136): 세라 아침 한 장·톰 일일보고서와 같은 것을 세 번째로 만드는 셈이라 코드는 두되 켜지 않는다.
+  // 켜려면 state/nightly.json 에 { "on": true } — 파일 스위치라 재시작 없이 다음 틱부터.
+  if (!nightlyOn()) return null;
   const hqFile = hqFileOf(day);
   if (fs.existsSync(hqFile)) { closedFor = day; return null; }   // 파일이 진실
   running = true;
