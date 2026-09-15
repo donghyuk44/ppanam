@@ -556,6 +556,12 @@ M6(화면이-답하는-질문.md, 톰·제리 B): **화면 자리 ① 은 없앤
 
 외부감사(codex)는 `bus/outside.mjs --turn <종류>` 로 깨운다 — 자기 커서(`state/outside-sessions.json` 의 `lastSeen`)로 못 들은 말을 붙인다.
 **인격은 턴마다 앞에 붙는다** — 클로드 자리가 시스템 프롬프트로 받는 것과 같은 조립(`assemblePrompt(team, 'outside')`: 인격 + 확정 조항 + 일지 + 라운드 브리프). 첫 턴에만 주면 세션이 라운드를 넘기며 압축될 때 인격이 먼저 밀려난다. `--dry` 를 붙이면 codex 를 부르지 않고 그 턴이 받을 입력만 찍는다(기록·커서 이동 없음).
+**엔진이 죽어도 차례가 사라지지 않는다**(8단계 ① — "codex 를 강제로 죽여도 1회 재시도 후 note + 큐"). 두 겹이다. ⓐ 안쪽 `outside.mjs`(`bus.withRetry`): 엔진 호출이 던지면(kill -9 → `codex SIGKILL 로 죽음` · exit≠0 · 시간 초과)
+`note` "…을 부르지 못했습니다 — <왜>. 한 번 더 부릅니다 (1/2)"(`meta.retry { actor, attempt, of, why }`) 를 남기고 **한 번 더** 부른다 — 이어붙이던 codex 세션은 버리고 새로 조립해서(`PPANAM_OUTSIDE_TRIES`, 기본 2).
+계정 한도는 재시도 없이 쿨다운으로. 두 번째도 실패면 `note` "…을 2번 불러도 답이 없습니다 … 이 차례는 못 냈습니다"(`meta.retry.gaveUp`) 와 **exit 1**. 종료 코드 약속: 0 됨 · 1 엔진 실패(재시도까지 하고 못 냄) · 2 사용법 · 3 일지 없음 · **4 건너뜀**(쿨다운·엔진 없음·대조 거부 — 다시 불러도 같다).
+ⓑ 바깥 사회자(`conductor.outsideFailed`): exit 1 이거나 프로세스 자체가 signal 로 죽었으면 `note` "…이 답을 못 냈습니다 — <왜>. 이 차례(<종류>)를 큐에 남기고 3분 뒤 다시 줍니다 (1/2)"(`meta.outsideRetry { actor, kind, tries, of, notBefore, why }`) —
+`pending` 에 `notBefore` 를 달아 두고 그 시각 전엔 안 준다(`PPANAM_OUTSIDE_RETRY_MS`, 기본 3분). 큐에서 준 것도 못 내면(`PPANAM_OUTSIDE_MAX_TRIES`, 기본 2) `note` "…을 2번 띄워도 답이 없습니다 … 이 차례를 버립니다"(`meta.outsideRetry.gaveUp`) —
+판정 흐름이 그를 기다리던 중이면 흐름도 놓는다(`meta.verdictFlow: 'abort'`, 다시 부르면 된다). exit 4 는 큐에 안 남긴다. 저장(`_queue`)에는 재시도 표시가 안 남아 서버 재시작 뒤엔 처음처럼 바로 준다.
 남들이 깨진 자리를 코드로 막은 것이다 — 작별 인사 20회 루프, 쳇바퀴, 감사 인사 무한 (`docs/cases.md` 1·11·17·20·33).
 
 ## 6. 승인 큐 — 대표가 없어도 팀이 달린다

@@ -134,6 +134,24 @@ export async function collectJournals(actors, once, { note = () => {}, nameOf = 
   }
   return { got: first.filter(Boolean).length + retried, missed, still };
 }
+/**
+ * 한 번 더 부르기(8단계 ① — codex 를 강제로 죽여도 1회 재시도). fn(attempt) 가 던지면: fatal(e) 이 참(계정 한도 같은 것)이면 그대로 던지고,
+ * 아니면 onRetry(e, attempt) 를 부른 뒤 다시. tries 번 다 실패하면 마지막 오류에 attempts·gaveUp 을 붙여 던진다.
+ * 엔진을 모르는 순수 함수라 round.mjs check 가 가짜 fn 으로 돌려본다 — outside.mjs 는 등록된 방에서만 돌아 거기서 못 잰다.
+ */
+export async function withRetry(fn, { tries = 2, fatal = () => false, onRetry = () => {} } = {}) {
+  let last = null;
+  for (let attempt = 1; attempt <= tries; attempt++) {
+    try { return await fn(attempt); }
+    catch (e) {
+      last = e;
+      if (fatal(e)) throw e;
+      if (attempt < tries) await onRetry(e, attempt);
+    }
+  }
+  last.attempts = tries; last.gaveUp = true;
+  throw last;
+}
 export function turnKindOf(text) {
   const s = String(text ?? '');
   if (s.includes(TURN_JOURNAL)) return 'journal';

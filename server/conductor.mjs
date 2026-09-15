@@ -55,6 +55,8 @@ function room(team) {
       lastLull: 0,
       lulls: [],            // 침묵 차례 시각 (시간당 상한)
       capNoted: 0,
+      retryTimer: null,     // 큐에 남긴 외부 자리 재시도(8단계 ①) — notBefore 가 되면 dispatch
+      retryAt: null,
       outsideBusy: false,
       outsideAgain: null,
       // 마지막으로 본 라운드 번호 — 바뀌면 상태를 비운다. 서버가 막 떴을 때는 null 이 아니라
@@ -109,7 +111,8 @@ function persist(team) {
   const all = readStore();
   (all[QUEUE_KEY] ??= {})[team] = {
     round: r.round, savedAt: new Date().toISOString(),
-    pending: [...r.pending].map(([a, p]) => [a, p.kind]),
+    pending: [...r.pending].map(([a, p]) => [a, p.kind]),   // 재시도 표시(tries·notBefore)는 안 남긴다 — 재시작 뒤엔 바로, 처음처럼 준다
+
     inflight: [...r.inflight].map(([a, p]) => [a, p.kind, p.cursor ?? null]),
     carry: r.carry, carryFrom: r.carryFrom ?? null,
     flow: r.flow ?? null,   // 판정 흐름도 살아남는다(결정 118 곁다리) — 전엔 메모리에만 있어 재시작에 흐름이 사라지고 verdict 차례만 남았다
@@ -228,7 +231,7 @@ const INSTRUCTION = {
 
 /* ── 턴 보내기 ── */
 
-function giveTurn(team, actor, kind) {
+function giveTurn(team, actor, kind, tries = 1) {
   const r = room(team);
   const target = r.flow?.target ?? '';
   (r.lastGiven ??= new Map()).set(actor, kind);   // 이 자리의 다음 말이 어떤 차례에서 나왔나 — 잡담 브레이크(결정 121)가 본다
@@ -236,7 +239,7 @@ function giveTurn(team, actor, kind) {
   if (isOutside(team, actor)) {
     // codex 는 프로세스가 턴마다 뜬다. outside.mjs 가 자기 커서(lastSeen)로 못 들은 말을 붙이므로 여기선 종류만 넘긴다.
     r.outsideBusy = true;
-    r.inflight.set(actor, { kind, cursor: null }); persist(team);   // codex 도 서버의 자식이라 같이 죽는다 — 되살릴 수 있게 적어 둔다
+    r.inflight.set(actor, { kind, cursor: null, tries }); persist(team);   // codex 도 서버의 자식이라 같이 죽는다 — 되살릴 수 있게 적어 둔다
     const args = [OUTSIDE, '--team', team, '--actor', actor, '--turn', kind];   // 자리 이름으로 띄운다 — outside 가 아닌 codex 자리도 (결정 69 ①)
     if (kind === 'verdict') args.push('--text', target);
     if (kind === 'carried' && r.carryFrom) args.push('--from-round', String(r.carryFrom));   // 닫힌 라운드의 못 들은 말부터 (결정 25)
@@ -251,13 +254,14 @@ function giveTurn(team, actor, kind) {
     let err = '';
     child.stderr.on('data', (d) => { err = (err + d).slice(-600); });
     child.on('error', (e) => { r.outsideBusy = false; r.inflight.delete(actor); persist(team); note(team, `${nameOf(team, actor)}을 깨우지 못했습니다 — ${String(e.message).slice(0, 160)}`); });
-    child.on('close', (code) => {
+    child.on('close', (code, signal) => {
       r.outsideBusy = false; r.inflight.delete(actor); persist(team);
-      // 1 은 outside.mjs 가 이미 방에 사유를 남긴 경우다. 그 밖의 비정상만 알린다.
-      if (code && code !== 1) {
-        const lastLine = err.trim().split('\n').filter(Boolean).slice(-1)[0] ?? '';
-        note(team, `${nameOf(team, actor)} 호출이 비정상 종료했습니다 (code ${code})${lastLine ? ' — ' + lastLine.slice(0, 160) : ''}`);
-      }
+      // 종료 코드는 outside.mjs 와 약속 — 0 됨 · 1 엔진 실패(안에서 1회 재시도까지 하고 못 냄, 사유는 그가 남겼다) · 2 사용법 · 3 일지 없음 ·
+      // 4 건너뜀(쿨다운·엔진 없음 — 다시 불러도 같다). signal 은 프로세스 자체가 죽은 것(kill -9) — 그는 아무것도 못 남겼다.
+      const lastLine = err.trim().split('\n').filter(Boolean).slice(-1)[0] ?? '';
+      if (code === 0 || code === OUTSIDE_EXIT_SKIPPED) { dispatch(team); return; }
+      if (code === 1 || signal) outsideFailed(team, actor, kind, tries, signal ? `${signal} 로 죽음` : (lastLine.slice(0, 160) || 'exit 1'));
+      else note(team, `${nameOf(team, actor)} 호출이 비정상 종료했습니다 (code ${code})${lastLine ? ' — ' + lastLine.slice(0, 160) : ''}`);
       dispatch(team);
     });
     return;
@@ -273,6 +277,42 @@ function giveTurn(team, actor, kind) {
   r.inflight.set(actor, { kind, cursor: before }); persist(team);
   const sent = session.send(team, quiet(body), actor, kind === 'verdict' ? { kind: 'verdict', extra: target.slice(0, 200) } : {});
   if (sent?.refused) { r.inflight.delete(actor); persist(team); note(team, `${nameOf(team, actor)}의 차례를 주지 못했습니다 — ${sent.reason}`); }
+}
+
+/* ── 다른 회사 엔진 자리의 실패(8단계 ①) — outside.mjs 가 안에서 한 번 더 부르고도 못 냈거나(exit 1), 프로세스 자체가 죽었다(signal). ──
+ * 조용히 버리지 않는다: note 를 남기고 그 차례를 **큐에 남겨** OUTSIDE_RETRY_MS 뒤 다시 준다. 큐에서 준 것도 실패하면(OUTSIDE_MAX_TRIES) 그때 버리고,
+ * 판정 흐름이 그를 기다리던 중이면 흐름도 멈춘다(verdictFlow:'abort') — 안 그러면 flow 가 굳어 다음 /verdict 가 "이미 돌고 있습니다" 로 거부된다.
+ * 순수한 판단(retryPlan)은 갈라 둔다 — round.mjs check 가 돌려본다. 종료 코드 4 는 outside.mjs 의 EXIT_SKIPPED 와 같은 숫자(그 파일은 CLI 라 import 못 한다). */
+export const OUTSIDE_EXIT_SKIPPED = 4;
+export const OUTSIDE_RETRY_MS = Number(process.env.PPANAM_OUTSIDE_RETRY_MS || 3 * 60_000);
+export const OUTSIDE_MAX_TRIES = Number(process.env.PPANAM_OUTSIDE_MAX_TRIES || 2);   // 프로세스를 몇 번 띄우나 — 처음 + 큐에서 한 번
+/** @returns { action: 'queue', notBefore } | { action: 'drop' } */
+export function retryPlan(tries, now = Date.now(), { max = OUTSIDE_MAX_TRIES, delay = OUTSIDE_RETRY_MS } = {}) {
+  return tries < max ? { action: 'queue', notBefore: now + delay } : { action: 'drop' };
+}
+function outsideFailed(team, actor, kind, tries, why) {
+  const r = room(team);
+  const plan = retryPlan(tries);
+  const who = nameOf(team, actor);
+  if (plan.action === 'queue') {
+    r.pending.set(actor, { kind, tries: tries + 1, notBefore: plan.notBefore });   // 있던 예약보다 우선 — 못 낸 차례가 그 자리의 가장 급한 것
+    persist(team);
+    emit(team, { actor: 'system', type: 'note', text: `${who}이 답을 못 냈습니다 — ${why}. 이 차례(${kind})를 큐에 남기고 ${Math.round(OUTSIDE_RETRY_MS / 60_000)}분 뒤 다시 줍니다 (${tries}/${OUTSIDE_MAX_TRIES}).`, meta: { outsideRetry: { actor, kind, tries, of: OUTSIDE_MAX_TRIES, notBefore: new Date(plan.notBefore).toISOString(), why } } });
+    armRetry(team, plan.notBefore);
+    return;
+  }
+  const waiting = r.flow?.waiting === actor;
+  if (waiting) { r.flow = null; persist(team); }
+  emit(team, { actor: 'system', type: 'note', text: `${who}을 ${OUTSIDE_MAX_TRIES}번 띄워도 답이 없습니다 — ${why}. 이 차례(${kind})를 버립니다.${waiting ? ' 판정 흐름도 멈춥니다 — 다시 부르세요 (node bus/round.mjs verdict).' : ''}`, meta: { outsideRetry: { actor, kind, tries, of: OUTSIDE_MAX_TRIES, gaveUp: true, why }, ...(waiting ? { verdictFlow: 'abort', waiting: actor } : {}) } });
+}
+/** 큐에 남긴 차례의 시각이 되면 dispatch — 방마다 타이머 하나, 더 이른 시각이 오면 당긴다. */
+function armRetry(team, at) {
+  const r = room(team);
+  if (r.retryTimer && r.retryAt <= at) return;
+  clearTimeout(r.retryTimer);
+  r.retryAt = at;
+  r.retryTimer = setTimeout(() => { r.retryTimer = null; r.retryAt = null; dispatch(team); }, Math.max(0, at - Date.now()));
+  r.retryTimer.unref?.();
 }
 
 /** 차례를 예약한다. 같은 자리에 쌓이면 더 센 종류로 합친다. */
@@ -370,9 +410,10 @@ function dispatch(team) {
   if (session.isClosing(team)) { stash(team, '라운드가 닫히는 중이라'); return; }
   let gave = false;
   for (const [actor, p] of [...r.pending]) {
+    if (p.notBefore && p.notBefore > Date.now()) { armRetry(team, p.notBefore); continue; }   // 큐에 남긴 재시도(8단계 ①) — 시각 전엔 안 준다
     if (busy(team, actor)) continue;
     r.pending.delete(actor); gave = true;
-    giveTurn(team, actor, p.kind);
+    giveTurn(team, actor, p.kind, p.tries ?? 1);
   }
   if (gave) persist(team);
 }

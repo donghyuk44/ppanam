@@ -554,6 +554,21 @@ switch (cmd) {
           && later.pending.length === 0 && later.carry?.round === 7 && later.carry.items.map((x) => x.join(':')).join(',') === 'review:called,guide:called' && later.cursors.length === 1
           && none.pending.length === 0 && !none.carry;
         out.push(['서버 재시작 뒤 차례 되살리기(결정 104)', ok ? '✓ 같은 라운드 3건 그대로(나가 있던 턴 포함·커서 되돌림) · 다음 라운드면 호명 2건만 carry · 침묵 버림 · 저장 없으면 0' : '✗ ' + JSON.stringify({ same, later, none })]);
+        // 8단계 ① — codex 를 강제로 죽여도 1회 재시도 후 note + 큐. 안쪽(outside.mjs, bus.withRetry): 한 번 실패 → onRetry 한 번 → 됨 · 둘 다 실패 → gaveUp·attempts 2 · 한도(fatal) 는 재시도 없이 바로.
+        // 바깥(conductor.retryPlan): 첫 프로세스가 못 냈으면(tries 1) 큐에 3분 뒤 · 큐에서 준 것도 못 냈으면(tries 2) 버림.
+        {
+          const { withRetry } = await import('./bus.mjs');
+          const { retryPlan, OUTSIDE_RETRY_MS, OUTSIDE_MAX_TRIES } = await import('../server/conductor.mjs');
+          const retried = [];
+          const flaky = await withRetry(async (n) => { if (n === 1) throw new Error('codex SIGKILL 로 죽음'); return `됨 ${n}`; }, { tries: 2, onRetry: (e, n) => retried.push(`${n}:${e.message}`) });
+          let dead = null; try { await withRetry(async () => { throw new Error('exit 1'); }, { tries: 2, onRetry: (e, n) => retried.push(`x${n}`) }); } catch (e) { dead = e; }
+          let fatal = null; const fatalRetries = []; try { await withRetry(async () => { throw new Error('usage limit'); }, { tries: 2, fatal: (e) => /limit/.test(e.message), onRetry: () => fatalRetries.push(1) }); } catch (e) { fatal = e; }
+          const t0 = 1_000_000;
+          const p1 = retryPlan(1, t0), p2 = retryPlan(2, t0), p0 = retryPlan(1, t0, { max: 1 });
+          const want = flaky === '됨 2' && retried.join(',') === '1:codex SIGKILL 로 죽음,x1' && dead?.gaveUp === true && dead.attempts === 2 && fatal?.message === 'usage limit' && !fatal.gaveUp && fatalRetries.length === 0
+            && p1.action === 'queue' && p1.notBefore === t0 + OUTSIDE_RETRY_MS && p2.action === 'drop' && p0.action === 'drop' && OUTSIDE_MAX_TRIES === 2;
+          out.push(['codex 죽여도 1회 재시도 후 note+큐(8단계 ①)', want ? `✓ withRetry: 한 번 죽고 두 번째 됨 · 둘 다 죽으면 gaveUp(2) · 한도는 재시도 없이 · retryPlan: 1번째 실패 → ${Math.round(OUTSIDE_RETRY_MS / 60_000)}분 뒤 큐 · 2번째 → 버림` : '✗ ' + JSON.stringify({ flaky, retried, dead: dead && { m: dead.message, g: dead.gaveUp, a: dead.attempts }, fatal: fatal && { m: fatal.message, g: fatal.gaveUp }, fatalRetries, p1, p2, p0 })]);
+        }
         // 잡담 브레이크(결정 121) — 침묵 차례 발언자 줄이 같은 둘로 3회씩이면 참. 셋이 섞이거나 짧으면 거짓. (호명은 이 줄에 안 들어가니 여기서 못 걸린다.)
         const { chatLoop } = await import('../server/conductor.mjs');
         const cl = [chatLoop(['a', 'b', 'a', 'b', 'a', 'b']), chatLoop(['a', 'a', 'b', 'b', 'a', 'b']), chatLoop(['a', 'b', 'a', 'b', 'a']), chatLoop(['a', 'b', 'c', 'a', 'b', 'a']), chatLoop(['x', 'a', 'b', 'a', 'b', 'a', 'b']), chatLoop([])];

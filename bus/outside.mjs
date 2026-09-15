@@ -27,7 +27,7 @@ import crypto from 'node:crypto';
 import {
   ROOT, emit, recordVerdict, readContext, readTail, readLog, readCast, readState, appendJournal,
   defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, headSha, codexModelOf, codexArgs,
-  markOutsideRunning, clearOutsideRunning, outsideCooldown, setOutsideCooldown, parseUsageLimit, geminiModelOf, isForeign, fallbackOf, engineName, agyArgs, parseAgy,
+  markOutsideRunning, clearOutsideRunning, outsideCooldown, setOutsideCooldown, parseUsageLimit, geminiModelOf, isForeign, fallbackOf, engineName, agyArgs, parseAgy, withRetry,
 } from './bus.mjs';
 // 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
 import { assemblePrompt, personaOf as seatPersonaOf } from '../server/session.mjs';
@@ -35,6 +35,13 @@ import { assemblePrompt, personaOf as seatPersonaOf } from '../server/session.mj
 const run = promisify(execFile);
 const TIMEOUT = Number(process.env.PPANAM_OUTSIDE_TIMEOUT || 300_000);
 const API_MODEL = process.env.PPANAM_OUTSIDE_MODEL || 'gpt-5.1';
+/** 엔진을 몇 번까지 부르나(8단계 ①) — 처음 + 재시도 1회. 시험은 PPANAM_OUTSIDE_TRIES 로 바꾼다. */
+const OUTSIDE_TRIES = Math.max(1, Number(process.env.PPANAM_OUTSIDE_TRIES || 2));
+/**
+ * 종료 코드 — 0 됨 · 1 엔진 호출 실패(재시도까지 다 하고 못 냄 — 사회자가 큐에 남긴다) · 2 사용법 · 3 일지 없음((패스)·빈 답) ·
+ * 4 건너뜀(쿨다운·엔진 없음·대조 거부 — 방에 사유를 남겼고, 다시 불러도 같으니 큐에 안 남긴다). server/conductor.mjs 가 같은 숫자를 읽는다(이 파일은 CLI 라 import 못 한다).
+ */
+const EXIT_SKIPPED = 4;
 
 // codex 는 모델이 아니라 CLI 다. 그 안에서 도는 모델을 여기서 못 박는다 — 기본값에 얹어두면 어느 엔진이 판정했는지 기록에 남지 않는다.
 // 모델은 자리별이다 (결정 69): cast.json 의 codexModel 이 먼저, 없으면 환경 PPANAM_CODEX_MODEL(옛 길, 전 자리 공통), 그것도 없으면 목록 첫 것.
@@ -123,13 +130,14 @@ function runCodex(input, { resume = null, model = codexModelOf(null), effort = n
     child.stdout.on('data', (d) => { stdout += d; });
     child.stderr.on('data', (d) => { stderr += d; });
     child.on('error', (e) => finish(reject, e));
-    child.on('close', (code) => {
+    child.on('close', (code, signal) => {
       let answer = '';
       try { answer = fs.readFileSync(outPath, 'utf8').trim(); } catch { /* stdout 으로 */ }
       try { fs.unlinkSync(outPath); } catch { /* 없으면 그만 */ }
       if (code !== 0) {
         const why = stderr.trim().split('\n').slice(-3).join(' ').slice(0, 300);
-        return finish(reject, new Error(`codex exit ${code}${why ? ' — ' + why : ''}`));
+        // 강제 종료(kill -9)면 code 가 null 이고 signal 에 이름이 온다 — 기록에 "exit null" 이 아니라 "SIGKILL 로 죽음" 이 남게 (8단계 ①)
+        return finish(reject, new Error(`codex ${signal ? `${signal} 로 죽음` : `exit ${code}`}${why ? ' — ' + why : ''}`));
       }
       // 세션 id 는 stderr 머리말에 나온다. 다음 턴을 이어붙이려면 이게 필요하다.
       // 머리말에 색 코드가 섞인다 — `\e[1msession id:\e[0m 01a0…` — 그대로 찾으면 못 읽고, 새 세션마다 id 가 null 이라
@@ -184,11 +192,11 @@ function runAgy(input, { resume = null, model = geminiModelOf(null), effort = nu
     child.stdout.on('data', (d) => { stdout += d; });
     child.stderr.on('data', (d) => { stderr = (stderr + d).slice(-2000); });
     child.on('error', (e) => finish(reject, e));
-    child.on('close', (code) => {
+    child.on('close', (code, signal) => {
       if (DEBUG) console.error(`[debug] agy exit ${code} · stdout ${stdout.length}자 · stderr:\n${stderr.slice(0, 800)}`);
       try {
         const r = parseAgy(stdout);
-        if (code !== 0 && !r.answer) throw new Error(`agy exit ${code}`);
+        if (code !== 0 && !r.answer) throw new Error(signal ? `agy ${signal} 로 죽음` : `agy exit ${code}`);
         // 빈 답 + "permission … auto-denied" 는 답이 아니라 권한이다(실측 09-14: 파일 읽으려다 막혀 "(빈 답)"). 조용히 빈 말풍선을 남기지 않는다.
         if (!r.answer && /permission/i.test(stderr)) throw new Error('agy 권한 — 도구가 헤드리스에서 거부됨. ~/.gemini/antigravity-cli/settings.json 에 읽기 허용을 넣어야 한다: node tools/antigravity/agy-permissions.mjs');
         return finish(resolve, r);
@@ -381,7 +389,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
         setOutsideCooldown({ ...cd, noted: [...cd.noted, team] });
       }
       console.error(`외부 감사 쿨다운 — ${cd.until} 까지`);
-      return 1;
+      return EXIT_SKIPPED;
     }
   }
   const ENGINE = engineLabel(team, KIND);   // 이 호출이 쓰는 엔진 — meta.engine 에 그대로 남는다 (자리별 모델, 결정 69 · 답한 것을 적는다, 결정 78)
@@ -391,7 +399,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
       text: '외부 모델이 연결되어 있지 않습니다. 교차검증 없이 진행합니다.',
     });
     console.error('외부감사 설정 안 됨 — node bus/outside.mjs --setup');
-    return 1;
+    return EXIT_SKIPPED;
   }
 
   // 승인 대조(apr_…)를 시키는 쪽을 먼저 본다. --team 은 다른 방의 외부감사를 빌려 묻는 데 쓰라고 열어둔 것인데
@@ -404,13 +412,13 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   if (apr && caller !== 'hq') {
     emit(team, { actor: 'system', type: 'note', text: `${apr} 대조 요청을 거부했습니다 — 총괄실 세션이 아니면(${caller ?? '환경 없는 셸'}) 대조를 시킬 수 없습니다.` });
     console.error(`거부: ${apr} 대조는 총괄실 세션(PPANAM_TEAM=hq)만 시킬 수 있습니다.`);
-    return 1;
+    return EXIT_SKIPPED;
   }
 
   const slot = slotOf(team);
   // 이어붙일 세션은 **같은 엔진 것**만 — 대표가 codex → gemini 로 바꾼 자리에 codex 세션 id 가 남아 있으면 그걸 gemini resume 으로 넘기고 인격까지 빼 버린다.
-  const prior = slot?.engine === KIND ? (slot?.id ?? null) : null;
-  const name = readCast(team).agents?.outside?.name ?? '외부감사';
+  let prior = slot?.engine === KIND ? (slot?.id ?? null) : null;
+  const name = readCast(team).agents?.[ACTOR]?.name ?? readCast(team).agents?.outside?.name ?? '외부감사';
   // 지금 라운드를 잡아둔다. 생각하는 5분 사이 라운드가 바뀌면 답은 이 번호로 남고 판정으로 세지 않는다.
   const round = readState(team).round;
   // HEAD 도 지금 잡아둔다 — 카드에 찍히는 sha 는 그가 **본** 커밋이어야 한다(결정 63). 답이 돌아온 뒤의 HEAD 를 찍으면
@@ -420,7 +428,6 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   // 인격은 턴마다. 대화는 첫 턴에 지금까지 전부, 이어지는 턴에는 지난번 이후 새로 온 말만 —
   // 자기 세션이 앞의 대화는 이미 기억하고 있으니, 못 들은 부분만 채워주면 된다. 인격은 다르다: 세션이 라운드를
   // 넘기며 길어지면 압축되고, 첫 턴에 한 번 준 인격이 제일 먼저 밀려난다. 그래서 클로드 자리처럼 매 턴 앞에 둔다.
-  const ctx = contextOf(team, { since: prior ? slot.lastSeen : null, fromRound });
   // 이 턴이 들은 마지막 말. 커서를 여기 둔다 — 자기 발언 id 로 두면 생각하는 동안(최대 5분)
   // 도착한 말이 since 밖으로 떨어져 영영 못 듣는다 (Fable 감사, 2026-09-02).
   const seenId = lastEventId(team);
@@ -438,9 +445,14 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
           : talk
             ? `방에서 누가 너에게 한 말이다. 판정이 아니라 대화로 답해라 — 첫 줄에 PASS·REVISE·FAIL 을 쓰지 마라. 상대 이름으로 시작해 네 말투로 한두 문장, 사람에게 말하듯. 모르면 모른다고, 돌려봐야 알면 돌려보겠다고 해라.\n\n${question}`
             : question;
-  const turnBody = (ctx ? `그동안 이 방에서 오간 말:\n\n${ctx}\n\n---\n` : '') + instruction;
-  // gemini 는 차례를 머리말로 갈라 준다(withTurn — 인격만 읽고 "대상을 주십시오" 로 답하던 실측). codex 는 검증된 옛 조립 그대로.
-  const input = KIND === 'gemini' ? withTurn(persona, turnBody) : [persona, persona ? '\n---\n' : null, turnBody].filter(Boolean).join('\n');
+  // 입력 조립 — 이어지는 세션이면 지난번 이후 새 말만, 새 세션이면 전부. 재시도가 세션을 버리면 다시 조립한다(8단계 ①).
+  const buildInput = (withPrior) => {
+    const ctx = contextOf(team, { since: withPrior ? slot.lastSeen : null, fromRound });
+    const turnBody = (ctx ? `그동안 이 방에서 오간 말:\n\n${ctx}\n\n---\n` : '') + instruction;
+    // gemini 는 차례를 머리말로 갈라 준다(withTurn — 인격만 읽고 "대상을 주십시오" 로 답하던 실측). codex 는 검증된 옛 조립 그대로.
+    return KIND === 'gemini' ? withTurn(persona, turnBody) : [persona, persona ? '\n---\n' : null, turnBody].filter(Boolean).join('\n');
+  };
+  let input = buildInput(!!prior);
 
   // --dry: codex 를 부르지 않고 이 턴이 받을 입력만 보여준다. 기록도 커서 이동도 없다 — 인격이 매 턴 실리는지 눈으로 확인하는 용도.
   if (dry) {
@@ -454,10 +466,24 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   markOutsideRunning(team, ACTOR);
   const clear = () => clearOutsideRunning(team, ACTOR);
   process.once('exit', clear);
+  const call = () => (KIND === 'gemini'
+    ? runGemini(input, { resume: prior, model: geminiModelFor(team), effort: effortFor(team), team })
+    : runCodex(input, { resume: prior, model: codexModelFor(team), effort: effortFor(team) }));
+  // 8단계 ① — 엔진이 죽어도(강제 종료·exit≠0·시간 초과) **한 번은 다시 부른다**(bus.withRetry). 전엔 note 한 줄 남기고 1 로 나가 차례가 사라졌다.
+  // 계정 한도는 재시도 대상이 아니다(fatal → 쿨다운으로). 이어붙이던 codex 세션이 깨진 것일 수 있어 두 번째는 세션을 버리고 새로 조립해 부른다.
+  // 두 번째도 실패하면 note 를 남기고 1 로 나간다 — 사회자(conductor)가 그 차례를 큐에 남겨 뒤에 다시 준다.
+  const why1 = (e) => String(e.message).split('\n')[0].slice(0, 200);
   try {
-    res = KIND === 'gemini'
-      ? await runGemini(input, { resume: prior, model: geminiModelFor(team), effort: effortFor(team), team })
-      : await runCodex(input, { resume: prior, model: codexModelFor(team), effort: effortFor(team) });
+    res = await withRetry(call, {
+      tries: OUTSIDE_TRIES,
+      fatal: (e) => KIND === 'gpt' && !!parseUsageLimit(e.message),
+      onRetry: (e, attempt) => {
+        // 이어붙이기가 깨졌으면 세션을 버리고 새로 연다. (codex 만 — gemini 의 sessionId 는 하네스 창의 대화라 답이 늦은 것뿐이다)
+        if (prior && KIND === 'gpt') { forget(team); prior = null; input = buildInput(false); }
+        emit(team, { actor: ACTOR, type: 'note', text: `${name}을 부르지 못했습니다 — ${why1(e)}. 한 번 더 부릅니다 (${attempt}/${OUTSIDE_TRIES}).`, meta: { retry: { actor: ACTOR, attempt, of: OUTSIDE_TRIES, why: why1(e) } } });
+        console.error(`실패(${attempt}/${OUTSIDE_TRIES}) — 다시: ${why1(e)}`);
+      },
+    });
   } catch (e) {
     clear();
     // 계정 한도면 쿨다운을 적어 두고 그 뒤 호출은 위에서 조용히 건너뛴다. 세션은 버리지 않는다 — 한도 때문이지 세션이 썩은 게 아니다. (codex 만 — gemini 는 계정이 다르다)
@@ -468,12 +494,8 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
       console.error('실패(한도): ' + limit.until + ' 까지');
       return 1;
     }
-    // 이어붙이기가 깨졌으면 세션을 버리고 다음에 새로 연다. (codex 만 — gemini 의 sessionId 는 하네스 창의 대화라 답이 늦은 것뿐이다)
     if (prior && KIND === 'gpt') forget(team);
-    emit(team, {
-      actor: ACTOR, type: 'note',
-      text: `외부 모델을 부르지 못했습니다 — ${String(e.message).split('\n')[0].slice(0, 200)}`,
-    });
+    emit(team, { actor: ACTOR, type: 'note', text: `${name}을 ${e.attempts ?? OUTSIDE_TRIES}번 불러도 답이 없습니다 — ${why1(e)}. 이 차례는 못 냈습니다.`, meta: { retry: { actor: ACTOR, attempt: e.attempts ?? OUTSIDE_TRIES, of: OUTSIDE_TRIES, why: why1(e), gaveUp: true } } });
     console.error('실패: ' + e.message);
     return 1;
   }
