@@ -27,7 +27,7 @@ let told = {};               // 승인 id → { requested, decided, executed } �
 let grades = {};
 let infra = null;             // 밑바닥 넷 — 서버가 2분마다 재서 준다(boot.infra · ws infra). blockedOf 의 입력
 let pauses = [];              // 멈춘 구간(state/pauses.json, boot.pauses) — 기다린 시간·늦음에서 뺀다
-let done = { since: null, items: [], fetchedAt: 0, more: false };   // 누가 뭘 했나(/api/done) — 관제탑 ②. more = "더 보기 — 어제까지" 펼침
+let done = { since: null, items: [], fetchedAt: 0, more: false };   // 누가 뭘 했나(/api/done) — 관제탑 ②. more = "더 보기" 펼침(오늘 안에서만 — 어제는 보고서)
 let openTeamRows = new Set();  // 관제탑 ④ 팀 줄 — 펼쳐 둔 팀(상황판 네 칸)
 let requestsAll = [];         // 요청 블록 접은 목록 (6-1절) — 관제탑 요청 탭·전체 탭 타일
 let requestsLoaded = false;
@@ -1273,16 +1273,16 @@ function renderTower() {
 }
 
 /* ── 현황 첫 화면 — 헨리 시안 2판(tower.svg) · 나리 '화면이 답하는 질문'(톰·제리 B): "지금 무슨 일이 벌어지고 있나".
- * 위에서 아래로 넷뿐 — ① 뭐가 막혔나(blockedOf, 대표 몫 아닌 것) ② 누가 뭘 했나(/api/done 오늘, 더 보기 = 어제까지) ③ 내 차례(대표가 답할 것)
+ * 위에서 아래로 넷뿐 — ① 뭐가 막혔나(blockedOf, 대표 몫 아닌 것) ② 누가 뭘 했나(/api/done 오늘, 더 보기는 오늘 안에서만) ③ 내 차례(대표가 답할 것)
  * ④ 팀(단계 N/M · 회차, 누르면 상황판 네 칸 그대로, 한 번 더 = 카드). 없으면 그 칸이 사라진다. 막힌 것은 스크롤 없이.
  * 숫자는 넷뿐 — 막힌 것 수 · 내 차례 수 · 단계 N/M · 회차(결정 92 통계 타일 탈락). 낱말은 하영. ── */
 const agoShort = (ts) => { const m = Math.max(0, Math.round((Date.now() - new Date(ts)) / 60000)); return m < 1 ? '방금' : m < 60 ? `${m}분 전` : m < 60 * 36 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
 const forShort = (ms) => { const m = Math.round(ms / 60000); return m < 1 ? '방금부터' : m < 60 ? `${m}분째` : m < 60 * 36 ? `${Math.round(m / 60)}시간째` : `${Math.round(m / 1440)}일째`; };
 const dayStartSeoulMs = (ms) => Math.floor((ms + 9 * 3600_000) / 86_400_000) * 86_400_000 - 9 * 3600_000;
 
-/** 누가 뭘 했나 — 창이 바뀌었거나 30초 지났으면 다시 받는다. 받으면 관제탑을 다시 그린다. */
+/** 누가 뭘 했나 — 창이 바뀌었거나 30초 지났으면 다시 받는다. 받으면 관제탑을 다시 그린다. 창은 늘 오늘 — "더 보기" 는 오늘 안에서 여섯을 넘긴 것(하영 내용 2판 9절 2: 어제는 보고서). */
 function loadDone() {
-  const since = done.more ? dayStartSeoulMs(Date.now()) - 86_400_000 : dayStartSeoulMs(Date.now());
+  const since = dayStartSeoulMs(Date.now());
   if (done.since === since && Date.now() - done.fetchedAt < 30_000) return;
   done.since = since; done.fetchedAt = Date.now();
   fetch(`/api/done?since=${since}`).then((r) => r.json()).then((r) => { done.items = r.items ?? []; if (view === 'tower' && towerTab === 'all') renderTower(); }).catch(() => {});
@@ -1342,9 +1342,9 @@ function renderTowerAll(grid) {
 
   // ② 누가 뭘 했나 · 오늘 — 숲: **사람마다 한 줄, 한 번씩**(톰 req_0964bae9 — 톰이 방마다 한 줄씩 두 번 섰고, 라운드 닫힘·마일스톤처럼 사람이 없는 것이 '개발·마케팅' 줄로
   // 섰다. 그건 팀 것이라 ④ 팀 칸 몫). 막대 길이 = 오늘 한 것 수(가장 많이 한 사람이 끝까지), 옆에 그 수 — 시간 띠는 배경이 꽉 차 보여 아무 말도 안 했다.
-  // 나무: 여섯 줄, "더 보기 — 어제까지"
+  // 나무: 여섯 줄, 넘치면 "더 보기"(오늘 안에서만)
   const sec2 = el('section', 'dash__card'); sec2.dataset.block = 'done';
-  sec2.appendChild(el('div', 'dash__k', `누가 뭘 했나 · ${done.more ? '어제부터' : '오늘'}`));
+  sec2.appendChild(el('div', 'dash__k', '누가 뭘 했나 · 오늘'));
   const byPerson = new Map();
   for (const it of today) {
     if (!it.by) continue;   // 사람이 없는 한 것(라운드 닫힘·마일스톤·부탁 닫힘) — 아래 여섯 줄엔 남는다
@@ -1367,7 +1367,8 @@ function renderTowerAll(grid) {
     }
     sec2.appendChild(bands);
   }
-  const items = done.items.filter((it) => it.by !== 'boss').slice(0, done.more ? 30 : 6);
+  const all = done.items.filter((it) => it.by !== 'boss');
+  const items = all.slice(0, done.more ? 60 : 6);
   if (!items.length) sec2.appendChild(el('div', 'dash__empty', done.fetchedAt ? '오늘 끝낸 일이 아직 없어요.' : '읽는 중…'));
   for (const it of items) {
     const row = el('button', 'dash__row'); row.type = 'button';
@@ -1380,9 +1381,12 @@ function renderTowerAll(grid) {
     row.addEventListener('click', () => { if (it.kind === 'decision' || it.kind === 'proxy') setTowerTab('all'); else jumpTo(it.team, String(it.id).split(':')[1] ?? null); });
     sec2.appendChild(row);
   }
-  const more = el('button', 'dash__more'); more.type = 'button'; more.textContent = done.more ? '오늘만' : '더 보기 — 어제까지';
-  more.addEventListener('click', () => { done.more = !done.more; done.fetchedAt = 0; loadDone(); renderTower(); });
-  sec2.appendChild(more);
+  // "더 보기" 는 오늘 한 것이 여섯을 넘을 때만(하영 사전 3-5-1 · 내용 2판 9절 2 — 어제로는 안 간다, 어제는 보고서). 전엔 '어제까지' 였다 — 내 계약 글자였지 나리 정본이 아니었다(하영 req_123f2ebe).
+  if (all.length > 6) {
+    const more = el('button', 'dash__more'); more.type = 'button'; more.textContent = done.more ? '접기' : '더 보기';
+    more.addEventListener('click', () => { done.more = !done.more; renderTower(); });
+    sec2.appendChild(more);
+  }
   grid.appendChild(sec2);
 
   // ③ 내 차례 — 대표가 답할 것: 결재(C)·물어봄(bossCall)·막힘(FAIL 대표 판단) + 각 방 상황판의 '대표 차례' 줄. 알림 종과 같은 목록(notify.js). 노랑(numbers.md 상태 색).
