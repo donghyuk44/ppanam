@@ -612,7 +612,7 @@ const server = http.createServer((req, res) => {
 
   // 라운드 열기·닫기. 이게 없으면 지시하려고 결국 터미널로 돌아가야 한다.
   if (url.pathname === '/api/round' && req.method === 'POST') {
-    readBody(req, res, ({ team: t, action, topic, milestone, verdict, summary, next }) => {
+    readBody(req, res, ({ team: t, action, topic, milestone, auditor, verdict, summary, next }) => {
       if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
       if (isOffice(t)) return json(res, 400, { error: '총괄실에는 라운드가 없습니다. 늘 열려 있습니다.' });
       try {
@@ -620,6 +620,8 @@ const server = http.createServer((req, res) => {
           return json(res, 200, startRound(t, {
             topic: topic ? String(topic).trim() : null,
             milestone: milestone == null ? null : Number(milestone),
+            // 이 회차의 안 걸음 감사 자리(결정 125) — CLI --auditor 와 같은 자리.
+            auditor: auditor ? String(auditor).trim() : null,
           }));
         }
         if (action === 'end') {
@@ -627,10 +629,14 @@ const server = http.createServer((req, res) => {
           const opts = {
             verdict: verdict ? String(verdict).toUpperCase() : null,
             summary: summary ? String(summary).trim() : null,
-            // --next (결정 25): 닫은 그 자리에서 다음 라운드를 연다. 마일스톤·주제는 있으면 그대로, 없으면 로드맵의 now.
+            // --next (결정 25): 닫은 그 자리에서 다음 라운드를 연다. 마일스톤·주제·감사 자리는 있으면 그대로, 없으면 로드맵의 now·비움.
             next: next && typeof next === 'object'
-              ? { milestone: next.milestone == null || Number.isNaN(Number(next.milestone)) ? null : Number(next.milestone), topic: next.topic ? String(next.topic).trim() : null }
-              : next ? { milestone: null, topic: null } : null,
+              ? {
+                  milestone: next.milestone == null || Number.isNaN(Number(next.milestone)) ? null : Number(next.milestone),
+                  topic: next.topic ? String(next.topic).trim() : null,
+                  auditor: next.auditor ? String(next.auditor).trim() : null,
+                }
+              : next ? { milestone: null, topic: null, auditor: null } : null,
           };
           const st = readState(t);
           if (!st.round || st.phase === 'idle') return json(res, 409, { error: '진행 중인 라운드가 없습니다.' });
