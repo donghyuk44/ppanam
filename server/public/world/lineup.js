@@ -152,7 +152,10 @@ if (HEAD) {
     const all = new THREE.Box3().setFromObject(g), body = new THREE.Box3().setFromObject(g.userData.body);
     const bodyH = body.max.y - body.min.y;
     const bottom = body.min.y + bodyH * 0.36, top = all.max.y + bodyH * 0.06;
-    let spanY = top - bottom, spanX = Math.max(spanY * aspect, (all.max.x - all.min.x) + bodyH * 0.04);
+    // 좌우는 세로 폭(정사각형). 몸 상자 폭은 안 쓴다 — T자 팔이 들어 1.1 이 되어 얼굴이 108px 로 줄었다(나리 첫 장, 톰). 부착물(갓 챙)만 더 넓으면 그만큼
+    let propW = 0;
+    for (const c of g.children) if (c !== g.userData.body) { const pb = new THREE.Box3().setFromObject(c); propW = Math.max(propW, pb.max.x - pb.min.x); }
+    let spanY = top - bottom, spanX = Math.max(spanY * aspect, propW + bodyH * 0.04);
     if (spanX > spanY * aspect) spanY = spanX / aspect;
     camera.left = -spanX / 2; camera.right = spanX / 2; camera.top = spanY / 2; camera.bottom = -spanY / 2;
     look = new THREE.Vector3(g.position.x, (top + bottom) / 2, g.position.z);
