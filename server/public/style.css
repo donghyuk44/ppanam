@@ -656,6 +656,15 @@ body {
 .apr__link { margin-left: auto; font: inherit; font-size: 11px; color: var(--ink-3); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
 .apr__what { color: var(--ink); font-weight: 600; word-break: break-word; }
 .apr__detail { font-size: 12px; color: var(--ink-2); white-space: pre-wrap; word-break: break-word; line-height: 1.5; }
+/* 결정 140 — 자(bosswords.js)에 안 맞는 줄은 글 대신 "아직 쉬운 말로 안 적음", 원문은 눌러 펼침(app.js bossLine). 카드 안은 진짜 <details>(apr__fold). */
+.notyet__t { color: var(--ink-4); font-style: italic; font-weight: 400; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.notyet[data-open="1"] .notyet__t { color: var(--ink-3); }
+.notyet__raw { display: block; margin-top: 3px; font-size: 12px; font-weight: 400; font-style: normal; color: var(--ink-3); white-space: pre-wrap; overflow-wrap: anywhere; }
+.dash__sub.notyet[data-open="1"] { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.apr__what.notyet { color: var(--ink-4); font-style: italic; font-weight: 400; }
+.apr__fold { font-size: 12px; }
+.apr__fold summary { cursor: pointer; color: var(--ink-3); }
+.apr__fold .apr__detail { margin-top: 4px; }
 .apr__pv { font-size: 11.5px; color: var(--ink-2); background: var(--sunk); border-radius: 8px; padding: 8px 10px; }
 .apr__pv table { border-collapse: collapse; width: 100%; }
 .apr__pv td { padding: 2px 8px 2px 0; vertical-align: top; white-space: pre-wrap; word-break: break-word; }

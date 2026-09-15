@@ -12,6 +12,7 @@ import { findOutPaths, linkOutPaths } from '/outlink.js';
 import { notificationsOf, blockedOf, pausedMs, delegated, deciders } from '/notify.js';
 import { dayWord, timeWord, clockWord, spanWord } from '/when.js';
 import { parseMention } from '/mention.js';
+import { bossOk, NOT_YET } from '/bosswords.js';
 
 const $ = (id) => document.getElementById(id);
 const app = $('app'), feed = $('feed'), stream = $('stream');
@@ -421,6 +422,32 @@ setInterval(renderWork, 30_000);
 
 /* ── 오른쪽 상황판 ── */
 
+/**
+ * 결정 140 — 대표가 보는 글 한 줄은 자(bosswords.js)에 맞아야 낸다. 안 맞으면 글 대신 "아직 쉬운 말로 안 적음", 원문은 눌러 펼침(나리 사용성-0916 3절 2·5).
+ * 세 근원(상황판 줄 · 결재 제목 · 누가 뭘 했나)이 전부 이 하나를 지난다. 행이 단추(dash__row·apr--line)여도 펼침 글자만 누르면 행이 안 열리게 클릭을 삼킨다.
+ */
+function bossLine(text, cls) {
+  const s = String(text ?? '');
+  if (bossOk(s)) return el('span', cls, s);
+  const w = el('span', `${cls ? cls + ' ' : ''}notyet`); w.dataset.open = '0';
+  const t = el('span', 'notyet__t', NOT_YET); t.setAttribute('role', 'button'); t.tabIndex = 0; t.title = '원문 보기';
+  const raw = el('span', 'notyet__raw', s); raw.hidden = true;
+  const flip = (e) => { e.stopPropagation(); e.preventDefault(); const o = w.dataset.open !== '1'; w.dataset.open = o ? '1' : '0'; raw.hidden = !o; };
+  t.addEventListener('click', flip);
+  t.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') flip(e); });
+  w.append(t, raw);
+  return w;
+}
+/** 상황판 한 칸의 줄들 — 줄마다 bossLine, 사이는 " / " (현황 ④ 펼친 줄·팀 탭 카드가 join 하던 자리). */
+function bossLines(lines, none) {
+  const s = el('span');
+  if (!lines.length) { s.textContent = none; return s; }
+  lines.forEach((l, i) => { if (i) s.append(' / '); s.appendChild(bossLine(l)); });
+  return s;
+}
+/** 결재 제목 — 올린 사람이 --boss 로 적은 한 줄(r.boss)이 자에 맞으면 그것, 아니면 원문(r.what)을 재고, 둘 다 아니면 "아직 쉬운 말로 안 적음" + 원문 펼침. */
+const bossTitle = (r) => bossOk(r.boss) ? r.boss : r.what;
+
 function renderSide() {
   // 첫 카드 — 지금 어디까지 왔나 (결정 23, 계약 3절 "상황판"). 실무가 progress.mjs 로 쓴 것을 그대로. 안 썼으면 안 쓴 채로 보이게.
   const pg = $('cardProgress');
@@ -435,7 +462,7 @@ function renderSide() {
       const row = el('div', 'prog__row'); row.dataset.k = k; row.dataset.n = String(items.length);
       row.appendChild(el('div', 'prog__k', label));
       if (!items.length) row.appendChild(el('div', 'prog__none', '없음'));
-      else { const ul = el('ul', 'prog__list'); for (const it of items) ul.appendChild(el('li', null, it)); row.appendChild(ul); }
+      else { const ul = el('ul', 'prog__list'); for (const it of items) { const li = el('li'); li.appendChild(bossLine(it)); ul.appendChild(li); } row.appendChild(ul); }   // 통과한 줄만(결정 140)
       pg.appendChild(row);
     }
     pg.appendChild(el('div', `card__note${p.fresh === false ? ' prog__stale' : ''}`, `${p.at ? `${ago(p.at)} 갱신` : '갱신 시각 없음'}${p.by ? ' · ' + p.by : ''}${p.fresh === false ? ' · 이 회차 시작 전 것이라 낡았어요' : ''}`));
@@ -1201,7 +1228,7 @@ function renderApprovals() {
     head.appendChild(g);
     head.appendChild(el('span', 'apr__team', approvalHead(r)));
     row.appendChild(head);
-    row.appendChild(el('span', 'apr__what', r.what));
+    row.appendChild(bossLine(bossTitle(r), 'apr__what'));   // 제목은 --boss 한 줄, 아니면 원문을 잰다(결정 140)
     row.appendChild(el('span', 'apr__go', mine.includes(r) ? '읽고 답하기' : '읽기'));
     row.addEventListener('click', () => openApprovalPop(r));
     return row;
@@ -1249,7 +1276,11 @@ function approvalCard(r) {
   card.appendChild(head);
   // 주제·왜 에 적힌 out/… 경로는 링크 (결정 36). 이스케이프 뒤에 잇는다 — 말풍선과 같은 순서.
   const linked = (cls, text) => { const d = el('div', cls); d.innerHTML = linkOutPaths(escapeHtml(text), r.team, outAnchor); return d; };
-  card.appendChild(linked('apr__what', r.what));
+  // 제목 — --boss 한 줄이 자에 맞으면 그것, 아니면 원문을 잰다. 안 맞으면 "아직 쉬운 말로 안 적음" 이 서고 원문(r.what)은 바로 아래 펼침에(결정 140 · 사용성-0916 3절 2).
+  // 카드는 단추가 아니라 진짜 <details> 를 쓴다 — 띠의 한 줄(apr--line)은 단추라 bossLine 의 눌러 펼침.
+  const title = bossTitle(r), titleOk = bossOk(title);
+  card.appendChild(titleOk ? linked('apr__what', title) : el('div', 'apr__what notyet', NOT_YET));
+  if (!titleOk || title !== r.what) { const fold = el('details', 'apr__fold'); fold.appendChild(el('summary', null, '원문')); fold.appendChild(linked('apr__detail', r.what)); card.appendChild(fold); }
   // 왜 — 대표 원문이 있으면 그 말부터(세라 자리, 결정 98 — 아직 세라가 안 바꾼 카드는 요청자 글 첫 문장 한 줄). 원문 칸은 그대로, 줄이지 않는다(5판 3-5-1 "N이 쓴 원문").
   // R31 ①(나리): 왜와 원문이 같은 글로 두 번 찍히지 않게 — 왜는 한 줄, 원문은 그 한 줄보다 긴 것이 있을 때만(같으면 칸 숨김). 왜가 주제와 같은 글이면 그 칸도 숨긴다.
   const detail = r.detail || '';
@@ -1433,7 +1464,7 @@ function renderTowerAll(grid) {
       head.appendChild(el('b', null, who));
       if (it.wait != null) { const w = el('span', 'wait'); w.appendChild(el('i', 'dot dot--bad')); w.append(forShort(it.wait)); head.appendChild(w); }
       row.appendChild(head);
-      row.appendChild(el('span', 'dash__sub', it.text));
+      row.appendChild(bossLine(it.text, 'dash__sub'));
       row.addEventListener('click', () => { const tg = it.target ?? {}; if (tg.view === 'tower') setTowerTab(tg.tab ?? 'asks'); else if (tg.team) jumpTo(tg.team, tg.event ?? null); });
       sec.appendChild(row);
     }
@@ -1481,7 +1512,7 @@ function renderTowerAll(grid) {
     head.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''}`));
     head.appendChild(el('span', 'dash__stage', agoShort(it.ts)));
     row.appendChild(head);
-    row.appendChild(el('span', 'dash__sub', it.text));
+    row.appendChild(bossLine(it.text, 'dash__sub'));
     row.addEventListener('click', () => { if (it.kind === 'decision' || it.kind === 'proxy') setTowerTab('all'); else jumpTo(it.team, String(it.id).split(':')[1] ?? null); });
     sec2.appendChild(row);
   }
@@ -1501,7 +1532,7 @@ function renderTowerAll(grid) {
     for (const it of mine) {
       const row = el('button', 'dash__row'); row.type = 'button';
       row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '결재 기다림' : it.kind === 'boss' ? '대표님께 물어봄' : '멈춤'}`));
-      row.appendChild(el('span', 'dash__sub', it.text));
+      row.appendChild(bossLine(it.text, 'dash__sub'));
       row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '읽고 답하기' : '방으로'));
       // 결재는 그 자리에서 카드가 팝업으로(approval 시안 — "읽고 답하기 를 누르면"). 맨 위 띠로 스크롤하던 것을 그만둔다
       row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (it.kind === 'approval') { const r = approvals.find((a) => a.id === (tg.approval ?? String(it.id).split(':')[1])); if (r) openApprovalPop(r); else { setTowerTab('all'); document.querySelector('.approvals')?.scrollIntoView({ block: 'start' }); } } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
@@ -1510,7 +1541,7 @@ function renderTowerAll(grid) {
     for (const b of fromBoard) {
       const row = el('button', 'dash__row'); row.type = 'button';
       row.appendChild(el('b', null, `${b.teamName} · 상황판`));
-      row.appendChild(el('span', 'dash__sub', b.text));
+      row.appendChild(bossLine(b.text, 'dash__sub'));
       row.addEventListener('click', goRoom(teams.find((t) => t.id === b.team)));
       sec3.appendChild(row);
     }
@@ -1553,7 +1584,7 @@ function renderTowerAll(grid) {
         const lines = p[k] ?? [];
         const kv = el('div', 'dash__kv');
         kv.appendChild(el('b', null, label));
-        kv.appendChild(el('span', null, lines.length ? lines.join(' / ') : '없음'));
+        kv.appendChild(bossLines(lines, '없음'));
         box.appendChild(kv);
       }
       if (p?.at) box.appendChild(el('div', 'dash__empty', `갱신 ${agoShort(p.at)}${p.by ? ' · ' + (s.cast?.[p.by]?.name ?? p.by) : ''}${p.fresh === false ? ' · 낡음' : ''}`));
@@ -1918,7 +1949,7 @@ function renderTowerTeams(grid) {
         const lines = p[k] ?? [];
         const kv = el('div', 'tcard__kv'); kv.dataset.k = k;
         kv.appendChild(el('b', null, label));
-        kv.appendChild(el('span', null, lines.length ? lines.join(' / ') : '없어요'));
+        kv.appendChild(bossLines(lines, '없어요'));
         card.appendChild(kv);
       }
       if (p.at) card.appendChild(el('div', 'tcard__quiet', `갱신 ${agoShort(p.at)}${p.by ? ' · ' + (agents[p.by]?.name ?? p.by) : ''}${p.fresh === false ? ' · 낡음' : ''}`));
@@ -2209,12 +2240,12 @@ function renderReport(r) {
     for (const it of mine) {
       const row = el('button', 'dash__row'); row.type = 'button';
       row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '결재 기다림' : it.kind === 'boss' ? '대표님께 물어봄' : '멈춤'}`));
-      row.appendChild(el('span', 'dash__sub', it.text));
+      row.appendChild(bossLine(it.text, 'dash__sub'));
       row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '읽고 답하기' : '방으로'));
       row.addEventListener('click', () => { const tg = it.target ?? {}; if (it.kind === 'approval') { const a = approvals.find((x) => x.id === (tg.approval ?? String(it.id).split(':')[1])); if (a) openApprovalPop(a); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
       sec.appendChild(row);
     }
-    for (const b of fromBoard) { const row = el('button', 'dash__row'); row.type = 'button'; row.appendChild(el('b', null, `${b.teamName} · 상황판`)); row.appendChild(el('span', 'dash__sub', b.text)); row.addEventListener('click', () => jumpTo(b.team, null)); sec.appendChild(row); }
+    for (const b of fromBoard) { const row = el('button', 'dash__row'); row.type = 'button'; row.appendChild(el('b', null, `${b.teamName} · 상황판`)); row.appendChild(bossLine(b.text, 'dash__sub')); row.addEventListener('click', () => jumpTo(b.team, null)); sec.appendChild(row); }
     body.appendChild(sec);
   }
 
