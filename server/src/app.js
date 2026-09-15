@@ -1066,6 +1066,8 @@ function setView(v) {
   syncHash();
   for (const b of $('views').querySelectorAll('button')) {
     b.setAttribute('aria-current', String(b.dataset.view === v));
+    // 마을 탭은 숨겨 두고(index.html hidden — 대표 09-16 '마을은 최최최최후'), 주소(#팀/world)로 한 번 열면 그 뒤로 보인다.
+    if (v === 'world' && b.dataset.view === 'world') b.hidden = false;
   }
   if (v === 'tower') renderTower();
   if (v === 'dashboard') loadDashboard();

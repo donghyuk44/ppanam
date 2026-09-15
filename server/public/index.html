@@ -46,7 +46,8 @@
       <button type="button" data-view="dashboard">앞으로</button>
       <button type="button" data-view="report">보고서</button>
       <button type="button" data-view="analysis">분석</button>
-      <button type="button" data-view="world">마을</button>
+      <!-- 마을 탭은 대표 화면에서 숨긴다(대표 09-16 07:2x '마을은 최최최최후', 나리 R32) — 오류가 많아 대표가 보면 안 된다. 주소(#팀/world)로 열면 그때 보인다(app.js setView). -->
+      <button type="button" data-view="world" hidden>마을</button>
     </nav>
     <nav class="rail__list" id="teams" aria-label="팀"></nav>
     <!-- 폰에서 띠 밖에 안 읽은 방이 있을 때 (검수 #4). 누르면 띠를 끝까지 민다. -->
