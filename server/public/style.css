@@ -798,8 +798,9 @@ button.dash__row:hover b { text-decoration: underline; }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-4); flex: none; vertical-align: middle; }
 .dot--bad { background: var(--bad) !important; }
 .wait { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--bad); white-space: nowrap; }
-.bar { display: inline-block; width: 72px; height: 5px; border-radius: 2.5px; background: var(--line); overflow: hidden; flex: none; vertical-align: middle; }
-.bar__fill { display: block; height: 100%; border-radius: 2.5px; background: var(--ink-4); }
+/* 진행 막대는 .pbar — .bar 는 방 머리(142행)다. 어제 .bar 로 넣어 방 머리가 72×5px 로 눌려 '누가 살아 있나' 줄·칩이 대표 화면에서 사라졌다(대표 09-15 첫 버그). */
+.pbar { display: inline-block; width: 72px; height: 5px; border-radius: 2.5px; background: var(--line); overflow: hidden; flex: none; vertical-align: middle; }
+.pbar__fill { display: block; height: 100%; border-radius: 2.5px; background: var(--ink-4); }
 .tband { position: relative; display: block; height: 12px; margin-top: 4px; background: var(--sunk); border-radius: 3px; width: 100%; }
 .tband__dot { position: absolute; top: 2px; width: 8px; height: 8px; border-radius: 50%; transform: translateX(-50%); background: var(--ink-4); }
 .tband__dot--bad { background: var(--bad); }
