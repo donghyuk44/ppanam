@@ -666,12 +666,28 @@ switch (cmd) {
         const av = [asksVerdict('레오, 산출물 out/m9-status.md 판정 부탁해요'), asksVerdict('마크, 판정해 주세요 — 얼굴 열일곱'), asksVerdict('레오, 이거 돌려봤어요?'), asksVerdict(''), asksVerdict(null)];
         out.push(['말로 부른 판정(asksVerdict)', av.join(',') === 'true,true,false,false,false' && AUTO_VERDICT_MS === 10 * 60_000 ? '✓ 판정 낱말이면 참 · 호명만이면 거짓 · 빈 글 거짓 · 기본 10분' : '✗ ' + JSON.stringify({ av, AUTO_VERDICT_MS })]);
         // 작은 B(점검-0916 3-9 감사 무게 나누기) — needsOf: 작은 B 는 톰 혼자, 보통 B 는 톰+제리, C 는 대표. 요청은 실행 대상 있는 B·C 에 --small 을 거부(임시 큐라 진짜 큐에 안 남는다).
-        const nd = [needsOf({ grade: 'B', small: true }), needsOf({ grade: 'B' }), needsOf({ grade: 'C', small: true }), needsOf({ grade: 'A' })].map((x) => x.join('+'));
+        // 위임은 인자로(null = 평소 톰) — 실제 state/delegation.json 이 켜져 있어도 check 는 흔들리지 않는다. 위임 중(to:system)엔 결정 자리가 나리.
+        const nd = [needsOf({ grade: 'B', small: true }, null), needsOf({ grade: 'B' }, null), needsOf({ grade: 'C', small: true }, null), needsOf({ grade: 'A' }, null)].map((x) => x.join('+'));
+        const ndDg = [needsOf({ grade: 'B', small: true }, { to: 'system' }), needsOf({ grade: 'B' }, { to: 'system' }), needsOf({ grade: 'C' }, { to: 'system' })].map((x) => x.join('+')).join(' / ');
         const smallC = refuses(() => requestApproval(T, { grade: 'C', what: '작은 C', small: true }), '작은 B');
         const smallPush = refuses(() => requestApproval(T, { grade: 'B', what: '작은 푸시', small: true, action: { type: 'restart' } }), '큰 것');
         let smallOk = null; try { smallOk = requestApproval(T, { grade: 'B', what: '재시작 — 시험', small: true }); } catch (e) { smallOk = { err: e.message }; }
-        const smallWant = nd.join(' / ') === 'chief / chief+outside / boss / ' && smallC === '✓ 거부' && smallPush === '✓ 거부' && smallOk?.small === true && needsOf(smallOk).join() === 'chief';
-        if (smallOk?.id) voidApproval(smallOk.id, '자가 시험');
+        const smallWant = nd.join(' / ') === 'chief / chief+outside / boss / ' && ndDg === 'system / system+outside / boss' && smallC === '✓ 거부' && smallPush === '✓ 거부' && smallOk?.small === true && needsOf(smallOk, null).join() === 'chief';
+        // 결정 자리 실측(임시 큐) — 위임 중 톰의 판정은 거부('나리가 정합니다'), 방 없는 나리 거부, 총괄실 나리 통과 → 작은 B 는 그걸로 닫힘. 위임 없이 나리는 거부('톰이 정합니다').
+        const { decideApproval, listApprovals: listQ } = await import('./bus.mjs');
+        const dgOnB = { to: 'system', until: '2099-01-01T00:00:00Z' };
+        const dTom = smallOk?.id ? refuses(() => decideApproval(smallOk.id, { by: 'chief', decision: 'PASS', team: 'hq', delegation: dgOnB }), '나리가 정합니다') : '✗ 카드 없음';
+        const dNariNoRoom = smallOk?.id ? refuses(() => decideApproval(smallOk.id, { by: 'system', decision: 'PASS', team: null, delegation: dgOnB }), '총괄실에서만') : '✗';
+        const dNariNoDg = smallOk?.id ? refuses(() => decideApproval(smallOk.id, { by: 'system', decision: 'PASS', team: 'hq', delegation: null }), '톰이 정합니다') : '✗';
+        let dNari = null; try { dNari = smallOk?.id ? decideApproval(smallOk.id, { by: 'system', decision: 'PASS', reason: '됐다', team: 'hq', delegation: dgOnB }) : null; } catch (e) { dNari = { err: e.message }; }
+        const closedBySystem = smallOk?.id ? listQ().find((x) => x.id === smallOk.id)?.status === 'passed' : false;
+        // 옛 카드(톰 PASS + 제리 PASS)가 위임 뒤에도 통과로 남나 — 결정 칸은 하나(sameSlot). 톰 통과 뒤 나리가 또 찍으면 거부.
+        let old = null; try { old = requestApproval(T, { grade: 'B', what: '옛 카드 — 톰이 통과시킨 것', action: null }); decideApproval(old.id, { by: 'chief', decision: 'PASS', team: 'hq', delegation: null }); decideApproval(old.id, { by: 'outside', decision: 'PASS', team: 'hq', delegation: null }); } catch (e) { old = { err: e.message }; }
+        const oldStill = old?.id ? listQ().find((x) => x.id === old.id)?.status === 'passed' : false;
+        const dupSlot = old?.id ? refuses(() => decideApproval(old.id, { by: 'system', decision: 'PASS', team: 'hq', delegation: dgOnB }), '이미 끝난') : '✗';
+        const dcWant = dTom === '✓ 거부' && dNariNoRoom === '✓ 거부' && dNariNoDg === '✓ 거부' && dNari?.status === 'passed' && closedBySystem && oldStill && dupSlot === '✓ 거부';
+        out.push(['결정 자리 — 위임 중 나리(대표 09-16)', dcWant ? '✓ 위임 중 톰 거부 · 방 없는 나리 거부 · 위임 없이 나리 거부 · 총괄실 나리 통과로 작은 B 닫힘 · 톰이 닫은 옛 카드는 그대로 통과 · 끝난 카드 재판정 거부' : '✗ ' + JSON.stringify({ dTom, dNariNoRoom, dNariNoDg, dNari: dNari?.status ?? dNari, closedBySystem, oldStill, dupSlot })]);
+        if (smallOk?.id && !closedBySystem) voidApproval(smallOk.id, '자가 시험');
         // PASS 모양(점검 3-9 ⑦) — 정형문·이유 셋 없음·반박 없음은 되돌리고, 모양이 맞으면 null. 지시문(bus.verdictInstruction)에 그 모양이 적혀 있다.
         const { passShapeError, verdictInstruction } = await import('./bus.mjs');
         const ps = [
@@ -691,7 +707,7 @@ switch (cmd) {
         const s1 = spliceBlock('a\nb\n', ['p1']), s2 = spliceBlock(s1, ['p2', 'p3']);
         const liWant = li.join(',') === 'teams/design/out/a.png,teams/dev/out/c.JPG' && s1.includes('\np1\n') && !s2.includes('p1') && s2.includes('p2\np3') && s2.split('>>>').length === 2 && s2.startsWith('a\nb\n');
         out.push(['out/ 큰 그림만 빼기(out-ignore)', liWant ? '✓ 100KB 넘는 그림만 · shots 안 셈 · md 안 뺌 · 대문자 확장자 · 블록 갈아 끼움' : '✗ ' + JSON.stringify({ li, s1, s2 })]);
-        out.push(['작은 B(점검 3-9 감사 무게)', smallWant ? '✓ 작은 B = 톰 혼자 · 보통 B = 톰+제리 · C 는 대표 · C·실행 대상에 --small 거부 · 레코드 small:true' : '✗ ' + JSON.stringify({ nd, smallC, smallPush, smallOk })]);
+        out.push(['작은 B · 결정 자리(점검 3-9 · 대표 09-16)', smallWant ? '✓ 작은 B = 톰 혼자 · 보통 B = 톰+제리 · 위임 중엔 나리 / 나리+제리 · C 는 대표 · C·실행 대상에 --small 거부 · 레코드 small:true' : '✗ ' + JSON.stringify({ nd, ndDg, smallC, smallPush, smallOk })]);
       }
       // 자리의 엔진·모델·추론 강도 (결정 69) — 순수 castChangeError 가 거르고, updateCastAgent 가 임시 방 cast.json 에 쓴다. 엔진 바꾸기는 아직 거부(같은 값은 통과).
       {
@@ -1357,11 +1373,14 @@ switch (cmd) {
           const q = nightlyOf({ team: 'dev', name: '개발', day: '2026-09-15', log: [nLog[0], nLog[3]], rounds: nRounds, approvals: [], progress: { next: ['내일 첫 일'], blocked: [] }, state: { round: 25, phase: 'idle' }, cast: nCast, now: nNow });
           const quietOk = q.problems.length === 0 && q.counts.rounds === 1 && q.counts.verdicts === 1 && q.counts.approvals === 0 && q.counts.blocked === 0
             && q.md.includes('문제 없음') && q.md.includes('- 25 · 화면 (6단계) · PASS · 09-14 10:51 ~ 21:32') && q.md.includes('레오 PASS (gemini) → 테라 — 테라, 봤습니다.') && q.md.includes('- 내일 첫 일') && !q.md.includes('옛것');
-          const b = nightlyOf({ team: 'dev', name: '개발', day: '2026-09-15', log: nLog, rounds: nRounds, approvals: nApr, progress: { blocked: ['디스크 꽉 참'], next: [] }, state: { round: 26, milestone: 7, topic: '기억', phase: 'blocked', attempt: 3, startedAt: '2026-09-15T12:33:00Z' }, cast: nCast, now: nNow });
+          const b = nightlyOf({ team: 'dev', name: '개발', day: '2026-09-15', log: nLog, rounds: nRounds, approvals: nApr, progress: { blocked: ['디스크 꽉 참'], next: [] }, state: { round: 26, milestone: 7, topic: '기억', phase: 'blocked', attempt: 3, startedAt: '2026-09-15T12:33:00Z' }, cast: nCast, now: nNow, delegation: null });   // 위임 없음으로 고정 — 실제 파일에 흔들리지 않게
+          // 위임 중(to:system)엔 같은 카드가 "제리 차례" 그대로다 — 톰이 답한 결정 칸을 나리 몫으로 다시 안 센다(같은 칸).
+          const bDg = nightlyOf({ team: 'dev', name: '개발', day: '2026-09-15', log: nLog, rounds: nRounds, approvals: nApr, progress: { blocked: [], next: [] }, state: { round: 26, milestone: 7, topic: '기억', phase: 'blocked', attempt: 3, startedAt: '2026-09-15T12:33:00Z' }, cast: nCast, now: nNow, delegation: { to: 'system', until: '2099-01-01T00:00:00Z' } });
           const kinds = b.problems.map((p) => p.kind);
           const blockOk = kinds.join(',') === 'blocked,approval,bossCall' && b.counts.blocked === 5 && b.counts.rounds === 2 && b.counts.verdicts === 1 && b.counts.approvals === 2
             && b.md.includes('문제 3건') && b.md.includes('- 26 · 기억 (7단계) · 아직 열림 · 21:33 ~ (FAIL 로 막힘)') && b.md.includes('FAIL 로 막힘 — 라운드 26') && b.md.includes('승인 [C] apr_c1 방향 — 대표 차례')
-            && b.md.includes('테라이 22:10 에 대표를 불렀는데 답이 없음 — "대표님, 유니티로 갈까요 Three 로 갈까요?"') && b.md.includes('apr_b1 [B] 푸시 — 대기 (제리 차례) (톰 PASS)') && b.md.includes('상황판 — 디스크 꽉 참') && !b.md.includes('apr_b0') && !b.md.includes('늦게 온 것');
+            && b.md.includes('테라이 22:10 에 대표를 불렀는데 답이 없음 — "대표님, 유니티로 갈까요 Three 로 갈까요?"') && b.md.includes('apr_b1 [B] 푸시 — 대기 (제리 차례) (톰 PASS)') && b.md.includes('상황판 — 디스크 꽉 참') && !b.md.includes('apr_b0') && !b.md.includes('늦게 온 것')
+            && bDg.md.includes('apr_b1 [B] 푸시 — 대기 (제리 차례) (톰 PASS)');
           const a = nightlyOf({ team: 'dev', name: '개발', day: '2026-09-15', log: [...nLog, { id: 'e6', ts: '2026-09-15T13:20:00Z', type: 'message', actor: 'boss', text: '유니티' }], rounds: nRounds, approvals: [], state: { round: 26, phase: 'running', attempt: 0, startedAt: '2026-09-15T12:33:00Z' }, cast: nCast, now: nNow });
           const answeredOk = a.problems.length === 0 && a.md.includes('아직 열림') && !a.md.includes('FAIL');
           const t = nightlyOf({ team: 'dev', name: '개발', day: '2026-09-15', log: [], rounds: [], approvals: [], state: { round: 26, phase: 'running', attempt: 3, startedAt: '2026-09-15T12:33:00Z' }, cast: nCast, now: nNow });

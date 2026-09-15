@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
-  ROOT, requestApproval, decideApproval, voidApproval, listApprovals, APPROVAL_GRADES, needsOf,
+  ROOT, requestApproval, decideApproval, voidApproval, listApprovals, APPROVAL_GRADES, needsOf, leftOf,
   defaultTeam, teamExists, listTeams, readCast, readRoadmap, paths, isOffice, pushAction, roomRules,
 } from './bus.mjs';
 import { untilOf } from './requests.mjs';
@@ -107,9 +107,10 @@ function usage() {
                  --until-milestone 이면 지금 마일스톤이 닫힐 때까지 여는 공동 프로젝트(결정 47). 그 뒤는 node bus/request.mjs
       --out      카드에 붙일 산출물 — teams/<팀>/out/ 안의 경로, 쉼표로 여럿. 그림은 카드 안에 뜨고 md 는 펼쳐 읽는다.
                  --detail 에 적힌 out/… 경로도 같이 붙는다.
-      --small    작은 B — 재시작·문구 한 줄·임시 파일 태그처럼 실행 대상 없는 것. 톰 혼자 보면 닫힌다(제리 대조 생략, 점검-0916 3-9).
+      --small    작은 B — 재시작·문구 한 줄·임시 파일 태그처럼 실행 대상 없는 것. 결정 자리 혼자 보면 닫힌다(제리 대조 생략, 점검-0916 3-9).
                  --push·--next·--roadmap·--to 와는 같이 못 쓴다 — 그건 큰 것.
-  --decide <id> --as <chief|outside|boss> <PASS|REVISE> "<이유>"
+  --decide <id> --as <chief|system|outside|boss> <PASS|REVISE> "<이유>"
+                 결정 자리는 평소 톰(chief), 위임 중(state/delegation.json to:system)엔 나리(system) — 대표 09-16. --as system 은 환경 없는 셸(나리)에서만.
   --list [--all]        대기 중인 것 (--all 이면 전부)
   --show <id>
   --void <id> "<이유>"   잘못 들어온 요청을 무효로 (총괄실만)
@@ -206,19 +207,22 @@ if (o.mode === 'request') {
 
   if (r.status === 'passed') { console.log('등급 A — 바로 진행하세요.'); process.exit(0); }
 
-  if (r.grade === 'B') console.log('큐에 남았습니다. 서버가 총괄실에 알리고, 톰과 제리가 판정하면 이 방에 들려줍니다. 대기 중에는 다음 일감으로 넘어가세요.');
+  if (r.grade === 'B') console.log(`큐에 남았습니다. 서버가 총괄실에 알리고, ${needsOf(r).map((w) => nameOf(r.team, w)).join('와 ')}가 판정하면 이 방에 들려줍니다. 대기 중에는 다음 일감으로 넘어가세요.`);
   if (r.grade === 'C') console.log('등급 C — 대표 판단입니다. 관제탑에 올라갑니다. 결과는 서버가 이 방에 들려줍니다. 다음 일감으로 넘어가세요.');
   process.exit(0);
 }
 
 if (o.mode === 'decide') {
-  if (!me) { console.error('오류: 방이 지정되지 않은 셸에서는 판정할 수 없습니다. 대표는 관제탑 화면에서 판정합니다.'); process.exit(1); }
-  if (o.as && o.as !== me.actor) { console.error(`오류: 너는 '${me.actor}' 다. '${o.as}' 로 판정할 수 없다.`); process.exit(1); }
-  const by = me.actor;
+  // 나리(system)는 서버가 띄운 세션이 아니라 환경이 없다 — `--as system` 은 **환경 없는 셸에서만** 받는다(총괄실 사람으로 기록).
+  // 방 세션(PPANAM_TEAM 있음)이 --as system 을 대면 아래 검사에 걸린다 — 위조 방지는 그대로(대표 09-16 "대리 판단은 나리").
+  const who = !me && o.as === 'system' ? { actor: 'system', team: 'hq' } : me;
+  if (!who) { console.error('오류: 방이 지정되지 않은 셸에서는 판정할 수 없습니다. 대표는 관제탑 화면에서, 나리는 --as system 으로 판정합니다.'); process.exit(1); }
+  if (o.as && o.as !== who.actor) { console.error(`오류: 너는 '${who.actor}' 다. '${o.as}' 로 판정할 수 없다.`); process.exit(1); }
+  const by = who.actor;
   const decision = words[0];
   const reason = words.slice(1).join(' ');
   let r;
-  try { r = decideApproval(o.id, { by, decision, reason, team: me.team }); }
+  try { r = decideApproval(o.id, { by, decision, reason, team: who.team }); }
   catch (e) { console.error('오류: ' + e.message); process.exit(1); }
 
   console.log(fmt(r));
@@ -226,7 +230,7 @@ if (o.mode === 'decide') {
   if (r.status !== 'pending') {
     console.log(`${r.status === 'passed' ? '통과' : '반려'}입니다. 서버가 ${r.team} 팀에 들려줍니다.`);
   } else {
-    const left = needsOf(r).filter((w) => !r.decisions.some((d) => d.by === w));
+    const left = leftOf(r);
     console.log(`아직 ${left.map((w) => nameOf(r.team, w)).join('·')} 판정이 남았습니다.`);
   }
   process.exit(0);

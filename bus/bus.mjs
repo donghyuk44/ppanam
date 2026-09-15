@@ -371,6 +371,7 @@ function appendApproval(line) {
 /** 요청과 판정 줄을 접어서 요청 하나당 상태 하나로 만든다. */
 export function listApprovals({ team = null, status = null } = {}) {
   const byId = new Map();
+  const dg = readDelegation();   // 한 번만 읽는다 — 줄마다 파일을 열지 않게
   for (const l of readJSONLCached(approvalsPath())) {
     if (l.kind === 'request') {
       byId.set(l.id, { ...l, decisions: [], status: l.grade === 'A' ? 'passed' : 'pending', decidedAt: l.grade === 'A' ? l.ts : null });
@@ -386,9 +387,10 @@ export function listApprovals({ team = null, status = null } = {}) {
       const r = byId.get(l.id);
       if (!r || r.status !== 'pending') continue;
       r.decisions.push(l);
-      const needs = needsOf(r);   // 작은 B 는 톰 하나로 닫힌다
+      const needs = needsOf(r, dg);   // 작은 B 는 결정 자리 하나로 닫힌다
       if (l.decision === 'REVISE') { r.status = 'revised'; r.decidedAt = l.ts; }
-      else if (needs.every((who) => r.decisions.some((d) => d.by === who && d.decision === 'PASS'))) {
+      // 결정 칸은 톰이든 나리든 같은 칸(sameSlot) — 위임 전에 톰이 통과시킨 옛 카드가 위임 뒤 다시 '대기' 로 살아나지 않게.
+      else if (needs.every((who) => r.decisions.some((d) => sameSlot(d.by, who) && d.decision === 'PASS'))) {
         r.status = 'passed'; r.decidedAt = l.ts;
       }
     }
@@ -400,10 +402,21 @@ export function listApprovals({ team = null, status = null } = {}) {
 }
 
 /**
- * 누가 판정하나 — 등급의 needs. **작은 B**(`small`, 재시작·문구 한 줄·임시 파일 태그 — 실행 대상 없는 B)는 톰 혼자, 제리 대조 생략
- * (나리 점검-0916 3-9 "감사 무게 나누기": 밤 99건 중 재시작 카드 15장에도 톰+제리 둘 다 대조라 큰 것에 힘이 안 남았다). 순수 — check 가 돌린다.
+ * 누가 판정하나 — 등급의 needs. **작은 B**(`small`, 재시작·문구 한 줄·임시 파일 태그 — 실행 대상 없는 B)는 결정 자리 혼자, 제리 대조 생략
+ * (나리 점검-0916 3-9 "감사 무게 나누기": 밤 99건 중 재시작 카드 15장에도 톰+제리 둘 다 대조라 큰 것에 힘이 안 남았다).
+ * **결정 자리**는 평소 톰(chief), 위임 중(`state/delegation.json` to:'system')엔 나리(system) — 대표 09-16 06:5x "대리 판단은 나리 너가 한다.
+ * 톰이 하던 기존 방향을 너가 하는걸로 바꿈". 톰은 운영·기록·배분만, 판정은 안 낸다. 순수(위임은 인자) — check 가 돌린다.
  */
-export const needsOf = (r) => (r?.grade === 'B' && r?.small ? ['chief'] : APPROVAL_GRADES[r?.grade]?.needs ?? []);
+export const DECIDERS = new Set(['chief', 'system']);
+export const needsOf = (r, dg = readDelegation()) => {
+  const decider = dg?.to === 'system' ? 'system' : 'chief';
+  if (r?.grade === 'B') return r?.small ? [decider] : [decider, 'outside'];
+  return APPROVAL_GRADES[r?.grade]?.needs ?? [];
+};
+/** 결정 자리는 하나다 — 톰의 판정과 나리의 판정은 같은 칸을 채운다(옛 카드는 톰이, 위임 뒤는 나리가). 접을 때·중복 검사·남은 판정자 셈에 쓴다. */
+export const sameSlot = (a, b) => a === b || (DECIDERS.has(a) && DECIDERS.has(b));
+/** 아직 안 답한 판정자 — needs 중 같은 칸의 판정이 없는 것. 톰이 답한 칸은 나리 몫으로 다시 세지 않는다. */
+export const leftOf = (r, dg = readDelegation()) => needsOf(r, dg).filter((w) => !(r?.decisions ?? []).some((d) => sameSlot(d.by, w)));
 
 export function requestApproval(team, { by = 'guide', grade, what, detail = '', action = null, files = [], small = false }) {
   const g = String(grade || '').toUpperCase();
@@ -539,21 +552,27 @@ export function voidApproval(id, reason = '') {
   return listApprovals().find((x) => x.id === id);
 }
 
-export function decideApproval(id, { by, decision, reason = '', team = null, proxy = null }) {
+export function decideApproval(id, { by, decision, reason = '', team = null, proxy = null, delegation = readDelegation() }) {
   const r = listApprovals().find((x) => x.id === id);
   if (!r) throw new Error(`그런 요청이 없습니다: ${id}`);
   if (r.status !== 'pending') throw new Error(`이미 끝난 요청입니다 (${r.status}).`);
   const d = String(decision || '').toUpperCase();
   if (!['PASS', 'REVISE'].includes(d)) throw new Error('판정은 PASS 또는 REVISE 입니다.');
-  const needs = needsOf(r);
-  if (!needs.includes(by)) throw new Error(`등급 ${r.grade}${r.small ? '(작은)' : ''} 는 ${needs.join('·')} 이(가) 판정합니다. '${by}' 는 아닙니다.${r.small && by === 'outside' ? ' 작은 B 는 제리 대조를 생략합니다(점검-0916 3-9).' : ''}`);
-  // B 의 chief·outside 는 총괄실 사람이다 — 톰과 제리. 'outside' 라는 자리 이름은 방마다 있어서
+  const dg = delegation;
+  const needs = needsOf(r, dg);
+  if (!needs.includes(by)) {
+    // 결정 자리가 바뀐 경우는 따로 말한다 — 위임 중 톰 / 위임 없이 나리.
+    const swap = DECIDERS.has(by) && needs.some((n) => DECIDERS.has(n))
+      ? (dg?.to === 'system' ? ' 지금은 나리가 정합니다(대표 09-16 위임 — 톰은 기록만).' : ' 위임이 없어 톰이 정합니다.') : '';
+    throw new Error(`등급 ${r.grade}${r.small ? '(작은)' : ''} 는 ${needs.join('·')} 이(가) 판정합니다. '${by}' 는 아닙니다.${swap}${r.small && by === 'outside' ? ' 작은 B 는 제리 대조를 생략합니다(점검-0916 3-9).' : ''}`);
+  }
+  // B 의 chief·system·outside 는 총괄실 사람이다 — 톰·나리·제리. 'outside' 라는 자리 이름은 방마다 있어서
   // 개발팀의 레오가 제리 몫의 대조를 기록할 수 있었다 (Fable 감사가 격리 실행으로 뚫었다, 2026-09-02).
   // 판정하는 프로세스가 자기 방을 같이 대야 한다. 대표(boss)는 방이 없다.
-  if ((by === 'chief' || by === 'outside') && team !== 'hq') {
+  if ((by === 'chief' || by === 'outside' || by === 'system') && team !== 'hq') {
     throw new Error(`등급 ${r.grade} 의 ${by} 판정은 총괄실에서만 합니다 (지금 방: ${team ?? '없음'}).`);
   }
-  if (r.decisions.some((x) => x.by === by)) throw new Error(`${by} 는 이미 판정했습니다.`);
+  if (r.decisions.some((x) => sameSlot(x.by, by))) throw new Error(`${by} 는 이미 판정했습니다.${DECIDERS.has(by) ? ' (결정 칸은 톰·나리 하나)' : ''}`);
   // 대리 결정 (결정 85) — by 는 boss 지만 정한 건 톰·제리다. 줄에 남겨 아침에 대표가 뒤집을 수 있게.
   appendApproval({ kind: 'decision', id, by, decision: d, reason: String(reason ?? '').trim(), ts: new Date().toISOString(), ...(proxy ? { proxy } : {}) });
   const after = listApprovals().find((x) => x.id === id);

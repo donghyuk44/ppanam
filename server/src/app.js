@@ -9,7 +9,7 @@
 import * as World from '/world/world.js';
 import { toolLabel, toolPhrase, baseName, ga } from '/toollabel.js';
 import { findOutPaths, linkOutPaths } from '/outlink.js';
-import { notificationsOf, blockedOf, pausedMs, delegated } from '/notify.js';
+import { notificationsOf, blockedOf, pausedMs, delegated, deciders } from '/notify.js';
 import { dayWord, timeWord, clockWord, spanWord } from '/when.js';
 import { parseMention } from '/mention.js';
 
@@ -1207,7 +1207,7 @@ function renderApprovals() {
   for (const r of mine) box.appendChild(line(r));
   if (theirs.length) {
     const fold = el('button', 'apr apr--fold'); fold.type = 'button'; fold.setAttribute('aria-expanded', String(theirsOpen));
-    fold.appendChild(el('span', 'apr__what', `톰·제리가 보는 중 ${theirs.length}건`));
+    fold.appendChild(el('span', 'apr__what', `${deciders(delegation)}가 보는 중 ${theirs.length}건`));
     fold.appendChild(el('span', 'apr__go', theirsOpen ? '접기' : '보기'));
     fold.addEventListener('click', () => { theirsOpen = !theirsOpen; renderApprovals(); });
     box.appendChild(fold);
@@ -1273,7 +1273,7 @@ function approvalCard(r) {
   if (r.grade === 'C') {
     // 위임 중(결정 136)이고 톰·제리가 대리할 수 있는 카드 — 단추 위에 한 줄, 단추는 그대로(R31 ②, 나리 · 톰 apr_e3e08ac8 반려: 대표가 누르는 길은 안 닫는다). 돈·바깥(proxyable false)은 단추만.
     const proxied = delegated(delegation) && !!r.proxyable;
-    if (proxied) card.appendChild(el('div', 'apr__proxy', '지금은 톰·제리가 정해요 · 직접 누르셔도 돼요'));
+    if (proxied) card.appendChild(el('div', 'apr__proxy', `지금은 ${deciders(delegation)}가 정해요 · 직접 누르셔도 돼요`));
     const act = el('div', 'apr__act');
     const err = el('div', 'apr__err'); err.hidden = true;
     const reasonBox = el('input', 'apr__reason'); reasonBox.type = 'text'; reasonBox.placeholder = '왜 — 한 마디'; reasonBox.hidden = true;
@@ -1303,12 +1303,15 @@ function approvalCard(r) {
     // 누가 판정했고 누가 남았나 — 이름으로. 그리고 총괄실이 이 요청을 들었는가.
     const hq = summaries.hq?.cast ?? {};
     const nameOf = (id) => hq[id]?.name ?? id;
-    const need = r.small ? ['chief'] : (grades[r.grade]?.needs ?? []);   // 작은 B 는 톰 혼자(bus.needsOf 와 같은 규칙, 점검-0916 3-9)
+    // bus.needsOf 와 같은 규칙 — 작은 B 는 결정 자리 혼자(점검-0916 3-9), 결정 자리는 위임 중 나리(system, 대표 09-16) 아니면 톰. 톰·나리는 같은 칸이라 어느 쪽 판정이든 센다.
+    const decider = delegated(delegation) && delegation?.to === 'system' ? 'system' : 'chief';
+    const need = r.grade === 'B' ? (r.small ? [decider] : [decider, 'outside']) : (grades[r.grade]?.needs ?? []);
+    const same = (a, b) => a === b || (['chief', 'system'].includes(a) && ['chief', 'system'].includes(b));
     const VERDICT_WORD = { PASS: '통과', REVISE: '다시', FAIL: '멈춤' };   // 하영 1절
     const done = r.decisions.map((x) => `${nameOf(x.by)} ${VERDICT_WORD[x.decision] ?? x.decision}`).join(' · ');
-    const left = need.filter((w) => !r.decisions.some((x) => x.by === w)).map(nameOf).join('·');
+    const left = need.filter((w) => !r.decisions.some((x) => same(x.by, w))).map(nameOf).join('·');
     const heard = told[r.id]?.requested ? '총괄실에 알렸어요' : '총괄실에 곧 알려요';
-    card.appendChild(el('span', 'apr__wait', `${r.small ? '작은 것 — 톰 혼자 봐요 · ' : ''}${done ? done + ' · ' : ''}${left ? left + ' 답 기다림' : ''} · ${heard}`));
+    card.appendChild(el('span', 'apr__wait', `${r.small ? `작은 것 — ${nameOf(decider)} 혼자 봐요 · ` : ''}${done ? done + ' · ' : ''}${left ? left + ' 답 기다림' : ''} · ${heard}`));
   }
   return card;
 }

@@ -16,6 +16,8 @@ const firstImage = (text, team) => findOutPaths(text, team).find((f) => f.kind =
 
 /** 위임(state/delegation.json, 결정 136)이 지금 살아 있나 — bus.delegationActive 와 같은 식(브라우저 파일). until 이 지나면 파일이 있어도 아니다. */
 export const delegated = (d, now = Date.now()) => !!d && Number.isFinite(Date.parse(d.until ?? '')) && now < Date.parse(d.until);
+/** 결재를 보는 둘의 이름 — 평소 톰·제리, 위임 중(to:'system', 대표 09-16 "대리 판단은 나리")엔 나리·제리. 띠·패널·팝업이 같은 말을 쓴다. */
+export const deciders = (d, now = Date.now()) => (delegated(d, now) && d.to === 'system' ? '나리·제리' : '톰·제리');
 
 /**
  * @param teams      [{ id, name, room }]
@@ -70,8 +72,9 @@ export function notificationsOf({ teams = [], summaries = {}, approvals = [] } =
   }
   if (theirs.length) {
     const office = byTeam.has('hq') ? 'hq' : theirs[0].team;   // 보는 사람은 총괄실
-    items.push({ id: 'approval:theirs', kind: 'approval', team: office, by: null, name: '톰·제리', mine: false,
-      text: `톰·제리가 보는 중 ${theirs.length}건`, ts: theirs.map((r) => r.ts).sort().at(-1) ?? null, thumb: null, target: { view: 'tower', team: office, approval: null } });
+    const pair = deciders(delegation, now);
+    items.push({ id: 'approval:theirs', kind: 'approval', team: office, by: null, name: pair, mine: false,
+      text: `${pair}가 보는 중 ${theirs.length}건`, ts: theirs.map((r) => r.ts).sort().at(-1) ?? null, thumb: null, target: { view: 'tower', team: office, approval: null } });
   }
 
   const rank = (k) => { const i = KIND_ORDER.indexOf(k); return i < 0 ? KIND_ORDER.length : i; };
