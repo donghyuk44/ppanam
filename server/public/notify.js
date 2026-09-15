@@ -81,7 +81,7 @@ export const INFRA_LABEL = { server: '서버', codex: '외부 감사(codex) 연�
 /** 잰 시각이 지금보다 이만큼 넘게 앞서면 시계가 틀린 것 — unknown. */
 export const INFRA_SKEW_MS = 60_000;
 /** 자리표시 줄 — bus.isPlaceholderLine 과 같은 식(브라우저 파일이라 못 불러온다). 바꾸면 둘 다. */
-export const PLACEHOLDER_RE = /^\s*[(（]?\s*(없음|없어요|없다|n\/a|none|-|—|·)\s*[)）]?\s*[.。]?\s*$/i;
+export const PLACEHOLDER_RE = /^\s*[(（]?\s*(없음|없어요|없다|n\/a|none|-|—|·)\s*[)）]?\s*[.。]?(\s*[—\-–:·,].*)?\s*$/i;
 
 /**
  * 막힌 것 — 한 목록 (결정 92 "뭐가 막혔나", M6 준비). 계약은 docs/event-schema.md 3절 "막힌 것 — 한 목록".

@@ -717,7 +717,7 @@ switch (cmd) {
         // 헛막힘 셋(나리 실측 R25): 상황판 "(없음)" 줄 · 총괄실(office)에서 대표 부른 것 · 서버가 거른 자리표시(normalizeProgress)
         const bFake = blockedOf({ teams: [{ id: 'hq', name: '총괄', room: '총괄실', kind: 'office' }, { id: 'mk', name: '마케팅', room: '마케팅실' }], summaries: {
           hq: { cast: { chief: { name: '톰' } }, bossCall: { id: 'h1', ts: '2026-09-13T11:00:00Z', by: 'chief' }, people: { chief: { bossCall: { id: 'h1', ts: '2026-09-13T11:00:00Z', text: '대표님, 나리 얘기입니다.' } } } },
-          mk: { cast: { guide: { name: '하영' } }, progress: { at: '2026-09-13T11:00:00Z', blocked: ['(없음)', '없음', '—', '진짜 막힘 하나'] } },
+          mk: { cast: { guide: { name: '하영' } }, progress: { at: '2026-09-13T11:00:00Z', blocked: ['(없음)', '없음', '—', '없음 — 사람 손 기다림뿐', '(없음 — 사용량으로 전원 멈춤)', '진짜 막힘 하나'] } },
         } }, { now: bNow });
         const fakeOk = bFake.length === 1 && bFake[0].kind === 'board' && bFake[0].text === '진짜 막힘 하나'
           && normalizeProgress({ blocked: ['(없음)', ' ', '막힘'], boss: ['없어요.'] }).blocked.join(',') === '막힘' && normalizeProgress({ boss: ['없어요.'] }).boss.length === 0;
