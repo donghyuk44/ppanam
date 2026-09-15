@@ -26,6 +26,7 @@ let pendingMark = -1;        // 마지막으로 본 대기 건수 합 — 바뀌
 let told = {};               // 승인 id → { requested, decided, executed } — 서버가 언제 알렸나
 let grades = {};
 let infra = null;             // 밑바닥 넷 — 서버가 2분마다 재서 준다(boot.infra · ws infra). blockedOf 의 입력
+let pauses = [];              // 멈춘 구간(state/pauses.json, boot.pauses) — 기다린 시간·늦음에서 뺀다
 let done = { since: null, items: [], fetchedAt: 0, more: false };   // 누가 뭘 했나(/api/done) — 관제탑 ②. more = "더 보기 — 어제까지" 펼침
 let openTeamRows = new Set();  // 관제탑 ④ 팀 줄 — 펼쳐 둔 팀(상황판 네 칸)
 let requestsAll = [];         // 요청 블록 접은 목록 (6-1절) — 관제탑 요청 탭·전체 탭 타일
@@ -1310,20 +1311,15 @@ function renderTowerAll(grid) {
   const now = Date.now(), day0 = dayStartSeoulMs(now);
   const pendingAll = approvals.map((r) => ({ id: r.id, grade: r.grade, team: r.team, by: r.by, what: r.what, ts: r.requestedAt ?? r.ts }));
   const openReq = requestsAll.filter((r) => r.status !== 'closed');
-  const blocked = blockedOf({ teams, summaries, approvals: pendingAll, requests: openReq, infra }, { now });
-  const stuck = blocked.filter((it) => it.waitOn !== 'boss');
+  const blocked = blockedOf({ teams, summaries, approvals: pendingAll, requests: openReq, infra }, { now, pauses });
+  // 부탁 블록의 '차례' 는 막힘이 아니다(톰 09-15 — 열린 부탁·닫힌 부탁이 '막힌 것 6' 을 만들었다). 부탁은 요청 탭에. 여기는 FAIL·상황판 막힘·결재 대기·밑바닥만.
+  const stuck = blocked.filter((it) => it.waitOn !== 'boss' && it.kind !== 'request');
   const mine = blocked.filter((it) => it.waitOn === 'boss');
   const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
   loadDone();
-  const today = done.items.filter((it) => new Date(it.ts).getTime() >= day0);
-
-  // 숲 — 큰 숫자 셋(numbers.md 4절): 대표님이 보실 것 · 막힌 것 · 오늘 한 것. 0 이면 그 칸 자체가 없다.
-  const nums = [['대표님이 보실 것', mine.length + fromBoard.length, 'boss'], ['막힌 것', stuck.length, 'bad'], ['오늘 한 것', today.length, 'live']].filter(([, n]) => n > 0);
-  if (nums.length) {
-    const box = el('div', 'forest');
-    for (const [k, n, tone] of nums) { const d = el('div', 'num'); d.dataset.tone = tone; d.appendChild(el('b', null, String(n))); d.appendChild(el('span', null, k)); box.appendChild(d); }
-    grid.appendChild(box);
-  }
+  // 대표는 '누가 뭘 했나' 에 안 선다(톰 09-15) — 팀원만. 대표의 결정은 결재 카드가 이미 보여 준다.
+  const today = done.items.filter((it) => new Date(it.ts).getTime() >= day0 && it.by !== 'boss');
+  // 큰 숫자 타일은 뺐다 — 하영 내용 2판 9절 5(큰 숫자 빼기)와 어긋난다(톰 09-15). 수는 칸 제목에만(막힌 것 N · 내 차례 N).
 
   // ① 뭐가 막혔나 — 대표가 풀 것이 아닌 막힘(팀·톰·운영·밑바닥). 강조: 그 팀 점만 색, 빨간 점 + N시간째. 대표 몫(waitOn boss)은 ③.
   if (stuck.length) {
@@ -1359,7 +1355,7 @@ function renderTowerAll(grid) {
     }
     sec2.appendChild(bands);
   }
-  const items = done.items.slice(0, done.more ? 30 : 6);
+  const items = done.items.filter((it) => it.by !== 'boss').slice(0, done.more ? 30 : 6);
   if (!items.length) sec2.appendChild(el('div', 'dash__empty', done.fetchedAt ? '오늘 끝낸 일이 아직 없어요.' : '읽는 중…'));
   for (const it of items) {
     const row = el('button', 'dash__row'); row.type = 'button';
@@ -2203,6 +2199,7 @@ approvals = boot.approvals ?? [];
 told = boot.told ?? {};
 grades = boot.grades ?? {};
 infra = boot.infra ?? null;
+pauses = boot.pauses ?? [];
 castOptions = boot.castOptions ?? {};
 for (const t of teams) unread[t.id] = 0;
 pendingMark = Object.values(summaries).reduce((n, s) => n + (s.approvals?.pending ?? 0), 0);

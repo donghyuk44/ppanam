@@ -1624,6 +1624,22 @@ export function bossNotesOf(log, cast, { now = Date.now(), limit = 30 } = {}) {
  *   status: running(지금 단계) · planned(잡힌 예정) · gated(대표 답 뒤 — gate 에 무엇) · blocked(FAIL 로 막힘)
  */
 export const DEFAULT_ROUND_MS = 90 * 60_000;
+/**
+ * 멈춘 시간(state/pauses.json — [{ from, to, why }], 대표가 "쉬어라" 한 구간을 나리·톰이 손으로 적는다).
+ * 늦음·기다림·회차 길이에서 뺀다 — 09-14 낮~09-15 밤(사용량 1%) 하루가 통째로 "41시간 늦음"·"33시간째" 로 대표 화면에 섰다(톰 09-15). 순수 — check 가 돌린다.
+ */
+export function readPauses() {
+  const list = readJSON(path.join(ROOT, 'state', 'pauses.json'), []);
+  return (Array.isArray(list) ? list : []).map((p) => ({ from: Date.parse(p.from), to: Date.parse(p.to), why: p.why ?? '' })).filter((p) => Number.isFinite(p.from) && Number.isFinite(p.to) && p.to > p.from);
+}
+/** a~b 사이에 멈춰 있던 ms — 구간이 겹친 만큼만. a·b 는 ms 또는 ISO. */
+export function pausedMs(a, b, pauses = []) {
+  const s = typeof a === 'number' ? a : Date.parse(a), e = typeof b === 'number' ? b : Date.parse(b);
+  if (!Number.isFinite(s) || !Number.isFinite(e) || e <= s) return 0;
+  let sum = 0;
+  for (const p of pauses) { const f = typeof p.from === 'number' ? p.from : Date.parse(p.from), t = typeof p.to === 'number' ? p.to : Date.parse(p.to); sum += Math.max(0, Math.min(e, t) - Math.max(s, f)); }
+  return sum;
+}
 export function timeboxRounds(timebox) {
   const s = String(timebox ?? '').trim();
   if (!s || /대표/.test(s)) return null;                          // "대표 방향 뒤 정함" · "대표가 방식을 고른 뒤 2 라운드" — 대표가 열어야 센다
@@ -1631,13 +1647,13 @@ export function timeboxRounds(timebox) {
   const m = /(\d+(?:\.\d+)?)\s*라운드/.exec(s);
   return m ? Number(m[1]) : null;
 }
-export function roundLengthMs(rounds, { fallback = DEFAULT_ROUND_MS, n = 8 } = {}) {
-  const lens = (rounds ?? []).filter((r) => r.startedAt && r.endedAt).map((r) => Date.parse(r.endedAt) - Date.parse(r.startedAt)).filter((x) => Number.isFinite(x) && x > 0);
+export function roundLengthMs(rounds, { fallback = DEFAULT_ROUND_MS, n = 8, pauses = [] } = {}) {
+  const lens = (rounds ?? []).filter((r) => r.startedAt && r.endedAt).map((r) => Date.parse(r.endedAt) - Date.parse(r.startedAt) - pausedMs(r.startedAt, r.endedAt, pauses)).filter((x) => Number.isFinite(x) && x > 0);
   const last = lens.slice(0, n);
   return last.length ? Math.round(last.reduce((a, b) => a + b, 0) / last.length) : fallback;
 }
-export function plansOf({ roadmap, state, rounds = [], progress = null, now = Date.now() } = {}) {
-  const roundMs = roundLengthMs(rounds);
+export function plansOf({ roadmap, state, rounds = [], progress = null, now = Date.now(), pauses = [] } = {}) {
+  const roundMs = roundLengthMs(rounds, { pauses });
   const ms = (roadmap?.milestones ?? []).filter((m) => m.status !== 'pass').sort((a, b) => (a.n ?? 0) - (b.n ?? 0));
   const phase = state?.phase ?? 'idle';
   const blockedWhy = phase === 'blocked' ? (progress?.blocked?.[0] ?? 'FAIL 로 막힘 — 대표 판단 대기') : null;
@@ -1651,9 +1667,10 @@ export function plansOf({ roadmap, state, rounds = [], progress = null, now = Da
     if (box != null) {
       from = isNow ? (state?.startedAt && phase !== 'idle' ? Date.parse(state.startedAt) : now) : (cursor ?? now);
       to = from + box * roundMs;
+      to += pausedMs(from, to, pauses);   // 예정 창 안에 멈춘 구간이 있으면 그만큼 뒤로 — 멈춤은 일한 시간이 아니다. 창 뒤의 멈춤은 late 에서 뺀다
       cursor = Math.max(to, now);
     }
-    const late = isNow && to != null && now > to ? now - to : 0;
+    const late = isNow && to != null && now > to ? Math.max(0, now - to - pausedMs(to, now, pauses)) : 0;
     const status = isNow && blockedWhy ? 'blocked' : gate ? 'gated' : isNow ? 'running' : 'planned';
     stages.push({
       n: m.n, title: m.title, status, gate,

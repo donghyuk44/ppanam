@@ -95,12 +95,22 @@ export const PLACEHOLDER_RE = /^\s*[(（]?\s*(없음|없어요|없다|n\/a|none|
  * @param infra      { server, codex, sessions, disk } — 각 { ok, at, timeout(ms), detail }. 없으면 항목 없음(안 잰 것은 막힘이 아니다)
  * @returns 항목 [{ id, kind, where, team, teamName, by, waitOn, text, since, wait, state, target }] — since 오름차순(오래 기다린 것이 위)
  */
-export function blockedOf({ teams = [], summaries = {}, approvals = [], requests = [], infra = null } = {}, { now = Date.now() } = {}) {
+/** a~b 사이 멈춰 있던 ms — bus.pausedMs 와 같은 식(브라우저 파일). pauses = state/pauses.json (boot.pauses). */
+export function pausedMs(a, b, pauses = []) {
+  const s = typeof a === 'number' ? a : Date.parse(a), e = typeof b === 'number' ? b : Date.parse(b);
+  if (!Number.isFinite(s) || !Number.isFinite(e) || e <= s) return 0;
+  let sum = 0;
+  for (const p of pauses) { const f = Date.parse(p.from), t = Date.parse(p.to); if (Number.isFinite(f) && Number.isFinite(t)) sum += Math.max(0, Math.min(e, t) - Math.max(s, f)); }
+  return sum;
+}
+
+export function blockedOf({ teams = [], summaries = {}, approvals = [], requests = [], infra = null } = {}, { now = Date.now(), pauses = [] } = {}) {
   const items = [];
   const byTeam = new Map(teams.map((t) => [t.id, t]));
   const teamName = (id) => byTeam.get(id)?.name ?? id ?? '';
   const nameOf = (team, actor) => summaries[team]?.cast?.[actor]?.name ?? actor;
-  const push = (it) => items.push({ ...it, teamName: teamName(it.team), since: it.since ?? null, wait: it.since ? Math.max(0, now - new Date(it.since).getTime()) : null });
+  // wait 는 멈춘 구간(대표가 쉬어라 한 시간)을 뺀 것 — 하루 멈춤이 '33시간째' 로 섰다(톰 09-15)
+  const push = (it) => items.push({ ...it, teamName: teamName(it.team), since: it.since ?? null, wait: it.since ? Math.max(0, now - new Date(it.since).getTime() - pausedMs(it.since, now, pauses)) : null });
 
   for (const t of teams) {
     const s = summaries[t.id];

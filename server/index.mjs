@@ -235,6 +235,7 @@ const server = http.createServer((req, res) => {
       told: notified(),
       grades: APPROVAL_GRADES,
       infra: infra.latest(),   // 밑바닥 넷 — blockedOf 의 infra 입력. 바뀌면 ws `infra` 로 온다
+      pauses: bus.readPauses(),   // 멈춘 구간(state/pauses.json) — 화면이 기다린 시간에서 뺀다(blockedOf). 자주 안 바뀌어 boot 로만
 
       // 개인 카드의 엔진·모델·강도 고르기 (결정 69) — 목록은 bus.mjs 하나.
       castOptions: { engines: bus.ENGINES, claude: bus.CLAUDE_MODELS, codex: bus.CODEX_MODELS, gemini: bus.GEMINI_MODELS, efforts: bus.EFFORTS },
@@ -324,7 +325,7 @@ const server = http.createServer((req, res) => {
     const rows = listTeams().filter((t) => t.id !== 'hq').sort((a, b) => (order.indexOf(a.id) + 1 || 99) - (order.indexOf(b.id) + 1 || 99));
     const bossGates = listApprovals({ status: 'pending' }).filter((r) => r.grade === 'C').map((r) => ({ kind: 'approval', team: r.team, what: r.what, id: r.id }));
     const teamsOut = rows.map((t) => {
-      const plan = bus.plansOf({ roadmap: readRoadmap(t.id), state: isOffice(t.id) ? { phase: 'idle' } : readState(t.id), rounds: isOffice(t.id) ? [] : listRounds(t.id), progress: bus.readProgress(t.id), now });
+      const plan = bus.plansOf({ roadmap: readRoadmap(t.id), state: isOffice(t.id) ? { phase: 'idle' } : readState(t.id), rounds: isOffice(t.id) ? [] : listRounds(t.id), progress: bus.readProgress(t.id), now, pauses: bus.readPauses() });
       for (const b of bus.readProgress(t.id)?.boss ?? []) bossGates.push({ kind: 'progress', team: t.id, what: b, id: null });
       for (const s of plan.stages) if (s.status === 'gated') bossGates.push({ kind: 'stage', team: t.id, what: `${s.n != null ? s.n + '단계 ' : ''}${s.title} — ${s.gate}`, id: s.n });
       const color = readCast(t.id).agents?.[bus.roomRules(t.id).owner]?.color ?? null;

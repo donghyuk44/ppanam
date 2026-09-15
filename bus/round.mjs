@@ -21,7 +21,7 @@ import {
   addressees, callsBoss, asksBoss, bossNotesOf, doneOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
   mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, overdue, setMilestoneStatus,
-  roomRules, allowedIn, plansOf, timeboxRounds, DEFAULT_ROUND_MS, stageTable, swapSection,
+  roomRules, allowedIn, plansOf, timeboxRounds, DEFAULT_ROUND_MS, stageTable, swapSection, pausedMs, roundLengthMs,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -905,6 +905,19 @@ switch (cmd) {
           && !swapped.includes('| 손 | 글 |') && swapped.includes('| 1 |') && swapped.includes('| 2 |') && swapped.indexOf('## 팀별 단계') < swapped.indexOf('## 대표님 손에') && swapped.includes(tbl)
           && swapped2.endsWith(tbl + '\n') && swapped2.includes('| a |');
         out.push(['팀별 단계 절(stageTable·swapSection)', tblOk ? '✓ roadmap 에서 표 · 가운데 절만 바꿔 끼움 · 위·아래 그대로 · 절 없으면 끝에' : '✗ ' + JSON.stringify({ tbl, swapped, swapped2 })]);
+        // 멈춘 구간(state/pauses.json, 톰 09-15 "대표가 멈추라 한 시간은 빼라") — pausedMs 순수 · plansOf 의 late·예정·회차 평균 · blockedOf 의 wait
+        const { blockedOf: blockedOf2 } = await import('../server/public/notify.js');
+        const pz = [{ from: '2026-09-14T04:00:00Z', to: '2026-09-15T12:00:00Z' }];   // 32시간
+        const pmOk = pausedMs('2026-09-14T00:00:00Z', '2026-09-15T13:00:00Z', pz) === 32 * 3600_000 && pausedMs('2026-09-14T05:00:00Z', '2026-09-14T06:00:00Z', pz) === 3600_000
+          && pausedMs('2026-09-13T00:00:00Z', '2026-09-14T04:00:00Z', pz) === 0 && pausedMs('x', 1, pz) === 0;
+        const pNow2 = Date.parse('2026-09-15T13:00:00Z');   // 멈춤 뒤 한 시간
+        const pLate = plansOf({ roadmap: { milestones: [{ n: 6, title: '지금', status: 'now', timebox: '2 라운드' }] }, state: { phase: 'running', round: 25, milestone: 6, startedAt: '2026-09-14T00:00:00Z' }, rounds: pRounds, now: pNow2, pauses: pz });
+        const pLate0 = plansOf({ roadmap: { milestones: [{ n: 6, title: '지금', status: 'now', timebox: '2 라운드' }] }, state: { phase: 'running', round: 25, milestone: 6, startedAt: '2026-09-14T00:00:00Z' }, rounds: pRounds, now: pNow2 });
+        const pRoundsPaused = [{ startedAt: '2026-09-14T03:00:00Z', endedAt: '2026-09-15T12:30:00Z' }];   // 33.5h 인데 32h 멈춤 → 1.5h
+        const pauseOk = pmOk && pLate.stages[0].late === (37 - 32 - 3) * 3600_000 && pLate0.stages[0].late === (37 - 3) * 3600_000   // 00:00 시작 + 2×90분 = 03:00 예정, 지금 13:00 다음날 = 37h 뒤. 멈춤 32h 빼면 2h 늦음
+          && roundLengthMs(pRoundsPaused, { pauses: pz }) === 1.5 * 3600_000
+          && blockedOf2({ teams: [{ id: 'dev', name: '개발', room: '개발실' }], summaries: { dev: { cast: {}, progress: { at: '2026-09-14T03:00:00Z', blocked: ['진짜'] } } } }, { now: pNow2, pauses: pz })[0].wait === (34 - 32) * 3600_000;
+        out.push(['멈춘 시간 빼기(pausedMs)', pauseOk ? '✓ 겹친 만큼만 · 늦음 37h→2h · 회차 33.5h→1.5h · 기다림 34h→2h' : '✗ ' + JSON.stringify({ pmOk, late: pLate.stages[0].late / 3600_000, late0: pLate0.stages[0].late / 3600_000, rl: roundLengthMs(pRoundsPaused, { pauses: pz }) / 3600_000 })]);
         out.push(['앞날 띠(plansOf)', plansOk ? '✓ 회차 평균 90분 · 지난 것 없음 · 지금→다음 잇기 · 반 라운드 · 대표 timebox 는 gated · 막힘 blocked+late 4h · 빈 계획표' : '✗ ' + JSON.stringify({ p1, p2, p3 })]);
         // 비서실 규칙(결정 132, 계약 0절) — roomRules·allowedIn 순수. 실제 teams.json 의 sera 가 그 규칙을 갖는지도 본다.
         const sr = roomRules('sera'), hr = roomRules('hq'), dr = roomRules('dev');
