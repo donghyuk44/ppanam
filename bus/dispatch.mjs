@@ -106,9 +106,10 @@ if (o.dry) {
 let failed = 0;
 
 for (const team of o.to) {
-  // 라운드가 닫혀 있으면 훅이 기록하지 않는다. 조용히 사라지느니 여기서 말한다.
-  if (readState(team).phase !== 'running') {
-    console.error(`[${team}] 라운드가 닫혀 있습니다. 열고 다시 보내세요.`);
+  // 닫힌 방(idle)에도 보낸다 — /api/say 가 훅에 "이번 턴은 적어라" 표시를 켜고 실무를 깨운다(결정 127 ②). 전엔 여기서 막았다.
+  // 막힌 방(blocked)만 거른다 — 대표 판단 대기는 배달로 풀지 않는다(/api/say 는 대표 말로 보고 풀어 버린다).
+  if (readState(team).phase === 'blocked') {
+    console.error(`[${team}] FAIL 로 막혀 대표 판단을 기다리는 방입니다. 대표가 그 방에 말해 풀기 전엔 배달하지 않습니다.`);
     failed++;
     continue;
   }

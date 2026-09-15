@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams, isForeign } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, TURN_VERDICT, listTeams, isForeign, allowIdleChat } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { ga } from './public/toollabel.js';
 
@@ -608,6 +608,10 @@ export function noticeEvents(team, events) {
  * 총괄실 발언이 다른 방 사람을 첫머리에 불렀으면 그 방에 같은 말을 남긴다 — 화자는 그대로(chief), 출처는 meta.from.
  * 그 방의 사회자가 이 사본을 보고 불린 사람을 깨운다. 사본은 meta.from 이 있어 다시 옮기지 않는다.
  * 대표 발언은 옮기지 않는다 — 대표의 지시는 총괄이 배달(dispatch)로 옮긴다.
+ *
+ * 닫힌 방(idle)에도 간다 (결정 127 ② — 09-15 밤에도 "옮기지 못했습니다" 가 두 번: 12:22 하영 · 12:32 테라). /api/say 와 같은 길이다:
+ * 훅에 "이번 턴은 적어라" 표시(allowIdleChat)를 켜고 사본을 남긴 뒤, 사회자는 idle 이면 차례를 안 돌리니(noticeEvents 가 idle 에서 돌아간다)
+ * 여기서 불린 사람에게 직접 준다. 전엔 note 한 줄 남기고 버렸다. 막힌 방(blocked)은 그대로 — 대표 판단 대기는 총괄 말로 풀지 않는다.
  */
 function crossPost(team, e) {
   if (e.actor === 'boss' || e.actor === 'system') return;
@@ -617,8 +621,16 @@ function crossPost(team, e) {
     const cast = readCast(t.id).agents ?? {};
     const there = addressees(e.text, cast).filter((to) => to !== 'boss');
     if (!there.length) continue;
-    if (readState(t.id).phase === 'idle') { note(team, `${nameOf(team, e.actor)}이 ${t.name} 팀 ${there.map((x) => cast[x]?.name ?? x).join('·')}을 불렀지만 그 방은 라운드가 닫혀 있어 옮기지 못했습니다.`); continue; }
+    const idle = readState(t.id).phase === 'idle';
+    if (idle) allowIdleChat(t.id);
     emit(t.id, { actor: e.actor, type: 'message', text: e.text, meta: { from: team, origin: e.id } });
+    if (!idle) continue;
+    for (const to of there) {
+      if (!participants(t.id).includes(to)) continue;
+      // codex 자리가 도는 중이면 또 띄우지 않는다(한 자리에 프로세스 하나) — claude 자리는 세션 큐가 받는다.
+      if (isOutside(t.id, to) && busy(t.id, to)) { note(t.id, `${nameOf(t.id, to)}이 지금 답하는 중이라 이 말은 다음 차례에 듣습니다.`); continue; }
+      giveTurn(t.id, to, 'called');
+    }
   }
 }
 
