@@ -24,7 +24,7 @@ import { listRequests, requestCounts } from '../bus/requests.mjs';
 import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
-import { runNightly, yesterdayKey } from './nightly.mjs';
+import { runNightly, yesterdayKey, runMorning } from './nightly.mjs';
 import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues, expireFlows, autoVerdicts, checkStalls } from './conductor.mjs';
 import * as world from './world.mjs';
 import { startInfra } from './infra.mjs';
@@ -778,6 +778,8 @@ setInterval(() => {
   try { runNotifier(); } catch (e) { console.error('notifier:', e.message); }
   // 자정 마감(M7) — 날짜가 바뀌어 있으면 지난 하루를 팀마다 한 장 + 대표용 한 장으로. 안에서 겹침·오류를 스스로 막는다(한 날 한 번).
   runNightly({ session }).catch((e) => console.error('nightly:', e.message));
+  // 아침 한 장(M4 · 결정 140 ④ · 경영 req_e27af3c5) — 06:30(우리 시각) 이 지났으면 지난 06:30 이후를 한 장으로. 자정과 같은 스위치·같은 겹침 방지 뼈대.
+  runMorning({ session }).catch((e) => console.error('morning:', e.message));
 
   // 레일의 계기판 값이 바뀌었을 때만 보낸다.
   const s = summaries();
