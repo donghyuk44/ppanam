@@ -1408,7 +1408,7 @@ function renderTowerAll(grid) {
 
   // ④ 팀 — 단계 N/M · 회차 · 알약. 누르면 그 자리에서 상황판 네 칸(하는 것·막힌 것·대표 차례·다음) 글자 그대로, 한 번 더 = 카드(팀 탭). 비서실은 줄이 없다.
   const tl = el('section', 'dash__card'); tl.dataset.block = 'teams';
-  tl.appendChild(el('div', 'dash__k', '팀 — 누르면 하는 것 · 막힌 것 · 대표 차례 · 다음'));
+  tl.appendChild(el('div', 'dash__k', '팀 — 누르면 하는 것 · 막힌 것 · 대표님이 보실 것 · 다음'));   // '대표 차례' 는 순서 말 — 하영 5판 3-5-3 ①(req_123f2ebe), 422·1827 과 같은 글자
   for (const t of teams.filter((x) => x.id !== 'sera')) {
     const s = summaries[t.id] ?? {};
     const office = t.kind === 'office';
@@ -1438,7 +1438,7 @@ function renderTowerAll(grid) {
       const p = s.progress;
       const box = el('div', 'dash__open');
       if (!p) box.appendChild(el('div', 'dash__empty', office ? '총괄실은 상황판이 없어요 — 승인·부탁·보고서가 일이에요.' : '아직 상황판을 안 썼어요.'));
-      else for (const [k, label] of [['doing', '하는 것'], ['blocked', '막힌 것'], ['boss', '대표 차례'], ['next', '다음']]) {
+      else for (const [k, label] of [['doing', '하는 것'], ['blocked', '막힌 것'], ['boss', '대표님이 보실 것'], ['next', '다음']]) {
         const lines = p[k] ?? [];
         const kv = el('div', 'dash__kv');
         kv.appendChild(el('b', null, label));
