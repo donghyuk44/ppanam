@@ -2202,7 +2202,8 @@ function renderReport(r) {
   // 창이 통째로(또는 거의) 쉰 시간이면 막힌 것이 아니라 쉰 것 — 한 줄로(나리 09-15: 멈춘 하루가 '네 팀이 밤새 막혔다' 로 읽혔다). 서버도 그 구간은 띠에서 잘라냈다
   const rested = pausedMs(since, until, pauses);
   if (rested > 0) {
-    const p = pauses.find((pz) => Date.parse(pz.to) > since && Date.parse(pz.from) < until);
+    const msOf = (v) => (typeof v === 'number' ? v : Date.parse(v));   // boot.pauses 는 ms
+    const p = pauses.find((pz) => msOf(pz.to) > since && msOf(pz.from) < until);
     const whole = rested >= (until - since) * 0.95;
     sec3.appendChild(el('div', 'rep__rest', `${whole ? '이 창은 쉰 시간이에요' : `이 창의 ${forShort(rested).replace(/째$/, '')}은 쉰 시간이에요`} — ${p ? `${whenKo(p.from)} → ${whenKo(p.to)}${p.why ? ' · ' + String(p.why).split('(')[0].trim() : ''}` : ''}`));
   }

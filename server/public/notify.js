@@ -96,11 +96,13 @@ export const PLACEHOLDER_RE = /^\s*[(（]?\s*(없음|없어요|없다|n\/a|none|
  * @returns 항목 [{ id, kind, where, team, teamName, by, waitOn, text, since, wait, state, target }] — since 오름차순(오래 기다린 것이 위)
  */
 /** a~b 사이 멈춰 있던 ms — bus.pausedMs 와 같은 식(브라우저 파일). pauses = state/pauses.json (boot.pauses). */
+/** ms 또는 ISO — boot.pauses 는 서버 readPauses 가 이미 ms 로 바꾼 것이라 Date.parse(숫자) 는 NaN 이 된다(나리 실측 09-15 23:22: 보고서에 "쉰 시간" 줄이 안 섰다). */
+const msOf = (v) => (typeof v === 'number' ? v : Date.parse(v));
 export function pausedMs(a, b, pauses = []) {
-  const s = typeof a === 'number' ? a : Date.parse(a), e = typeof b === 'number' ? b : Date.parse(b);
+  const s = msOf(a), e = msOf(b);
   if (!Number.isFinite(s) || !Number.isFinite(e) || e <= s) return 0;
   let sum = 0;
-  for (const p of pauses) { const f = Date.parse(p.from), t = Date.parse(p.to); if (Number.isFinite(f) && Number.isFinite(t)) sum += Math.max(0, Math.min(e, t) - Math.max(s, f)); }
+  for (const p of pauses) { const f = msOf(p.from), t = msOf(p.to); if (Number.isFinite(f) && Number.isFinite(t)) sum += Math.max(0, Math.min(e, t) - Math.max(s, f)); }
   return sum;
 }
 
