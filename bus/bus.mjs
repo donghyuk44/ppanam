@@ -2379,7 +2379,8 @@ export function doneOf(log, cast, { team = null, since = null, until = null, app
         // 파일은 이름만(확장자 뗀 것) — "그림 한 장 — room" · "글 한 장 — ui-spec". 경로는 ref(화면의 링크)에.
         const base = rel.split('/').pop() ?? rel, ext = (base.match(/\.([a-z0-9]+)$/i)?.[1] ?? '').toLowerCase();
         const what = /^(png|jpe?g|gif|webp|svg)$/.test(ext) ? '그림 한 장' : /^(md|txt|html)$/.test(ext) ? '글 한 장' : '파일 하나';
-        const it = { id: key, kind: 'file', team, by: e.actor, ts: e.ts, text: `${what} — ${one(base.replace(/\.[a-z0-9]+$/i, ''), 40)}`, ref: rel };
+        const stem = one(base.replace(/\.[a-z0-9]+$/i, ''), 40);   // 이름에 R36·해시 같은 게 박혀 자에 안 맞으면 이름도 뺀다(경로는 ref 에 그대로) — 나리 자 마지막 1줄
+        const it = { id: key, kind: 'file', team, by: e.actor, ts: e.ts, text: bossOk(stem) ? `${what} — ${stem}` : what, ref: rel };
         if (i >= 0) out[i] = it; else out.push(it);   // 같은 파일을 여러 번 고쳐도 창 안 마지막 한 번
       }
     }
