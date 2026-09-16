@@ -881,7 +881,8 @@ function crossPost(team, e) {
     if (t.id === team || isOffice(t.id)) continue;
     // 호명은 이름으로 맞춘다 — 자리 이름(outside)이 방마다 있어도 제리와 다니엘은 다른 이름이다.
     const cast = readCast(t.id).agents ?? {};
-    const there = addressees(e.text, cast).filter((to) => to !== 'boss');
+    // 나리(system)는 총괄실 세션 하나뿐이라 사본으로 옮기지 않는다(09-16 10:5x 대표: 비서실 말이 다섯 방에 그대로 노출) — 다른 방에서 부르는 건 callSystemElsewhere 가 맡는다.
+    const there = addressees(e.text, cast).filter((to) => to !== 'boss' && to !== 'system');
     if (!there.length) continue;
     const idle = readState(t.id).phase === 'idle';
     if (idle) allowIdleChat(t.id);
