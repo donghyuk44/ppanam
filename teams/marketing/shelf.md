@@ -19,7 +19,7 @@
 - 결재·요청 올리기 — `node bus/approve.mjs --team marketing --request B|C "무엇" --detail "…" [--to <팀>:<자리> --why "…"] [--out a.md,b.md]`
 - 요청 블록 주고받기 — `node bus/request.mjs --say|--done|--ack <req_id> "…"` · 열린 것 `--list --team marketing`
 - 상황판 — `node bus/progress.mjs --team marketing --doing "…" --blocked "…" --boss "…" --next "…"` — 턴 끝마다·회차 닫기 전에.
-- 다니엘 판정 — 이름으로 부르면 말만 오고 판정어가 안 설 때가 있다. 세 번 청하지 말고 `node bus/round.mjs verdict --team marketing --target outside` 로 판정 흐름을 연다(나리). 그래도 안 나오면 솔라 목록.
+- 판정 길 — `teams/hq/out/규칙.md` 18행("이름으로 부르면 말만 오고 판정이 안 선다"). 판정은 `node bus/round.mjs verdict --team marketing --target outside` 로 흐름을 열어 받는다.
 
 ## 전문 Read 금지
 
