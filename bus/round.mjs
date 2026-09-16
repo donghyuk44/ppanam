@@ -657,6 +657,19 @@ switch (cmd) {
           ? `✓ now 면 승인 없이 이어 R${before2}→R${before2 + 1} · 이미 pass 면 사람 몫 그대로 · next 부르면 안 겹침`
           : '✗ ' + JSON.stringify({ autoOk, noAutoOk, withNextOk, after2 })]);
       }
+      // 멈춤 감시 ㉢ — owner 만 부르면 그 회차에 몫이 걸린 다른 자리가 조용해도 못 잡는다(독립검수 실측, 노라 71분 안 걸림).
+      // workSeatsOf(team, work) 는 순수 — work.json 에서 "진행" 인 그 팀 자리를 뽑는다(중복 제거).
+      {
+        const { workSeatsOf } = await import('../server/conductor.mjs');
+        const work = { items: [
+          { id: 'w1', team: T, seat: 'ops', status: '진행' },
+          { id: 'w2', team: T, seat: 'ops', status: '진행' },   // 같은 자리 둘 — 중복 제거
+          { id: 'w3', team: T, seat: 'review', status: '대기' },   // 대기는 안 걸림
+          { id: 'w4', team: `${T}x`, seat: 'guide', status: '진행' },   // 다른 팀은 안 걸림
+        ] };
+        const seats = workSeatsOf(T, work);
+        out.push(['work.json "진행" 자리 뽑기(㉢, 독립검수)', seats.join(',') === 'ops' ? '✓ 진행만 · 중복 제거 · 다른 팀 제외' : '✗ ' + JSON.stringify(seats)]);
+      }
       // 닫히는 중 쌓인 차례는 다음 라운드로 (결정 25) — 호명·제3자만 넘기고 판정·침묵·점심은 버린다. 순수 함수 pickCarry.
       const { pickCarry, staleCalls, mergeCarry } = await import('../server/conductor.mjs');
       const carried = pickCarry(new Map([['review', { kind: 'called' }], ['outside', { kind: 'verdict' }], ['ops', { kind: 'lull' }], ['guide', { kind: 'third' }], ['chief', { kind: 'lunch' }]]));

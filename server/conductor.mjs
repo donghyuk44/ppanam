@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed, readRoadmap, listApprovals } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed, readRoadmap, listApprovals, readWork } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { ga, eul } from './public/toollabel.js';
 
@@ -232,6 +232,7 @@ const INSTRUCTION = {
   // 멈춤 감시(㉡~㉣, checkStalls) 가 주는 차례 둘 — 사람이 부른 게 아니라 서버가 조용함을 보고 불렀다.
   roadmap: '이 방의 로드맵 마일스톤이 모두 pass 다. 다음 단계를 제안해라 — 제안 파일을 teams/<이 팀>/out/ 에 쓰고, node bus/approve.mjs --request C --roadmap out/<파일명> "무엇" 으로 카드를 올려라. 판정이 아니다 — 첫 줄에 PASS·REVISE 를 쓰지 마라.',
   status: '방이 한동안 조용하다(20분 동안 사건 없음). 지금 뭐 하고 있는지 한 줄만 남겨라 — 막힌 게 있으면 그것도 같이. 판정이 아니다 — 첫 줄에 PASS·REVISE 를 쓰지 마라.',
+  close: '판정이 끝났는데 회차가 안 닫혔다(20분 넘게). node bus/round.mjs end 로 지금 닫아라 — 판정이 아니다.',
 };
 
 /* ── 턴 보내기 ── */
@@ -322,7 +323,7 @@ function armRetry(team, at) {
 }
 
 /** 차례를 예약한다. 같은 자리에 쌓이면 더 센 종류로 합친다. */
-const RANK = { verdict: 4, third: 3, called: 2, carried: 2, roadmap: 2, status: 2, lull: 1, lunch: 1 };
+const RANK = { verdict: 4, third: 3, called: 2, carried: 2, roadmap: 2, status: 2, close: 2, lull: 1, lunch: 1 };
 function enqueue(team, actor, kind) {
   const r = room(team);
   const cur = r.pending.get(actor);
@@ -522,8 +523,13 @@ export function autoVerdicts(now = Date.now()) {
 export const ROADMAP_PROPOSAL_MS = Number(process.env.PPANAM_ROADMAP_PROPOSAL_MS || 10 * 60_000);
 export const ROUND_SILENT_MS = Number(process.env.PPANAM_ROUND_SILENT_MS || 20 * 60_000);
 export const DEAD_SEAT_MS = Number(process.env.PPANAM_DEAD_SEAT_MS || 5 * 60_000);
+export const CLOSE_REMINDER_MS = Number(process.env.PPANAM_CLOSE_REMINDER_MS || 20 * 60_000);
 
-const stallState = (team) => (room(team).stall ??= { roadmap: null, silent: null });
+const stallState = (team) => (room(team).stall ??= { roadmap: null, silent: null, closeReminded: null });
+/** 순수 — 이 팀에서 work.json 에 "진행" 으로 걸린 자리들(독립검수 실측: ㉢ 이 owner 만 불러 다른 몫 자리를 놓쳤다). */
+export function workSeatsOf(team, work) {
+  return [...new Set((work?.items ?? []).filter((it) => it.team === team && it.status === '진행').map((it) => it.seat))];
+}
 /** 순수 — 로드맵 마일스톤이 있고 전부 pass 인가. round.mjs check 가 돌려본다. */
 export function roadmapAllPass(roadmap) {
   const ms = roadmap?.milestones ?? [];
@@ -557,25 +563,54 @@ export function checkStalls(now = Date.now()) {
       s.roadmap = null;
     }
 
-    // ㉢ — 회차가 running 인데 20분 동안 이 라운드의 사건(message·verdict)이 없다.
+    // ㉢ — 회차가 running 인데 20분 동안 이 라운드의 사건(message·verdict)이 없다. owner(실무) 만 부르면
+    // 그 회차에 몫이 걸린 다른 자리(work.json 에 "진행" 으로 걸린 seat)가 조용해도 못 잡는다 — 독립검수 실측,
+    // 노라(경영 ops)가 71분 조용했는데 안 걸림. owner + work.json 몫이 걸린 자리를 같이 부른다.
     if (state.phase === 'running') {
       const log = readLog(team).filter((e) => e.round === state.round && (e.type === 'message' || e.type === 'verdict'));
       const lastTs = log.length ? new Date(log[log.length - 1].ts).getTime() : (state.startedAt ? new Date(state.startedAt).getTime() : now);
       if (now - lastTs >= ROUND_SILENT_MS) {
         if (!s.silent || s.silent.since !== lastTs) {
-          s.silent = { since: lastTs, notified: false };
-          note(team, `방이 ${Math.round(ROUND_SILENT_MS / 60_000)}분째 조용합니다 — ${nameOf(team, owner)}에게 지금 하는 일을 묻습니다.`);
-          enqueue(team, owner, 'status');
+          let work; try { work = readWork(); } catch { work = null; }
+          const actors = [...new Set([owner, ...workSeatsOf(team, work)])];
+          s.silent = { since: lastTs, notified: false, actors };
+          note(team, `방이 ${Math.round(ROUND_SILENT_MS / 60_000)}분째 조용합니다 — ${actors.map((a) => nameOf(team, a)).join('·')}에게 지금 하는 일을 묻습니다.`);
+          for (const a of actors) enqueue(team, a, 'status');
         }
         if (!s.silent.notified) {
           s.silent.notified = true;
-          rows.push([team, state.round, minAgo(now, lastTs), `${Math.round(ROUND_SILENT_MS / 60_000)}분째 사건 없음 — ${nameOf(team, owner)}을 불렀음`]);
+          rows.push([team, state.round, minAgo(now, lastTs), `${Math.round(ROUND_SILENT_MS / 60_000)}분째 사건 없음 — ${s.silent.actors.map((a) => nameOf(team, a)).join('·')}을 불렀음`]);
         }
       } else {
         s.silent = null;
       }
     } else {
       s.silent = null;
+    }
+
+    // ㉤(신설, 독립검수 실측) — 판정이 다 났는데 회차를 닫는 눈이 없었다. 이 회차 안에 "판정 완료" note
+    // (verdictFlow: 'pass')가 있고 그 뒤로 round_end 가 아직 없이 CLOSE_REMINDER_MS 를 넘겼으면 실무에게
+    // 한 번만 닫으라고 청한다. 판정 흐름이 다시 돌거나(새 verdictFlow note) 닫히면 다음 틱에 조건이 풀려
+    // s.closeReminded 가 비워진다 — 회차 번호로 표시해 라운드가 바뀌면 자동으로 다시 걸릴 수 있게 한다.
+    if (state.phase === 'running') {
+      const roundLog = readLog(team).filter((e) => e.round === state.round);
+      const closed = roundLog.some((e) => e.type === 'round_end');
+      const lastPass = [...roundLog].reverse().find((e) => e.type === 'note' && e.meta?.verdictFlow === 'pass');
+      if (!closed && lastPass) {
+        const passedAt = new Date(lastPass.ts).getTime();
+        if (now - passedAt >= CLOSE_REMINDER_MS) {
+          if (s.closeReminded !== `${state.round}:${lastPass.id}`) {
+            s.closeReminded = `${state.round}:${lastPass.id}`;
+            note(team, `판정이 끝난 지 ${Math.round(CLOSE_REMINDER_MS / 60_000)}분이 지났는데 회차가 안 닫혔습니다 — ${nameOf(team, owner)}, 닫으세요.`);
+            enqueue(team, owner, 'close');
+            rows.push([team, state.round, minAgo(now, passedAt), `판정 완료 뒤 안 닫힘 — ${nameOf(team, owner)}에게 닫으라 알림`]);
+          }
+        }
+      } else {
+        s.closeReminded = null;
+      }
+    } else {
+      s.closeReminded = null;
     }
 
     // ㉣ — 차례가 나갔는데(inflight) 그 자리 세션이 꺼져 있고, 그 상태로 DEAD_SEAT_MS 를 넘겼다. 외부 자리(codex·gemini)는
