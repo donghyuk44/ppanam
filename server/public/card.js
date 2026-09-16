@@ -149,7 +149,8 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
   // 재료는 하영 팀별-세줄.md(팀장이 맞다고 한 글자가 정본, d.three) — 있으면 그 줄이 '지금' 이고 없으면 상황판 doing 을 '진행 중' 으로. 자에 안 맞는 줄은 안 그린다(지어 쓰지 않는다)
   // "요약 없음" 은 안 찍는다(적대검수 opus ④ — 가린 글은 읽을 수 있는 글이 아니다): 자에 안 맞는 줄은 빼고, 블록의 줄이 다 빠지면 블록도 안 그린다(block 이 null). 세 줄이 있으면 '진행 중' 은 그 줄
   const three = d.three ?? {};
-  const ok = (s) => bossOk(String(s ?? '').trim());
+  // 서버(/api/card)가 자에 안 맞는 줄을 NOT_YET("요약 없음") 글자로 바꿔 보내기도 한다 — 그 글자는 자를 지나지만 읽을 글이 아니라 빈 줄로 친다(R34 실측: 마케팅 카드 승인 대기에 "요약 없음").
+  const ok = (s) => { const v = String(s ?? '').trim(); return v !== NOT_YET && bossOk(v); };
   if (three.now && ok(three.now)) card.appendChild(block('now', [el('span', 'card__text', three.now)]));
   else if (d.doing?.text && ok(d.doing.text)) card.appendChild(block('doing', [personLine(d.doing.who, said(d.doing.text))]));
   if (three.next && ok(three.next)) card.appendChild(block('next', [el('span', 'card__text', three.next)]));

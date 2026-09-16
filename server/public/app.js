@@ -1777,8 +1777,8 @@ function loadCard(team, rerender = null) {
 }
 /** 오늘 쓴 것(토큰 장부 T1) — /api/dashboard 의 teams[].usage 를 팀별로 60초 캐시. 팀 카드 꼬리 '오늘 쓴 것 N번 $X' 가 쓴다(나리: 현황 '오늘 쓴 것' 은 테라). */
 const usage = { byTeam: {}, fetchedAt: 0 };
-// 오늘 쓴 것은 잠시 숨김(나리 대리 결정 12:5x — 장부가 sessionId 없는 줄을 누적값째 더해 총괄 $329 중 $214 가 거품, 틀린 돈이 보이는 것보다 안 보이는 게 낫다). 솔라 델타 고침(withCostDeltas, team·actor 묶음) 뒤 true 로.
-const SHOW_USAGE = false;
+// 오늘 쓴 것 — 12:5x 에 잠시 숨겼던 것(장부가 세션 누적값을 그대로 더해 총괄 $329 중 $214 가 거품, 나리 대리 결정)을 솔라가 세션별 델타(server/usage.mjs withCostDeltas, 레오 33회차 통과)로 고쳐 다시 켠다(나리 34회차 첫 손, 17:2x).
+const SHOW_USAGE = true;
 function loadUsage(rerender = null) {
   if (Date.now() - usage.fetchedAt < 60_000) return;
   usage.fetchedAt = Date.now();
