@@ -12,7 +12,7 @@ import { findOutPaths, linkOutPaths } from '/outlink.js';
 import { notificationsOf, blockedOf, pausedMs, delegated, deciders } from '/notify.js';
 import { dayWord, timeWord, clockWord, spanWord } from '/when.js';
 import { parseMention } from '/mention.js';
-import { bossOk, NOT_YET, doingWord, gateLine } from '/bosswords.js';   // doingWord·gateLine — 자(boss-words-check)가 화면과 같은 글을 재게 공용
+import { bossOk, doingWord, gateLine } from '/bosswords.js';   // doingWord·gateLine — 자(boss-words-check)가 화면과 같은 글을 재게 공용. NOT_YET 은 화면에서 안 쓴다(opus ④ — 가린 글 대신 팀 진행 중 줄이나 빈 자리)
 import { teamCard, verdictCard } from '/card.js';   // 카드 부품(C6) — 팀 상황 카드는 채팅 맨 위·대시보드·비서실 세 곳(C7), 판정 카드는 방의 도장 자리(G3)
 
 const $ = (id) => document.getElementById(id);
@@ -444,28 +444,27 @@ setInterval(renderWork, 30_000);
 /* ── 오른쪽 상황판 ── */
 
 /**
- * 결정 140 — 대표가 보는 글 한 줄은 자(bosswords.js)에 맞아야 낸다. 안 맞으면 글 대신 "아직 쉬운 말로 안 적음", 원문은 눌러 펼침(나리 사용성-0916 3절 2·5).
- * 세 근원(상황판 줄 · 결재 제목 · 누가 뭘 했나)이 전부 이 하나를 지난다. 행이 단추(dash__row·apr--line)여도 펼침 글자만 누르면 행이 안 열리게 클릭을 삼킨다.
+ * 결정 140 — 대표가 보는 글 한 줄은 자(bosswords.js)에 맞아야 낸다. 안 맞으면 **"요약 없음" 을 찍지 않는다**(적대검수 opus ④: 가린 글은 읽을 수 있는 글이 아니다) —
+ * 그 팀의 '진행 중' 첫 줄(하영 팀별-세줄, 팀장 확인분)이 있으면 그 줄을 대신 내고(원문은 title 에), 그것도 없으면 null — 부르는 쪽이 그 줄·행을 안 그린다.
+ * 세 근원(상황판 줄 · 결재 제목 · 누가 뭘 했나)이 전부 이 하나를 지난다.
  */
-function bossLine(text, cls) {
+function bossLine(text, cls, team = null) {
   const s = String(text ?? '');
   if (bossOk(s)) return el('span', cls, s);
-  const w = el('span', `${cls ? cls + ' ' : ''}notyet`); w.dataset.open = '0';
-  const t = el('span', 'notyet__t', NOT_YET); t.setAttribute('role', 'button'); t.tabIndex = 0; t.title = '원문 보기';
-  const raw = el('span', 'notyet__raw', s); raw.hidden = true;
-  const flip = (e) => { e.stopPropagation(); e.preventDefault(); const o = w.dataset.open !== '1'; w.dataset.open = o ? '1' : '0'; raw.hidden = !o; };
-  t.addEventListener('click', flip);
-  t.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') flip(e); });
-  w.append(t, raw);
-  return w;
+  const alt = team ? three.byTeam[team]?.now : null;
+  if (alt && bossOk(alt)) { const w = el('span', cls, alt); w.title = s; w.dataset.alt = '1'; return w; }
+  return null;
 }
-/** 상황판 한 칸의 줄들 — 줄마다 bossLine, 사이는 " / " (현황 ④ 펼친 줄·팀 탭 카드가 join 하던 자리). */
+/** 상황판 한 칸의 줄들 — 자에 맞는 줄만, 사이는 " / ". 다 걸리면 none 글자(빈 칸은 안 지어 쓴다). */
 function bossLines(lines, none) {
   const s = el('span');
-  if (!lines.length) { s.textContent = none; return s; }
-  lines.forEach((l, i) => { if (i) s.append(' / '); s.appendChild(bossLine(l)); });
+  const ok = lines.filter((l) => bossOk(l));
+  if (!ok.length) { s.textContent = none; return s; }
+  ok.forEach((l, i) => { if (i) s.append(' / '); s.append(l); });
   return s;
 }
+/** 행 하나에 bossLine 을 넣되, 낼 글이 없으면 그 행을 통째로 빼는 데 쓴다 — true 면 붙였다. */
+const putLine = (row, text, cls, team = null) => { const n = bossLine(text, cls, team); if (!n) return false; row.appendChild(n); return true; };
 /** 결재 제목 — 올린 사람이 --boss 로 적은 한 줄(r.boss)이 자에 맞으면 그것, 아니면 원문(r.what)을 재고, 둘 다 아니면 "아직 쉬운 말로 안 적음" + 원문 펼침. */
 const bossTitle = (r) => bossOk(r.boss) ? r.boss : r.what;
 /** 줄이 팀 이름으로 시작하나("총괄 · …", "경영: …") — 그러면 머리에 팀 이름을 또 안 붙인다(daily-words 1절, 폴드 QA #4). */
@@ -488,7 +487,7 @@ function renderSide() {
       const row = el('div', 'prog__row'); row.dataset.k = k; row.dataset.n = String(items.length);
       row.appendChild(el('div', 'prog__k', label));
       if (!items.length) row.appendChild(el('div', 'prog__none', '없음'));
-      else { const ul = el('ul', 'prog__list'); for (const it of items) { const li = el('li'); li.appendChild(bossLine(it)); ul.appendChild(li); } row.appendChild(ul); }   // 통과한 줄만(결정 140)
+      else { const ok = items.filter((it) => bossOk(it)); if (!ok.length) row.appendChild(el('div', 'prog__none', '없음')); else { const ul = el('ul', 'prog__list'); for (const it of ok) ul.appendChild(el('li', null, it)); row.appendChild(ul); } }   // 통과한 줄만(결정 140), 걸린 줄은 안 그림(opus ④)
       pg.appendChild(row);
     }
     pg.appendChild(el('div', `card__note${p.fresh === false ? ' prog__stale' : ''}`, `${p.at ? `${ago(p.at)} 갱신` : '갱신 시각 없음'}${p.by ? ' · ' + p.by : ''}${p.fresh === false ? ' · 이 회차 시작 전 것이라 낡았어요' : ''}`));
@@ -1555,7 +1554,8 @@ function renderApprovals() {
     head.appendChild(g);
     head.appendChild(el('span', 'apr__team', approvalHead(r)));
     row.appendChild(head);
-    row.appendChild(bossLine(bossTitle(r), 'apr__what'));   // 제목은 --boss 한 줄, 아니면 원문을 잰다(결정 140)
+    // 제목은 --boss 한 줄, 아니면 원문을 잰다(결정 140). 둘 다 안 맞으면 "요약 없음" 대신 '{팀} 결재' — 원문은 팝업 카드의 펼침에(opus ④)
+    if (!putLine(row, bossTitle(r), 'apr__what')) row.appendChild(el('span', 'apr__what', `${teams.find((x) => x.id === r.team)?.name ?? r.team} 결재`));
     row.appendChild(el('span', 'apr__go', mine.includes(r) ? '확인' : '읽기'));
     row.addEventListener('click', () => openApprovalPop(r));
     return row;
@@ -1606,7 +1606,7 @@ function approvalCard(r) {
   // 제목 — --boss 한 줄이 자에 맞으면 그것, 아니면 원문을 잰다. 안 맞으면 "아직 쉬운 말로 안 적음" 이 서고 원문(r.what)은 바로 아래 펼침에(결정 140 · 사용성-0916 3절 2).
   // 카드는 단추가 아니라 진짜 <details> 를 쓴다 — 띠의 한 줄(apr--line)은 단추라 bossLine 의 눌러 펼침.
   const title = bossTitle(r), titleOk = bossOk(title);
-  card.appendChild(titleOk ? linked('apr__what', title) : el('div', 'apr__what notyet', NOT_YET));
+  card.appendChild(titleOk ? linked('apr__what', title) : el('div', 'apr__what', `${teams.find((x) => x.id === r.team)?.name ?? r.team} 결재`));   // "요약 없음" 대신 '{팀} 결재', 원문은 바로 밑 펼침(opus ④)
   if (!titleOk || title !== r.what) { const fold = el('details', 'apr__fold'); fold.appendChild(el('summary', null, '원문')); fold.appendChild(linked('apr__detail', r.what)); card.appendChild(fold); }
   // 왜 — 대표 원문이 있으면 그 말부터(세라 자리, 결정 98 — 아직 세라가 안 바꾼 카드는 요청자 글 첫 문장 한 줄). 원문 칸은 그대로, 줄이지 않는다(5판 3-5-1 "N이 쓴 원문").
   // R31 ①(나리): 왜와 원문이 같은 글로 두 번 찍히지 않게 — 왜는 한 줄, 원문은 그 한 줄보다 긴 것이 있을 때만(같으면 칸 숨김). 왜가 주제와 같은 글이면 그 칸도 숨긴다.
@@ -1864,7 +1864,7 @@ function workBoardBlock() {
   for (const b of (w.topBlockers ?? []).slice(0, 2)) {
     const who = (b.waiting ?? []).map((x) => nameOf(x.team, x.seat)).filter((v, i, a) => a.indexOf(v) === i).join('·');
     // 병목 글자는 work.json 그대로("server(솔라)"·"app.js(테라)") — bosswords.gateLine 이 "솔라 손 뒤에 7건 — … 기다림" 으로(나리 R32 ⑤). 자도 같은 함수
-    sec.appendChild(bossLine(gateLine(b.bottleneck, b.count, who), 'dash__empty work__wait'));
+    putLine(sec, gateLine(b.bottleneck, b.count, who), 'dash__empty work__wait');   // 자에 안 맞으면 그 줄은 안 그림(opus ④)
   }
   return sec;
 }
@@ -1920,11 +1920,11 @@ function renderTowerAll(grid) {
       head.appendChild(el('b', null, who));
       if (it.wait != null) { const w = el('span', 'wait'); w.appendChild(el('i', 'dot dot--bad')); w.append(forShort(it.wait).replace(/째$/, ' 경과')); head.appendChild(w); }
       row.appendChild(head);
-      row.appendChild(bossLine(it.text, 'dash__sub'));
+      if (!putLine(row, it.text, 'dash__sub', it.team)) continue;   // 낼 글이 없으면 행을 안 그림(opus ④)
       row.addEventListener('click', () => { const tg = it.target ?? {}; if (tg.view === 'tower') setTowerTab(tg.tab ?? 'asks'); else if (tg.team) jumpTo(tg.team, tg.event ?? null); });
       sec.appendChild(row);
     }
-    order.stuck = sec;
+    if (sec.querySelector('.dash__row')) order.stuck = sec;   // 행이 하나도 안 남으면 블록도 안 그림
   }
 
   // ② 최근 활동 · 오늘 — 여섯 줄, 넘치면 "더 보기"(오늘 안에서만). 사람별 막대(숲)는 뺐다 — 숫자 없는 게이지가 관제탑 내용 규칙 ④ "자기 통계 줄 0" 과 부딪혔다(폴드 QA #8, 나리 14:4x "내용 규칙 ④가 이김").
@@ -1940,7 +1940,7 @@ function renderTowerAll(grid) {
     head.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''}`));
     head.appendChild(el('span', 'dash__stage', agoShort(it.ts)));
     row.appendChild(head);
-    row.appendChild(bossLine(it.text, 'dash__sub'));
+    if (!putLine(row, it.text, 'dash__sub', it.team)) continue;   // 낼 글이 없으면 행을 안 그림(opus ④)
     row.addEventListener('click', () => { if (it.kind === 'decision' || it.kind === 'proxy') setTowerTab('all'); else jumpTo(it.team, String(it.id).split(':')[1] ?? null); });
     sec2.appendChild(row);
   }
@@ -1960,7 +1960,7 @@ function renderTowerAll(grid) {
     for (const it of mine) {
       const row = el('button', 'dash__row'); row.type = 'button';
       row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '승인 필요' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));
-      row.appendChild(bossLine(it.text, 'dash__sub'));
+      putLine(row, it.text, 'dash__sub', it.team);   // 대표 몫은 행은 남기고(누를 수 있어야) 글만 — 없으면 머리 한 줄(opus ④)
       row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '확인' : '채팅 열기'));
       // 결재는 그 자리에서 카드가 팝업으로(approval 시안 — "읽고 답하기 를 누르면"). 맨 위 띠로 스크롤하던 것을 그만둔다
       row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (it.kind === 'approval') { const r = approvals.find((a) => a.id === (tg.approval ?? String(it.id).split(':')[1])); if (r) openApprovalPop(r); else { setTowerTab('all'); document.querySelector('.approvals')?.scrollIntoView({ block: 'start' }); } } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
@@ -1970,7 +1970,7 @@ function renderTowerAll(grid) {
       const row = el('button', 'dash__row'); row.type = 'button';
       // 머리는 팀 이름 한 번 — 줄이 이미 팀 이름으로 시작하면 머리를 안 붙인다(daily-words 1절, 폴드 QA #4 반쪽). '상황판' 은 어디서 왔나지 제목이 아니다
       if (!startsWithTeam(b.text, b.teamName)) row.appendChild(el('b', null, b.teamName));
-      row.appendChild(bossLine(b.text, 'dash__sub'));
+      if (!putLine(row, b.text, 'dash__sub', b.team)) continue;   // 낼 글이 없으면 행을 안 그림(opus ④)
       row.addEventListener('click', goRoom(teams.find((t) => t.id === b.team)));
       sec3.appendChild(row);
     }
@@ -2107,7 +2107,8 @@ function personCard(t, id, a, p) {
   } else {
     // 2줄 지금 하는 일 — 마지막 발언 뒤 도구 줄이면 "app.js 고치는 중"(파일 도구만 — Bash 명령 글자(say.mjs…, null | sort…)가 그대로 섰다, 나리 R32 ①), 아니면 마지막 발언 첫 문장.
     // 사람 말 검사(결정 140)를 지난다 — 안 맞으면 "요약 없음" + 원문 펼침. 3줄 "N분 전에 움직임"(결정 31 안죽었어요).
-    card.appendChild(bossLine(doingWord(p.doing, { live: p.busy, toolPhrase, firstLine }), 'pcard__doing'));   // bosswords.doingWord — 자와 같은 함수
+    // bosswords.doingWord — 자와 같은 함수. 자에 안 맞으면 그 팀 진행 중 첫 줄, 그것도 없으면 '작업 중'("요약 없음" 은 안 찍는다, opus ④)
+    if (!putLine(card, doingWord(p.doing, { live: p.busy, toolPhrase, firstLine }), 'pcard__doing', t.id)) card.appendChild(el('div', 'pcard__doing', '작업 중'));
     card.appendChild(el('div', 'pcard__nums', moved(lastMove(p))));
     if (why) card.appendChild(el('div', 'pcard__why', why));
   }
@@ -2653,12 +2654,12 @@ function renderReport(r) {
     for (const it of mine) {
       const row = el('button', 'dash__row'); row.type = 'button';
       row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '승인 필요' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));
-      row.appendChild(bossLine(it.text, 'dash__sub'));
+      putLine(row, it.text, 'dash__sub', it.team);   // 대표 몫은 행은 남기고(누를 수 있어야) 글만 — 없으면 머리 한 줄(opus ④)
       row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '확인' : '채팅 열기'));
       row.addEventListener('click', () => { const tg = it.target ?? {}; if (it.kind === 'approval') { const a = approvals.find((x) => x.id === (tg.approval ?? String(it.id).split(':')[1])); if (a) openApprovalPop(a); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
       sec.appendChild(row);
     }
-    for (const b of fromBoard) { const row = el('button', 'dash__row'); row.type = 'button'; if (!startsWithTeam(b.text, b.teamName)) row.appendChild(el('b', null, b.teamName)); row.appendChild(bossLine(b.text, 'dash__sub')); row.addEventListener('click', () => jumpTo(b.team, null)); sec.appendChild(row); }   // 머리는 팀 이름 한 번, 줄이 팀 이름으로 시작하면 머리 없음(폴드 QA #4, daily-words 1절)
+    for (const b of fromBoard) { const row = el('button', 'dash__row'); row.type = 'button'; if (!startsWithTeam(b.text, b.teamName)) row.appendChild(el('b', null, b.teamName)); if (!putLine(row, b.text, 'dash__sub', b.team)) continue; row.addEventListener('click', () => jumpTo(b.team, null)); sec.appendChild(row); }   // 머리는 팀 이름 한 번, 줄이 팀 이름으로 시작하면 머리 없음(폴드 QA #4) · 낼 글 없으면 행 없음(opus ④)
     body.appendChild(sec);
   }
 
@@ -2670,12 +2671,12 @@ function renderReport(r) {
       const row = el('button', 'dash__row'); row.type = 'button';
       row.appendChild(el('b', null, `${teamOf(p.team).name} · ${whenKo(p.ts)}`));
       // 사람 말 검사(결정 140, G4 — 안젤 사용성 표: [C]·카드 번호·결정 번호가 그대로 섰다). 서버가 준 사람 말 한 줄(p.boss — --boss·--boss-line, 솔라 3c90edf)이 있으면 그것, 없으면 머리말을 뗀 원문 → 자에 안 맞으면 "요약 없음" + 원문 펼침
-      row.appendChild(bossLine(bossOk(p.boss) ? p.boss : String(p.text).replace(/^대리 결정[^—:]*[—:]\s*/, ''), 'dash__sub'));
+      if (!putLine(row, bossOk(p.boss) ? p.boss : String(p.text).replace(/^대리 결정[^—:]*[—:]\s*/, ''), 'dash__sub', p.team)) continue;   // 사람 말 한 줄이 없으면 행 없음 — "요약 없음" 대신(opus ④, 재료는 나리 --boss-line)
       row.appendChild(el('span', 'dash__go', '채팅 열기'));
       row.addEventListener('click', () => jumpTo(p.team, p.id));
       sec.appendChild(row);
     }
-    body.appendChild(sec);
+    if (sec.querySelector('.dash__row')) body.appendChild(sec);   // 다 걸리면 블록 자체를 안 그림
   }
 
   // ③ 막힌 것 N · 한 것은 점, 멈춤은 빨간 띠 — 팀마다 시간 띠 한 줄(창 = 띠 가로), 그 밑에 멈춘 구간 하나씩(5판 3-5-3 ⑫: '멈춘 것' 이 아니라 '막힌 것' — 막힌 것 = 일)

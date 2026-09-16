@@ -147,27 +147,27 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
 
   // 지금 · 다음 · 그 뒤 — 팀별 세 줄(대표 15:1x "팀별로 지금 하는 것·다음·그 뒤를 볼 수가 없다"; 머리 글자는 하영 사전 그대로, 나리 16:3x — 글자는 하영 몫).
   // 재료는 하영 팀별-세줄.md(팀장이 맞다고 한 글자가 정본, d.three) — 있으면 그 줄이 '지금' 이고 없으면 상황판 doing 을 '진행 중' 으로. 자에 안 맞는 줄은 안 그린다(지어 쓰지 않는다)
+  // "요약 없음" 은 안 찍는다(적대검수 opus ④ — 가린 글은 읽을 수 있는 글이 아니다): 자에 안 맞는 줄은 빼고, 블록의 줄이 다 빠지면 블록도 안 그린다(block 이 null). 세 줄이 있으면 '진행 중' 은 그 줄
   const three = d.three ?? {};
-  if (three.now && bossOk(three.now)) card.appendChild(block('now', [el('span', 'card__text', three.now)]));
-  else if (d.doing?.text) card.appendChild(block('doing', [personLine(d.doing.who, said(d.doing.text))]));
-  if (three.next && bossOk(three.next)) card.appendChild(block('next', [el('span', 'card__text', three.next)]));
-  if (three.later && bossOk(three.later)) card.appendChild(block('later', [el('span', 'card__text', three.later)]));
+  const ok = (s) => bossOk(String(s ?? '').trim());
+  if (three.now && ok(three.now)) card.appendChild(block('now', [el('span', 'card__text', three.now)]));
+  else if (d.doing?.text && ok(d.doing.text)) card.appendChild(block('doing', [personLine(d.doing.who, said(d.doing.text))]));
+  if (three.next && ok(three.next)) card.appendChild(block('next', [el('span', 'card__text', three.next)]));
+  if (three.later && ok(three.later)) card.appendChild(block('later', [el('span', 'card__text', three.later)]));
 
-  // 된 것 — 0~3, 파일 있으면 누르면 열림
-  const done = (d.done ?? []).slice(0, 3).map((x) => {
+  // 된 것 — 0~3(자에 맞는 줄만), 파일 있으면 누르면 열림
+  const done = (d.done ?? []).filter((x) => ok(x.text)).slice(0, 3).map((x) => {
     const txt = said(x.text);
     if (!x.file) return personLine(x.who, txt);
     const a = el('a', 'card__link'); a.href = outUrl(d.team, x.file); a.target = '_blank'; a.rel = 'noopener';
     if (onOpen) a.addEventListener('click', (e) => { e.preventDefault(); onOpen(x.file); });
-    // 글이 자에 안 맞으면 원문 펼침이 글 자리에 서니 링크로 감싸지 않는다(펼침을 누르면 링크가 열린다) — 옆에 "열기" 로
-    if (txt.dataset.notyet) { const row = personLine(x.who, txt); a.textContent = '열기'; row.appendChild(a); return row; }
     a.appendChild(txt);
     return personLine(x.who, a);
   });
   const doneSec = block('done', done); if (doneSec) card.appendChild(doneSec);
 
-  // 막힌 것 — 0~2, "{무엇이 왜} — {누가} 풀어요"
-  const blocked = (d.blocked ?? []).slice(0, 2).map((x) => {
+  // 막힌 것 — 0~2(자에 맞는 줄만), "{무엇이 왜} — {누가} 풀어요"
+  const blocked = (d.blocked ?? []).filter((x) => ok(x.text)).slice(0, 2).map((x) => {
     const row = el('div', 'card__item');
     row.appendChild(said(x.text));
     if (x.who) row.appendChild(el('span', 'card__solver', `— ${x.who} 풀어요`));
@@ -175,10 +175,10 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
   });
   const blockedSec = block('blocked', blocked); if (blockedSec) card.appendChild(blockedSec);
 
-  // 승인 대기 — 대표님이 할 동작 하나 + 단추 둘
-  if (d.boss?.text) {
+  // 승인 대기 — 대표님이 할 동작 하나 + 단추 둘. 글이 자에 안 맞아도 단추는 남겨야 하니(대표가 누르는 길) 글 자리엔 '{팀} 결재' 한 줄
+  if (d.boss?.id) {
     const row = el('div', 'card__item card__item--boss');
-    row.appendChild(said(d.boss.text));
+    row.appendChild(ok(d.boss.text) ? said(d.boss.text) : el('div', 'card__text', `${d.name ?? d.team ?? ''} 결재`));
     row.appendChild(decideButtons(d.boss.id, onDecide));
     card.appendChild(block('boss', [row]));
   }
@@ -229,9 +229,9 @@ export function verdictCard(v) {
 
   // 한 줄 — 자는 감사가 쓴 원문에 재고, 화면엔 "승인 — …" 꼴로
   const raw = String(v.line ?? '').trim();
+  // 사람 말 한 줄이 없으면 "요약 없음" 대신 '{승인} — {누가} 판정' 한 줄(opus ④) — 감사 본문은 자세히에 그대로
   const line = el('div', 'card__line');
-  if (bossOk(raw)) line.textContent = raw.startsWith(word) ? raw : `${word} — ${raw}`;
-  else line.appendChild(said(raw));
+  line.textContent = bossOk(raw) ? (raw.startsWith(word) ? raw : `${word} — ${raw}`) : `${word} — ${v.from ?? '감사'} 판정`;
   card.appendChild(line);
 
   // 자세히(접힘) — 감사끼리 보는 글
@@ -266,18 +266,19 @@ export function approvalCard(r, { onDecide } = {}) {
 
   // 머리 — 무엇
   const head = el('header', 'card__head');
-  const title = bossOk(r.boss) ? r.boss : r.what;
-  const tt = said(title, { raw: false }); tt.classList.add('card__title');
+  // 제목 — --boss 한 줄이 자에 맞으면 그것, 아니면 원문을 재고, 둘 다 아니면 "요약 없음" 대신 '{팀} 결재'(opus ④) — 원문은 자세히에
+  const title = bossOk(r.boss) ? r.boss : bossOk(r.what) ? r.what : `${r.teamName ?? r.team ?? ''} 결재`;
+  const tt = el('div', 'card__text card__title', title);
   head.appendChild(tt);
   const t = timeNode(r.ts); if (t) head.appendChild(t);
   card.appendChild(head);
 
-  // 왜 — 첫 문장 한 줄
+  // 왜 — 첫 문장 한 줄(자에 맞을 때만, 아니면 칸 없음)
   const why = firstSentence(r.detail);
-  if (why) {
+  if (why && bossOk(why)) {
     const row = el('div', 'card__why');
     row.appendChild(el('span', 'card__label', '왜'));
-    row.appendChild(said(why, { raw: false }));
+    row.appendChild(el('div', 'card__text', why));
     card.appendChild(row);
   }
 
