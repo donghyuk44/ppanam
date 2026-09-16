@@ -65,7 +65,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
+html, body { height: 100%; margin: 0; overflow-x: hidden; }   /* 폰에서 가로 넘침이 뷰포트를 넓혀 종·보내기·상황판 단추가 잘렸다(대표 폴드7 사진 14:11, 노라 QA 1·2번) — 가로 스크롤은 안쪽 띠만 */
 
 body {
   background: var(--panel);
