@@ -31,6 +31,7 @@
       "Bash(curl http://localhost*)",
       "Bash(curl -s http://localhost*)",
       "Bash(curl -sI http://localhost*)",
+      "Bash(curl -L -o teams/*)",
       "Bash(node teams/*)",
       "Bash(node --test:*)",
       "mcp__claude_ai_Figma"
