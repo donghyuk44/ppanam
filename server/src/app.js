@@ -63,7 +63,8 @@ function callsBoss(text) {
 /** 이 방 사람들 — 대표와, 옮겨온 말 때문에 빌려 온 총괄(from) 은 뺀다. 나리(system)는 세션이 있는 방(N1 — 총괄실, cast model 있음)에서만 사람이고, 다른 방의 system 은 로밍 자리라 뺀다(대표 12:2x "대시보드에 멤버쪽 나리가 없다", 톰 배분). 헤더 둘째 줄·상태 칩이 같은 명단을 쓴다. */
 /* 얼굴 열일곱(결정 131 · 헨리 req_99dbd1fe, C7) — teams/design/out/faces/<팀>-<자리>.png(대표 boss.png · 나리 hq-system.png), 서버가 /out/design/faces/ 로 내준다.
  * 이름표(.av 32×32)·칩(.chip)·사람 카드 머리에 <img> 를 얹고 머리글자는 밑에 남긴다 — 그림이 없거나 못 읽으면 img 가 빠져 머리글자만 보인다(헨리 ①). 크기·둥글기는 CSS(.chip img, 클레멘타인 d61339a). */
-const FACE_DIR = '/out/design/faces/';
+// 결정 197(대표 18:28 "내가 고른 게 아닌데") — 도트(faces/)가 아니라 대표가 고른 초상(portraits/picks-0916.json). 칩엔 128px 판(portraits/chip128, 장당 35KB 아래 — 394px chip/ 은 장당 25만 바이트라 방 하나에 4MB, 나리 apr_654ef2a7).
+const FACE_DIR = '/out/design/portraits/chip128/';
 const faceFile = (team, id) => (id === 'boss' ? 'boss.png' : id === 'system' ? 'hq-system.png' : `${team === 'sera' ? 'hq' : team}-${id}.png`);
 function withFace(node, team, id) {
   if (!team || !id) return node;
