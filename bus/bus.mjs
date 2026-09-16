@@ -1183,6 +1183,20 @@ export function readRoadmap(team) {
   return readJSON(paths(team).roadmap, { destination: null, milestones: [], cutList: [] });
 }
 
+/**
+ * 라운드 한 줄 — "라운드 N · 마일스톤 M …" 또는 "지금 열린 라운드가 없다." session.briefOf(세션이 새로 뜰
+ * 때 한 번)와 conductor.giveTurn(턴마다)이 같이 쓴다 — T2(같은 단계 안이면 세션을 안 버림) 뒤로 한 단계
+ * 안에서 세션이 여러 회차를 사는데, 브리프는 spawn 때만 실려 옛 라운드 번호를 계속 붙들고 있었다
+ * (2판 코드 점검 #11 — "지난 할 일을 붙들고 답함"). round.mjs check 가 돌려본다.
+ */
+export function roundLineOf(team) {
+  const st = readState(team);
+  if (st.phase === 'idle') return '지금 열린 라운드가 없다.';
+  const rm = readRoadmap(team);
+  const m = rm.milestones?.find((x) => x.n === st.milestone);
+  return `라운드 ${st.round} · 마일스톤 ${st.milestone}${m ? ` "${m.title}" — 통과 조건: ${m.deliverable}` : ''}${st.topic ? ` · 주제: ${st.topic}` : ''}${st.phase === 'blocked' ? ' · FAIL 로 막혀 있다. 대표 판단 대기' : ''}`;
+}
+
 /* ── 대화록 ── */
 
 /**

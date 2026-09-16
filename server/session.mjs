@@ -18,7 +18,7 @@ import { spawn as spawnProc } from 'node:child_process';
 import {
   ROOT, emit, listTeams, isOffice, paths, endRound, startRound, readCast, readState, readRoadmap, listRounds,
   readLog, quiet, RELAY_QUIET, appendJournal, journalPrompt, collectJournals, writeTurn, readProgress, progressFresh, progressText,
-  isForeign, engineName, roomRules, listApprovals, takeVillage,
+  isForeign, engineName, roomRules, listApprovals, takeVillage, roundLineOf,
 } from '../bus/bus.mjs';
 import { listRequests } from '../bus/requests.mjs';
 import { toolPhrase } from './public/toollabel.js';
@@ -242,13 +242,9 @@ export function briefOf(team, actor) {
     // 비서실(결정 98·132) — 세라의 재료는 다섯 팀 상황 파일·승인 목록·요청 블록. 대표에게 요약해 보고하는 게 이 방의 전부다.
     if (roomRules(team).owner === 'secretary') lines.push('', ...secretaryBriefLines());
   } else {
-    const st = readState(team);
     const rm = readRoadmap(team);
-    const m = rm.milestones?.find((x) => x.n === st.milestone);
     const last = listRounds(team)[0];
-    lines.push(st.phase !== 'idle'
-      ? `라운드 ${st.round} · 마일스톤 ${st.milestone}${m ? ` "${m.title}" — 통과 조건: ${m.deliverable}` : ''}${st.topic ? ` · 주제: ${st.topic}` : ''}${st.phase === 'blocked' ? ' · FAIL 로 막혀 있다. 대표 판단 대기' : ''}`
-      : '지금 열린 라운드가 없다.');
+    lines.push(roundLineOf(team));
     if (rm.cutList?.length) lines.push(`컷리스트(이번엔 하지 않는 것): ${rm.cutList.join(' / ')}`);
     if (last) lines.push(`직전 라운드 ${last.round}: ${last.verdict ?? '판정 없음'}${last.summary ? ' — ' + last.summary : ''}`);
     // 상황판 (결정 23) — 팀원 모두가 읽고, 실무는 턴 끝·닫기마다 쓴다. 파일이 없거나 낡았으면 그렇다고 말한다.

@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, verdictTargetActor, withVerdictTarget, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed, readRoadmap, listApprovals, readWork } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, verdictTargetActor, withVerdictTarget, roundLineOf, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed, readRoadmap, listApprovals, readWork } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { ga, eul } from './public/toollabel.js';
 
@@ -283,7 +283,10 @@ function giveTurn(team, actor, kind, tries = 1) {
   const instruction = kind === 'verdict' ? VERDICT_INSTRUCTION(target, nameOf(team, verdictTargetActor(team, target))) : INSTRUCTION[kind];
   // 턴마다 이름을 한 번 불러 준다 — 긴 세션에서 말투가 모델 기본값으로 흘러가는 것을 막는 닻 (docs/cases.md 24·25).
   const anchor = kind === 'verdict' ? '' : `너는 ${nameOf(team, actor)}다. `;
-  const body = (lines.length ? `그동안 이 방에서 오간 말:\n\n${lines.join('\n')}\n\n---\n` : '') + anchor + instruction;
+  // 라운드 한 줄도 턴마다 다시 준다 — 브리프(라운드 번호·마일스톤)는 세션이 새로 뜰 때만 실리는데, T2 뒤로
+  // 같은 단계 안이면 세션이 여러 회차를 산다. 새로 안 주면 옛 번호를 계속 붙들고 답한다(2판 코드 점검 #11).
+  const roundLine = isOffice(team) ? '' : `지금: ${roundLineOf(team)}\n`;
+  const body = (lines.length ? `그동안 이 방에서 오간 말:\n\n${lines.join('\n')}\n\n---\n` : '') + roundLine + anchor + instruction;
   const before = cursorOf(team, actor);               // 서버가 이 턴 중에 죽으면 여기로 되돌린다 (결정 104)
   if (last) setCursor(team, actor, last);
   // since — 이 턴을 준 시각(메모리에만, persist 는 안 한다). checkStalls(㉣) 가 이 값으로 "세션이 꺼진 채 답이 없다" 를 잰다.

@@ -701,6 +701,25 @@ switch (cmd) {
         out.push(['완료 조건(D1) — doneCheckOf', dc1.ok === true && dc2.ok === false && dc3.ok === true && dc4.ok === true && dc4.item === null
           ? '✓ 파일 있으면 통과 · 없으면 대기 · doneCheck 없으면 통과 · 걸린 항목 없어도 통과(item null)' : '✗ ' + JSON.stringify({ dc1, dc2, dc3, dc4 })]);
       }
+      // 라운드 한 줄(roundLineOf, 2판 #11) — briefOf(세션이 뜰 때)와 giveTurn(턴마다)이 같은 함수를 쓴다,
+      // T2 뒤로 세션이 한 단계 안 여러 회차를 사는 동안 옛 번호를 붙들지 않게.
+      {
+        const { roundLineOf } = await import('./bus.mjs');
+        const stBefore = fs.readFileSync(paths(T).state, 'utf8');
+        const rmBefore2 = fs.readFileSync(paths(T).roadmap, 'utf8');
+        fs.writeFileSync(paths(T).roadmap, JSON.stringify({ milestones: [{ n: 5, title: '다섯째', deliverable: '물건 하나', status: 'now' }] }));
+        fs.writeFileSync(paths(T).state, JSON.stringify({ round: 9, milestone: 5, topic: '주제 시험', phase: 'running' }));
+        const rl1 = roundLineOf(T);
+        fs.writeFileSync(paths(T).state, JSON.stringify({ round: 9, milestone: 5, topic: '주제 시험', phase: 'blocked' }));
+        const rl2 = roundLineOf(T);
+        fs.writeFileSync(paths(T).state, JSON.stringify({ phase: 'idle' }));
+        const rl3 = roundLineOf(T);
+        fs.writeFileSync(paths(T).state, stBefore);
+        fs.writeFileSync(paths(T).roadmap, rmBefore2);
+        const rlWant = rl1 === '라운드 9 · 마일스톤 5 "다섯째" — 통과 조건: 물건 하나 · 주제: 주제 시험'
+          && rl2 === rl1 + ' · FAIL 로 막혀 있다. 대표 판단 대기' && rl3 === '지금 열린 라운드가 없다.';
+        out.push(['라운드 한 줄(roundLineOf, 2판 #11)', rlWant ? '✓ 라운드·마일스톤·주제 · blocked 꼬리 · idle 은 다른 문장' : '✗ ' + JSON.stringify({ rl1, rl2, rl3 })]);
+      }
       // 판정 대상 자리 찾기(테라 code-review 지적, dea1182 — 훅이 target 을 'guide' 로 고정해서 서로 감사(결정 125)로
       // ops 등이 평가받아도 항상 guide 로 찍혔다) — verdictTargetActor(team, flowTargetText) 순수: 자유 글에서
       // 먼저 나오는 이름의 자리를 돌려주고, 아무도 안 나오면 예전처럼 'guide'.
