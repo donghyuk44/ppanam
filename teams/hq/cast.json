@@ -1,46 +1,47 @@
 {
-  "agents": {
-    "chief": {
-      "name": "톰",
-      "initial": "톰",
-      "color": "#1f5f4f",
-      "title": "실장",
-      "does": "대표 지시를 팀에 배분",
-      "model": "claude"
-    },
-    "outside": {
-      "name": "제리",
-      "initial": "제",
-      "color": "#7a3b52",
-      "title": "감사 · 다른 회사",
-      "does": "원문과 배분을 맞춰본다",
-      "model": "gemini",
-      "geminiModel": "gemini-3.6-flash"
-    },
-    "secretary": {
-      "name": "세라",
-      "initial": "세",
-      "color": "#2f6f8f",
-      "title": "비서",
-      "does": "대표에게 가는 말을 골라 대표 말로 바꿔 전한다",
-      "model": null
-    },
-    "boss": {
-      "name": "함동혁(댄)",
-      "initial": "댄",
-      "color": "#8a7320",
-      "title": "대표",
-      "does": "사람",
-      "model": null
-    },
-    "system": {
-      "name": "나리",
-      "initial": "나",
-      "color": "#8a8175",
-      "title": "사장",
-      "does": "파일을 열어 다시 센다 · 재시작·스크린샷·유니티처럼 저장소 밖에 손이 닿는 일 (자동 안내 글도 이 자리 이름으로 뜬다)",
-      "model": "claude",
-      "titleWas": "검수"
-    }
+ "agents": {
+  "chief": {
+   "name": "톰",
+   "initial": "톰",
+   "color": "#1f5f4f",
+   "title": "실장",
+   "does": "대표 지시를 팀에 배분",
+   "model": "claude"
+  },
+  "outside": {
+   "name": "제리",
+   "initial": "제",
+   "color": "#7a3b52",
+   "title": "감사 · 다른 회사",
+   "does": "원문과 배분을 맞춰본다",
+   "model": "gemini",
+   "geminiModel": "gemini-3.6-flash",
+   "effort": "low"
+  },
+  "secretary": {
+   "name": "세라",
+   "initial": "세",
+   "color": "#2f6f8f",
+   "title": "비서",
+   "does": "대표에게 가는 말을 골라 대표 말로 바꿔 전한다",
+   "model": null
+  },
+  "boss": {
+   "name": "함동혁(댄)",
+   "initial": "댄",
+   "color": "#8a7320",
+   "title": "대표",
+   "does": "사람",
+   "model": null
+  },
+  "system": {
+   "name": "나리",
+   "initial": "나",
+   "color": "#8a8175",
+   "title": "사장",
+   "does": "파일을 열어 다시 센다 · 재시작·스크린샷·유니티처럼 저장소 밖에 손이 닿는 일 (자동 안내 글도 이 자리 이름으로 뜬다)",
+   "model": "claude",
+   "titleWas": "검수"
   }
+ }
 }
