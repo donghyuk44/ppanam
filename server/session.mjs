@@ -97,6 +97,29 @@ function rememberId(team, actor, id) {
   delete all[team];
   writeStore(all);
 }
+/**
+ * 자리의 model 이 claude 가 아닌데 저장된 세션 id 가 남아 있으면 지운다(N1 뒷정리 — 나리 실측 10:5x,
+ * cast.json 을 null 로 되돌린 뒤에도 sessions.json 에 옛 id 다섯이 남아 있었다). 살아 있는 프로세스가
+ * 있으면 먼저 내린다(stop) — 없어도 안전(그냥 false 를 돌려주고 지나간다). 서버가 뜰 때 한 번 부른다.
+ */
+export function pruneStaleSessions() {
+  const all = readStore();
+  let changed = false;
+  for (const key of Object.keys(all)) {
+    const i = key.indexOf(':');
+    if (i < 0) continue;   // 옛 형식({팀: id}, 방 주인 것) — 자리별 형식만 정리한다
+    const team = key.slice(0, i), actor = key.slice(i + 1);
+    let model; try { model = readCast(team).agents?.[actor]?.model; } catch { model = undefined; }
+    if (model !== 'claude') {
+      try { stop(team, actor); } catch { /* 살아 있지 않으면 그만 */ }
+      delete all[key];
+      changed = true;
+    }
+  }
+  if (changed) writeStore(all);
+  return changed;
+}
+
 function forgetId(team, actor) {
   const all = readStore();
   let changed = false;

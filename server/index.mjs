@@ -830,6 +830,9 @@ wss.on('connection', (ws) => {
 
 // 기동 시 이미 쌓여 있던 대화록의 끝으로 커서를 옮긴다 (다시 밀지 않기 위해).
 for (const t of listTeams()) pollTeam(t.id);
+// cast.json 에서 model 이 바뀌어(예: N1 재정의로 다섯 팀의 system 이 다시 null) 더는 세션 자리가 아닌데도
+// sessions.json 에 옛 id 가 남아 있으면 지운다 — 나리 실측 10:5x, 재시작 뒤에도 유령 다섯이 안 지워짐.
+try { session.pruneStaleSessions(); } catch (e) { console.error('session prune:', e.message); }
 // 그 다음 — 지난 서버가 저장해 둔 차례를 되살린다 (결정 104). 커서를 맞춘 뒤라야 되살린 차례가 새 사건으로 두 번 안 온다.
 // 세션은 여기서 안 띄운다 — 차례를 줄 때 session.send 가 그 자리 세션을 띄우고 나서 쓴다.
 try { restoreQueues(); } catch (e) { console.error('conductor restore:', e.message); }
