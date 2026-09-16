@@ -5,7 +5,7 @@
    컴퓨터에서는 여러 팀을 한눈에, 폰에서는 방 하나만. */
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
 
   --ground:   #FFFFFF;
   --panel:    #FFFFFF;
@@ -35,7 +35,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root[data-theme="dark"] {
+  :root:not([data-theme="light"]) {
     --ground:   #151A21;
     --panel:    #1D232C;
     --panel-2:  #252C36;
