@@ -1902,9 +1902,11 @@ function renderTowerAll(grid) {
   const today = done.items.filter((it) => new Date(it.ts).getTime() >= day0 && it.by !== 'boss');
   // 큰 숫자 타일은 뺐다 — 하영 내용 2판 9절 5(큰 숫자 빼기)와 어긋난다(톰 09-15). 수는 칸 제목에만(막힌 것 N · 내 차례 N).
 
-  // ⓪ 작업 보드 — 맨 위 한 블록(카드-체계 1-1, 대표 08:2x). /api/work 가 있을 때만
+  // 순서(적대검수 opus ①, 나리 16:0x): 팀 카드(진행 중·다음·예정) 맨 위 → 대표 할 일 → 이슈 → 작업 보드·최근 활동은 맨 아래 접힘. 블록은 아래서 만들고 끝에서 이 순서로 붙인다.
+  const order = { teams: null, mine: null, stuck: null, folded: [] };
+  // ⓪ 작업 보드 — 한 블록(카드-체계 1-1, 대표 08:2x). /api/work 가 있을 때만. 맨 아래 접힘
   const wb = workBoardBlock();
-  if (wb) grid.appendChild(wb);
+  if (wb) order.folded.push(wb);
 
   // ① 뭐가 막혔나 — 대표가 풀 것이 아닌 막힘(팀·톰·운영·밑바닥). 강조: 그 팀 점만 색, 빨간 점 + N시간째. 대표 몫(waitOn boss)은 ③.
   if (stuck.length) {
@@ -1922,7 +1924,7 @@ function renderTowerAll(grid) {
       row.addEventListener('click', () => { const tg = it.target ?? {}; if (tg.view === 'tower') setTowerTab(tg.tab ?? 'asks'); else if (tg.team) jumpTo(tg.team, tg.event ?? null); });
       sec.appendChild(row);
     }
-    grid.appendChild(sec);
+    order.stuck = sec;
   }
 
   // ② 최근 활동 · 오늘 — 여섯 줄, 넘치면 "더 보기"(오늘 안에서만). 사람별 막대(숲)는 뺐다 — 숫자 없는 게이지가 관제탑 내용 규칙 ④ "자기 통계 줄 0" 과 부딪혔다(폴드 QA #8, 나리 14:4x "내용 규칙 ④가 이김").
@@ -1948,7 +1950,7 @@ function renderTowerAll(grid) {
     more.addEventListener('click', () => { done.more = !done.more; renderTower(); });
     sec2.appendChild(more);
   }
-  grid.appendChild(sec2);
+  order.folded.push(sec2);
 
   // ③ 내 차례 — 대표가 답할 것: 결재(C)·물어봄(bossCall)·막힘(FAIL 대표 판단) + 각 방 상황판의 '대표 차례' 줄. 알림 종과 같은 목록(notify.js). 노랑(numbers.md 상태 색).
   if (mine.length || fromBoard.length) {
@@ -1972,7 +1974,7 @@ function renderTowerAll(grid) {
       row.addEventListener('click', goRoom(teams.find((t) => t.id === b.team)));
       sec3.appendChild(row);
     }
-    grid.appendChild(sec3);
+    order.mine = sec3;
   }
 
   // ④ 팀 — 팀 상황 카드 다섯이 세로로(카드-체계 1절 "② 첫 화면 탭", C7). 부품은 card.js teamCard 하나 — 채팅 맨 위·비서실과 같은 것. 옛 줄(진행 막대·시간 띠·펼침)은 뺐다 —
@@ -1985,7 +1987,20 @@ function renderTowerAll(grid) {
     cardsBox.appendChild(cardNode ?? el('div', 'dash__empty', `${t.name} — 불러오는 중`));
   }
   tl.appendChild(cardsBox);
-  grid.appendChild(tl);
+  order.teams = tl;
+
+  // 붙이기 — 팀 카드 · 대표 할 일 · 이슈 · (접힘) 작업 보드·최근 활동
+  for (const n of [order.teams, order.mine, order.stuck]) if (n) grid.appendChild(n);
+  if (order.folded.length) {
+    const fold = el('details', 'dash__card'); fold.dataset.block = 'more';   // 기존 카드 틀·머리 글자 클래스 그대로(style.css 는 클레멘타인 몫이라 새 규칙 없이)
+    let open = false; try { open = localStorage.getItem('ppanam.towerMore') === '1'; } catch { /* 기본은 접힘 */ }
+    fold.open = open;
+    fold.addEventListener('toggle', () => { try { localStorage.setItem('ppanam.towerMore', fold.open ? '1' : '0'); } catch { /* 무시 */ } });
+    const sum = el('summary', 'dash__k', '작업 보드 · 최근 활동'); sum.style.cursor = 'pointer';
+    fold.appendChild(sum);
+    for (const n of order.folded) fold.appendChild(n);
+    grid.appendChild(fold);
+  }
 }
 
 /* ── 개인 — 열넷 + 대표. 헨리 사람 카드 2판(person.svg). 데이터는 요약의 people ── */
