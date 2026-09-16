@@ -1185,16 +1185,18 @@ switch (cmd) {
           proxyEligible(C('로드맵 7단계 교체', { detail: '로드맵은 돈·바깥이 아니라 대리 대상 — 비용 상한 아님' })),   // 설명 글(detail)은 안 훑는다 — 올림 (톰 09-15, apr_1bf1b266)
           proxyEligible(C('결제 허용', { detail: '' })),                    // what 에 든 돈 — 안 올림
         ];
-        // 위임 스위치(결정 136, 나리 09-15) — delegationActive 순수: until 안이면 { to, until, decision }, 지났거나 없거나 깨졌으면 null. to 기본 system
+        // 위임 스위치(결정 136, 나리 09-15 · until 없음은 결정 188 "대표님이 멈추라 할 때까지") — delegationActive
+        // 순수: until 있고 안 지났으면 { to, until, decision }, until 없으면(상시) { to, until:null, decision }, 지났거나 깨졌으면 null. to 기본 system
         const dgNow = Date.parse('2026-09-15T14:00:00Z');
         const dg = [
           delegationActive({ to: 'system', until: '2026-09-16T01:00:00Z', decision: 136 }, dgNow),
           delegationActive({ to: 'system', until: '2026-09-15T13:00:00Z', decision: 136 }, dgNow),   // 지남
-          delegationActive({ to: 'system', decision: 136 }, dgNow),                                   // until 없음
+          delegationActive({ to: 'system', decision: 136 }, dgNow),                                   // until 없음 — 상시(결정 188)
           delegationActive(null, dgNow),
           delegationActive({ until: '2026-09-16T01:00:00Z' }, dgNow),
         ];
-        const dgOk = dg[0]?.to === 'system' && dg[0]?.decision === 136 && dg[0]?.until === '2026-09-16T01:00:00.000Z' && dg[1] === null && dg[2] === null && dg[3] === null && dg[4]?.to === 'system' && dg[4]?.decision === null;
+        const dgOk = dg[0]?.to === 'system' && dg[0]?.decision === 136 && dg[0]?.until === '2026-09-16T01:00:00.000Z' && dg[1] === null
+          && dg[2]?.to === 'system' && dg[2]?.decision === 136 && dg[2]?.until === null && dg[3] === null && dg[4]?.to === 'system' && dg[4]?.decision === null;
         const t0 = Date.parse('2026-09-13T10:00:00Z');
         const od = overdue([{ key: 'a', since: new Date(t0 - 11 * 60_000).toISOString() }, { key: 'b', since: new Date(t0 - 9 * 60_000).toISOString() }, { key: 'c', since: null }], { now: t0 }).map((x) => x.key);
         startRound(T, { milestone: 2 });
@@ -1216,7 +1218,7 @@ switch (cmd) {
           proxyForbidden('대표님, .claude/hooks/to-bus.mjs 한 줄 허용해 주세요.'), proxyForbidden('클로드 세션 훅이 잘 돈다')];
         const xWant = el.join(',') === 'true,false,false,false,false,false,false,true,false' && dgOk && od.join(',') === 'a' && un?.phase === 'running' && unNote?.text?.startsWith('대리 결정(톰·제리)으로 재개')
           && unNote?.meta?.proxy?.length === 2 && before?.id === 'q2' && after === null && fb.join(',') === 'true,false,true,false,false,false,true,false';
-        out.push(['대리 결정(결정 85)', xWant ? '✓ 돈·바깥·병합·B·끝난 것 안 올림 · 설명 글은 안 훑음 · 위임 스위치(until 안·지남·없음) · 물음도 같은 선(유료 결제·외부 발송·.claude 제외) · "외부 감사"·"돈다"·"클로드" 는 안 걸림 · 10분 넘은 것만 · FAIL 대리 풀기 note · 대리 답이면 부름 사라짐' : '✗ ' + JSON.stringify({ el, od, un: un?.phase, note: unNote?.text, before, after, fb })]);
+        out.push(['대리 결정(결정 85)', xWant ? '✓ 돈·바깥·병합·B·끝난 것 안 올림 · 설명 글은 안 훑음 · 위임 스위치(until 안·지남·없음은 상시, 결정 188) · 물음도 같은 선(유료 결제·외부 발송·.claude 제외) · "외부 감사"·"돈다"·"클로드" 는 안 걸림 · 10분 넘은 것만 · FAIL 대리 풀기 note · 대리 답이면 부름 사라짐' : '✗ ' + JSON.stringify({ el, od, un: un?.phase, note: unNote?.text, before, after, fb })]);
       }
       // 상황판 (결정 23) — 옛 모양(issues·left)을 계약 모양으로, 준 항목만 통째로 바뀜, --clear 로 비움, 프롬프트 네 줄, 이 라운드 동안 갱신됐나.
       {

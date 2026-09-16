@@ -693,14 +693,17 @@ export function overdue(items, { now = Date.now(), wait = PROXY_WAIT_MS } = {}) 
   return items.filter((it) => it.since && now - new Date(it.since).getTime() >= wait);
 }
 /* ── 위임 스위치 (결정 136 · 나리 09-15 — 대표 원문 "일단 승인버튼 눌렀는데 다음부턴 너가 처리해") ──
- * state/delegation.json { "to": "system", "until": "2026-09-16T01:00:00Z", "decision": 136 }. until 안이면 C 카드가 대리 후보에 **바로** 든다(10분·대표 조용 조건 없이),
- * 대리 판정 note 에 "대리 — 나리 위임 136" 이 붙는다. 돈·바깥(proxyForbidden)은 그대로 대표만. until 이 지나면 파일이 있어도 평소대로. 나리는 --decide 를 못 하니 이게 제일 짧은 길.
+ * state/delegation.json { "to": "system", "until": "2026-09-16T01:00:00Z" | null, "decision": 136 }. until 안이면 C 카드가 대리 후보에 **바로** 든다(10분·대표 조용 조건 없이),
+ * 대리 판정 note 에 "대리 — 나리 위임 136" 이 붙는다. 돈·바깥(proxyForbidden)은 그대로 대표만.
+ * until 이 없으면(null) 끝 시각 없는 상시 위임 — 대표 09-16 결정 188 "내가 멈추라고 하기 전까지는 나리가 대리 승인 하는것 유지한다",
+ * 오늘 "6시까지" 도 없다. 있으면(옛 시각 지정형) 지난 뒤엔 파일이 있어도 평소대로. 나리는 --decide 를 못 하니 이게 제일 짧은 길.
  */
 const DELEGATION_PATH = path.join(ROOT, 'state', 'delegation.json');
-/** 순수 — 파일 내용이 지금 살아 있는 위임인가. until 이 없거나 지났으면 null. check 가 돌린다. */
+/** 순수 — 파일 내용이 지금 살아 있는 위임인가. until 이 지났으면 null, 없으면(상시) 그대로 산다. check 가 돌린다. */
 export function delegationActive(d, now = Date.now()) {
   if (!d || typeof d !== 'object') return null;
-  const until = Date.parse(d.until ?? '');
+  if (d.until == null) return { to: d.to ?? 'system', until: null, decision: d.decision ?? null };
+  const until = Date.parse(d.until);
   if (!Number.isFinite(until) || now >= until) return null;
   return { to: d.to ?? 'system', until: new Date(until).toISOString(), decision: d.decision ?? null };
 }

@@ -252,7 +252,8 @@ function runProxy(store) {
         by: 'system', grade: 'B',
         what: `대리 결정 — ${it.what.slice(0, 120)}`,
         detail: dg && it.kind === 'approval'
-          ? `대표 위임 중(결정 ${dg.decision ?? '136'}, ${dg.until.slice(0, 16).replace('T', ' ')}Z 까지) — C 카드는 기다리지 않고 바로 올립니다. 종류: ${it.kind} · 방: ${it.team} · 대상: ${it.ref}. 둘 다 PASS 면 서버가 실행하고 방에 '대리 — 나리 위임' 으로 남깁니다.`
+          // 끝 시각이 없을 수 있다(결정 188 — 대표님이 멈추라 하실 때까지, 상시 위임). 있을 때만 "…까지"를 붙인다.
+          ? `대표 위임 중(결정 ${dg.decision ?? '136'}${dg.until ? `, ${dg.until.slice(0, 16).replace('T', ' ')}Z 까지` : ''}) — C 카드는 기다리지 않고 바로 올립니다. 종류: ${it.kind} · 방: ${it.team} · 대상: ${it.ref}. 둘 다 PASS 면 서버가 실행하고 방에 '대리 — 나리 위임' 으로 남깁니다.`
           : `대표 차례가 ${Math.round((Date.now() - new Date(it.since).getTime()) / 60000)}분째 답이 없습니다(결정 85). 종류: ${it.kind} · 방: ${it.team} · 대상: ${it.ref}. 둘 다 PASS 면 서버가 실행하고 방에 '대리 결정' 으로 남깁니다.`,
         action: { type: 'proxy', kind: it.kind, team: it.team, ref: it.ref },
       });
