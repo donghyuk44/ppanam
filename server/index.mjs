@@ -30,6 +30,7 @@ import * as world from './world.mjs';
 import { startInfra } from './infra.mjs';
 import * as gemini from './gemini.mjs';
 import { bossOk, NOT_YET } from './public/bosswords.js';
+import { todayUsage } from './usage.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
 // 밑바닥 넷(서버·codex·세션·디스크) — 2분마다 재서 값만 넘긴다(결정 92 "막힌 것" 의 infra, M6 준비). 첫 재기 전엔 null — 안 잰 것은 막힘이 아니다.
@@ -346,7 +347,9 @@ const server = http.createServer((req, res) => {
       const cast = readCast(t.id), owner = bus.roomRules(t.id).owner;
       const color = cast.agents?.[owner]?.color ?? null;
       // hasRoadmap: 계획표 파일이 있나 — 없으면 "계획표 아직 없어요", 있는데 남은 단계가 없으면 "다음 단계 아직 없어요"(하영 1-2 빈칸 말 둘). owners: 담당 점 둘(1-3)
-      return { id: t.id, name: t.name, room: t.room, color, hasRoadmap: fs.existsSync(paths(t.id).roadmap), owners: bus.ownersOf(cast, { owner }), ...plan };
+      // usage: 오늘 쓴 것(T1, 대표 09-16 "톰 역할 토큰을 걱정했는데 지금은 잴 수가 없다") — 세션이 여러 날 살 수 있어(T2)
+      // costUsd 는 턴별 델타 합이다(withCostDeltas), 세션 누적값을 그대로 더하지 않는다(독립검수 실측 3.8배).
+      return { id: t.id, name: t.name, room: t.room, color, hasRoadmap: fs.existsSync(paths(t.id).roadmap), owners: bus.ownersOf(cast, { owner }), usage: todayUsage(t.id, new Date(now)), ...plan };
     });
     // '팀별 단계' 절은 서버가 roadmap 에서 만들어 끼운다(톰 09-14: "손으로 세는 건 썩는다") — 톰이 쓰는 건 위·아래 두 표뿐. 정본은 표 파일 + roadmap 둘이 한 화면에.
     const merged = bus.swapSection(text ?? '', '팀별 단계', bus.stageTable(teamsOut, { now }));

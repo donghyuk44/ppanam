@@ -19,6 +19,7 @@ export function recordUsage(team, actor, round, msg, file = USAGE_PATH) {
   const row = {
     ts: new Date().toISOString(),
     team, actor, round: round ?? null,
+    sessionId: msg?.session_id ?? null,   // costUsd 를 세션 단위로 다시 더하려면 이게 있어야 한다 — 아래 참고
     inputTokens: u.input_tokens ?? 0,
     outputTokens: u.output_tokens ?? 0,
     cacheCreateTokens: u.cache_creation_input_tokens ?? 0,
@@ -36,21 +37,42 @@ function readRows(file) {
 }
 
 /**
+ * costUsd 는 claude CLI 가 그 세션(프로세스) 시작부터 지금까지 쓴 돈의 누적값이다 — 그 턴 하나의 값이
+ * 아니다. T2(회차가 닫혀도 세션을 안 버림) 뒤로는 한 세션이 여러 회차·여러 날을 살 수 있어, 이 줄들을
+ * 그냥 더하면 같은 세션의 턴마다 이미 앞 턴의 비용까지 얹힌 값을 또 더하게 된다(독립검수 실측 — 3.8배
+ * 부풀었다). 세션(sessionId)별로 시각순 정렬해 이전 값과의 차이만 그 턴이 실제로 쓴 돈이다 — 첫 턴은
+ * 이전 값이 0 이라 그대로. sessionId 가 없는(엔진이 안 준) 줄은 델타를 못 구하니 그 줄 자체를 그 턴의
+ * 값으로 본다(과소평가는 해도 3.8배 같은 과대평가는 안 한다). 입력·출력 토큰은 턴마다의 실제 값이라
+ * (세션 누적이 아니다) 그대로 더한다 — 부푸는 건 costUsd 뿐이다.
+ * @returns rows 와 같은 길이 — 각 줄에 { ...row, costDelta } 를 붙인다. 순수 함수(round.mjs check 가 돌려본다).
+ */
+export function withCostDeltas(rows) {
+  const bySession = new Map();
+  for (const r of rows) if (r.sessionId) (bySession.get(r.sessionId) ?? bySession.set(r.sessionId, []).get(r.sessionId)).push(r);
+  for (const group of bySession.values()) {
+    group.sort((a, b) => new Date(a.ts) - new Date(b.ts));
+    let prev = 0;
+    for (const r of group) { const cur = r.costUsd ?? prev; r.costDelta = Math.max(0, cur - prev); prev = cur; }
+  }
+  return rows.map((r) => r.sessionId ? r : { ...r, costDelta: r.costUsd ?? 0 });
+}
+
+/**
  * 오늘(우리 시각, UTC+9) 그 팀이 쓴 것 — 토큰 합·비용 합. 현황판 "오늘 쓴 것" 한 줄이 이걸 쓴다.
- * 톰 걱정(캐시 토큰)은 costUsd 가 이미 답한다 — Claude 의 total_cost_usd 는 캐시 생성·읽기 단가를
- * 이미 반영한 값이라, "오늘 쓴 것" 한 줄은 costUsd 를 앞세우면 된다. cacheReadTokens 는 "그중 캐시로
- * 아낀 몫"을 보여주고 싶을 때 쓰는 참고 값이다(값이 크면 클수록 캐시가 잘 먹었다는 뜻 — 반대로 비용이
- * 적게 드는 것).
+ * 델타는 세션 전체 이력이 있어야 정확하다(위 withCostDeltas) — 그래서 전체를 읽어 델타를 구한 다음
+ * 오늘 것만 골라 더한다. 톰 걱정(캐시 토큰)은 costUsd 가 이미 답한다 — Claude 의 total_cost_usd 는
+ * 캐시 생성·읽기 단가를 이미 반영한 값이다. cacheReadTokens 는 "그중 캐시로 아낀 몫" 참고 값이다.
  */
 export function todayUsage(team, now = new Date(), file = USAGE_PATH) {
   const kstDate = (iso) => new Date(new Date(iso).getTime() + 9 * 3_600_000).toISOString().slice(0, 10);
   const today = kstDate(now.toISOString());
-  const rows = readRows(file).filter((r) => r.team === team && kstDate(r.ts) === today);
+  const all = withCostDeltas(readRows(file).filter((r) => r.team === team));
+  const rows = all.filter((r) => kstDate(r.ts) === today);
   const inputTokens = rows.reduce((s, r) => s + (r.inputTokens ?? 0), 0);
   const outputTokens = rows.reduce((s, r) => s + (r.outputTokens ?? 0), 0);
   const cacheReadTokens = rows.reduce((s, r) => s + (r.cacheReadTokens ?? 0), 0);
   const cacheCreateTokens = rows.reduce((s, r) => s + (r.cacheCreateTokens ?? 0), 0);
-  const costUsd = rows.reduce((s, r) => s + (r.costUsd ?? 0), 0);
+  const costUsd = rows.reduce((s, r) => s + (r.costDelta ?? 0), 0);
   return { date: today, turns: rows.length, inputTokens, outputTokens, cacheReadTokens, cacheCreateTokens, costUsd };
 }
 
