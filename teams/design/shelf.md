@@ -11,6 +11,7 @@
 - `teams/design/out/kit/characters.json` (185줄 · 11KB) — 얼굴·인형 색표. 자리 하나 볼 땐 `grep -n '"<자리>"'`.
 - `server/public/style.css` (1151줄 · 73KB, 09-16 04:5x 기준 — 줄 수는 자란다) — 실물 색·간격. **전문 금지** — 화면 칸 이름(`.report`·`.tower`)으로 `grep -n` 한 뒤 그 블록만. `card.css`(117줄)는 통째로 돼도 된다.
 - `teams/design/out/screens/diff-0916.md` (133줄 · 20KB · 절 12) — 시안 대 실물 다른 점. 화면 절만.
+- `teams/marketing/out/opsroom-words.md` — 화면 글자 사전. **시안에 글자를 넣기 전에 대본다**: 0-3 표준어 잣대(33~48행, "이 낱말 쓰는 서비스 셋" 못 대면 안 쓴다)와 1절 말 사전(166행부터, 우리 말 → 사람 말). 사전에 없는 낱말은 그리기 전에 마케팅 방에 한 줄 묻는다(결정 190, 하영 답이 정본). 절 이름으로만 연다 — 전문 금지.
 - `teams/design/out/triptude-map.md` (91줄) — 19회차 대응표, 지금 적용 중(apr_21370997). 부품 하나 볼 땐 번호 줄만(`grep -n '^| 3 '`). 값의 출처는 `out/ref/triptude-city-compare-tokens.md`(30줄, 통째 가능) · 현재 장은 `out/screens/fig-0916-{team-card,dash-412,dash-1280,table}.png` 넷 — 고치는 한 장만 (헨리 09-16 보탬).
 
 ## 전문 Read 금지
