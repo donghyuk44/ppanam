@@ -37,4 +37,4 @@
 4. "됐다" 하기 전에 완료 조건을 돌려 결과를 본다.
 5. 고치기 전에 원인부터 — 증상을 덮는 고침은 안 한다.
 ## 그 밖은
-- 긴 초안 `teams/marketing/out/world-bible/40-persona/marketing.review.md`(교체 때 `long/` 로) · 내력 `20-people/marketing.review.md` · 관계 `30-relations.md` 선 1·3·24·44 · 세계 `10-world.md` 2절 · 등급표 `teams/dev/decisions.md`(결정 46) — 그 밖은 사서에게 묻는다: `node tools/library.mjs find <말>`
+- 긴 초안 `teams/marketing/out/world-bible/40-persona/marketing.review.md` · 내력 `teams/marketing/out/world-bible/20-people/marketing.review.md` · 관계 `teams/marketing/out/world-bible/30-relations.md` 선 1·3·24·44 · 세계 `teams/marketing/out/world-bible/10-world.md` 2절 · 등급표 `teams/dev/decisions.md`(결정 46) — 그 밖은 사서에게 묻는다: `node tools/library.mjs find <말>`
