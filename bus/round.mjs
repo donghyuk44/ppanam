@@ -731,6 +731,19 @@ switch (cmd) {
           && rl2 === rl1 + ' · FAIL 로 막혀 있다. 대표 판단 대기' && rl3 === '지금 열린 라운드가 없다.';
         out.push(['라운드 한 줄(roundLineOf, 2판 #11)', rlWant ? '✓ 라운드·마일스톤·주제 · blocked 꼬리 · idle 은 다른 문장' : '✗ ' + JSON.stringify({ rl1, rl2, rl3 })]);
       }
+      // 팀 카드 꼬리 N/전체(milestoneStageOf, 나리 실측 — 총괄이 1/5 에 굳어 있었다) — round.json 의
+      // state.milestone 이 아니라 로드맵의 pass 수 + 1 로 센다. 총괄실처럼 라운드를 안 타는 방도 맞다.
+      {
+        const { milestoneStageOf } = await import('./bus.mjs');
+        const ms1 = milestoneStageOf({ milestones: [{ n: 1, status: 'pass' }, { n: 2, status: 'pass' }, { n: 3, status: 'wait' }, { n: 4, status: 'wait' }, { n: 5, status: 'wait' }] });
+        const ms2 = milestoneStageOf({ milestones: [{ n: 1, status: 'pass' }, { n: 2, status: 'now' }, { n: 3, status: 'wait' }] });
+        const ms3 = milestoneStageOf({ milestones: [{ n: 1, status: 'pass' }, { n: 2, status: 'pass' }] });   // 전부 pass — 전체에서 멈춤
+        const ms4 = milestoneStageOf({ milestones: [] });
+        const msWant = ms1?.n === 3 && ms1.total === 5 && ms2?.n === 2 && ms2.total === 3 && ms3?.n === 2 && ms3.total === 2 && ms4 === null;
+        out.push(['팀 카드 꼬리 N/전체(milestoneStageOf)', msWant
+          ? '✓ pass 수 + 1(지금 것) · 전부 pass 면 전체에서 멈춤 · 마일스톤 없으면 null'
+          : '✗ ' + JSON.stringify({ ms1, ms2, ms3, ms4 })]);
+      }
       // 판정 대상 자리 찾기(테라 code-review 지적, dea1182 — 훅이 target 을 'guide' 로 고정해서 서로 감사(결정 125)로
       // ops 등이 평가받아도 항상 guide 로 찍혔다) — verdictTargetActor(team, flowTargetText) 순수: 자유 글에서
       // 먼저 나오는 이름의 자리를 돌려주고, 아무도 안 나오면 예전처럼 'guide'.

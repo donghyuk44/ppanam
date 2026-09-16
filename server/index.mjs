@@ -426,8 +426,8 @@ const server = http.createServer((req, res) => {
 
     const state = readState(t);
     const roadmap = readRoadmap(t);
-    const total = roadmap.milestones?.length ?? 0;
-    const stage = state.milestone ? { n: state.milestone, total, round: state.round ?? 0 } : null;
+    const ms = bus.milestoneStageOf(roadmap);
+    const stage = ms ? { n: ms.n, total: ms.total, round: state.round ?? 0 } : null;
 
     // 팀 이름·색 — app.js teamColor(id) 와 같은 자리(hq 는 chief, 그 밖은 guide 의 color).
     const teamName = listTeams().find((x) => x.id === t)?.name ?? t;

@@ -1184,6 +1184,20 @@ export function readRoadmap(team) {
 }
 
 /**
+ * 팀 카드 꼬리 "N/전체" (나리 실측 — 총괄이 1/5 에 굳어 있었다). round.json 의 state.milestone 은 그
+ * 방이 열었던 마지막 회차의 번호일 뿐이라, 총괄실처럼 보통 라운드를 안 타는 방은 로드맵이 pass 로
+ * 넘어가도 이 값이 안 올라간다. 다섯 팀이 다 맞게 로드맵에서만 센다 — 지난 것(pass) 수 + 1(지금 것,
+ * now 든 아직 wait 든), 전부 pass 면 전체에서 멈춘다. 순수 — round.mjs check 가 돌려본다.
+ */
+export function milestoneStageOf(roadmap) {
+  const ms = roadmap?.milestones ?? [];
+  const total = ms.length;
+  if (!total) return null;
+  const passed = ms.filter((m) => m.status === 'pass').length;
+  return { n: Math.min(passed + 1, total), total };
+}
+
+/**
  * 라운드 한 줄 — "라운드 N · 마일스톤 M …" 또는 "지금 열린 라운드가 없다." session.briefOf(세션이 새로 뜰
  * 때 한 번)와 conductor.giveTurn(턴마다)이 같이 쓴다 — T2(같은 단계 안이면 세션을 안 버림) 뒤로 한 단계
  * 안에서 세션이 여러 회차를 사는데, 브리프는 spawn 때만 실려 옛 라운드 번호를 계속 붙들고 있었다
