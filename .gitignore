@@ -196,3 +196,4 @@ state/nightly.json
 unity/ppanam-shot/ProjectSettings/
 unity/**/*.meta
 unity/**/packages-lock.json
+state/outside-running/
