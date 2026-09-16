@@ -32,6 +32,7 @@
       "does": "교차검증, 다른 회사 모델",
       "model": "gemini",
       "geminiModel": "gemini-3.6-flash",
+      "geminiFallback": "gemini-3.1-pro",
       "fallback": "gpt"
     },
     "boss": {

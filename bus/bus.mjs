@@ -996,7 +996,7 @@ export const codexModelsFor = (actorId) => (actorId === 'system' ? CODEX_MODELS_
 export const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3.1-pro'];
 export const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
 export const ENGINES = ['claude', 'gpt', 'gemini'];
-export const CAST_FIELDS = ['model', 'llm', 'codexModel', 'geminiModel', 'effort', 'fallback', 'suspended'];
+export const CAST_FIELDS = ['model', 'llm', 'codexModel', 'geminiModel', 'geminiFallback', 'effort', 'fallback', 'suspended'];
 /**
  * 중단(결정 118 ②) — 외부 감사 자리를 "지금 못 부른다" 로 명시한다. 값은 복귀 예정일 'YYYY-MM-DD'(또는 'none' → 해제). 조용히 빠지는 게 아니라
  * 상태다: 판정 흐름이 그 걸음을 건너뛰되 방에 note 를 남기고(CLAUDE.md "외부 모델이 연결돼 있지 않으면 작전실에 남긴다"), 라운드 기록에 outsideAudited:false 가 박힌다.
@@ -1021,6 +1021,9 @@ export const engineName = (model) => (model === 'gpt' ? 'codex' : model === 'gem
 /** 이 자리의 codex 모델 — 자리별 값이 먼저, 없으면 환경(전 자리 공통, 옛 길), 그것도 없으면 목록 첫 것. */
 export const codexModelOf = (agent) => agent?.codexModel ?? process.env.PPANAM_CODEX_MODEL ?? CODEX_MODELS[0];
 export const geminiModelOf = (agent) => agent?.geminiModel ?? GEMINI_MODELS[0];
+/** 기본 gemini 모델이 서버 용량 부족(503 UNAVAILABLE)이면 갈아탈 모델 — 자리에 없으면 null(재시도만, 갈아탈 데 없음).
+ * 값은 실측된 것만(agy models 로 확인 뒤 배선, 나리 15:5x) — GEMINI_MODELS 밖은 castChangeError 가 막는다. */
+export const geminiFallbackOf = (agent) => agent?.geminiFallback ?? null;
 /**
  * codex CLI 인자 — 순수, bus/outside.mjs 가 쓰고 round.mjs check 가 돌려본다.
  * 샌드박스는 읽기 전용으로 못 박는다 — 기본값에 맡겼더니 codex 0.154 가 워크트리에 시험 디렉터리와 수정을 남겼다(2026-09-12).
@@ -1062,9 +1065,9 @@ export function castChangeError(actorId, agent, patch) {
   // 다만 목록이 더 넓다(claudeModelsFor·codexModelsFor).
   if (actorId === 'boss') return `'${actorId}' 는 사람이라 엔진이 없습니다.`;
   const keys = Object.keys(patch ?? {}).filter((k) => patch[k] !== undefined);
-  if (!keys.length) return '바꿀 값이 없습니다 (model · llm · codexModel · geminiModel · effort).';
+  if (!keys.length) return '바꿀 값이 없습니다 (model · llm · codexModel · geminiModel · geminiFallback · effort).';
   const bad = keys.find((k) => !CAST_FIELDS.includes(k));
-  if (bad) return `'${bad}' 는 고칠 수 있는 값이 아닙니다 (model · llm · codexModel · geminiModel · effort).`;
+  if (bad) return `'${bad}' 는 고칠 수 있는 값이 아닙니다 (model · llm · codexModel · geminiModel · geminiFallback · effort).`;
   if (patch.model !== undefined) {
     if (!ENGINES.includes(patch.model)) return `엔진은 ${ENGINES.join(' · ')} 중 하나입니다: ${patch.model}`;
     // 외부감사만은 다른 회사 모델이어야 한다 — CLAUDE.md "클로드 둘이 사이좋게 같이 틀릴 때, 그건 다른 엔진에게만 보인다". codex 든 gemini 든 클로드만 아니면 된다.
@@ -1073,6 +1076,7 @@ export function castChangeError(actorId, agent, patch) {
   if (patch.llm !== undefined && !claudeModelsFor(actorId).includes(patch.llm)) return `claude 모델은 ${claudeModelsFor(actorId).join(' · ')} 중 하나입니다: ${patch.llm}`;
   if (patch.codexModel !== undefined && !codexModelsFor(actorId).includes(patch.codexModel)) return `codex 모델은 ${codexModelsFor(actorId).join(' · ')} 중 하나입니다: ${patch.codexModel}`;
   if (patch.geminiModel !== undefined && !GEMINI_MODELS.includes(patch.geminiModel)) return `gemini 모델은 ${GEMINI_MODELS.join(' · ')} 중 하나입니다: ${patch.geminiModel}`;
+  if (patch.geminiFallback !== undefined && patch.geminiFallback !== null && !GEMINI_MODELS.includes(patch.geminiFallback)) return `gemini 대체 모델도 ${GEMINI_MODELS.join(' · ')} 중 하나입니다: ${patch.geminiFallback}`;
   if (patch.fallback !== undefined && patch.fallback !== 'none' && !isForeign(patch.fallback)) return `폴백은 다른 회사 엔진(gpt · gemini) 또는 'none'(대표께 올림)입니다: ${patch.fallback}`;
   if (patch.suspended !== undefined) {
     if (actorId !== 'outside') return `중단은 외부감사(outside) 자리에만 적습니다: ${actorId}`;

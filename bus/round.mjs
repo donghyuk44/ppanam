@@ -1058,12 +1058,17 @@ switch (cmd) {
         const swWant = sw.to.model === 'gpt' && sw.from.model === 'claude' && readCast(T).agents.guide.model === 'gpt' && castChangeText('테라', sw.to) === '대표가 테라를 codex 로 바꿨습니다 — 다음 턴부터.';
         updateCastAgent(T, 'guide', { model: 'claude' });
         // gemini — 임시 외부 감사(대표 결정 09-14). 외부감사를 gemini 로는 되고 claude 로는 안 되고, geminiModel 은 목록 안, note 는 'gemini'. isForeign 이 셋 다 가른다.
-        const { isForeign, engineName, GEMINI_MODELS } = await import('./bus.mjs');
+        const { isForeign, engineName, GEMINI_MODELS, geminiFallbackOf } = await import('./bus.mjs');
         const gErrs = [castChangeError('outside', ag.outside, { model: 'gemini' }), castChangeError('outside', ag.outside, { geminiModel: GEMINI_MODELS[1] }), castChangeError('outside', ag.outside, { geminiModel: 'gemini-9' })];
         const gsw = updateCastAgent(T, 'outside', { model: 'gemini', geminiModel: GEMINI_MODELS[0] });
+        // geminiFallback(503 갈아탈 모델, 나리 15:5x) — 목록 안만 통과, 없으면 null(갈아탈 데 없음). 실측 안 된
+        // 값(예: 3.8-flash)은 agy 확인 전엔 안 넣는다 — GEMINI_MODELS 안(3.1-pro)만 실제 배선.
+        const gfErrs = [castChangeError('outside', ag.outside, { geminiFallback: GEMINI_MODELS[1] }), castChangeError('outside', ag.outside, { geminiFallback: 'gemini-3.8-flash' })];
+        const gfWant = gfErrs[0] === null && gfErrs[1]?.includes('gemini 대체 모델') && geminiFallbackOf({ geminiFallback: GEMINI_MODELS[1] }) === GEMINI_MODELS[1] && geminiFallbackOf({}) === null;
         const gWant = gErrs[0] === null && gErrs[1] === null && gErrs[2]?.includes('gemini 모델') && readCast(T).agents.outside.model === 'gemini'
           && castChangeText('레오', gsw.to) === `대표가 레오를 gemini·${GEMINI_MODELS[0]} 로 바꿨습니다 — 다음 턴부터.`
-          && isForeign('gpt') && isForeign('gemini') && !isForeign('claude') && !isForeign(null) && engineName('gemini') === 'gemini' && engineName('gpt') === 'codex';
+          && isForeign('gpt') && isForeign('gemini') && !isForeign('claude') && !isForeign(null) && engineName('gemini') === 'gemini' && engineName('gpt') === 'codex'
+          && gfWant;
         updateCastAgent(T, 'outside', { model: 'gpt' });
         // 폴백(결정 116 ②) — 자리에 없으면 나머지 다른 회사 엔진, 'none' 은 대표께 올림(null), 클로드 자리는 없음, 목록 밖은 거부.
         const { fallbackOf } = await import('./bus.mjs');
@@ -1091,7 +1096,7 @@ switch (cmd) {
           && !mp.permissions.deny.includes('unsandboxed(*)') && ['command(node tools/screen-shot.mjs)', 'command(node tools/library.mjs)', 'command(node --test)', 'command(jq)'].every((x) => mp.permissions.allow.includes(x));   // 나리 실측 09-16 — deny unsandboxed(*) 가 모든 명령을 막았다
         out.push(['agy 권한 합치기(읽기만)', mpWant ? '✓ 있던 것 유지 · 중복 없음 · write_file(*) deny · unsandboxed(*) 는 뺌 · 사진·책장·--test·jq 허용' : '✗ ' + JSON.stringify(mp)]);
         out.push(['Antigravity CLI(agy) 인자·봉투', agyWant ? '✓ -p·json·모델·상한·effort·--conversation · 승인 건너뛰기 없음 · 봉투 response/conversation_id · ERROR·비JSON throw' : '✗ ' + JSON.stringify({ aa, ab, pa, pErr, pBad })]);
-        out.push(['gemini 임시 외부 감사(09-14)', gWant ? '✓ outside→gemini 통과 · geminiModel 목록 · note gemini · isForeign 셋' : '✗ ' + JSON.stringify({ gErrs, to: gsw.to })]);
+        out.push(['gemini 임시 외부 감사(09-14)', gWant ? '✓ outside→gemini 통과 · geminiModel 목록 · note gemini · isForeign 셋 · geminiFallback 목록 안만(15:5x)' : '✗ ' + JSON.stringify({ gErrs, gfErrs, to: gsw.to })]);
         const txt = castChangeText('테라', up.to), txt2 = castChangeText('안젤', { effort: 'low' });
         const ca = codexArgs({ model: 'gpt-5.1', effort: 'high', resume: 'sid' }), cb = codexArgs({ model: 'gpt-5.1', outPath: '/tmp/o' });
         const cWant = ca.join(' ') === 'exec resume sid --skip-git-repo-check -c model=gpt-5.1 -c sandbox_mode=read-only -c model_reasoning_effort=high -'

@@ -25,6 +25,7 @@
       "does": "열어서 재고 세어 본다",
       "model": "gemini",
       "geminiModel": "gemini-3.6-flash",
+      "geminiFallback": "gemini-3.1-pro",
       "fallback": "gpt"
     },
     "boss": {
