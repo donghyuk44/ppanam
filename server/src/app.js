@@ -1379,7 +1379,8 @@ async function loadSettings() {
   // ① 권한 현황 — 나리 표(teams/hq/out/권한-현황-0916.md)를 그대로. 바꾸는 손은 대표(settings.json)라 여기선 읽기만.
   body.appendChild(el('div', 'set__k', '권한'));
   const perm = el('div'); body.appendChild(perm); perm.textContent = '로딩 중';
-  fetch('/out/hq/' + encodeURIComponent('권한-현황-0916.md')).then(async (r) => { perm.replaceChildren(r.ok ? mdLite(await r.text()) : el('p', null, '권한 표 없음')); }).catch(() => { perm.textContent = '권한 표 없음'; });
+  // 대표용 한 장(teams/hq/out/권한.md — 자리마다 되는 것·안 되는 것 한 줄, 나리 폴드 QA #22). 옛 권한-현황-0916.md 는 기록 문서라 대표 화면에 안 올린다
+  fetch('/out/hq/' + encodeURIComponent('권한.md')).then(async (r) => { perm.replaceChildren(r.ok ? mdLite(await r.text()) : el('p', null, '권한 표 없음')); }).catch(() => { perm.textContent = '권한 표 없음'; });
   // ② 낱말 사전 — 하영(teams/marketing/out/opsroom-words.md). 길어서 접힘.
   body.appendChild(el('div', 'set__k', '용어'));
   body.appendChild(mdFold('용어 사전', '/out/marketing/opsroom-words.md'));
