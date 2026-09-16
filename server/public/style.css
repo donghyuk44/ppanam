@@ -286,7 +286,7 @@ body {
 @keyframes hit { 0%, 55% { box-shadow: 0 0 0 3px var(--me-line); background: color-mix(in srgb, var(--me) 28%, transparent); } 100% { box-shadow: 0 0 0 3px transparent; background: transparent; } }
 .row.me { flex-direction: row-reverse; }
 .av {
-  flex: none; width: 32px; height: 32px; border-radius: 9px; margin-top: 15px;
+  flex: none; width: 32px; height: 32px; border-radius: 50%; margin-top: 15px;   /* 이름표 r9 → 32 원(.chip 과 같은 50%) */
   display: grid; place-items: center;
   font-family: 'Gowun Batang', serif; font-size: 15px; color: #fdfbf7;
 }
@@ -824,7 +824,8 @@ body {
 .tcard__ask b { font-size: 12.5px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tcard__ask span { font-size: 11px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tcard__person { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 2px 0; background: none; border: 0; cursor: pointer; font-family: inherit; }
-.tcard__person .chip { flex: none; width: 32px; height: 32px; font-size: 11px; }
+/* 사람 카드 얼굴 — PC 48 원 + 팀 색 테두리 2(폰은 819 블록에서 40). chip.style.background(자리 색, app.js)를 padding 만큼 비쳐 나오게 해 테두리로 쓴다 — img 는 inset:0 라 패딩 안쪽에만 앉는다(JS 안 건드림). */
+.tcard__person .chip { flex: none; width: 48px; height: 48px; font-size: 12px; padding: 2px; }
 .tcard__person .pill { margin-left: auto; flex: none; }
 .tcard__pwho { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .tcard__pwho b { font-size: 12.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -934,6 +935,33 @@ button.dash__row:hover b { text-decoration: underline; }
 .num[data-tone="bad"] { border-color: var(--bad-line); } .num[data-tone="bad"] b { color: var(--bad); }
 .num[data-tone="live"] b { color: var(--good); }
 
+/* 대시보드 3판(헨리 ui-spec 12절, 테라 req_7e1cff83) — 띠 큰 숫자 셋 · 채팅 머리 띠 한 줄 · 오늘 끝난 것 줄. 값(여백·글자 크기)은 12절 표 그대로, 색은 토큰. 다듬기는 클레멘타인 몫. */
+.stats { display: flex; gap: 8px; min-width: 0; }
+.stats__item { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; height: 80px; box-sizing: border-box; cursor: pointer; font: inherit; color: var(--ink); text-align: left; }
+.stats__k { font-size: 12px; font-weight: 700; color: var(--ink-4); }
+.stats__n { font-size: 28px; font-weight: 700; line-height: 1.1; color: var(--ink); }
+.stats__item[data-k="mine"][data-n] { border-color: var(--me-line); box-shadow: inset 3px 0 0 var(--me-line); }
+.stats__item[data-k="teams"][data-n] { border-color: var(--bad-line); box-shadow: inset 3px 0 0 var(--bad-line); }
+.stats--line { gap: 0; height: 37px; padding: 0 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.stats--line .stats__item { flex-direction: row; align-items: center; gap: 6px; height: auto; padding: 0; border: 0; border-radius: 0; background: none; }
+.stats--line .stats__k { font-weight: 500; }
+.stats--line .stats__n { font-size: 15px; }
+.statline:empty { display: none; }
+.dash__row--done { display: flex; flex-direction: row; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); }
+.dash__row--done:first-of-type { border-top: 0; }
+.dash__row--done .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.dash__row--done .dash__sub { font-size: 14px; line-height: 22px; color: var(--ink); }
+@media (min-width: 1180px) {
+  [data-cards="team"] { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; align-items: stretch; }   /* PC 팀 다섯 가로(12절 — 같은 높이, 꼬리 바닥) */
+  [data-cards="team"] .card { display: flex; flex-direction: column; }
+  [data-cards="team"] .card .card__foot { margin-top: auto; }
+  .stats { gap: 12px; }
+  .stats__item { padding: 16px 20px; height: 92px; }
+  .stats__n { font-size: 32px; }
+  .stats--line { height: 37px; padding: 0 24px; justify-content: flex-start; gap: 28px; }
+  .stats--line .stats__item { flex: 0 0 auto; }
+}
+
 /* 현황 첫 화면 넷(헨리 시안 2판): 막힌 것 → 한 것 → 내 차례 → 팀. 막힌 것·내 차례는 테두리로 튀고, 팀 줄은 펼쳐진다. */
 .dash__card[data-block="stuck"] { border-color: var(--bad-line); }
 .dash__card[data-block="stuck"] .dash__k { color: var(--bad); }
@@ -973,8 +1001,9 @@ button.dash__row:hover b { text-decoration: underline; }
 }
 .pcard[data-boss="1"] { border-color: var(--me-line); }
 .pcard[data-alert="1"] { border-color: var(--bad-line); background: var(--bad-bg); }
-.pcard__top { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.pcard__chip { font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+/* 프로필 띠(테라 자리 지정) — PC 왼쪽 110 폭 띠에 지름 90, 폰(819 아래) 위 150 띠 가운데 지름 110. .pcard__chip 만 키운다 — .chip(157행) 은 다른 칩이 쓰니 안 건드린다. */
+.pcard__top { display: grid; grid-template-columns: 110px 1fr auto; align-items: center; gap: 8px; min-width: 0; }
+.pcard__chip { font-family: 'IBM Plex Mono', monospace; font-size: 22px; width: 90px; height: 90px; justify-self: center; }
 .pcard__who { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .pcard__who b { font-size: 13.5px; font-weight: 500; color: var(--ink); }
 .pcard__who span { font-size: 11px; color: var(--ink-4); overflow: hidden; text-overflow: ellipsis; }
@@ -1127,6 +1156,11 @@ button.dash__row:hover b { text-decoration: underline; }
   .dash__body { padding: 12px; }
   .band { padding: 8px 8px 4px; }
   .band__head, .band__row { grid-template-columns: 96px minmax(0, 1fr) 14px; gap: 6px; }   /* 헨리 폰 시안 — 팀 이름 칸 좁게, 눈금 넷, 오른쪽 점 둘 */
+  /* 프로필 띠 — 폰: 위 150 띠 가운데 지름 110, 이름·직책·알약은 띠 아래 한 줄로 */
+  .pcard__top { grid-template-columns: 1fr; grid-template-rows: 150px auto; justify-items: center; row-gap: 4px; }
+  .pcard__chip { width: 110px; height: 110px; }
+  .pcard__who { flex-direction: column; align-items: center; text-align: center; white-space: normal; }
+  .tcard__person .chip { width: 40px; height: 40px; }   /* 사람 카드 얼굴 — 폰 40 */
   .dash__body table, .dash__body tr, .dash__body td { display: block; width: 100%; }
   .dash__body th { display: none; }
   .dash__body tr { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 8px 10px; margin-bottom: 8px; }

@@ -46,6 +46,10 @@
 .card__text  { min-width: 0; overflow-wrap: anywhere; }
 
 /* 막힌 것 — 빨간 왼쪽 띠 3(8절 표 그대로) */
+/* 3판(ui-spec 12절, 테라 임시 — 값은 표 그대로, 다듬기는 클레멘타인): 막힌 것 줄은 빨간 띠(바탕 #f7e0dc · 글자 #c94a3a 13 Medium · 모서리 10 · 안여백 8/12), 머리 작은 줄 "누구 진행 중" */
+.card__alert { background: #f7e0dc; color: #c94a3a; font-size: 13px; font-weight: 500; border-radius: 10px; padding: 8px 12px; }
+.card__alert .card__solver { color: inherit; }
+.card__doer { margin-left: auto; font-size: 11px; color: var(--ink-4); white-space: nowrap; }
 .card__block[data-block="blocked"] { border-left: 3px solid var(--bad); padding: 2px 0 2px 6px; background: var(--bad-bg); border-radius: 0 4px 4px 0; }
 .card__block[data-block="blocked"] .card__label { color: var(--bad-dim); }
 .card__solver { color: var(--bad-dim); font-size: 12px; }

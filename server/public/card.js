@@ -135,14 +135,14 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
   card.dataset.team = d.team ?? '';
   card.dataset.state = STATE_WORD[d.state] ? d.state : 'working';
 
-  // 머리 — 팀 색 점 · 이름 · 알약 · 시각
+  // 머리 — 팀 색 점 · 이름 · 알약 · 작은 줄 "누구 진행 중"(3판 ui-spec 12절 — 시각 대신, 결정 187·188. 누구는 d.doing.who, 없으면 줄 없음)
   const head = el('header', 'card__head');
   const dot = el('span', 'card__dot'); if (d.color) dot.style.setProperty('--dot', d.color);
   head.appendChild(dot);
   head.appendChild(el('span', 'card__name', d.name ?? d.team ?? ''));
   const pill = el('span', 'card__pill', STATE_WORD[card.dataset.state]); pill.dataset.state = card.dataset.state;
   head.appendChild(pill);
-  const t = timeNode(d.at); if (t) head.appendChild(t);
+  if (d.doing?.who && card.dataset.state === 'working') head.appendChild(el('span', 'card__doer', `${d.doing.who} 진행 중`));
   card.appendChild(head);
 
   // 지금 · 다음 · 그 뒤 — 팀별 세 줄(대표 15:1x "팀별로 지금 하는 것·다음·그 뒤를 볼 수가 없다"; 머리 글자는 하영 사전 그대로, 나리 16:3x — 글자는 하영 몫).
@@ -167,9 +167,9 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
   });
   const doneSec = block('done', done); if (doneSec) card.appendChild(doneSec);
 
-  // 막힌 것 — 0~2(자에 맞는 줄만), "{무엇이 왜} — {누가} 풀어요"
+  // 막힌 것 — 0~2(자에 맞는 줄만), "{무엇이 왜} — {누가} 풀어요". 3판(ui-spec 12절): 세 줄 밑 **빨간 띠**(.card__alert — 색·모서리는 card.css 몫)
   const blocked = (d.blocked ?? []).filter((x) => ok(x.text)).slice(0, 2).map((x) => {
-    const row = el('div', 'card__item');
+    const row = el('div', 'card__item card__alert');
     row.appendChild(said(x.text));
     if (x.who) row.appendChild(el('span', 'card__solver', `— ${x.who} 풀어요`));
     return row;
@@ -188,9 +188,9 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
   if (d.stage || d.usage || onOpen) {
     const foot = el('footer', 'card__foot');
     const bits = [];
-    if (d.stage) {
-      if (d.stage.n != null) bits.push(d.stage.total != null ? `${d.stage.n}/${d.stage.total} 단계` : `${d.stage.n}단계`);   // 사전 1절 125행·0-3 폴드7 QA 표(3aa853b): 단계(마일스톤은 후보로만)
-      if (d.stage.round != null) bits.push(`${d.stage.round}회차`);
+    if (d.stage && d.stage.n != null) {
+      // 3판 꼬리 한 자리 "끝난 수/전체 · 지금 N단계"(ui-spec 12절, 제안 2절 3번) — 끝난 수 = 지금 단계 앞의 것(n-1). 회차 수는 뺐다(사람 말 아님, 187·188)
+      bits.push(d.stage.total != null ? `${Math.max(0, d.stage.n - 1)}/${d.stage.total} · 지금 ${d.stage.n}단계` : `지금 ${d.stage.n}단계`);
     }
     if (d.usage && (d.usage.turns > 0 || d.usage.costUsd > 0)) bits.push(`오늘 쓴 것 ${d.usage.turns ?? 0}번${d.usage.costUsd > 0 ? ` $${Number(d.usage.costUsd).toFixed(2)}` : ''}`);
     if (bits.length) foot.appendChild(el('span', 'card__stage', bits.join(' · ')));

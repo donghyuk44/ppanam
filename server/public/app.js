@@ -1773,7 +1773,7 @@ function loadDone() {
   const since = dayStartSeoulMs(Date.now());
   if (done.since === since && Date.now() - done.fetchedAt < 30_000) return;
   done.since = since; done.fetchedAt = Date.now();
-  fetch(`/api/done?since=${since}`).then((r) => r.json()).then((r) => { done.items = r.items ?? []; if (view === 'tower' && towerTab === 'all') renderTower(); else if (view === 'analysis') loadAnalysis(); }).catch(() => {});   // 분석 첫 층 그림도 같은 점을 쓴다
+  fetch(`/api/done?since=${since}`).then((r) => r.json()).then((r) => { done.items = r.items ?? []; if (view === 'tower' && towerTab === 'all') renderTower(); else if (view === 'analysis') loadAnalysis(); const sl = $('statLine'); if (sl) sl.replaceChildren(statBand(dashStats(), 'line')); }).catch(() => {});   // 분석 첫 층 그림·채팅 머리 띠도 같은 점을 쓴다
 }
 /** 작업 보드 — 30초마다. /api/work 가 없으면(솔라 배선 전 404) data 는 null 로 두고 블록을 안 그린다. */
 function loadWork() {
@@ -1874,7 +1874,15 @@ function teamCardNode(team, rerender = null) {
   });
 }
 /** 채팅 맨 위 — 그 팀 카드 하나가 고정(카드-체계 1절 "어디에 뜨나 ③", 옛 '지금 하는 회차' 줄 자리). 총괄실·비서실은 상황판이 없어 안 그린다. */
+/** 채팅 머리 띠 한 줄(ui-spec 12절 ③) — 대시보드 띠와 같은 값(dashStats). 방마다(총괄실·비서실도). 누르면 대시보드 그 블록. */
+function renderStatLine() {
+  const box = $('statLine');
+  if (!box) return;
+  loadDone();
+  box.replaceChildren(statBand(dashStats(), 'line'));
+}
 function renderRoomCard() {
+  renderStatLine();
   const box = $('roomCard');
   if (!box) return;
   const t = teams.find((x) => x.id === active);
@@ -1882,43 +1890,6 @@ function renderRoomCard() {
   const node = teamCardNode(active, () => { if (view === 'room') renderRoomCard(); });
   box.replaceChildren();
   if (node) { box.appendChild(node); box.hidden = false; } else box.hidden = true;
-}
-
-/**
- * 대시보드 맨 위 작업 보드 한 블록(카드-체계-0916 1-1, 대표 08:2x "간트 시스템 만든 거 그것도 대시보드에서 보여야 해"). state/work.json 그대로(bus.timelineOf) —
- * 줄기마다 한 줄: 진행 N · 감사 대기 N · 통과 N · 막힘(있으면 빨강) · 시작 가능 N. 밑에 "누가 누구를 기다리나" 한두 줄(topBlockers). 누르면 타임라인 탭. 비어 있는 줄기는 안 그린다.
- */
-function workBoardBlock() {
-  const w = work.data;
-  if (!w?.streams?.length) return null;
-  const sec = el('section', 'dash__card'); sec.dataset.block = 'work';
-  sec.appendChild(el('div', 'dash__k', '작업 보드'));
-  const nameOf = (team, seat) => summaries[team]?.cast?.[seat]?.name ?? summaries.hq?.cast?.[seat]?.name ?? seat;
-  const streams = w.streams.filter((s) => s.items?.length && (s.items.length !== (s.counts?.['통과'] ?? 0) + (s.counts?.['안 함'] ?? 0)));   // 다 끝난 줄기는 안 그린다
-  // 흐름 이름은 사람 말(사전 0-3 폴드7 QA 표 3aa853b, #7 — work.json stream 은 그대로): 토큰→비용 · 카드 체계→카드 · 시안 대 실물→시안 맞춤 · 인격·자리→사람 설정
-  const STREAM_WORD = { '토큰': '비용', '권한': '권한', '화면 글': '화면 글', '카드 체계': '카드', '시안 대 실물': '시안 맞춤', '운영': '운영', '인격·자리': '사람 설정', '인격': '사람 설정' };
-  for (const s of streams.slice(0, 7)) {
-    const c = s.counts ?? {};
-    const row = el('button', 'dash__row work__row'); row.type = 'button';
-    const head = el('span', 'dash__head');
-    head.appendChild(el('b', null, STREAM_WORD[s.name] ?? s.name));
-    const bits = [];
-    if (c['진행']) bits.push(`진행 ${c['진행']}`);
-    if (c['감사 대기']) bits.push(`감사 대기 ${c['감사 대기']}`);
-    if (c['통과']) bits.push(`통과 ${c['통과']}`);
-    if (c['시작가능']) bits.push(`시작 가능 ${c['시작가능']}`);
-    head.appendChild(el('span', 'dash__stage', bits.join(' · ')));
-    if (c['막힘']) { const b = el('span', 'wait'); b.appendChild(el('i', 'dot dot--bad')); b.append(`막힘 ${c['막힘']}`); head.appendChild(b); }
-    row.appendChild(head);
-    row.addEventListener('click', () => setView('dashboard'));
-    sec.appendChild(row);
-  }
-  for (const b of (w.topBlockers ?? []).slice(0, 2)) {
-    const who = (b.waiting ?? []).map((x) => nameOf(x.team, x.seat)).filter((v, i, a) => a.indexOf(v) === i).join('·');
-    // 병목 글자는 work.json 그대로("server(솔라)"·"app.js(테라)") — bosswords.gateLine 이 "솔라 손 뒤에 7건 — … 기다림" 으로(나리 R32 ⑤). 자도 같은 함수
-    putLine(sec, gateLine(b.bottleneck, b.count, who), 'dash__empty work__wait');   // 자에 안 맞으면 그 줄은 안 그림(opus ④)
-  }
-  return sec;
 }
 
 /* ── 그림 부품 — 헨리 '숫자를 어떻게 보여 주나 — 한 벌'(numbers.md). 이 문서 밖 모양은 안 쓴다.
@@ -1940,119 +1911,118 @@ function timeBand(start, end, marks, spans = []) {
 }
 
 function renderTowerAll(grid) {
+  // 대시보드 3판(헨리 ui-spec 12절 · 대표 답 ④ · 결정 192, req_7e1cff83): 위에서 아래로 넷 — 띠 큰 숫자 셋 → 정할 것 → 팀 다섯 → 오늘 끝난 것.
+  // 뺀 것: 이슈 블록(막힌 것은 팀 카드의 빨간 띠로) · 작업 보드 · 최근 활동 · 시각. 숫자 하나 = 목록 하나 = 정본 하나(제안 2절).
   const goRoom = (t) => async () => { await selectTeam(t.id); setView('room'); };
-  const now = Date.now(), day0 = dayStartSeoulMs(now);
-  const pendingAll = approvals.map((r) => ({ id: r.id, grade: r.grade, team: r.team, by: r.by, what: r.what, ts: r.requestedAt ?? r.ts }));
-  const openReq = requestsAll.filter((r) => r.status !== 'closed');
-  const blocked = blockedOf({ teams, summaries, approvals: pendingAll, requests: openReq, infra }, { now, pauses });
-  // 부탁 블록의 '차례' 는 막힘이 아니다(톰 09-15 — 열린 부탁·닫힌 부탁이 '막힌 것 6' 을 만들었다). 부탁은 요청 탭에. 여기는 FAIL·상황판 막힘·결재 대기·밑바닥만.
-  const stuck = blocked.filter((it) => it.waitOn !== 'boss' && it.kind !== 'request');
-  const mine = blocked.filter((it) => it.waitOn === 'boss');
-  const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
-  loadDone(); loadWork();
-  // 대표는 '누가 뭘 했나' 에 안 선다(톰 09-15) — 팀원만. 대표의 결정은 결재 카드가 이미 보여 준다.
-  const today = done.items.filter((it) => new Date(it.ts).getTime() >= day0 && it.by !== 'boss');
-  // 큰 숫자 타일은 뺐다 — 하영 내용 2판 9절 5(큰 숫자 빼기)와 어긋난다(톰 09-15). 수는 칸 제목에만(막힌 것 N · 내 차례 N).
+  const { mine, fromBoard } = bossItems();
+  loadDone();
+  const stat = dashStats({ mine, fromBoard });
+  const jump = (block) => () => { grid.querySelector(`[data-block="${block}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
 
-  // 순서(적대검수 opus ①, 나리 16:0x): 팀 카드(진행 중·다음·예정) 맨 위 → 대표 할 일 → 이슈 → 작업 보드·최근 활동은 맨 아래 접힘. 블록은 아래서 만들고 끝에서 이 순서로 붙인다.
-  const order = { teams: null, mine: null, stuck: null, folded: [] };
-  // ⓪ 작업 보드 — 한 블록(카드-체계 1-1, 대표 08:2x). /api/work 가 있을 때만. 맨 아래 접힘
-  const wb = workBoardBlock();
-  if (wb) order.folded.push(wb);
+  // ① 띠 — 큰 숫자 셋(사전 191행 셈). 누르면 그 블록으로. 채팅 머리 한 줄(③)과 같은 값 하나(dashStats).
+  grid.appendChild(statBand(stat, 'big', jump));
 
-  // ① 뭐가 막혔나 — 대표가 풀 것이 아닌 막힘(팀·톰·운영·밑바닥). 강조: 그 팀 점만 색, 빨간 점 + N시간째. 대표 몫(waitOn boss)은 ③.
-  if (stuck.length) {
-    const sec = el('section', 'dash__card'); sec.dataset.block = 'stuck';
-    sec.appendChild(el('div', 'dash__k', `이슈 ${stuck.length}`));
-    for (const it of stuck) {
-      const row = el('button', 'dash__row'); row.type = 'button';
-      const head = el('span', 'dash__head');
-      const dot = el('span', 'dot'); dot.style.background = it.team ? teamColor(it.team) : 'var(--ink-4)'; head.appendChild(dot);
-      const who = it.kind === 'infra' ? '시스템' : `${it.teamName}${it.name && it.kind !== 'blocked' && it.kind !== 'board' ? ' · ' + it.name : ''}`;
-      head.appendChild(el('b', null, who));
-      if (it.wait != null) { const w = el('span', 'wait'); w.appendChild(el('i', 'dot dot--bad')); w.append(forShort(it.wait).replace(/째$/, ' 경과')); head.appendChild(w); }
-      row.appendChild(head);
-      if (!putLine(row, it.text, 'dash__sub', it.team)) continue;   // 낼 글이 없으면 행을 안 그림(opus ④)
-      row.addEventListener('click', () => { const tg = it.target ?? {}; if (tg.view === 'tower') setTowerTab(tg.tab ?? 'asks'); else if (tg.team) jumpTo(tg.team, tg.event ?? null); });
-      sec.appendChild(row);
-    }
-    if (sec.querySelector('.dash__row')) order.stuck = sec;   // 행이 하나도 안 남으면 블록도 안 그림
-  }
-
-  // ② 최근 활동 · 오늘 — 여섯 줄, 넘치면 "더 보기"(오늘 안에서만). 사람별 막대(숲)는 뺐다 — 숫자 없는 게이지가 관제탑 내용 규칙 ④ "자기 통계 줄 0" 과 부딪혔다(폴드 QA #8, 나리 14:4x "내용 규칙 ④가 이김").
-  const sec2 = el('section', 'dash__card'); sec2.dataset.block = 'done';
-  sec2.appendChild(el('div', 'dash__k', '최근 활동 · 오늘'));
-  const all = done.items.filter((it) => it.by !== 'boss');
-  const items = all.slice(0, done.more ? 60 : 6);
-  if (!items.length) sec2.appendChild(el('div', 'dash__empty', done.fetchedAt ? '완료 없음' : '로딩 중'));
-  for (const it of items) {
+  // ② 정할 것 N — 결재(C)·물어봄·FAIL 판단 + 상황판 '대표님이 보실 것' 줄. 0 이면 "오늘은 없어요"(나리 상시 대리 188 뒤 기본 모양).
+  const sec3 = el('section', 'dash__card'); sec3.dataset.block = 'mine'; if (stat.decide) sec3.dataset.alert = '1';
+  sec3.appendChild(el('div', 'dash__k', `정할 것 ${stat.decide}`));
+  if (!stat.decide) sec3.appendChild(el('div', 'dash__empty', '오늘은 없어요'));
+  for (const it of mine) {
     const row = el('button', 'dash__row'); row.type = 'button';
-    const head = el('span', 'dash__head');
-    const dot = el('span', 'dot'); dot.style.background = it.by ? seatColor(it.team, it.by) : teamColor(it.team); head.appendChild(dot);
-    head.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''}`));
-    head.appendChild(el('span', 'dash__stage', agoShort(it.ts)));
-    row.appendChild(head);
-    if (!putLine(row, it.text, 'dash__sub', it.team)) continue;   // 낼 글이 없으면 행을 안 그림(opus ④)
-    row.addEventListener('click', () => { if (it.kind === 'decision' || it.kind === 'proxy') setTowerTab('all'); else jumpTo(it.team, String(it.id).split(':')[1] ?? null); });
-    sec2.appendChild(row);
+    row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '승인 필요' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));
+    putLine(row, it.text, 'dash__sub', it.team);   // 대표 몫은 행은 남기고(누를 수 있어야) 글만 — 없으면 머리 한 줄(opus ④)
+    row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '확인' : '채팅 열기'));
+    row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (it.kind === 'approval') { const r = approvals.find((a) => a.id === (tg.approval ?? String(it.id).split(':')[1])); if (r) openApprovalPop(r); else document.querySelector('.approvals')?.scrollIntoView({ block: 'start' }); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
+    sec3.appendChild(row);
   }
-  // "더 보기" 는 오늘 한 것이 여섯을 넘을 때만(하영 사전 3-5-1 · 내용 2판 9절 2 — 어제로는 안 간다, 어제는 보고서). 전엔 '어제까지' 였다 — 내 계약 글자였지 나리 정본이 아니었다(하영 req_123f2ebe).
-  if (all.length > 6) {
-    const more = el('button', 'dash__more'); more.type = 'button'; more.textContent = done.more ? '접기' : '더 보기';
-    more.addEventListener('click', () => { done.more = !done.more; renderTower(); });
-    sec2.appendChild(more);
+  for (const b of fromBoard) {
+    const row = el('button', 'dash__row'); row.type = 'button';
+    if (!startsWithTeam(b.text, b.teamName)) row.appendChild(el('b', null, b.teamName));   // 줄이 이미 팀 이름으로 시작하면 머리를 안 붙인다(폴드 QA #4)
+    if (!putLine(row, b.text, 'dash__sub', b.team)) continue;
+    row.addEventListener('click', goRoom(teams.find((t) => t.id === b.team)));
+    sec3.appendChild(row);
   }
-  order.folded.push(sec2);
+  grid.appendChild(sec3);
 
-  // ③ 내 차례 — 대표가 답할 것: 결재(C)·물어봄(bossCall)·막힘(FAIL 대표 판단) + 각 방 상황판의 '대표 차례' 줄. 알림 종과 같은 목록(notify.js). 노랑(numbers.md 상태 색).
-  if (mine.length || fromBoard.length) {
-    const sec3 = el('section', 'dash__card'); sec3.dataset.block = 'mine'; sec3.dataset.alert = '1';
-    // 머리는 '대표님이 보실 것'(하영 77행 · 현황 시안 tower 51 — '내 차례' 는 사전 밖, 5판 3-5-2 어긋남 ⑴) · 줄의 '물어봄' 은 '대표님께 물어봄'(3-5-3 ③ — 누가 누구를 이 보여야)
-    sec3.appendChild(el('div', 'dash__k', `대표 확인 ${mine.length + fromBoard.length}`));
-    for (const it of mine) {
-      const row = el('button', 'dash__row'); row.type = 'button';
-      row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '승인 필요' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));
-      putLine(row, it.text, 'dash__sub', it.team);   // 대표 몫은 행은 남기고(누를 수 있어야) 글만 — 없으면 머리 한 줄(opus ④)
-      row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '확인' : '채팅 열기'));
-      // 결재는 그 자리에서 카드가 팝업으로(approval 시안 — "읽고 답하기 를 누르면"). 맨 위 띠로 스크롤하던 것을 그만둔다
-      row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (it.kind === 'approval') { const r = approvals.find((a) => a.id === (tg.approval ?? String(it.id).split(':')[1])); if (r) openApprovalPop(r); else { setTowerTab('all'); document.querySelector('.approvals')?.scrollIntoView({ block: 'start' }); } } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
-      sec3.appendChild(row);
-    }
-    for (const b of fromBoard) {
-      const row = el('button', 'dash__row'); row.type = 'button';
-      // 머리는 팀 이름 한 번 — 줄이 이미 팀 이름으로 시작하면 머리를 안 붙인다(daily-words 1절, 폴드 QA #4 반쪽). '상황판' 은 어디서 왔나지 제목이 아니다
-      if (!startsWithTeam(b.text, b.teamName)) row.appendChild(el('b', null, b.teamName));
-      if (!putLine(row, b.text, 'dash__sub', b.team)) continue;   // 낼 글이 없으면 행을 안 그림(opus ④)
-      row.addEventListener('click', goRoom(teams.find((t) => t.id === b.team)));
-      sec3.appendChild(row);
-    }
-    order.mine = sec3;
-  }
-
-  // ④ 팀 — 팀 상황 카드 다섯이 세로로(카드-체계 1절 "② 첫 화면 탭", C7). 부품은 card.js teamCard 하나 — 채팅 맨 위·비서실과 같은 것. 옛 줄(진행 막대·시간 띠·펼침)은 뺐다 —
-  //   재료(/api/card)가 아직이면 팀 이름 한 줄만("불러오는 중"). 카드 사이 간격·폭은 클레멘타인 토큰(card.css) 몫 — 여기 껍데기는 [data-cards] 하나.
+  // ③ 팀 다섯 — 팀 카드(card.js teamCard: 진행 중·다음·예정 · 막힌 것 빨간 띠 · 머리 "누구 진행 중" · 꼬리 "끝난 수/전체 · 지금 N단계"). 재료가 아직이면 팀 이름 한 줄.
   const tl = el('section', 'dash__card'); tl.dataset.block = 'teams';
-  tl.appendChild(el('div', 'dash__k', '팀'));
+  tl.appendChild(el('div', 'dash__k', '팀 다섯'));
   const cardsBox = el('div', 'cards'); cardsBox.dataset.cards = 'team';
   for (const t of teams.filter((x) => x.id !== 'sera')) {
     const cardNode = teamCardNode(t.id, () => { if (view === 'tower' && towerTab === 'all') renderTower(); });
     cardsBox.appendChild(cardNode ?? el('div', 'dash__empty', `${t.name} — 불러오는 중`));
   }
   tl.appendChild(cardsBox);
-  order.teams = tl;
+  grid.appendChild(tl);
 
-  // 붙이기 — 팀 카드 · 대표 할 일 · 이슈 · (접힘) 작업 보드·최근 활동
-  for (const n of [order.teams, order.mine, order.stuck]) if (n) grid.appendChild(n);
-  if (order.folded.length) {
-    const fold = el('details', 'dash__card'); fold.dataset.block = 'more';   // 기존 카드 틀·머리 글자 클래스 그대로(style.css 는 클레멘타인 몫이라 새 규칙 없이)
-    let open = false; try { open = localStorage.getItem('ppanam.towerMore') === '1'; } catch { /* 기본은 접힘 */ }
-    fold.open = open;
-    fold.addEventListener('toggle', () => { try { localStorage.setItem('ppanam.towerMore', fold.open ? '1' : '0'); } catch { /* 무시 */ } });
-    const sum = el('summary', 'dash__k', '작업 보드 · 최근 활동'); sum.style.cursor = 'pointer';
-    fold.appendChild(sum);
-    for (const n of order.folded) fold.appendChild(n);
-    grid.appendChild(fold);
+  // ④ 오늘 끝난 것 N — 사람 말 한 줄 + 팀 색 점. 정본은 /api/done 오늘(상황판 done + 판정 통과 + 결재·회차·글). 자에 안 맞는 줄은 안 낸다. 대표는 안 선다(톰).
+  const sec2 = el('section', 'dash__card'); sec2.dataset.block = 'done';
+  sec2.appendChild(el('div', 'dash__k', `오늘 끝난 것 ${stat.doneList.length}`));
+  if (!stat.doneList.length) sec2.appendChild(el('div', 'dash__empty', done.fetchedAt ? '아직 없어요' : '불러오는 중'));
+  const items = stat.doneList.slice(0, done.more ? 60 : 8);
+  for (const it of items) {
+    const row = el('button', 'dash__row dash__row--done'); row.type = 'button';
+    const dot = el('span', 'dot'); dot.style.background = teamColor(it.team); row.appendChild(dot);
+    row.appendChild(el('span', 'dash__sub', it.line));
+    row.addEventListener('click', () => { if (it.kind === 'board') jumpTo(it.team, null); else if (it.kind === 'decision' || it.kind === 'proxy') jump('mine')(); else jumpTo(it.team, String(it.id).split(':')[1] ?? null); });   // 상황판 줄은 이벤트가 없다 — 방만 연다(code-review)
+    sec2.appendChild(row);
   }
+  if (stat.doneList.length > 8) {
+    const more = el('button', 'dash__more'); more.type = 'button'; more.textContent = done.more ? '접기' : '더 보기';
+    more.addEventListener('click', () => { done.more = !done.more; renderTower(); });
+    sec2.appendChild(more);
+  }
+  grid.appendChild(sec2);
+}
+
+/** 대표 몫 하나 — 정할 것의 재료(결재 C·물어봄·FAIL 판단 = blockedOf 의 waitOn boss, + 상황판 '보실 것' 줄). 대시보드 블록·띠·채팅 머리가 같은 것을 쓴다(code-review — 두 벌이면 갈린다). */
+function bossItems() {
+  const now = Date.now();
+  const pendingAll = approvals.map((r) => ({ id: r.id, grade: r.grade, team: r.team, by: r.by, what: r.what, ts: r.requestedAt ?? r.ts }));
+  const openReq = requestsAll.filter((r) => r.status !== 'closed');
+  const mine = blockedOf({ teams, summaries, approvals: pendingAll, requests: openReq, infra }, { now, pauses }).filter((it) => it.waitOn === 'boss');
+  const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
+  return { mine, fromBoard };
+}
+/**
+ * 띠 큰 숫자 셋 — 사전 191행(결정 192)의 셈, 값은 하나(대시보드 띠·채팅 머리 한 줄이 같이 쓴다).
+ *   정할 것 = 대표님이 정하거나 눌러야 다음으로 가는 일(결재 대기 + 답변 대기 + 상황판 '보실 것' 줄) · 막힌 것 = 누가 풀어야 넘어가는 일(팀 카드 막힌 것, 자 통과분) ·
+ *   오늘 끝난 것 = 상황판 done 줄 + 오늘 통과 판정(작업 보드 doneAt 칸은 아직 없다 — 그 칸이 생기면 여기 한 줄로 바꾼다).
+ */
+function dashStats({ mine = null, fromBoard = null, day0 = dayStartSeoulMs(Date.now()) } = {}) {
+  if (!mine || !fromBoard) ({ mine, fromBoard } = bossItems());
+  const okLine = (s) => bossOk(String(s ?? '').trim());
+  const stuck = teams.filter((t) => t.id !== 'sera').reduce((n, t) => {
+    const d = cards.byTeam[t.id];
+    const list = d ? (d.blocked ?? []).map((x) => x.text) : (summaries[t.id]?.progress?.blocked ?? []);
+    return n + list.filter(okLine).length;
+  }, 0);
+  // 오늘 끝난 것 = 상황판 done 줄(팀 카드 재료, 자 통과분) + 오늘 통과 판정(ui-spec 12절 "상황판 done + 판정 통과"). /api/done 전부(커밋·글·보고…)는 안 센다 — 실측 800줄.
+  const doneList = [];
+  for (const t of teams.filter((x) => x.id !== 'sera')) {
+    const d = cards.byTeam[t.id];
+    const lines = d ? (d.done ?? []).map((x) => x.text) : (summaries[t.id]?.progress?.done ?? []);
+    for (const s of lines.filter(okLine)) doneList.push({ id: `board:${t.id}:${s}`, kind: 'board', team: t.id, line: s });
+  }
+  for (const it of done.items) {
+    if (it.kind !== 'verdict' || it.by === 'boss' || new Date(it.ts).getTime() < day0 || !/^승인/.test(String(it.text ?? ''))) continue;   // 대표는 안 선다(톰 09-15)
+    const who = summaries[it.team]?.cast?.[it.by]?.name ?? it.by;
+    const line = `${teams.find((t) => t.id === it.team)?.name ?? it.team} · ${who} 판정 승인`;
+    if (okLine(line)) doneList.push({ ...it, line });
+  }
+  return { decide: mine.length + fromBoard.length, stuck, done: doneList.length, doneList };
+}
+
+/** 띠 한 줄 — size 'big'(대시보드: 카드 셋, 숫자 28/32) 또는 'line'(채팅 머리 한 줄 37, 숫자 15). 누르면 대시보드 그 블록. 글자는 사전 1절 "정할 것·막힌 것·오늘 끝난 것". */
+function statBand(stat, size = 'big', jump = null) {
+  const band = el('div', `stats stats--${size}`); band.dataset.block = 'stats';
+  for (const [key, label, n] of [['mine', '정할 것', stat.decide], ['teams', '막힌 것', stat.stuck], ['done', '오늘 끝난 것', stat.done]]) {
+    const b = el('button', 'stats__item'); b.type = 'button'; b.dataset.k = key; if (n) b.dataset.n = '1';
+    b.appendChild(el('span', 'stats__k', label));
+    b.appendChild(el('b', 'stats__n', String(n)));
+    b.addEventListener('click', () => { if (jump) jump(key)(); else { setView('tower'); setTowerTab('all'); setTimeout(() => $('towerGrid').querySelector(`[data-block="${key}"]`)?.scrollIntoView({ block: 'start' }), 50); } });
+    band.appendChild(b);
+  }
+  return band;
 }
 
 /* ── 개인 — 열넷 + 대표. 헨리 사람 카드 2판(person.svg). 데이터는 요약의 people ── */
