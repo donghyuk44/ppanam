@@ -1385,6 +1385,8 @@ const ago = (ts) => {
   return `${Math.floor(s / 86400)}일 전`;
 };
 /** "N분 전에 움직임" — 결정 31 "안죽었어요" 의 자리(하영 3-1: 신호 → 움직임, 1시간 넘으면 "N시간째 조용함", 없으면 "오늘 움직임 없음"). */
+/** 마지막 활동 시각 — 세션 신호(lastSignal, 서버 메모리라 재시작 직후엔 비어 있다)가 없으면 방 기록의 마지막 말·도구 줄(doing.ts·lastSaidAt)로. 새는 것 ⑥(나리 12:3x: 켜진 직후 '오늘 활동 없음' 이 틀린 글). */
+const lastMove = (p) => p?.lastSignal ?? p?.doing?.ts ?? p?.lastSaidAt ?? null;
 const moved = (ts) => {
   if (!ts) return '오늘 활동 없음';
   const s = Math.floor((Date.now() - new Date(ts)) / 1000);
@@ -2007,8 +2009,9 @@ const firstLine = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, 20
 function whyStopped(t, p) {
   const s = summaries[t.id] ?? {};
   if (p.state === 'blocked') return BOSS_WHY[s.needsBossWhy] ?? '답변 필요';
-  if (p.state === 'waiting') return s.phase !== 'running' ? `진행 중인 회차 없음${p.alive === false ? ' · 세션 없음' : ''}` : '대기 — 멘션 시 응답';
-  if (p.state === 'resting') return p.alive === null ? '대기 — 5분 이상 멘션 없음' : '세션 없음 — 재시작 필요';
+  // 세션이 안 떠 있는 것(alive false)은 '재시작 필요' 가 아니다 — 서버가 켜진 직후엔 다 그렇고 첫 차례에 다시 뜬다(T2·sessions.json). 대표가 켠 직후 '다 죽었다' 로 읽으셨다(나리 12:3x, 새는 것 ⑥).
+  if (p.state === 'waiting') return s.phase !== 'running' ? '진행 중인 회차 없음' : '대기 — 멘션 시 응답';
+  if (p.state === 'resting') return p.alive === null ? '대기 — 5분 이상 멘션 없음' : '대기 — 멘션 시 다시 뜸';
   return '';
 }
 
@@ -2049,12 +2052,12 @@ function personCard(t, id, a, p) {
   const idle = p.state === 'waiting' || p.state === 'resting';
   if (idle) {
     // 쉬는 중 · 자리 비움 — 짧게 한 줄: 왜 · N분 전에 움직임(시안 노라·레오 줄)
-    card.appendChild(el('div', 'pcard__why', [why, moved(p.lastSignal)].filter(Boolean).join(' · ')));
+    card.appendChild(el('div', 'pcard__why', [why, moved(lastMove(p))].filter(Boolean).join(' · ')));
   } else {
     // 2줄 지금 하는 일 — 마지막 발언 뒤 도구 줄이면 "app.js 고치는 중"(파일 도구만 — Bash 명령 글자(say.mjs…, null | sort…)가 그대로 섰다, 나리 R32 ①), 아니면 마지막 발언 첫 문장.
     // 사람 말 검사(결정 140)를 지난다 — 안 맞으면 "요약 없음" + 원문 펼침. 3줄 "N분 전에 움직임"(결정 31 안죽었어요).
     card.appendChild(bossLine(doingWord(p.doing, { live: p.busy, toolPhrase, firstLine }), 'pcard__doing'));   // bosswords.doingWord — 자와 같은 함수
-    card.appendChild(el('div', 'pcard__nums', moved(p.lastSignal)));
+    card.appendChild(el('div', 'pcard__nums', moved(lastMove(p))));
     if (why) card.appendChild(el('div', 'pcard__why', why));
   }
   // ▸ 대표님께 물어봄 — 물었는데 대표가 아직 답 안 했을 때만(결정 52 — 결정이 필요한 부름만). 누르면 그 말
@@ -2337,7 +2340,7 @@ function renderTowerTeams(grid) {
         const nm = el('b', null, a.name ?? id); if (a.title) nm.appendChild(el('small', null, ` ${a.title}`)); who.appendChild(nm);
         const working = pp.state === 'working';
         const doing = pp.doing ? (pp.doing.tool ? toolPhrase(pp.doing, pp.busy) : firstLine(pp.doing.text)) : '완료 없음';
-        who.appendChild(el('span', null, `${doing.slice(0, 48)}${doing.length > 48 ? '…' : ''} · ${moved(pp.lastSignal)}`));
+        who.appendChild(el('span', null, `${doing.slice(0, 48)}${doing.length > 48 ? '…' : ''} · ${moved(lastMove(pp))}`));
         row.appendChild(who);
         const st = WORK_PILL[pp.state] ?? WORK_PILL.waiting;
         row.appendChild(pill(st[0], st[1]));

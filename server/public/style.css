@@ -709,6 +709,7 @@ body {
 .notyet__t { color: var(--ink-4); font-style: italic; font-weight: 400; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 .notyet[data-open="1"] .notyet__t { color: var(--ink-3); }
 .notyet__raw { display: block; margin-top: 3px; font-size: 12px; font-weight: 400; font-style: normal; color: var(--ink-3); white-space: pre-wrap; overflow-wrap: anywhere; }
+.notyet__raw[hidden] { display: none; }   /* display:block 이 hidden 속성을 이겨 원문이 늘 펼쳐져 있었다(멤버 탭 412 실측 12:4x) — 눌러야 펼침 */
 .dash__sub.notyet[data-open="1"] { display: block; -webkit-line-clamp: unset; overflow: visible; }
 .apr__what.notyet { color: var(--ink-4); font-style: italic; font-weight: 400; }
 .apr__fold { font-size: 12px; }
