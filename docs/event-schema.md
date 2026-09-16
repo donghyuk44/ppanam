@@ -49,6 +49,7 @@ teams/<방>/
 
 모든 이벤트는 `team` 필드를 갖는다. 컴퓨터에서는 왼쪽 레일이 **안 보고 있는 팀**의
 상태(진행 중 / 대기 / 대표 호출)까지 함께 보여주고, 폰에서는 한 방씩 본다.
+레일의 팀 줄 둘째 줄은 **지금 하는 일 한 줄**(사용성-0916 표 4, R34) — 팀별 세 줄 정본(`/out/marketing/팀별-세줄.md` 첫 표) 의 '지금' → 상황판 `doing[0]` 순으로 자(`bossOk`)에 맞는 첫 줄, 둘 다 안 맞으면 상태 말(진행 중 · 대기 · 시작 전). 회차·단계 번호는 안 쓴다(`app.js renderRail`).
 
 ## 1. 화자(actor)
 
@@ -162,6 +163,7 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 가장 흔한 것. 에이전트나 사람의 발언.
 `actor` 가 `boss` 면 오른쪽 노란 말풍선, 나머지는 왼쪽.
 연속된 같은 화자의 발언은 아바타를 생략하고 묶는다.
+아바타(이름표 `.av`·사람 칩 `.chip`·사람 카드 머리·종 목록)는 **대표가 고른 초상**(결정 131·197) — `/out/design/portraits/chip128/<팀>-<자리>.png`(대표 `boss.png`, 나리 `hq-system.png`, 비서실은 `hq-`; 빌려 온 자리는 집 팀 파일)를 머리글자 위에 `<img>` 로 얹는다(`app.js withFace`). 파일이 없거나 못 읽으면 img 가 빠져 머리글자만. 크기·둥글기는 CSS(클레멘타인).
 
 - **출처**: `SubagentStop` 훅의 `last_assistant_message`
 - `meta.partial` — 계약 필드이나 **미구현**(안 지킴 — 타이핑 말풍선은 만들지 않았다. 자리만 있고 코드가 없다).
@@ -220,7 +222,8 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 
 ### 사람별 집계 `people` — 관제탑 개인 탭
 요약(`summaries[팀]`)의 `people[자리]` — 그 방의 사람마다 한 묶음. 열쇠는 `cast.json` 의 자리 이름(`guide`·`ops`·`outside` …)이고
-`system` 은 없다. 대표는 `people.boss` 로 따로 모양이 다르다(아래). 이름·색·자리 이름은 `cast` 에 이미 있으니 여기 다시 싣지 않는다.
+`system`(나리)도 든다(43daf85 — 여섯 방 cast 가 다 갖고 있다). 대표는 `people.boss` 로 따로 모양이 다르다(아래). 이름·색·자리 이름은 `cast` 에 이미 있으니 여기 다시 싣지 않는다.
+**화면(멤버 탭)은 나리·세라를 비서실 묶음에만 세운다**(결정 185, R34 — `app.js renderTowerPeople`): 다른 다섯 묶음에선 `system`·`secretary` 를 거르고, 비서실 묶음의 나리는 세션이 총괄실에 살아 상태·하는 일·노랑 손은 `summaries.hq` 것을 쓴다. 총괄 묶음은 톰·제리 둘.
 
 | 필드 | 무엇 | 어디서 |
 | --- | --- | --- |
@@ -285,7 +288,8 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 순서는 종류 순(대표 차례 → 승인 대기 → 막힘 → 보고), 같은 종류 안은 최근 것부터. `id` 는 `<kind>:<이벤트 id 또는 승인 id 또는 팀>` —
 같은 일은 한 항목. `thumb` 은 그 말에 `out/` 그림 경로가 있으면 첫 장의 `/out/` url, 없으면 null(화면은 방 아이콘). `unread` 는
 브라우저가 기억하는 읽음 목록(`localStorage`, id 집합)에 없는 것 — 항목을 누르거나 "모두 읽음" 이면 읽음. 종 배지 숫자는 **안 읽은 것 중 `mine` 인 수**,
-빨강은 그중 대표 차례·승인·막힘이 있을 때 — 보고·B 카드·위임 중 대리될 것은 패널에 남되 숫자엔 안 든다. `delegation` 은 boot 의 `state/delegation.json`(6절) — `until` 은 화면이 본다.
+빨강은 그중 대표 차례·승인·막힘이 있을 때 — 보고·B 카드·위임 중 대리될 것은 목록(`items`)엔 남되 숫자엔 안 든다. `delegation` 은 boot 의 `state/delegation.json`(6절) — `until` 이 없으면 끝 시각 없는 위임(결정 188), 있으면 그때까지(`notify.js delegated`).
+**화면의 패널은 대표님 몫만 그린다**(사용성-0916 표 6, R34 — `app.js renderBellMenu`): `mine` 인 항목 + "톰·제리가 보는 중 N건" 한 줄(U3). 보고(`report`)는 안 그린다 — 오늘 대표를 부른 말 전부라 마흔 줄이 종을 덮었다, 보고는 방에 있다. 글은 자(`bossOk`)를 지난다 — 승인은 `--boss` 한 줄 → 원문 → "{팀} 결재", 대표 차례 인용은 안 맞으면 "{누가} 불렀습니다"만. 시간 약속 낱말("10분 안")은 없다(188). 빈 패널은 **보실 것 없어요. 팀이 일하는 중이에요.**(하영 7판 3-1).
 항목 한 줄 = 팀 색 아바타(`by` 의 색, 없으면 팀) + 이름 · 한 줄 · "N분 전" · 오른쪽
 썸네일 또는 방 아이콘 · 안 읽음 점. 패널 머리는 "알림" + ⚙(설정 — 지금은 자리만) + "모두 읽음". 폰 412 에서 전체 폭.
 
@@ -348,6 +352,7 @@ codex 는 `which codex` · 세션은 메모리 맵의 좀비 수(`session.health
 | 카드 | 이 하나를 더 보고 싶다 · (깊이) | `GET /api/actor` · 승인 레코드 · 마일스톤 · 방 요약 | 탭이 아니라 **문** — 어느 화면에서든 **두 번 눌러** 닿는다(한 줄 → 펼친 줄 → 카드). 넷째 겹은 없다. 사람 카드는 정사각형(얼굴·이름·직책·열 줄 1번·상태 알약) | — |
 
 **결정 188 — 앞날 띠에서 시간은 없다.** 시간 눈금(오늘·내일·모레·이번 주)·**{날}까지**·빨간 띠 **N분 늦음**·**{때} 시작 · 회차 평균 × N회차 → {날}**·**예정보다 N 지났어요** 같은 timebox 로 지어낸 앞날 예측은 화면이 더는 안 그린다(`app.js loadDashboardBand`). 남는 것은 위 대시보드 행의 모양(순서대로 같은 폭 칸, 시간 없는 글자). 서버 문의 `plannedFrom/To`·`late`·`roundMs`·`roundLengthMs`·`endAfterWork` 도 걷었다(`bus.plansOf` 간소화) — 지금 `/api/dashboard` 는 이 값들을 내려주지 않는다.
+**첫 층 — 대표님이 시킨 일 다섯**(사용성-0916 표 8, R34): 팀 띠 위에 "대표님이 시킨 일" 블록 — `/out/marketing/ahead-five.md` 첫 표(| # | 일 | … 한 줄 | 자 |)의 굵은 글을 자(`bossOk`)에 맞는 것만 한 줄씩(`app.js loadAheadFive`). 값은 사람이 쓴다 — 맡은 실무가 회차 닫을 때 그 파일에서(리뉴얼 테라 · 프로필 하영 · 마을 헨리 · 리포트 유진 · 세라 앱 테라). 줄이 하나도 없으면 층을 안 그린다. 그림말은 "채움 = 지금 단계 · 점선 = 대표님이 정한 뒤 · 빨강 = 막힌 것".
 
 서버 문(결정 188 뒤로 시각 예측 없음): `GET /api/dashboard` → `{ text, at, now, teams: [{ id, name, room, color, hasRoadmap, owners: [{ actor, name, initial, color }], stages: [{ n, title, status, blockedWhy, gate, gateWhat, gateBoss }] }], bossGates: [{ kind, team, what, id }] }`
 — `hasRoadmap` 은 `teams/<팀>/roadmap.json` 이 있나(빈 줄 말 둘을 가른다). `owners` 는 그 팀 cast 에서 다른 회사(외부 감사)·대표·안내를 뺀 둘, 팀장(`roomRules.owner`) 먼저(`bus.ownersOf`, 순수 — 계획표 `owner` 칸은 마케팅만 있어 cast 가 정본). `gate` 는 timebox 원문(펼친 줄), `gateWhat` 은 칸 글자 — "대표" 가 들면 **대표님이 정한 뒤**, 아니면 조건의 **{무엇} 뒤**("1 라운드 — 테라 붙인 뒤" → "테라 붙인 뒤", `bus.gateWhatOf`), `gateBoss` 는 대표 문인가(카드 "대표님이 여실 단계" 는 이것만).
