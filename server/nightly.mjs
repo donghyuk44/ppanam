@@ -253,6 +253,8 @@ export async function runMorning({ now = Date.now(), session = null } = {}) {
   try {
     // 창은 "지난 장을 만든 뒤 → 지금" 하나(유진 daily-template.md 2절) — 지난 장이 없으면(mtime 0) 기간 조건 없이.
     const out = buildMorning(day, { now, since: mtime || null });
+    let before = null; try { before = fs.readFileSync(target, 'utf8'); } catch { /* 아직 없음 */ }
+    const changed = before !== out.md;
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, out.md);
     writeStore({ ...readStore(), morning: { day, at: new Date(now).toISOString(), auto, blocked: out.counts.blocked, boss: out.counts.boss } });
@@ -266,12 +268,16 @@ export async function runMorning({ now = Date.now(), session = null } = {}) {
       for (const s of out.skipped) byTeam.set(s.team, (byTeam.get(s.team) ?? 0) + 1);
       for (const [team, n] of byTeam) emit(team, { actor: 'system', type: 'note', text: `아침 한 장 자에 안 맞아 ${n}줄 뺌 — 목록은 파일: ${rel(skippedFile)}` });
     }
-    emit('hq', {
-      actor: 'system', type: 'note',
-      text: `아침 한 장 ${day} 다시 만듦 — 막힌 것 ${out.counts.blocked} · 대표님 손 ${out.counts.boss} · ${rel(target)}${auto ? ' (손 글이 있어 자동 판을 따로 냄)' : ''}`,
-      meta: { morning: { day, file: rel(target), auto, blocked: out.counts.blocked, boss: out.counts.boss } },
-    });
-    return { day, file: rel(target), auto, ...out.counts };
+    // 내용이 안 바뀌었으면 방엔 조용히 — 8분 사이 같은 안내가 다섯 번 선 것(톰·나리 지적 09-16 18:4x)은
+    // 회차 닫힘·결정마다 다시 쓰긴 하는데 재료가 그대로였던 경우다. 파일은 그래도 새로 써서 mtime 은 최신.
+    if (changed) {
+      emit('hq', {
+        actor: 'system', type: 'note',
+        text: `아침 한 장 ${day} 다시 만듦 — 막힌 것 ${out.counts.blocked} · 대표님이 하실 일 ${out.counts.boss} · ${rel(target)}${auto ? ' (손 글이 있어 자동 판을 따로 냄)' : ''}`,
+        meta: { morning: { day, file: rel(target), auto, blocked: out.counts.blocked, boss: out.counts.boss } },
+      });
+    }
+    return { day, file: rel(target), auto, changed, ...out.counts };
   } catch (e) {
     morningRetryAt = now + RETRY_MS;
     try { emit('hq', { actor: 'system', type: 'note', text: `아침 한 장 ${day} 을 쓰지 못했습니다 — ${String(e.message).slice(0, 200)}. 10분 뒤 다시 봅니다.` }); } catch { /* 삼킨다 */ }
