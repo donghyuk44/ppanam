@@ -713,8 +713,13 @@ switch (cmd) {
         const vt2 = verdictTargetActor(T, '이번 라운드 산출물');   // 아무 이름도 없음 — 예전 기본값
         const vt3 = verdictTargetActor(T, '솔라 서버랑 테라 화면 둘 다 — 먼저 나온 솔라부터');
         const vt4 = verdictTargetActor(T, '댄·나리 확인 — 실무 아님');   // boss·system 은 자리 후보가 아니다
-        out.push(['판정 대상 자리 찾기(target 고정 버그)', vt1 === 'ops' && vt2 === 'guide' && vt3 === 'ops' && vt4 === 'guide'
-          ? '✓ 이름 있으면 그 자리 · 없으면 guide · 글 순서로 먼저 나온 이름 · boss·system 은 후보 아님' : '✗ ' + JSON.stringify({ vt1, vt2, vt3, vt4 })]);
+        // 감사역을 먼저 부르고 그다음 대상을 말하는 게 보통 글(2판 코드 점검 #1) — "레오, 솔라 서버 것 봐줘"
+        // 에서 레오(outside)가 먼저 나온다고 outside 가 대상이 되면 안 된다. review(안젤)도 같은 선.
+        const vt5 = verdictTargetActor(T, '레오, 솔라 서버 것 봐줘');
+        const vt6 = verdictTargetActor(T, '안젤, 이번 라운드 산출물 봐줘');
+        out.push(['판정 대상 자리 찾기(target 고정 버그)', vt1 === 'ops' && vt2 === 'guide' && vt3 === 'ops' && vt4 === 'guide' && vt5 === 'ops' && vt6 === 'guide'
+          ? '✓ 이름 있으면 그 자리 · 없으면 guide · 글 순서로 먼저 나온 이름 · boss·system 은 후보 아님 · 감사역(outside·review) 도 후보 아님(2판 #1)'
+          : '✗ ' + JSON.stringify({ vt1, vt2, vt3, vt4, vt5, vt6 })]);
       }
       // 닫히는 중 쌓인 차례는 다음 라운드로 (결정 25) — 호명·제3자만 넘기고 판정·침묵·점심은 버린다. 순수 함수 pickCarry.
       const { pickCarry, staleCalls, mergeCarry } = await import('../server/conductor.mjs');
