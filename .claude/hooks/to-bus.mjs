@@ -175,8 +175,13 @@ switch (ev) {
     // 영어 속말 — 통째로 영어면 걸렸는데(가-힣 0개), 코드·명령 예시에 한글 낱말 몇 개만 섞이면 안
     // 걸렸다(백틱 안 한글 둘이 방패가 된 400자 영어 요약, 나리 09-16 실측). 비율로 본다 — 영어 글자가
     // 한글 글자의 6배를 넘고 40자 이상이면 덩이. 정상적인 한글 문장 속 영어 낱말 몇 개는 안 걸린다.
+    // 경로·명령·해시 낱말(/ . : _ - 숫자 @ # = \\ 든 것)은 셈에서 뺀다 — git log·파일 목록처럼
+    // 한글 없는 정상 답까지 영어 속말로 버려졌다(테라 apr_df4bc5b8 실측). 줄째 버리진 않는다 — 그러면
+    // "O1 is wired: …" 처럼 첫 낱말에 숫자가 든 정상 영어 문장까지 통째로 안 셈해 leak 을 놓친다
+    // (되짚다 실측, teams/dev/out/_test-prose-ratio-v3-0916.mjs).
     const koreanChars = (text.match(/[가-힣]/g) || []).length;
-    const latinChars = (text.match(/[A-Za-z]/g) || []).length;
+    const proseText = String(text).replace(/`[^`]*`/g, ' ').split(/\s+/).filter((w) => w && !/[/.:_\-\d@#=\\]/.test(w)).join(' ');
+    const latinChars = (proseText.match(/[A-Za-z]/g) || []).length;
     if (latinChars >= 40 && latinChars > koreanChars * 6) bail('영어 속말 — 기록 안 함');
     const actor = ev === 'Stop' ? ME : actorOf(hook.agent_type);
     if (!actor) bail('캐스트가 아닌 서브에이전트 — 기록 안 함');
