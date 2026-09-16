@@ -12,3 +12,19 @@ export const isBossWord = (s) => !JARGON.test(String(s ?? ''));
 
 /** 대표 화면에 낼 수 있는 줄인가 — 비어 있지 않고, 하네스 낱말 없고, 60자 안. */
 export const bossOk = (s) => { const t = String(s ?? '').trim(); return !!t && t.length <= MAX_LEN && isBossWord(t); };
+
+/* 화면이 조립하는 두 줄 — 자(tools/boss-words-check.mjs)가 원문이 아니라 **화면에 서는 글**을 재게 같은 함수를 여기 둔다(나리 R32 ①⑤: 자는 굵은 글만 재서 못 잡았다). */
+
+/** 멤버 카드 "지금 하는 일" — 파일 도구(Read·Edit·Write)만 "app.js 고치는 중", Bash 같은 명령 글자는 "작업 중", 말이면 첫 문장. 60자 넘거나 하네스 말이면 부르는 쪽이 NOT_YET 로 가린다. */
+export const FILE_TOOLS = new Set(['Read', 'Edit', 'Write', 'NotebookEdit', 'MultiEdit']);
+export function doingWord(doing, { live = true, toolPhrase = null, firstLine = (s) => String(s ?? '').split(/\n/)[0] } = {}) {
+  if (!doing) return '완료 없음';
+  if (doing.tool) return FILE_TOOLS.has(doing.tool) && toolPhrase ? toolPhrase(doing, live) : '작업 중';
+  return String(firstLine(doing.text) ?? '').trim() || '작업 중';
+}
+/** 작업 보드 병목 줄 — work.json 의 "server(솔라)"·"app.js(테라)" 는 괄호 안 사람의 "손", "나리 판정"·"재시작" 은 그대로. "솔라 손 뒤에 7건 — 유진·노라 기다림". */
+export function gateLine(bottleneck, count, who = '') {
+  const m = /^(.*?)\s*\((.+?)\)\s*$/.exec(String(bottleneck ?? ''));
+  const gate = m ? `${m[2]} 손` : String(bottleneck ?? '');
+  return `${gate} 뒤에 ${count}건${who ? ` — ${who} 기다림` : ''}`;
+}

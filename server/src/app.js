@@ -12,7 +12,7 @@ import { findOutPaths, linkOutPaths } from '/outlink.js';
 import { notificationsOf, blockedOf, pausedMs, delegated, deciders } from '/notify.js';
 import { dayWord, timeWord, clockWord, spanWord } from '/when.js';
 import { parseMention } from '/mention.js';
-import { bossOk, NOT_YET } from '/bosswords.js';
+import { bossOk, NOT_YET, doingWord, gateLine } from '/bosswords.js';   // doingWord·gateLine — 자(boss-words-check)가 화면과 같은 글을 재게 공용
 import { teamCard } from '/card.js';   // 팀 상황 카드 부품 하나(C6) — 채팅 맨 위·대시보드·비서실 세 곳이 같은 것을 그린다(카드-체계-0916 1절, C7)
 
 const $ = (id) => document.getElementById(id);
@@ -1611,10 +1611,8 @@ function workBoardBlock() {
   }
   for (const b of (w.topBlockers ?? []).slice(0, 2)) {
     const who = (b.waiting ?? []).map((x) => nameOf(x.team, x.seat)).filter((v, i, a) => a.indexOf(v) === i).join('·');
-    // 병목 글자는 work.json 그대로("server(솔라)"·"app.js(테라)"·"나리 판정"·"재시작") — 괄호 안 사람이 있으면 "솔라 손", 없으면 그 말 그대로(나리 R32 ⑤: 'server(솔라) 뒤에 7건' 이 대표 화면에 섰다)
-    const m = /^(.*?)\s*\((.+?)\)\s*$/.exec(String(b.bottleneck ?? ''));
-    const gate = m ? `${m[2]} 손` : String(b.bottleneck ?? '');
-    sec.appendChild(bossLine(`${gate} 뒤에 ${b.count}건${who ? ` — ${who} 기다림` : ''}`, 'dash__empty work__wait'));
+    // 병목 글자는 work.json 그대로("server(솔라)"·"app.js(테라)") — bosswords.gateLine 이 "솔라 손 뒤에 7건 — … 기다림" 으로(나리 R32 ⑤). 자도 같은 함수
+    sec.appendChild(bossLine(gateLine(b.bottleneck, b.count, who), 'dash__empty work__wait'));
   }
   return sec;
 }
@@ -1904,9 +1902,7 @@ function personCard(t, id, a, p) {
   } else {
     // 2줄 지금 하는 일 — 마지막 발언 뒤 도구 줄이면 "app.js 고치는 중"(파일 도구만 — Bash 명령 글자(say.mjs…, null | sort…)가 그대로 섰다, 나리 R32 ①), 아니면 마지막 발언 첫 문장.
     // 사람 말 검사(결정 140)를 지난다 — 안 맞으면 "요약 없음" + 원문 펼침. 3줄 "N분 전에 움직임"(결정 31 안죽었어요).
-    const FILE_TOOLS = new Set(['Read', 'Edit', 'Write', 'NotebookEdit', 'MultiEdit']);
-    const doing = p.doing ? (p.doing.tool ? (FILE_TOOLS.has(p.doing.tool) ? toolPhrase(p.doing, p.busy) : '작업 중') : firstLine(p.doing.text)) : '완료 없음';
-    card.appendChild(bossLine(doing.trim() || '작업 중', 'pcard__doing'));
+    card.appendChild(bossLine(doingWord(p.doing, { live: p.busy, toolPhrase, firstLine }), 'pcard__doing'));   // bosswords.doingWord — 자와 같은 함수
     card.appendChild(el('div', 'pcard__nums', moved(p.lastSignal)));
     if (why) card.appendChild(el('div', 'pcard__why', why));
   }
