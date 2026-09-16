@@ -27,8 +27,11 @@
       "Bash(cd:*)",
       "Bash(mkdir:*)",
       "Bash(cp:*)",
-      "Bash(curl http://localhost:*)",
-      "Bash(curl -s http://localhost:*)",
+      "Bash(curl -s -o /dev/null:*)",
+      "Bash(curl http://localhost*)",
+      "Bash(curl -s http://localhost*)",
+      "Bash(curl -sI http://localhost*)",
+      "Bash(node teams/*)",
       "Bash(node --test:*)",
       "mcp__claude_ai_Figma"
     ]
