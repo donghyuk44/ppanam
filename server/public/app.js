@@ -2629,8 +2629,8 @@ function renderReport(r) {
     for (const p of r.proxy) {
       const row = el('button', 'dash__row'); row.type = 'button';
       row.appendChild(el('b', null, `${teamOf(p.team).name} · ${whenKo(p.ts)}`));
-      // 사람 말 검사(결정 140, G4 — 안젤 사용성 표: [C]·카드 번호·결정 번호가 그대로 섰다). 머리말을 뗀 뒤 자에 안 맞으면 "아직 쉬운 말로 안 적음" + 원문 펼침
-      row.appendChild(bossLine(String(p.text).replace(/^대리 결정[^—:]*[—:]\s*/, ''), 'dash__sub'));
+      // 사람 말 검사(결정 140, G4 — 안젤 사용성 표: [C]·카드 번호·결정 번호가 그대로 섰다). 서버가 준 사람 말 한 줄(p.boss — --boss·--boss-line, 솔라 3c90edf)이 있으면 그것, 없으면 머리말을 뗀 원문 → 자에 안 맞으면 "요약 없음" + 원문 펼침
+      row.appendChild(bossLine(bossOk(p.boss) ? p.boss : String(p.text).replace(/^대리 결정[^—:]*[—:]\s*/, ''), 'dash__sub'));
       row.appendChild(el('span', 'dash__go', '채팅 열기'));
       row.addEventListener('click', () => jumpTo(p.team, p.id));
       sec.appendChild(row);
