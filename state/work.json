@@ -1018,6 +1018,144 @@
     "team": "design",
     "n": 7
    }
+  },
+  {
+   "id": "K1",
+   "stream": "적대검수",
+   "what": "첫 화면 순서 뒤집기 — 팀 카드·정할 것을 맨 위, 작업 보드·최근 활동은 첫 화면에서 뺌",
+   "seat": "guide",
+   "after": [],
+   "bottleneck": "app.js(테라)",
+   "status": "감사 대기",
+   "note": "대시보드 3판(a24b562)에 들어감 — 헨리 \"같다\" 대기(req_7e1cff83)",
+   "team": "dev",
+   "milestone": {
+    "team": "dev",
+    "n": 10
+   }
+  },
+  {
+   "id": "K2",
+   "stream": "적대검수",
+   "what": "대표님이 정할 것은 결재 카드 하나에서만 — 끝나면 사건으로 바로 사라짐, 끝난 걸 누르면 \"이미 끝난 결재예요\"",
+   "seat": "guide",
+   "after": [],
+   "bottleneck": "app.js(테라)",
+   "status": "대기",
+   "note": "결재 카드는 3판에 들어감. 사라지기·한 줄은 톰 배분 18:4x(나리 결정), 아직",
+   "team": "dev",
+   "milestone": {
+    "team": "dev",
+    "n": 10
+   }
+  },
+  {
+   "id": "K3",
+   "stream": "적대검수",
+   "what": "단계 숫자 정본 하나 — 모든 탭이 \"끝난 수/전체 · 지금 N단계\" 한 꼴",
+   "seat": "guide",
+   "after": [],
+   "bottleneck": "app.js(테라)",
+   "status": "감사 대기",
+   "note": "팀 카드 꼬리는 3판(d682167 셈 로드맵 기준). 왼쪽 팀 줄·타임라인도 같은 꼴인지는 헨리 대조",
+   "team": "dev",
+   "milestone": {
+    "team": "dev",
+    "n": 10
+   }
+  },
+  {
+   "id": "K4",
+   "stream": "적대검수",
+   "what": "\"요약 없음\" 없앰 — 걸린 줄은 빈칸 대신 진행 중 첫 줄, 네 칸 다 비면 블록을 안 그림",
+   "seat": "guide",
+   "after": [],
+   "bottleneck": "app.js(테라)",
+   "status": "감사 대기",
+   "note": "대시보드 제안 2절 → 3판",
+   "team": "dev",
+   "milestone": {
+    "team": "dev",
+    "n": 10
+   }
+  },
+  {
+   "id": "K5",
+   "stream": "적대검수",
+   "what": "\"손\" 을 화면 코드에서 지움(\"N 차례 뒤에 M건\") — 사전은 \"손 → 차례\" 로 이미 감(하영)",
+   "seat": "guide",
+   "after": [],
+   "bottleneck": "app.js(테라)",
+   "status": "대기",
+   "note": "낱말은 갔고 화면 코드 쪽이 남음",
+   "team": "dev",
+   "milestone": {
+    "team": "dev",
+    "n": 10
+   }
+  },
+  {
+   "id": "K6",
+   "stream": "적대검수",
+   "what": "작업 보드의 잘린 여덟째 줄기(대표가 시킨 채팅 기능)를 보이게, \"통과\" 수 대신 \"대기\" 수",
+   "seat": "",
+   "after": [],
+   "bottleneck": "담당 없음",
+   "status": "대기",
+   "note": "담당 없음 — 작업 보드가 타임라인 탭으로 가면서(192) 자리가 바뀜, 200 타임라인 실물에서 다시",
+   "team": "dev",
+   "milestone": null
+  },
+  {
+   "id": "K7",
+   "stream": "적대검수",
+   "what": "요청 탭 — 진행 중만 펼치고 완료는 접음, 줄 글자도 같은 자",
+   "seat": "",
+   "after": [],
+   "bottleneck": "담당 없음",
+   "status": "대기",
+   "note": "담당 없음(199 톰 실측)",
+   "team": "dev",
+   "milestone": null
+  },
+  {
+   "id": "K8",
+   "stream": "적대검수",
+   "what": "리포트 — 고정 머리말 지움, 중단 문장에 날짜, 팀별 완료는 파일 이름 대신 한 줄 설명",
+   "seat": "",
+   "after": [],
+   "bottleneck": "담당 없음",
+   "status": "대기",
+   "note": "담당 없음(199). 리포트 시안 R1 은 헨리 감사 대기 — 붙일 때 같이",
+   "team": "dev",
+   "milestone": null
+  },
+  {
+   "id": "K9",
+   "stream": "적대검수",
+   "what": "멤버 탭 — 나리 카드 하나로(185), 모델 칸은 접기, \"진행 중\" 은 실제 일할 때만",
+   "seat": "",
+   "after": [],
+   "bottleneck": "담당 없음",
+   "status": "대기",
+   "note": "담당 없음(199). 185 로 나리는 비서실에만이라 절반은 정해짐",
+   "team": "dev",
+   "milestone": null
+  },
+  {
+   "id": "K10",
+   "stream": "적대검수",
+   "what": "이름 하나로(팀 이름·\"승인 대기\"·단계/마일스톤) + 타임라인 막대를 날짜 축으로 다시",
+   "seat": "guide",
+   "after": [],
+   "bottleneck": "헨리 시안",
+   "status": "대기",
+   "note": "타임라인은 결정 200(주 단위 팀별 간트) 시안으로 — 헨리·클레멘타인. 이름 하나로는 하영 낱말(마케팅 7단계)",
+   "team": "design",
+   "milestone": {
+    "team": "design",
+    "n": 7
+   }
   }
  ]
 }
