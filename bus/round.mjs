@@ -944,13 +944,16 @@ switch (cmd) {
         const nd = [needsOf({ grade: 'B', small: true }, null), needsOf({ grade: 'B' }, null), needsOf({ grade: 'C', small: true }, null), needsOf({ grade: 'A' }, null)].map((x) => x.join('+'));
         const ndDg = [needsOf({ grade: 'B', small: true }, { to: 'system' }), needsOf({ grade: 'B' }, { to: 'system' }), needsOf({ grade: 'C' }, { to: 'system' })].map((x) => x.join('+')).join(' / ');
         const smallC = refuses(() => requestApproval(T, { grade: 'C', what: '작은 C', small: true }), '작은 B');
-        const smallPush = refuses(() => requestApproval(T, { grade: 'B', what: '작은 푸시', small: true, action: { type: 'restart' } }), '큰 것');
+        const smallPush = refuses(() => requestApproval(T, { grade: 'B', what: '작은 푸시', small: true, action: { type: 'push' } }), '큰 것');
         let smallOk = null; try { smallOk = requestApproval(T, { grade: 'B', what: '재시작 — 시험', small: true }); } catch (e) { smallOk = { err: e.message }; }
-        // --to 카드도 --small 붙게(톰 배분) — 팀 사이 요청 블록은 실행 결과가 그 방 확인 정도라 가벼운 것,
-        // 다른 실행 대상(재시작 등)은 그대로 거부.
+        // --to 도 --restart 도 --small 됨(점검-0916 3-9 가 재시작을 원래 "작은 B" 예로 들었다, 톰 배분이
+        // --to 를 더했다·나리 지적 apr_642fbd69) — 결과가 되돌리기 쉽거나 그 방 확인 정도라 가벼운 것들.
+        // 다른 실행 대상(푸시 등)은 그대로 거부.
         let smallToOk = null; try { smallToOk = requestApproval(T, { grade: 'B', what: '작은 요청 블록 시험', small: true, action: { type: 'request', to: { team: 'design', actor: 'guide' }, why: '', due: null, mode: 'once' } }); } catch (e) { smallToOk = { err: e.message }; }
+        let smallRestartOk = null; try { smallRestartOk = requestApproval(T, { grade: 'B', what: '작은 재시작 시험', small: true, action: { type: 'restart' } }); } catch (e) { smallRestartOk = { err: e.message }; }
         const smallWant = nd.join(' / ') === 'chief / chief+outside / boss / ' && ndDg === 'system / system+outside / boss' && smallC === '✓ 거부' && smallPush === '✓ 거부' && smallOk?.small === true && needsOf(smallOk, null).join() === 'chief'
-          && smallToOk?.small === true && smallToOk?.action?.type === 'request';
+          && smallToOk?.small === true && smallToOk?.action?.type === 'request'
+          && smallRestartOk?.small === true && smallRestartOk?.action?.type === 'restart';
         // 결정 자리 실측(임시 큐) — 위임 중 톰의 판정은 거부('나리가 정합니다'), 방 없는 나리 거부, 총괄실 나리 통과 → 작은 B 는 그걸로 닫힘. 위임 없이 나리는 거부('톰이 정합니다').
         const { decideApproval, listApprovals: listQ } = await import('./bus.mjs');
         const dgOnB = { to: 'system', until: '2099-01-01T00:00:00Z' };
@@ -1030,7 +1033,7 @@ switch (cmd) {
         const s1 = spliceBlock('a\nb\n', ['p1']), s2 = spliceBlock(s1, ['p2', 'p3']);
         const liWant = li.join(',') === 'teams/design/out/a.png,teams/dev/out/c.JPG' && s1.includes('\np1\n') && !s2.includes('p1') && s2.includes('p2\np3') && s2.split('>>>').length === 2 && s2.startsWith('a\nb\n');
         out.push(['out/ 큰 그림만 빼기(out-ignore)', liWant ? '✓ 100KB 넘는 그림만 · shots 안 셈 · md 안 뺌 · 대문자 확장자 · 블록 갈아 끼움' : '✗ ' + JSON.stringify({ li, s1, s2 })]);
-        out.push(['작은 B · 결정 자리(점검 3-9 · 대표 09-16)', smallWant ? '✓ 작은 B = 톰 혼자 · 보통 B = 톰+제리 · 위임 중엔 나리 / 나리+제리 · C·재시작 등엔 --small 거부 · --to 는 --small 됨(톰 배분) · 레코드 small:true' : '✗ ' + JSON.stringify({ nd, ndDg, smallC, smallPush, smallOk, smallToOk })]);
+        out.push(['작은 B · 결정 자리(점검 3-9 · 대표 09-16)', smallWant ? '✓ 작은 B = 톰 혼자 · 보통 B = 톰+제리 · 위임 중엔 나리 / 나리+제리 · C·푸시 등엔 --small 거부 · --to·--restart 는 --small 됨(톰 배분·나리 지적) · 레코드 small:true' : '✗ ' + JSON.stringify({ nd, ndDg, smallC, smallPush, smallOk, smallToOk, smallRestartOk })]);
       }
       // 자리의 엔진·모델·추론 강도 (결정 69) — 순수 castChangeError 가 거르고, updateCastAgent 가 임시 방 cast.json 에 쓴다. 엔진 바꾸기는 아직 거부(같은 값은 통과).
       {

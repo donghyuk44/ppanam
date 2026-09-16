@@ -462,11 +462,12 @@ export function requestApproval(team, { by = 'guide', grade, what, detail = '', 
     const guardErr = d2GuardError(readLog(team).filter((e) => e.round === st.round));
     if (guardErr) throw new Error(`카드를 못 엽니다 — ${guardErr}`);
   }
-  // 작은 B 는 실행 대상 없는 B, 또는 팀 사이 요청 블록(--to)만 — 톰 배분("--to 카드도 --small 붙게").
-  // 요청 블록은 실행 결과가 그 방에 블록 하나 여는 정도라 가볍다 — 받는 자리가 확인하면 그만이다.
-  // 그 밖의 실행 대상(푸시·착수·로드맵·재시작)은 여전히 큰 것 — 제리 대조 없이 톰 혼자 보내면 안 된다.
-  const smallOkAction = !action || action.type === 'request';
-  if (small && (g !== 'B' || !smallOkAction)) throw new Error(`작은 B(--small) 는 실행 대상 없는 B 나 팀 사이 요청 블록(--to)만입니다 — 재시작·문구 한 줄·임시 파일 태그, 또는 --to. ${g !== 'B' ? `등급 ${g} 는 안 됩니다.` : `--push·--next·--roadmap·--restart 는 큰 것입니다.`}`);
+  // 작은 B 는 실행 대상 없는 B, 팀 사이 요청 블록(--to), 또는 재시작(--restart)만 — 점검-0916 3-9 가
+  // 애초에 재시작을 "작은 B" 예로 들었다(재시작·문구 한 줄·임시 파일 태그), 톰 배분("--to 카드도
+  // --small 붙게")이 --to 를 더했다(나리 지적, apr_642fbd69). 재시작·요청 블록 둘 다 실행 결과가
+  // 되돌리기 쉽거나 그 방 확인 정도라 제리 대조까지 필요한 무게가 아니다. 푸시·착수·로드맵은 여전히 큰 것.
+  const smallOkAction = !action || action.type === 'request' || action.type === 'restart';
+  if (small && (g !== 'B' || !smallOkAction)) throw new Error(`작은 B(--small) 는 실행 대상 없는 B, 팀 사이 요청 블록(--to), 재시작(--restart) 만입니다. ${g !== 'B' ? `등급 ${g} 는 안 됩니다.` : `--push·--next·--roadmap 은 큰 것입니다.`}`);
   // 카드에 붙일 산출물 — teams/<팀>/out/ 기준 상대 경로. 요청 시 있어야 한다 (대표 결정 36).
   const outs = (files ?? []).map((f) => String(f).trim().replace(/^out\//, '')).filter(Boolean);
   for (const f of outs) {
