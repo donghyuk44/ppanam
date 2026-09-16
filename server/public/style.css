@@ -132,16 +132,18 @@ body {
 /* 여섯 자식(머리·라운드 줄·열기 폼·피드·안내 줄·입력창)에 행을 못박는다. 넷만 적었을 때 열기 폼이 보이면 폼이 1fr 을
  * 먹고 피드가 암시적 행으로 밀려, 빈 방에서 폼이 화면 한가운데 떴다 (독립검수 #3). 숨은 자식은 행을 안 차지한다(auto=0). */
 .room {
-  display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+  display: grid; grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto auto;   /* 띠 한 줄(statline)·팀 카드(roomcard) 자리를 줄로 박음 — 3판 ③ 띠는 윗줄 바로 밑(테라, ui-spec 12절) */
   min-width: 0; min-height: 0;
   border-right: 1px solid var(--line);
 }
 .room > .bar { grid-row: 1; }
-.room > .roundbar { grid-row: 2; }
-.room > .roundopen { grid-row: 3; }
-.room > .feed { grid-row: 4; }
-.room > .composer__msg { grid-row: 5; }
-.room > .composer { grid-row: 6; }
+.room > .statline { grid-row: 2; }
+.room > .roundbar { grid-row: 3; }
+.room > .roundopen { grid-row: 4; }
+.room > .roomcard { grid-row: 5; }
+.room > .feed { grid-row: 6; }
+.room > .composer__msg { grid-row: 7; }
+.room > .composer { grid-row: 8; }
 
 .bar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;

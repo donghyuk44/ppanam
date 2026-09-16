@@ -22,6 +22,10 @@
 /* ── 머리 ── */
 .card__head { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .card__dot  { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--dot, var(--ink-4)); }
+/* 3판 머리(헨리 diff-0916 11절 ③, 테라 임시 값 — 다듬기는 클레멘타인): 팀 타일 36 네모 + 이름·작은 줄 */
+.card__tile  { flex: none; width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 15px; background: var(--ink-4); }
+.card__names { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.card__names .card__doer { margin-left: 0; }
 .card__name { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card[data-card="team"] .card__name { font-family: 'Gowun Batang', serif; font-size: 15px; font-weight: 400; }
 .card__time { margin-left: auto; flex: none; font-size: 11px; color: var(--ink-4); }

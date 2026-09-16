@@ -137,12 +137,15 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
 
   // 머리 — 팀 색 점 · 이름 · 알약 · 작은 줄 "누구 진행 중"(3판 ui-spec 12절 — 시각 대신, 결정 187·188. 누구는 d.doing.who, 없으면 줄 없음)
   const head = el('header', 'card__head');
-  const dot = el('span', 'card__dot'); if (d.color) dot.style.setProperty('--dot', d.color);
-  head.appendChild(dot);
-  head.appendChild(el('span', 'card__name', d.name ?? d.team ?? ''));
+  // 3판(헨리 diff-0916 11절 ③): 점 대신 팀 타일(36 네모, 팀 색, 이름 첫 글자) + 이름 밑 작은 줄 "누구 진행 중"(다섯 다 — 일하는 중이 아니면 상태 말)
+  const tile = el('span', 'card__tile', String(d.name ?? d.team ?? '?').slice(0, 1)); if (d.color) tile.style.background = d.color;
+  head.appendChild(tile);
+  const names = el('span', 'card__names');
+  names.appendChild(el('span', 'card__name', d.name ?? d.team ?? ''));
+  names.appendChild(el('span', 'card__doer', d.doing?.who && card.dataset.state === 'working' ? `${d.doing.who} 진행 중` : STATE_WORD[card.dataset.state]));
+  head.appendChild(names);
   const pill = el('span', 'card__pill', STATE_WORD[card.dataset.state]); pill.dataset.state = card.dataset.state;
   head.appendChild(pill);
-  if (d.doing?.who && card.dataset.state === 'working') head.appendChild(el('span', 'card__doer', `${d.doing.who} 진행 중`));
   card.appendChild(head);
 
   // 지금 · 다음 · 그 뒤 — 팀별 세 줄(대표 15:1x "팀별로 지금 하는 것·다음·그 뒤를 볼 수가 없다"; 머리 글자는 하영 사전 그대로, 나리 16:3x — 글자는 하영 몫).
@@ -176,8 +179,8 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
   });
   const blockedSec = block('blocked', blocked); if (blockedSec) card.appendChild(blockedSec);
 
-  // 승인 대기 — 대표님이 할 동작 하나 + 단추 둘. 글이 자에 안 맞아도 단추는 남겨야 하니(대표가 누르는 길) 글 자리엔 '{팀} 결재' 한 줄
-  if (d.boss?.id) {
+  // 승인 대기 상자는 뺐다(3판, 헨리 diff-0916 11절 ①) — 단추는 대시보드 '정할 것' 결재 카드에만, 팀 카드는 세 줄 + 막힌 것 띠. d.boss·onDecide 는 재료·손잡이로 남는다(비서실 카드 등 다른 자리가 쓸 수 있게).
+  if (d.boss?.id && onDecide && d.showBoss) {
     const row = el('div', 'card__item card__item--boss');
     row.appendChild(ok(d.boss.text) ? said(d.boss.text) : el('div', 'card__text', `${d.name ?? d.team ?? ''} 결재`));
     row.appendChild(decideButtons(d.boss.id, onDecide));

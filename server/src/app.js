@@ -1928,9 +1928,14 @@ function renderTowerAll(grid) {
   sec3.appendChild(el('div', 'dash__k', `정할 것 ${stat.decide}`));
   if (!stat.decide) sec3.appendChild(el('div', 'dash__empty', '오늘은 없어요'));
   for (const it of mine) {
+    // 결재는 카드 그대로(승인·반려 단추 · '대표님이 정함' 칩 — 헨리 diff-0916 11절 ①, 시안 5절 폭 384). 물어봄·FAIL 판단은 줄.
+    if (it.kind === 'approval') {
+      const r = approvals.find((a) => a.id === (it.target?.approval ?? String(it.id).split(':')[1]));
+      if (r) { const c = approvalCard(r); c.classList.add('apr--inline'); sec3.appendChild(c); continue; }
+    }
     const row = el('button', 'dash__row'); row.type = 'button';
     const who = it.name ?? (it.by ? (summaries[it.team]?.cast?.[it.by]?.name ?? summaries.hq?.cast?.[it.by]?.name ?? null) : null);   // 누가 올렸나 — 글이 자에 걸려 머리만 남을 때 카드 둘이 같은 줄로 보이지 않게(톰 ②)
-    row.appendChild(el('b', null, `${it.teamName}${who ? ' · ' + who : ''} · ${it.kind === 'approval' ? '승인 필요' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));
+    row.appendChild(el('b', null, `${it.teamName}${who ? ' · ' + who : ''} · ${it.kind === 'approval' ? '결재 대기' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));   // '결재 대기' — 사전 124행(헨리)
     putLine(row, it.text, 'dash__sub', it.team);   // 대표 몫은 행은 남기고(누를 수 있어야) 글만 — 없으면 머리 한 줄(opus ④)
     row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '확인' : '채팅 열기'));
     row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (it.kind === 'approval') { const r = approvals.find((a) => a.id === (tg.approval ?? String(it.id).split(':')[1])); if (r) openApprovalPop(r); else document.querySelector('.approvals')?.scrollIntoView({ block: 'start' }); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
