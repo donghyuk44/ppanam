@@ -68,7 +68,7 @@ const me = whoAmI();
 /* ── 인자 ── */
 
 const argv = process.argv.slice(2);
-const o = { team: null, mode: null, grade: null, id: null, as: null, decision: null, detail: '', all: false, push: false, next: false, roadmap: null, out: [], to: null, why: '', due: null, untilMilestone: false, small: false };
+const o = { team: null, mode: null, grade: null, id: null, as: null, decision: null, detail: '', all: false, push: false, next: false, restart: false, roadmap: null, out: [], to: null, why: '', due: null, untilMilestone: false, small: false };
 const words = [];
 
 for (let i = 0; i < argv.length; i++) {
@@ -80,6 +80,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--detail') o.detail = argv[++i];
   else if (a === '--push') o.push = true;
   else if (a === '--next') o.next = true;
+  else if (a === '--restart') o.restart = true;
   else if (a === '--roadmap') o.roadmap = argv[++i];
   else if (a === '--to') o.to = argv[++i];
   else if (a === '--why') o.why = argv[++i];
@@ -98,9 +99,10 @@ for (let i = 0; i < argv.length; i++) {
 function usage() {
   console.log(`승인 — 등급으로 나뉜 게이트.
 
-  --request <A|B|C> "<무엇>" [--detail "..."] [--push | --next | --roadmap <파일> | --to <팀>] [--out a.png,b.md]   요청 (--team 으로 방 지정)
+  --request <A|B|C> "<무엇>" [--detail "..."] [--push | --next | --restart | --roadmap <파일> | --to <팀>] [--out a.png,b.md]   요청 (--team 으로 방 지정)
       --push     지금의 브랜치·SHA 를 요청에 묶는다. 통과하면 서버가 그 커밋을 origin 에 민다. (B)
       --next     로드맵의 다음 마일스톤을 묶는다. 통과하면 서버가 그것을 now 로 옮긴다. (B)
+      --restart  서버 재시작을 묶는다. 통과하면 일하는 세션이 없을 때 서버가 스스로 내려갔다 다시 뜬다(N1, 감독 tools/serve.mjs). 보통 --small 과 같이. (B)
       --roadmap  teams/<팀>/out/ 의 제안 파일을 묶는다. 통과하면 서버가 roadmap.json 으로 옮긴다. (C)
       --to <팀>[:<자리>] [--why "왜"] [--due "기한"] [--until-milestone]
                  다른 팀에 요청 블록을 연다 (B, 결정 49). 통과하면 서버가 state/requests/<id>.jsonl 을 열고 두 방에 알린다.
@@ -166,8 +168,12 @@ if (o.mode === 'request') {
   const what = words.join(' ').trim();
   // 실행할 행동을 요청에 박는다. 실행자·알림자는 이것만 믿는다 — 자유 텍스트를 훑지 않는다.
   let action = null;
-  if ([o.push, o.next, !!o.roadmap, !!o.to].filter(Boolean).length > 1) { console.error('오류: --push · --next · --roadmap · --to 는 하나만.'); process.exit(1); }
+  if ([o.push, o.next, o.restart, !!o.roadmap, !!o.to].filter(Boolean).length > 1) { console.error('오류: --push · --next · --restart · --roadmap · --to 는 하나만.'); process.exit(1); }
   if (o.push) action = gitTarget();
+  if (o.restart) {
+    if (String(o.grade).toUpperCase() !== 'B') { console.error('오류: --restart 는 B 등급입니다.'); process.exit(1); }
+    action = { type: 'restart' };
+  }
   if (o.to) {
     // 팀 사이 요청 블록 (결정 49) — 받는 팀[:자리]. 자기 팀에게는 못 연다. 통과하면 알림자가 블록을 연다.
     if (String(o.grade).toUpperCase() !== 'B') { console.error('오류: --to 는 B 등급(팀 사이 요청)입니다.'); process.exit(1); }
@@ -200,6 +206,7 @@ if (o.mode === 'request') {
   console.log(fmt(r));
   if (r.small) { const d = nameOf(r.team, needsOf(r)[0]); console.log(`작은 B — ${d} 혼자 보면 닫힙니다(제리 대조 생략, 점검-0916 3-9). 작은 게 아니라고 보면 ${d}가 돌려보냅니다.`); }
   if (action?.type === 'push') console.log(`푸시 대상: ${action.remote}/${action.branch} @ ${action.sha.slice(0, 8)} — 이 커밋을 통과시키는 것입니다.`);
+  if (action?.type === 'restart') console.log('재시작 대상: 서버 — 통과하면 일하는 세션이 없을 때 서버가 스스로 내려갔다 다시 뜹니다.');
   if (action?.type === 'milestone') console.log(`착수 대상: 마일스톤 ${action.n}${action.title ? ' ' + action.title : ''} — 통과하면 서버가 now 로 옮깁니다.`);
   if (action?.type === 'roadmap') console.log(`교체 대상: out/${action.file} — 통과하면 서버가 roadmap.json 으로 옮깁니다.`);
   if (action?.type === 'request') console.log(`요청 대상: ${action.to.team}/${action.to.actor}${action.mode === 'milestone' ? ` · 마일스톤 ${action.until.milestone} 끝까지(공동 프로젝트)` : ''} — 통과하면 서버가 블록을 열고 두 방에 알립니다. 그 뒤는 node bus/request.mjs --say <id> "…".`);

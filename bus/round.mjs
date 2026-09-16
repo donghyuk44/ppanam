@@ -1346,6 +1346,17 @@ switch (cmd) {
           ? '✓ sessionId 없어도 team:actor 로 묶어 델타 · sessionId 있으면 세션별 · 딴 자리 안 섞임 · 재시작(값 작아짐) 은 0'
           : '✗ ' + JSON.stringify({ dNoSid, dSid, restart })]);
       }
+      // 재시작 실행자(N1 둘째 — 나리 13:2x) — anyBusy 는 순수: claude 세션 상태 목록 + gemini 풀 상태 목록 중 하나라도 busy 면 참.
+      {
+        const { anyBusy } = await import('../server/executor.mjs');
+        const none = anyBusy([{ busy: false }, { busy: false }], [{ busy: false }]);
+        const claudeBusy = anyBusy([{ busy: false }, { busy: true }], [{ busy: false }]);
+        const geminiBusy = anyBusy([{ busy: false }], [{ busy: true }]);
+        const empty = anyBusy([], []);
+        out.push(['재시작 — 일하는 세션 있으면 대기(anyBusy)', none === false && claudeBusy === true && geminiBusy === true && empty === false
+          ? '✓ 다 조용하면 false · claude 세션 하나라도 busy 면 true · gemini 풀 하나라도 busy 면 true · 빈 방은 false'
+          : '✗ ' + JSON.stringify({ none, claudeBusy, geminiBusy, empty })]);
+      }
       // claude 자리로 codex 를 띄우면 거부 (결정 69 ① — --actor 는 cast.json 이 gpt 인 자리만). 진짜 방(dev)의 guide 는 claude 다. --dry 라 codex 는 안 뜬다.
       const devGuide = readCast('dev').agents?.guide?.model;
       const j2 = spawnSync('node', [path.join(ROOT, 'bus', 'outside.mjs'), '--team', 'dev', '--actor', 'guide', '--turn', 'called', '--dry'], { cwd: ROOT, encoding: 'utf8', timeout: 20_000 });

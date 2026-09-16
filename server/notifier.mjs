@@ -76,6 +76,7 @@ function requestText(r) {
     (r.small ? '\n작은 B — 재시작·문구·임시 파일 같은 것. 톰 혼자 보면 닫힌다, 제리 대조는 생략(점검-0916 3-9). 작은 게 아니면 REVISE 로 돌려보내 큰 카드로 다시 올리게.' : '') +
     (r.detail ? `\n상세: ${r.detail}` : '') +
     (a?.type === 'push' ? `\n대상: ${a.remote ?? 'origin'}/${a.branch} @ ${String(a.sha).slice(0, 8)} — 통과하면 서버가 정확히 이 커밋을 민다` : '') +
+    (a?.type === 'restart' ? '\n대상: 서버 재시작 — 통과하면 일하는 세션이 없을 때 서버가 스스로 내려갔다 다시 뜬다(N1)' : '') +
     (a?.type === 'milestone' ? `\n대상: 마일스톤 ${a.n} 착수 — 통과하면 서버가 로드맵의 now 를 옮긴다` : '') +
     (a?.type === 'request' ? `\n대상: ${a.to.team}/${a.to.actor} 에게 요청 블록${a.mode === 'milestone' ? ` (마일스톤 ${a.until?.milestone ?? '?'} 끝까지 — 공동 프로젝트)` : ''}${a.why ? ` · 왜: ${a.why}` : ''}${a.due ? ` · 기한: ${a.due}` : ''} — 통과하면 서버가 블록을 열고 너는 감시자로 들어간다(결정 51: 목표 한 줄 node bus/request.mjs --goal <id> "…")` : '') +
     (a?.type === 'proxy' ? `\n대리 결정 (결정 85 — 대표가 10분 넘게 답이 없다): ${a.kind === 'approval' ? `C 승인 ${a.ref} 를 대표 대신 통과시킬까` : a.kind === 'unblock' ? `${a.team} 방의 FAIL 을 대표 대신 풀까` : `${a.team} 방의 물음에 대표 대신 답할까 — 답은 너의 PASS 이유에 적어라, 그 글이 그 방에 '대리 결정' 으로 남는다`}. 둘 다 PASS 여야 실행되고 하나라도 REVISE 면 대표를 기다린다. 돈·바깥으로 나가는 건 여기 안 온다.` : '') +

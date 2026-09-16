@@ -22,10 +22,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile, execFileSync } from 'node:child_process';
-import { listApprovals, emit, protectedBranch, pushGateError, readLog } from '../bus/bus.mjs';
+import { listApprovals, emit, protectedBranch, pushGateError, readLog, listTeams } from '../bus/bus.mjs';
+import * as session from './session.mjs';
+import * as gemini from './gemini.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STORE = path.join(REPO, 'state', 'executor.json');
+
+/** 감독(tools/serve.mjs)이 보는 신호 — 이 코드로 끝나면 재시작, 아니면 그대로 끝. 감독 없이 맨몸으로 뜬 서버는 그냥 죽는다. */
+export const RESTART_EXIT_CODE = 75;
 
 function readStore() {
   try { return JSON.parse(fs.readFileSync(STORE, 'utf8')); }
@@ -39,6 +44,22 @@ function writeStore(s) {
 /** 이 통과가 실행할 푸시인가. 요청에 박힌 action 만 본다. 텍스트는 안 본다. */
 function isPush(r) {
   return r.grade === 'B' && r.status === 'passed' && r.action?.type === 'push';
+}
+
+/** 이 통과가 실행할 재시작인가 (N1 둘째 조각 — 나리 13:2x "서버가 스스로 내려갔다 뜨는 길"). */
+function isRestart(r) {
+  return r.grade === 'B' && r.status === 'passed' && r.action?.type === 'restart';
+}
+
+/** 일하는 세션이 하나라도 있으면 안 내린다 — 관리 창이 손으로 재시작할 때 지키던 "busy 세션 없을 때만" 그대로(순수, round.mjs check 가 돌려본다). */
+export function anyBusy(sessionRows, geminiRows) {
+  return sessionRows.some((x) => x.busy) || geminiRows.some((x) => x.busy);
+}
+
+/** 지금 이 순간 실제로 일하는 세션이 있는가 — 여섯 방의 claude 세션 + gemini 상주 풀. */
+function liveAnyBusy() {
+  const sessionRows = listTeams().flatMap((t) => Object.values(session.statusAll(t.id)));
+  return anyBusy(sessionRows, gemini.status());
 }
 
 /** 몇 번 터지면 포기하나. 실패를 done 에 안 남기면 250ms 마다 영원히 다시 시도해 총괄실을 도배한다. */
@@ -91,6 +112,31 @@ let busy = false;
 export async function runExecutor() {
   if (busy) return;
   const store = readStore();
+
+  // 재시작 — 일하는 세션이 하나라도 있으면 이번 틱은 넘긴다(대기 note 는 한 번만, 도배 방지). 조용해지면 내려갔다 뜬다.
+  const restartTarget = listApprovals({ status: 'passed' }).find((r) => isRestart(r) && !store.done[r.id]);
+  if (restartTarget) {
+    if (liveAnyBusy()) {
+      store.waiting = store.waiting ?? {};
+      if (!store.waiting[restartTarget.id]) {
+        store.waiting[restartTarget.id] = true;
+        writeStore(store);
+        const meta = { approval: restartTarget.id, grade: 'B', executed: 'waiting' };
+        emit(restartTarget.team, { actor: 'system', type: 'note', text: `승인 ${restartTarget.id} — 일하는 세션이 있어 아직 안 내립니다. 조용해지면 내려갔다 뜹니다.`, meta });
+        if (restartTarget.team !== 'hq') emit('hq', { actor: 'system', type: 'note', text: `${restartTarget.team} 팀 승인 ${restartTarget.id} — 재시작 대기 중`, meta });
+      }
+      return;
+    }
+    store.done[restartTarget.id] = { at: new Date().toISOString(), ok: true, out: 'restart' };
+    writeStore(store);
+    const meta = { approval: restartTarget.id, grade: 'B', executed: 'restarting' };
+    emit(restartTarget.team, { actor: 'system', type: 'note', text: `승인 ${restartTarget.id} — 서버를 다시 켭니다.`, meta });
+    if (restartTarget.team !== 'hq') emit('hq', { actor: 'system', type: 'note', text: `${restartTarget.team} 팀 승인 ${restartTarget.id} — 서버 재시작`, meta });
+    session.stopAll();
+    gemini.stopAll();
+    process.exit(RESTART_EXIT_CODE);   // 감독(tools/serve.mjs)이 이 코드를 보고 다시 띄운다
+  }
+
   const target = listApprovals({ status: 'passed' }).find((r) => isPush(r) && !store.done[r.id]);
   if (!target) return;
 

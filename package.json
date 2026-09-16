@@ -8,7 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "start": "node server/index.mjs",
+    "start": "node tools/serve.mjs",
     "say": "node bus/say.mjs",
     "round": "node bus/round.mjs",
     "demo": "node bus/demo.mjs",
