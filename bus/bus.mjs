@@ -1739,7 +1739,23 @@ export function countsAsDispute(prev, { sha, text }) {
 export const WORK_PATH = path.join(ROOT, 'state', 'work.json');
 /** work.json 그대로 — 파일이 없으면 { items: [] }. */
 export function readWork() { return readJSON(WORK_PATH, { items: [] }); }
-function writeWork(work) { return writeJSON(WORK_PATH, work); }
+
+/**
+ * work 를 쓰되, 쓰기 직전 파일이 읽었을 때(before)와 그대로일 때만 쓴다 — 그새 다른 프로세스(다른 팀의
+ * PASS 훅)가 먼저 썼으면 버리고 false(호출부가 새로 읽어 다시 시도한다). tmp+rename 이라 반쯤 쓴 파일을
+ * 보는 일도 없다. writeJSON(단순 writeFileSync)만으로는 읽기-고치기-쓰기 사이 경합에서 먼저 쓴 쪽의
+ * 변경을 나중 쓴 쪽이 통째로 덮어썼다(2판 코드 점검 #12 — "통과가 진행으로 남음").
+ */
+export function writeWorkIfUnchanged(work, before, file = WORK_PATH) {
+  const dir = path.dirname(file);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = `${file}.tmp-${process.pid}-${crypto.randomBytes(3).toString('hex')}`;
+  fs.writeFileSync(tmp, JSON.stringify(work, null, 2) + '\n');
+  if (safeRead(file) !== before) { try { fs.unlinkSync(tmp); } catch { /* 이미 없음 */ } return false; }
+  fs.renameSync(tmp, file);
+  return true;
+}
+export const WORK_WRITE_TRIES = 5;
 
 const WORK_ACTIVE = new Set(['대기', '진행', '감사 대기', '막힘']);   // 통과·안 함은 끝난 일 — 브리프에 안 올린다
 
@@ -1770,16 +1786,20 @@ export function workBriefOf(team, seat) {
  * recordVerdict 의 PASS 가 부른다. 걸린 항목이 없으면 null — work.json 배선 전 팀·자리도 있으므로 조용히 넘어간다.
  * @returns 통과로 바뀐 항목(이미 바뀐 값) 또는 null
  */
-export function advanceWorkOnPass(team, seat, { workId = null } = {}) {
-  const work = readWork();
-  const items = work.items ?? [];
-  const idx = workId != null
-    ? items.findIndex((it) => it.id === workId && it.status !== '통과')
-    : items.findIndex((it) => it.team === team && it.seat === seat && it.status === '진행');
-  if (idx === -1) return null;
-  items[idx] = { ...items[idx], status: '통과' };
-  writeWork(work);
-  return items[idx];
+export function advanceWorkOnPass(team, seat, { workId = null, file = WORK_PATH } = {}) {
+  for (let attempt = 0; attempt < WORK_WRITE_TRIES; attempt++) {
+    const before = safeRead(file);
+    const work = before ? JSON.parse(before) : { items: [] };
+    const items = work.items ?? [];
+    const idx = workId != null
+      ? items.findIndex((it) => it.id === workId && it.status !== '통과')
+      : items.findIndex((it) => it.team === team && it.seat === seat && it.status === '진행');
+    if (idx === -1) return null;
+    items[idx] = { ...items[idx], status: '통과' };
+    if (writeWorkIfUnchanged(work, before, file)) return items[idx];
+    // 그 사이 다른 팀의 PASS 훅이 먼저 썼다 — 새로 읽어 다시(2판 #12).
+  }
+  throw new Error('work.json 이 계속 바뀌어 통과를 못 남겼습니다 — 다시 시도하세요.');
 }
 
 /**

@@ -716,6 +716,29 @@ switch (cmd) {
           ? '✓ 파일 있으면 통과 · 없으면 대기 · doneCheck 없으면 통과 · 걸린 항목 없어도 통과(item null) · ..로 저장소 밖은 이유 있는 거부(2판 #10)'
           : '✗ ' + JSON.stringify({ dc1, dc2, dc3, dc4, dc5 })]);
       }
+      // work.json 통과 겹쳐 쓰기(2판 코드 점검 #12, "그럴 법함") — writeWorkIfUnchanged 는 CAS: 쓰기 직전
+      // 파일이 읽었을 때(before)와 다르면(다른 프로세스가 먼저 썼으면) 버리고 false, 남의 변경을 안 덮는다.
+      // advanceWorkOnPass 는 그러면 새로 읽어 다시 시도한다 — 두 방 PASS 훅이 겹쳐도 서로 안 지운다.
+      {
+        const { writeWorkIfUnchanged, advanceWorkOnPass } = await import('./bus.mjs');
+        const workFile = path.join(paths(T).dir, 'work.json');
+        const seed = { items: [{ id: 'x1', team: T, seat: 'guide', status: '진행' }, { id: 'x2', team: T, seat: 'ops', status: '진행' }] };
+        fs.writeFileSync(workFile, JSON.stringify(seed, null, 2) + '\n');
+        const before = fs.readFileSync(workFile, 'utf8');
+        fs.writeFileSync(workFile, JSON.stringify(seed, null, 2) + '\n// 다른 프로세스가 먼저 씀\n');   // 경합 흉내
+        const cas1 = writeWorkIfUnchanged({ items: [{ id: 'x1', team: T, seat: 'guide', status: '통과' }] }, before, workFile);
+        const survivedRace = fs.readFileSync(workFile, 'utf8').includes('다른 프로세스가 먼저 씀');
+        fs.writeFileSync(workFile, JSON.stringify(seed, null, 2) + '\n');   // 되돌리고 정상 진행 확인
+        const p1 = advanceWorkOnPass(T, 'guide', { workId: 'x1', file: workFile });
+        const p2 = advanceWorkOnPass(T, '없는자리', { workId: 'x9', file: workFile });
+        const after = JSON.parse(fs.readFileSync(workFile, 'utf8'));
+        fs.rmSync(workFile, { force: true });
+        const wfWant = cas1 === false && survivedRace && p1?.status === '통과' && p1.id === 'x1' && p2 === null
+          && after.items.find((it) => it.id === 'x1').status === '통과' && after.items.find((it) => it.id === 'x2').status === '진행';
+        out.push(['work.json 통과 겹쳐 쓰기(CAS, 2판 #12)', wfWant
+          ? '✓ 옛 스냅샷으로 쓰면 거부(false)·남의 변경 안 덮음 · advanceWorkOnPass 는 정상 진행 · 없는 항목은 null'
+          : '✗ ' + JSON.stringify({ cas1, survivedRace, p1, p2, after })]);
+      }
       // 라운드 한 줄(roundLineOf, 2판 #11) — briefOf(세션이 뜰 때)와 giveTurn(턴마다)이 같은 함수를 쓴다,
       // T2 뒤로 세션이 한 단계 안 여러 회차를 사는 동안 옛 번호를 붙들지 않게.
       {
