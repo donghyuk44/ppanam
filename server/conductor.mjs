@@ -834,9 +834,13 @@ export function noticeEvents(team, events) {
       continue;
     }
 
-    // 총괄실에서 다른 방 사람을 불렀다 — 그 방에도 같은 말을 게시한다 (아래 crossPost). 총괄실 세션의 훅은 자기 방에만
-    // 남기므로 톰의 "하영, …" 이 하영 없는 방에만 떴다 (대표 원문 09-13 13:08, 결정 21).
-    if (isOffice(team) && e.type === 'message' && !e.meta?.from) crossPost(team, e);
+    // 총괄실(hq)에서 다른 방 사람을 불렀다 — 그 방에도 같은 말을 게시한다 (아래 crossPost). 총괄실 세션의 훅은
+    // 자기 방에만 남기므로 톰의 "하영, …" 이 하영 없는 방에만 떴다 (대표 원문 09-13 13:08, 결정 21). **비서실은
+    // 뺀다** — 대표 원문 09-16 10:55 "비서실에서 나눈 세라랑 나리 대화가 그냥 그대로 다른 방에 노출되는거야?" —
+    // isOffice(team) 이 hq 뿐 아니라 sera 도 참이라, 세라가 "나리, …" 라고만 해도(N1 뒤로 나리는 어느 방에서든
+    // 이름이 잡힌다) 비서실 대화가 통째로 다른 방에 복사됐다. 비서실 말을 다른 방에 옮길 일이 생기면 인용
+    // 모양(meta.quote)으로 — 원문 그대로 새 발언인 척 안 한다.
+    if (team === 'hq' && e.type === 'message' && !e.meta?.from) crossPost(team, e);
 
     r.recent.push(e.actor);
     r.recent = r.recent.slice(-RECENT_KEEP);
