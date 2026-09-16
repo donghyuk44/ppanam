@@ -208,9 +208,13 @@ function unheard(team, actor, { fromRound = null } = {}) {
     if (e.actor === actor && e.type !== 'verdict') continue;
     if (e.actor === 'boss') {
       // /api/say 가 대표의 말을 주인(또는 대표가 부른 사람)에게 바로 넣었다. 그에게는 다시 들려주지 않는다.
+      // 단, /api/say 가 실제로 세션에 바로 넣는 건 **이 방의 로컬 claude 자리**를 불렀을 때뿐이다 — 외부
+      // 자리(codex)나 로밍 자리(집이 아닌 방의 나리·세라)를 불렀을 땐 말풍선만 남기고 아무 세션에도 안
+      // 넣는다(server/index.mjs /api/say). 그런데도 got 을 방 주인으로 잡으면 주인마저 못 듣는다 —
+      // 대표가 레오·다니엘에게 한 말이 팀 누구에게도 안 들리던 것(점검-코드리뷰-0916 #6).
       const to = addressee(e.text, cast);
-      const got = to && cast[to]?.model === 'claude' ? to : session.ownerOf(team);
-      if (got === actor) continue;
+      const got = to ? (cast[to]?.model === 'claude' ? to : null) : session.ownerOf(team);
+      if (got && got === actor) continue;
     }
     if (e.type === 'round_start' || e.type === 'round_end' || e.type === 'milestone') { lines.push(`[${e.text}]`); continue; }
     const who = nameOf(team, e.actor) + (e.meta?.from ? '(총괄실에서)' : '');
