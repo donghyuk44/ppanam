@@ -445,7 +445,14 @@ function dispatch(team) {
   const r = room(team);
   const state = readState(team);
   if (!isOffice(team) && state.phase !== 'running') {
-    // 막 닫혔다(idle) — 닫히는 동안 dispatch 가 안 돌았으면 여기서 넘긴다. blocked 는 대표 차례라 버린다.
+    // 로드맵 청함(㉡, checkStalls)은 방이 idle 이라는 사실 자체가 이유라 라운드 없이도 나간다 — 안 그러면
+    // 바로 아래 stash→pickCarry 가 'roadmap' 을 모르는 종류라 그냥 버렸다(2판 #6, "다음 단계 제안이 안 옴").
+    for (const [actor, p] of [...r.pending]) {
+      if (p.kind !== 'roadmap' || busy(team, actor)) continue;
+      r.pending.delete(actor);
+      giveTurn(team, actor, p.kind, p.tries ?? 1);
+    }
+    // 막 닫혔다(idle) — 닫히는 동안 dispatch 가 안 돌았으면 나머지(로드맵 아닌 것)는 여기서 넘긴다. blocked 는 대표 차례라 버린다.
     if (state.phase === 'idle') stash(team, '라운드가 닫혀'); else { r.pending.clear(); persist(team); }
     return;
   }
