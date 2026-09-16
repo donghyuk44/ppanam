@@ -701,6 +701,21 @@ switch (cmd) {
         out.push(['완료 조건(D1) — doneCheckOf', dc1.ok === true && dc2.ok === false && dc3.ok === true && dc4.ok === true && dc4.item === null
           ? '✓ 파일 있으면 통과 · 없으면 대기 · doneCheck 없으면 통과 · 걸린 항목 없어도 통과(item null)' : '✗ ' + JSON.stringify({ dc1, dc2, dc3, dc4 })]);
       }
+      // 판정 대상 자리 찾기(테라 code-review 지적, dea1182 — 훅이 target 을 'guide' 로 고정해서 서로 감사(결정 125)로
+      // ops 등이 평가받아도 항상 guide 로 찍혔다) — verdictTargetActor(team, flowTargetText) 순수: 자유 글에서
+      // 먼저 나오는 이름의 자리를 돌려주고, 아무도 안 나오면 예전처럼 'guide'.
+      {
+        const { verdictTargetActor } = await import('./bus.mjs');
+        // guide·ops 순서로 선언 — vt3 는 글에서 ops(솔라)가 먼저 나오게 해서, "글에서 먼저 나온 이름"과
+        // "cast 선언 순서" 가 갈리게 만든다(code-review 지적 — 선언 순서로 도는 버그를 이 시험이 못 잡았었다).
+        fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라' }, ops: { name: '솔라' }, review: { name: '안젤' }, outside: { name: '레오' }, boss: { name: '댄' }, system: { name: '나리' } } }));
+        const vt1 = verdictTargetActor(T, '솔라 서버 것 봐줘');
+        const vt2 = verdictTargetActor(T, '이번 라운드 산출물');   // 아무 이름도 없음 — 예전 기본값
+        const vt3 = verdictTargetActor(T, '솔라 서버랑 테라 화면 둘 다 — 먼저 나온 솔라부터');
+        const vt4 = verdictTargetActor(T, '댄·나리 확인 — 실무 아님');   // boss·system 은 자리 후보가 아니다
+        out.push(['판정 대상 자리 찾기(target 고정 버그)', vt1 === 'ops' && vt2 === 'guide' && vt3 === 'ops' && vt4 === 'guide'
+          ? '✓ 이름 있으면 그 자리 · 없으면 guide · 글 순서로 먼저 나온 이름 · boss·system 은 후보 아님' : '✗ ' + JSON.stringify({ vt1, vt2, vt3, vt4 })]);
+      }
       // 닫히는 중 쌓인 차례는 다음 라운드로 (결정 25) — 호명·제3자만 넘기고 판정·침묵·점심은 버린다. 순수 함수 pickCarry.
       const { pickCarry, staleCalls, mergeCarry } = await import('../server/conductor.mjs');
       const carried = pickCarry(new Map([['review', { kind: 'called' }], ['outside', { kind: 'verdict' }], ['ops', { kind: 'lull' }], ['guide', { kind: 'third' }], ['chief', { kind: 'lunch' }]]));

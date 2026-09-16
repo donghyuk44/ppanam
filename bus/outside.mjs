@@ -25,7 +25,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {
-  ROOT, emit, recordVerdict, readContext, readTail, readLog, readCast, readState, appendJournal,
+  ROOT, emit, recordVerdict, verdictTargetActor, readContext, readTail, readLog, readCast, readState, appendJournal,
   defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, verdictInstruction, headSha, codexModelOf, codexArgs,
   markOutsideRunning, clearOutsideRunning, outsideCooldown, setOutsideCooldown, parseUsageLimit, geminiModelOf, isForeign, fallbackOf, engineName, agyArgs, parseAgy, withRetry,
 } from './bus.mjs';
@@ -560,7 +560,9 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   let rec;
   if (verdict && !apr) {
     try {
-      rec = recordVerdict(team, { actor: ACTOR, verdict, text: body, target: 'guide', round, sha, engine: ENGINE });
+      // target 고정 버그(테라 code-review 지적, dea1182) — 서로 감사(결정 125)로 ops 등이 평가받아도 항상
+      // guide 로 찍히던 것. --text 로 받은 판정 대상 자유 글(예: "솔라 서버 것 봐줘")에서 이름을 찾는다.
+      rec = recordVerdict(team, { actor: ACTOR, verdict, text: body, target: verdictTargetActor(team, text), round, sha, engine: ENGINE });
     } catch (e) {
       // 방이 막혀 있다(FAIL 뒤 대표 판단 대기). 판정으로 세지 않고 말로만 남긴다.
       rec = emit(team, { round, actor: ACTOR, type: 'message', text: `[${verdict} — 판정으로 세지 않음: ${e.message}] ${body}`, meta: { engine: ENGINE, ...ms } });

@@ -1810,6 +1810,25 @@ export function timelineOf() {
   return { streams, topBlockers };
 }
 
+/**
+ * 판정 흐름(startVerdict)의 target 은 자리 이름이 아니라 자유 글(예: "솔라 서버 것 봐줘")이다. 훅이
+ * recordVerdict 에 넘기는 target(누가 평가받았나)은 지금 'guide' 로 고정돼 있어(테라 code-review 지적,
+ * dea1182), 실무 아닌 다른 자리(ops 등, 결정 125 서로 감사)가 평가받아도 항상 guide 로 찍힌다 — 그 자리의
+ * work.json 자동 진행(advanceWorkOnPass)이 엉뚱한 항목을 건드리는 원인. 이 함수는 그 자유 글에서 이름이
+ * 실제로 언급된 자리를 찾아 돌려준다(순서: 제일 먼저 나온 이름) — 없으면 'guide'(예전 기본값 그대로).
+ */
+export function verdictTargetActor(team, flowTargetText) {
+  const cast = readCast(team).agents ?? {};
+  const text = String(flowTargetText ?? '');
+  let best = null, bestAt = Infinity;
+  for (const [id, a] of Object.entries(cast)) {
+    if (id === 'boss' || id === 'system' || !a?.name) continue;
+    const i = text.indexOf(a.name);
+    if (i >= 0 && i < bestAt) { bestAt = i; best = id; }
+  }
+  return best ?? 'guide';
+}
+
 export function recordVerdict(team, { actor, verdict, text, target = 'guide', round = null, sha = undefined, engine = null, workId = null }) {
   const v = String(verdict || '').toUpperCase();
   if (!VERDICTS.has(v)) throw new Error(`판정은 ${[...VERDICTS].join(' / ')} 중 하나여야 합니다.`);
