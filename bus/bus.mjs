@@ -707,6 +707,17 @@ export function delegationTag(now = Date.now()) {
   return ` — 대리, ${who} 위임${d.decision != null ? ' ' + d.decision : ''}`;
 }
 
+/** 위임 자리(결정 154, D4) — 판정 카드 하나 대기가 이 창(기본 40분)을 넘으면 서버가 잡는다. 위임 중이
+ * 아니면 빈 배열. leftOf 로 "그 자리가 아직 안 정한 카드" 만 본다 — 이미 정했는데 다른 판정자를
+ * 기다리는 카드는 안 잡는다(대표 09-16 09:5x — 카드 다섯이 30분 넘게 선 것이 계기). delegation 을
+ * 인자로 받는다(decideApproval 과 같은 꼴) — 시험이 진짜 state/delegation.json 을 안 건드리고 부를
+ * 수 있게. 순수 — check 가 돌린다. */
+export const DELEGATE_DECIDE_MS = Number(process.env.PPANAM_DELEGATE_DECIDE_MS || 40 * 60_000);
+export function delegateOverdueCards(now = Date.now(), { wait = DELEGATE_DECIDE_MS, delegation = readDelegation(now) } = {}) {
+  if (!delegation) return [];
+  return listApprovals({ status: 'pending' }).filter((r) => leftOf(r, delegation).includes(delegation.to) && now - new Date(r.ts).getTime() >= wait);
+}
+
 export function proxyCandidates({ now = Date.now(), wait = PROXY_WAIT_MS, withExcluded = false, delegation = readDelegation(now) } = {}) {
   const items = [], excluded = [], immediate = [];
   const quiet = bossQuietFor(now) >= wait;

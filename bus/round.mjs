@@ -961,6 +961,24 @@ switch (cmd) {
         const dcWant = dTom === '✓ 거부' && dNariNoRoom === '✓ 거부' && dNariNoDg === '✓ 거부' && dNari?.status === 'passed' && closedBySystem && bossStored && oldStill && dupSlot === '✓ 거부';
         out.push(['결정 자리 — 위임 중 나리(대표 09-16)', dcWant ? '✓ 위임 중 톰 거부 · 방 없는 나리 거부 · 위임 없이 나리 거부 · 총괄실 나리 통과로 작은 B 닫힘 · --boss 한 줄 저장(지적 #5) · 톰이 닫은 옛 카드는 그대로 통과 · 끝난 카드 재판정 거부' : '✗ ' + JSON.stringify({ dTom, dNariNoRoom, dNariNoDg, dNari: dNari?.status ?? dNari, closedBySystem, bossStored, oldStill, dupSlot })]);
         if (smallOk?.id && !closedBySystem) voidApproval(smallOk.id, '자가 시험');
+        // 위임 자리 40분 마감(D4, 결정 154) — delegateOverdueCards 순수: 위임 없으면 빈 배열, 위임
+        // 중이면 leftOf 에 위임 대상이 남은 pending 카드 중 wait 를 넘은 것만(오늘 아침 카드 다섯이
+        // 30분 넘게 선 것이 계기). delegation 을 인자로 넣어(decideApproval 과 같은 꼴) 진짜
+        // state/delegation.json 을 안 건드리고 시험한다.
+        {
+          const { delegateOverdueCards } = await import('./bus.mjs');
+          const dgObj = { to: 'system', until: '2099-01-01T00:00:00Z', decision: 999 };
+          const fresh = requestApproval(T, { grade: 'B', what: '위임 시험 카드' });
+          const noDg = delegateOverdueCards(Date.now(), { wait: 0, delegation: null });               // 위임 없으면 wait 0 이어도 빈 배열
+          const overNow = delegateOverdueCards(Date.now(), { wait: 0, delegation: dgObj }).some((r) => r.id === fresh.id);        // wait 0 — 바로 넘김
+          const notYet = delegateOverdueCards(Date.now(), { wait: 3600_000, delegation: dgObj }).some((r) => r.id === fresh.id);  // wait 1시간 — 아직
+          decideApproval(fresh.id, { by: 'system', decision: 'PASS', team: 'hq', delegation: dgObj });
+          const doneOne = delegateOverdueCards(Date.now(), { wait: 0, delegation: dgObj }).some((r) => r.id === fresh.id);        // 나리가 정했으니 그 뒤론 안 걸림(outside 만 남음)
+          const d4Want = noDg.length === 0 && overNow === true && notYet === false && doneOne === false;
+          out.push(['위임 자리 40분 마감(D4, 결정 154)', d4Want
+            ? '✓ 위임 없으면 빈 배열 · wait 넘으면 잡음 · 아직이면 안 잡음 · 위임 자리가 이미 정했으면 안 잡음'
+            : '✗ ' + JSON.stringify({ noDg, overNow, notYet, doneOne })]);
+        }
         // requestApproval 이 only:['message'] 방(비서실 꼴)에서도 안 죽는가(점검-코드리뷰-0916 #5) — emit 이 type:'note'
         // 를 버려(null) rec.note = ev.id 가 TypeError 로 승인 자체가 기록 안 됐다. 임시 팀을 teams.json 에 등록해 실물로 시험.
         {

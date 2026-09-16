@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, verdictTargetActor, withVerdictTarget, roundLineOf, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed, readRoadmap, listApprovals, readWork } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, verdictTargetActor, withVerdictTarget, roundLineOf, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed, readRoadmap, listApprovals, readWork, delegateOverdueCards, readDelegation } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { ga, eul } from './public/toollabel.js';
 
@@ -588,7 +588,7 @@ export const ROUND_SILENT_MS = Number(process.env.PPANAM_ROUND_SILENT_MS || 20 *
 export const DEAD_SEAT_MS = Number(process.env.PPANAM_DEAD_SEAT_MS || 5 * 60_000);
 export const CLOSE_REMINDER_MS = Number(process.env.PPANAM_CLOSE_REMINDER_MS || 20 * 60_000);
 
-const stallState = (team) => (room(team).stall ??= { roadmap: null, silent: null, closeReminded: null });
+const stallState = (team) => (room(team).stall ??= { roadmap: null, silent: null, closeReminded: null, delegate: null });
 /** 순수 — 이 팀에서 work.json 에 "진행" 으로 걸린 자리들(독립검수 실측: ㉢ 이 owner 만 불러 다른 몫 자리를 놓쳤다). */
 export function workSeatsOf(team, work) {
   return [...new Set((work?.items ?? []).filter((it) => it.team === team && it.status === '진행').map((it) => it.seat))];
@@ -648,13 +648,16 @@ export function checkStalls(now = Date.now()) {
     // ㉢ — 회차가 running 인데 20분 동안 이 라운드의 사건(message·verdict)이 없다. owner(실무) 만 부르면
     // 그 회차에 몫이 걸린 다른 자리(work.json 에 "진행" 으로 걸린 seat)가 조용해도 못 잡는다 — 독립검수 실측,
     // 노라(경영 ops)가 71분 조용했는데 안 걸림. owner + work.json 몫이 걸린 자리를 같이 부른다.
+    // 위임 자리(결정 154, D4)는 뺀다 — 일반 침묵 20분과 위임 판정 40분은 다른 시계라, 같이 넣으면
+    // 판정을 기다리는 중인데 "지금 뭐 하나" 로 또 부르게 된다(㉥ 이 그 시계를 따로 잰다).
     if (state.phase === 'running') {
       const log = readLog(team).filter((e) => e.round === state.round && (e.type === 'message' || e.type === 'verdict'));
       const lastTs = log.length ? new Date(log[log.length - 1].ts).getTime() : (state.startedAt ? new Date(state.startedAt).getTime() : now);
       if (now - lastTs >= ROUND_SILENT_MS) {
         if (!s.silent || s.silent.since !== lastTs) {
           let work; try { work = readWork(); } catch { work = null; }
-          const actors = [...new Set([owner, ...workSeatsOf(team, work)])];
+          const dg = readDelegation(now);
+          const actors = [...new Set([owner, ...workSeatsOf(team, work)])].filter((a) => !(dg && a === dg.to));
           s.silent = { since: lastTs, notified: false, actors };
           note(team, `방이 ${Math.round(ROUND_SILENT_MS / 60_000)}분째 조용합니다 — ${actors.map((a) => nameOf(team, a)).join('·')}에게 지금 하는 일을 묻습니다.`);
           for (const a of actors) enqueue(team, a, 'status');
@@ -723,6 +726,29 @@ export function checkStalls(now = Date.now()) {
       note(team, `${nameOf(team, actor)}의 세션이 꺼진 채 ${minAgo(now, since)}분째 답이 없습니다 — 다시 띄웁니다.`);
       giveTurn(team, actor, inf.kind, 1);
       rows.push([team, state.round, minAgo(now, since), `${nameOf(team, actor)} 세션 꺼짐 — 다시 띄움`]);
+    }
+  }
+
+  // ㉥ — 위임 자리(결정 154, D4) 판정 카드 마감 감시. 팀 방 루프 밖의 전역 검사 — 위임·승인 큐는
+  // 총괄실 하나뿐이라 팀마다 돌 이유가 없다. 위임 자리(나리)가 아직 안 정한 카드가 40분을 넘으면
+  // 한 번만 hq 에 note + 그 자리를 부른다(dedup 은 hq stallState.delegate 에 카드 id 로).
+  {
+    const overdue = delegateOverdueCards(now);
+    const ds = stallState('hq');
+    if (overdue.length) {
+      ds.delegate ??= new Set();
+      const fresh = overdue.filter((r) => !ds.delegate.has(r.id));
+      if (fresh.length) {
+        for (const r of fresh) ds.delegate.add(r.id);
+        const dg = readDelegation(now);
+        const who = nameOf('hq', dg?.to ?? 'system');
+        const body = fresh.map((r) => `${r.team} · [${r.grade}] ${r.what} (${minAgo(now, new Date(r.ts).getTime())}분 전)`).join('\n');
+        emit('hq', { actor: 'system', type: 'note', text: `${who}, 위임 중인 판정 카드가 40분을 넘겼습니다 — 지금 정해 주세요.\n${body}`, meta: { delegateOverdue: fresh.map((r) => r.id) } });
+        if (dg?.to && dg.to !== 'boss') enqueue('hq', dg.to, 'called');
+        for (const r of fresh) rows.push([r.team, r.round ?? 0, minAgo(now, new Date(r.ts).getTime()), `위임 카드 40분 넘김 — ${who}에게 알림 (${r.id})`]);
+      }
+    } else {
+      stallState('hq').delegate = null;
     }
   }
 
