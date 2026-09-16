@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>카드 부품 미리보기 — 팀 상황 다섯 · 판정 셋 · 결재 하나</title>
+  <!-- 서버가 /out/dev/card-preview.html 로 내준다. 부품·모양·자는 절대 경로 — 화면(app.js)이 쓰는 것과 같은 파일.
+       style.css 는 변수(--ink --line …)를 얻으려고 읽는다 — card.css 는 그 변수만 쓴다.
+       표본 값: 다섯 팀 teams/<팀>/progress.json (2026-09-16 아침 실제 값, 글자 그대로 — 자에 안 맞는 줄은 NOT_YET 이 보이게 둠) ·
+       판정 셋은 카드-체계 2절·card-words 2절의 본보기 글 · 결재 하나는 state/approvals.jsonl 의 request 한 줄 그대로(apr_d378699b, C —
+       쓰는 시점에 대기 중인 카드가 0 이라 가장 최근 C 카드를 그대로 박음). -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/card.css">
+  <style>
+    /* style.css 가 body 를 overflow:hidden 으로 잠근다(작전실은 방 안에서만 스크롤) — 미리보기는 한 장으로 흐르게 푼다 */
+    html, body { height: auto; overflow: auto; }
+    body { background: var(--ground); }
+    .preview { max-width: 412px; margin: 0 auto; padding: 8px; display: flex; flex-direction: column; gap: 10px; }
+    .preview h2 { margin: 6px 0 0; font-family: 'Gowun Batang', serif; font-weight: 400; font-size: 14px; color: var(--ink-3); }
+    .preview__log { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-4); white-space: pre-wrap; }
+    /* 컴퓨터 폭 — 카드가 옆으로 서고 세로로 흐른다. 폰 412 는 위 한 단 그대로 */
+    @media (min-width: 900px) {
+      .preview { max-width: 1280px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 12px; }
+      .preview h2 { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="preview" id="preview"></main>
+  <script type="module">
+    import { teamCard, verdictCard, approvalCard } from '/card.js';
+
+    const root = document.getElementById('preview');
+    const h = (t) => { const n = document.createElement('h2'); n.textContent = t; root.appendChild(n); };
+    const log = document.createElement('div'); log.className = 'preview__log';
+    const say = (s) => { log.textContent += s + '\n'; };
+    const handlers = {
+      onOpen: (file) => say(file ? `열기 → ${file}` : '팀 방으로'),
+      onDecide: (id, k) => say(`${k === 'PASS' ? '승인' : '반려'} → ${id ?? '(id 없음)'}`),
+    };
+
+    /* ── 1. 팀 상황 카드 다섯 — teams/<팀>/progress.json 실제 값(doing[0]·done·blocked·boss[0]·at·by·round), 단계는 roadmap.json ── */
+    const teams = [
+      {
+        team: 'hq', name: '총괄', color: '#1f5f4f', state: 'boss', at: '2026-09-15T21:49:53.214Z',
+        doing: { who: '톰', text: '총괄 · 밤새 대표님 대신 정한 것 열 남짓은 아침 한 장에 — 되돌리시려면 한마디면 돼요' },
+        done: [], blocked: [],
+        boss: { id: null, text: '총괄 · 대표님 화면에 새는 영어 속말을 막는 한 줄 — 나리가 드린 명령 한 번 돌려 주세요' },
+        stage: { n: 1, total: 5, round: 2 },
+      },
+      {
+        team: 'dev', name: '개발', color: '#4a5d3a', state: 'blocked', at: '2026-09-15T22:42:30.189Z',
+        doing: { who: '테라', text: '화면 글 검사(G2)는 넣었고, 카드 부품 새 파일(C6)을 손 하나 붙여 만드는 중이에요' },
+        done: [{ who: '테라', text: '결재 카드·첫 화면·알림·판정 규칙·결정 자리를 고쳤어요. 레오 통과', file: null }],
+        blocked: [{ text: '화면에 올리는 빌드와 사진은 제 권한이 막혀 나리 손이에요', who: '나리' }],
+        boss: null,
+        stage: { n: 10, total: 11, round: 32 },
+      },
+      {
+        team: 'design', name: '디자인', color: '#4b5f9e', state: 'blocked', at: '2026-09-15T22:33:10.499Z',
+        doing: { who: '헨리', text: '카드 셋(팀 상황·판정·결재) 시안 1판을 폰과 컴퓨터 폭으로 그렸어요 — 값은 다섯 팀 오늘 아침 상황판 · 시안 대 실물 목록 1판은 그대로' },
+        done: [],
+        blocked: [{ text: '디자인 · 얼굴 열일곱과 화면 시안이 이 컴퓨터에만 있어요 — 저장소 규칙을 톰이 풀어 줘야 올라가요', who: '톰' }],
+        boss: null,
+        stage: { n: 5, total: 6, round: 18 },
+      },
+      {
+        team: 'marketing', name: '마케팅', color: '#2f4f7a', state: 'working', at: '2026-09-15T22:42:02.816Z',
+        doing: { who: '하영', text: '작업 보드(work.json) 마케팅 줄: C2 카드 글 — 2판 머리까지 냄(안젤 자로 잼 → 감사 대기) · H1 톰·세라 절 — 제리 감사 대기 · H2 세라 붙임 — 카드 apr_078fa7fc 대기 · H3 인격 40줄·traps — 틀(40-fold.md)+본보기(40/marketing.guide.md)+traps 첫 판(teams/marketing/traps.md 00c7d8a) 끝, 각 자리가 제 것을 접는다. 사전 7판 0-3(표준어) 다니엘 확인 대기. 5단계 닫힘 셋 나리 손' },
+        done: [], blocked: [], boss: null,
+        stage: { n: 5, total: 5, round: 36 },
+      },
+      {
+        team: 'finance', name: '경영', color: '#6f9a4a', state: 'boss', at: '2026-09-15T22:03:18.733Z',
+        doing: { who: '유진', text: 'R5 M4 아침 한 장: out/daily-template.md 1판(틀 세 칸+대리 결정 조건부 · 어디서 뽑나 · 본보기 열다섯, 자 수는 jq length 실측) · 개발 요청 카드 apr_f0c65cd4(B --to dev, 06:30 자동 생성) · 손 실물 2026-09-16.md 는 09-17 자동 전까지 본보기. 노라 잣대 두 줄 자리 5절에 비워 둠 → 빅터 판정' },
+        // 상황판 done 은 비어 있다 — 파일 링크 꼴을 보이려고 doing 에 적힌 물건(teams/finance/out/daily-template.md, 실제 있음) 하나만 표본으로 둠
+        done: [{ who: '유진', text: '아침 한 장 틀 1판', file: 'out/daily-template.md' }],
+        blocked: [],
+        boss: { id: null, text: '경영 · 아침 한 장을 읽고 읽히는지 한마디 주세요' },
+        stage: { n: 4, total: 4, round: 5 },
+      },
+    ];
+    h('팀 상황 카드 다섯 — 상황판 실제 값');
+    for (const d of teams) root.appendChild(teamCard(d, handlers));
+
+    /* ── 2. 판정 카드 셋 — 한 줄은 카드-체계 2절·card-words 2절 본보기, 본문은 표본 ── */
+    h('판정 카드 셋 — 승인 · 반려 · 보류');
+    root.appendChild(verdictCard({
+      verdict: 'PASS', from: '레오', to: '테라', ts: '2026-09-15T22:31:57.553Z',
+      line: '얼굴 열일곱이 시안과 같아요',
+      detail: '떨어뜨릴 이유 셋:\n① 얼굴 크기가 규격과 다르다 — 열일곱 장 전부 200×200, 아니다.\n② 배경이 안 투명하다 — 전부 투명, 아니다.\n③ 정면이 아닌 장이 있다 — 열일곱 장 눈으로 봤다, 아니다.\n반박할 것이 없어 통과.',
+      attempt: null,
+    }));
+    root.appendChild(verdictCard({
+      verdict: 'REVISE', from: '마크', to: '헨리', ts: '2026-09-15T22:35:10.000Z',
+      line: '보고서 PC 폭이 아직 1/4 이에요',
+      detail: '떨어뜨릴 이유 셋:\n① 컴퓨터 폭에서 보고서가 화면의 1/4 만 쓴다 — 시안은 두 단, 맞다.\n② 폰 폭은 시안과 같다 — 아니다.\n③ 글꼴 크기가 시안과 다르다 — 표 값과 같다, 아니다.\n①이 남아 반려. 헨리가 두 단으로 고친다.',
+      attempt: { n: 1, max: 3 },
+    }));
+    root.appendChild(verdictCard({
+      verdict: 'FAIL', from: '안젤', to: '하영', ts: '2026-09-15T22:40:00.000Z',
+      line: '세 번 고쳐도 안 됐어요, 대표님께 가요',
+      detail: '세 번째 반박까지 같은 자리가 남았다 — 대표님께 보고. 무엇이 막혔는지: 카드 글 열 줄 중 셋이 자에 걸린 채로 세 판.',
+      attempt: { n: 3, max: 3 },
+    }));
+
+    /* ── 3. 결재 카드 하나 — state/approvals.jsonl 의 request 한 줄 그대로 ── */
+    h('결재 카드 하나 — 결재 큐 실제 카드(--boss 한 줄이 아직 없어 머리·왜가 NOT_YET)');
+    const request = {"kind":"request","id":"apr_d378699b","ts":"2026-09-15T17:08:13.528Z","team":"dev","by":"guide","grade":"C","what":"로드맵 교체 — 새 9단계 '현황 나머지와 뒷정리', 세라 앱은 10단계로 (apr_8b50b2ce 고침)","detail":"톰 REVISE(apr_e55ddca1) 반영 — note 끝 한 절만 '톰이 반려했다(apr_f80ca2b7)' 로 고침, 나머지는 한 글자도 안 건드림. 내용은 그대로: ① 현황 팀 탭 team.svg·사람 탭 person.svg 412 ② 결재 카드 연 팝업 412(7단계 이월) ③ 분석 첫 층 그림 하나(글자만이면 실패) ④ 뒷정리: 임시 파일 셋·조사 고침 9cfd994 확인·bossQuietFor via 제외 확인·총괄실 부탁을 실장이 닫기. 통과: 나리 412 셋 못 깨뜨림 + 레오. timebox 2 라운드. 파일: teams/dev/out/roadmap.proposed.json. 앞 카드 apr_8b50b2ce 는 아직 대기라 톰이 무효로 해 주면 된다","round":29,"action":{"type":"roadmap","file":"roadmap.proposed.json"},"note":"evt_ccb90d0548"};
+    root.appendChild(approvalCard(request, handlers));
+
+    /* 단추·링크를 누르면 여기 찍힌다 — 미리보기라 서버로는 안 간다 */
+    root.appendChild(log);
+  </script>
+</body>
+</html>
