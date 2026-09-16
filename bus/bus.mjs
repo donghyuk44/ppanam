@@ -451,12 +451,14 @@ export function requestApproval(team, { by = 'guide', grade, what, detail = '', 
   };
   // 방에도 남긴다 — 화면에서 가장 약한 줄이지만, 나중에 "언제 요청했나"를 찾을 수 있어야 한다.
   // 그 줄의 id 를 레코드에 박아 카드의 "방에서 보기" 가 요청자 원문으로 건너간다 (결정 20-2).
-  const ev = emit(team, {
-    actor: by, type: 'note',
-    text: `승인 요청 [${g}${small ? '·작은' : ''}] ${rec.what}${g === 'A' ? ' — 자동 통과' : small ? ' — 톰 혼자 봄' : ''}`,
-    meta: { approval: rec.id, grade: g, ...(small ? { small: true } : {}) },
-  });
-  rec.note = ev.id;
+  const noteText = `승인 요청 [${g}${small ? '·작은' : ''}] ${rec.what}${g === 'A' ? ' — 자동 통과' : small ? ' — 톰 혼자 봄' : ''}`;
+  const noteMeta = { approval: rec.id, grade: g, ...(small ? { small: true } : {}) };
+  // 비서실처럼 only:['message'] 인 방은 type:'note' 를 emit 이 버려(null) — 버려도 승인 자체는 남아야 한다
+  // (점검-코드리뷰-0916 #5: rec.note = ev.id 가 TypeError 로 여기서 통째로 죽어 요청이 기록조차 안 됐다).
+  // message 로 한 번 더 시도하고, 그마저 안 되면(대표·세라 아닌 자리) 방 줄 없이 승인만 남긴다.
+  const ev = emit(team, { actor: by, type: 'note', text: noteText, meta: noteMeta })
+    ?? emit(team, { actor: by, type: 'message', text: noteText, meta: noteMeta });
+  if (ev) rec.note = ev.id;
   appendApproval(rec);
   return listApprovals().find((r) => r.id === rec.id);
 }

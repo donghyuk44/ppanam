@@ -800,6 +800,29 @@ switch (cmd) {
         const dcWant = dTom === '✓ 거부' && dNariNoRoom === '✓ 거부' && dNariNoDg === '✓ 거부' && dNari?.status === 'passed' && closedBySystem && oldStill && dupSlot === '✓ 거부';
         out.push(['결정 자리 — 위임 중 나리(대표 09-16)', dcWant ? '✓ 위임 중 톰 거부 · 방 없는 나리 거부 · 위임 없이 나리 거부 · 총괄실 나리 통과로 작은 B 닫힘 · 톰이 닫은 옛 카드는 그대로 통과 · 끝난 카드 재판정 거부' : '✗ ' + JSON.stringify({ dTom, dNariNoRoom, dNariNoDg, dNari: dNari?.status ?? dNari, closedBySystem, oldStill, dupSlot })]);
         if (smallOk?.id && !closedBySystem) voidApproval(smallOk.id, '자가 시험');
+        // requestApproval 이 only:['message'] 방(비서실 꼴)에서도 안 죽는가(점검-코드리뷰-0916 #5) — emit 이 type:'note'
+        // 를 버려(null) rec.note = ev.id 가 TypeError 로 승인 자체가 기록 안 됐다. 임시 팀을 teams.json 에 등록해 실물로 시험.
+        {
+          const { TEAMS_PATH } = await import('./bus.mjs');
+          const teamsBefore = fs.readFileSync(TEAMS_PATH, 'utf8');   // 원본 바이트 그대로 되돌린다 — JSON.stringify 로 다시 쓰면 들여쓰기가 깨진다
+          const cfg = JSON.parse(teamsBefore);
+          const T2 = '_check_sera';
+          cfg.teams.push({ id: T2, name: '시험 비서실', room: '시험', kind: 'office', owner: 'secretary', speakers: ['boss', 'secretary'], only: ['message'] });
+          fs.writeFileSync(TEAMS_PATH, JSON.stringify(cfg));
+          let onlyMsg = null;
+          try {
+            fs.rmSync(paths(T2).dir, { recursive: true, force: true }); fs.mkdirSync(paths(T2).dir, { recursive: true });
+            onlyMsg = requestApproval(T2, { by: 'secretary', grade: 'B', what: '시험 — 비서실 꼴', small: true });
+          } catch (e) { onlyMsg = { err: e.message }; }
+          finally {
+            fs.writeFileSync(TEAMS_PATH, teamsBefore);
+            fs.rmSync(paths(T2).dir, { recursive: true, force: true });
+          }
+          const onlyMsgWant = onlyMsg?.id && onlyMsg.note && !onlyMsg.err;
+          out.push(['requestApproval — only:[message] 방에서도 안 죽음(#5)', onlyMsgWant
+            ? '✓ note 대신 message 로 남기고 승인은 그대로 appendApproval — TypeError 없음'
+            : '✗ ' + JSON.stringify(onlyMsg)]);
+        }
         // PASS 모양(점검 3-9 ⑦) — 정형문·이유 셋 없음·반박 없음은 되돌리고, 모양이 맞으면 null. 지시문(bus.verdictInstruction)에 그 모양이 적혀 있다.
         const { passShapeError, verdictInstruction } = await import('./bus.mjs');
         const ps = [
