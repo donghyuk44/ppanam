@@ -43,9 +43,11 @@ function readRows(file) {
  * 부풀었다). 세션(sessionId)별로 시각순 정렬해 이전 값과의 차이만 그 턴이 실제로 쓴 돈이다 — 첫 턴은
  * 이전 값이 0 이라 그대로. sessionId 가 없는(엔진이 안 준) 줄도 같은 자리(session.mjs 가 team·actor 마다
  * 프로세스 하나만 띄운다)가 이어 쓴 누적값이라 똑같이 부푼다(나리 실측 09-16: 총괄 chief 12.9→14.3→14.6 을
- * 그냥 더해 총괄 $329 중 $214 가 이 몫이었다) — team:actor 로 묶어 같은 델타를 낸다. 재시작으로 프로세스가
- * 바뀌면 누적값이 작아질 수 있는데, 그때는 Math.max(0, …)이 0으로 막아 과소평가는 해도 과대평가는 안 한다.
- * 입력·출력 토큰은 턴마다의 실제 값이라(세션 누적이 아니다) 그대로 더한다 — 부푸는 건 costUsd 뿐이다.
+ * 그냥 더해 총괄 $329 중 $214 가 이 몫이었다) — team:actor 로 묶어 같은 델타를 낸다.
+ * --resume 뒤 누적이 작아지면(새 프로세스가 자기 시작부터 다시 세므로) 그 줄부터는 옛 최고값과의 차가
+ * 아니라 그 줄 자체의 값을 델타로 삼는다 — 그냥 Math.max(0, cur - prev) 로 0 을 주면 누적이 옛 최고값을
+ * 다시 넘을 때까지 여러 턴이 델타 0 으로 사라졌다(2판 코드 점검 #8, "오늘 쓴 것"이 작게 나옴). 입력·출력
+ * 토큰은 턴마다의 실제 값이라(세션 누적이 아니다) 그대로 더한다 — 부푸는 건 costUsd 뿐이다.
  * @returns rows 와 같은 길이 — 각 줄에 { ...row, costDelta } 를 붙인다. 순수 함수(round.mjs check 가 돌려본다).
  */
 export function withCostDeltas(rows) {
@@ -57,7 +59,11 @@ export function withCostDeltas(rows) {
   for (const group of byKey.values()) {
     group.sort((a, b) => new Date(a.ts) - new Date(b.ts));
     let prev = 0;
-    for (const r of group) { const cur = r.costUsd ?? prev; r.costDelta = Math.max(0, cur - prev); prev = cur; }
+    for (const r of group) {
+      const cur = r.costUsd ?? prev;
+      r.costDelta = cur < prev ? Math.max(0, cur) : Math.max(0, cur - prev);   // 작아졌으면 새 프로세스 — 그 값 자체가 델타
+      prev = cur;
+    }
   }
   return rows;
 }

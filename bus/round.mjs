@@ -1485,13 +1485,17 @@ switch (cmd) {
         ];
         const dSid = withCostDeltas(withSid);
         const sidWant = dSid[0].costDelta === 5 && dSid[1].costDelta === 1;
-        const restart = withCostDeltas([   // 프로세스가 바뀌어 누적값이 작아지면 0 (과소평가는 해도 과대평가는 안 한다)
+        // 프로세스가 바뀌어(--resume) 누적이 작아지면(2판 코드 점검 #8) — 그 줄부터는 옛 최고값과의 차가
+        // 아니라 그 줄 자체가 델타(새 프로세스가 0 부터 다시 세니까), 그다음 줄은 다시 정상 증가분.
+        // 옛 코드(Math.max(0, cur-prev))라면 둘째 줄이 0, 셋째 줄도 20 을 다시 넘기 전까진 0 이었다.
+        const restart = withCostDeltas([
           { ts: '2026-09-16T03:00:00Z', team: 'hq', actor: 'chief', sessionId: null, costUsd: 20 },
-          { ts: '2026-09-16T03:10:00Z', team: 'hq', actor: 'chief', sessionId: null, costUsd: 2 },
+          { ts: '2026-09-16T03:10:00Z', team: 'hq', actor: 'chief', sessionId: null, costUsd: 2 },     // 재시작 — 그 자체가 델타
+          { ts: '2026-09-16T03:20:00Z', team: 'hq', actor: 'chief', sessionId: null, costUsd: 5 },     // 새 프로세스에서 정상 증가
         ]);
-        const restartWant = restart[0].costDelta === 20 && restart[1].costDelta === 0;
+        const restartWant = restart[0].costDelta === 20 && restart[1].costDelta === 2 && restart[2].costDelta === 3;
         out.push(['토큰 장부 델타(T1 — sessionId 없는 줄)', noSidWant && sidWant && restartWant
-          ? '✓ sessionId 없어도 team:actor 로 묶어 델타 · sessionId 있으면 세션별 · 딴 자리 안 섞임 · 재시작(값 작아짐) 은 0'
+          ? '✓ sessionId 없어도 team:actor 로 묶어 델타 · sessionId 있으면 세션별 · 딴 자리 안 섞임 · 재시작은 그 줄 자체가 델타(2판 #8), 그 뒤 정상 증가'
           : '✗ ' + JSON.stringify({ dNoSid, dSid, restart })]);
       }
       // 재시작 실행자(N1 둘째 — 나리 13:2x) — anyBusy 는 순수: claude 세션 상태 목록 + gemini 풀 상태 목록 중 하나라도 busy 면 참.
