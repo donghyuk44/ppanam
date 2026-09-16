@@ -2664,19 +2664,27 @@ function renderReport(r) {
   }
 
   // ② 톰·제리가 대표님 대신 정했어요 — 창 안의 대리 결정(note meta.proxy). 되돌리시려면 방에 한마디(결정 85 ③)
+  // 두 블록으로 가른다(나리 16:3x): 대표님이 직접 찍으신 C 카드(p.by === 'boss', 솔라 58a62fa) 는 "대표님이 정하신 것", 나머지(system·chief 대리)는 "대리 결정 — 되돌리기는 답하기"
   if ((r.proxy ?? []).length) {
-    const sec = el('section', 'dash__card rep__sec'); sec.dataset.block = 'proxy';
-    sec.appendChild(el('div', 'dash__k', '대리 결정 — 되돌리기는 답하기'));   // 위임 중엔 나리·제리(notify.deciders)
-    for (const p of r.proxy) {
-      const row = el('button', 'dash__row'); row.type = 'button';
-      row.appendChild(el('b', null, `${teamOf(p.team).name} · ${whenKo(p.ts)}`));
-      // 사람 말 검사(결정 140, G4 — 안젤 사용성 표: [C]·카드 번호·결정 번호가 그대로 섰다). 서버가 준 사람 말 한 줄(p.boss — --boss·--boss-line, 솔라 3c90edf)이 있으면 그것, 없으면 머리말을 뗀 원문 → 자에 안 맞으면 "요약 없음" + 원문 펼침
-      if (!putLine(row, bossOk(p.boss) ? p.boss : String(p.text).replace(/^대리 결정[^—:]*[—:]\s*/, ''), 'dash__sub', p.team)) continue;   // 사람 말 한 줄이 없으면 행 없음 — "요약 없음" 대신(opus ④, 재료는 나리 --boss-line)
-      row.appendChild(el('span', 'dash__go', '채팅 열기'));
-      row.addEventListener('click', () => jumpTo(p.team, p.id));
-      sec.appendChild(row);
+    const groups = [
+      { key: 'boss', title: '대표님이 정하신 것', items: (r.proxy ?? []).filter((p) => p.by === 'boss') },
+      { key: 'proxy', title: '대리 결정 — 되돌리기는 답하기', items: (r.proxy ?? []).filter((p) => p.by !== 'boss') },
+    ];
+    for (const g of groups) {
+      if (!g.items.length) continue;
+      const sec = el('section', 'dash__card rep__sec'); sec.dataset.block = g.key;
+      sec.appendChild(el('div', 'dash__k', g.title));
+      for (const p of g.items) {
+        const row = el('button', 'dash__row'); row.type = 'button';
+        row.appendChild(el('b', null, `${teamOf(p.team).name} · ${whenKo(p.ts)}`));
+        // 사람 말 한 줄(p.boss — --boss·--boss-line)이 있으면 그것, 없으면 머리말을 뗀 원문 → 자에 안 맞으면 행 없음("요약 없음" 대신, opus ④)
+        if (!putLine(row, bossOk(p.boss) ? p.boss : String(p.text).replace(/^대리 결정[^—:]*[—:]\s*/, ''), 'dash__sub', p.team)) continue;
+        row.appendChild(el('span', 'dash__go', '채팅 열기'));
+        row.addEventListener('click', () => jumpTo(p.team, p.id));
+        sec.appendChild(row);
+      }
+      if (sec.querySelector('.dash__row')) body.appendChild(sec);   // 다 걸리면 블록 자체를 안 그림
     }
-    if (sec.querySelector('.dash__row')) body.appendChild(sec);   // 다 걸리면 블록 자체를 안 그림
   }
 
   // ③ 막힌 것 N · 한 것은 점, 멈춤은 빨간 띠 — 팀마다 시간 띠 한 줄(창 = 띠 가로), 그 밑에 멈춘 구간 하나씩(5판 3-5-3 ⑫: '멈춘 것' 이 아니라 '막힌 것' — 막힌 것 = 일)
