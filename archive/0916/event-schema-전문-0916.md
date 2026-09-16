@@ -46,6 +46,7 @@ teams/<방>/
 서버가 자리마다 `claude -p` 를 띄우며 `PPANAM_TEAM`·`PPANAM_ACTOR` 를 넣고, 인격은 `teams/<방>/<자리>.md` 를
 `--append-system-prompt` 로 붙인다 (`server/session.mjs assemblePrompt` = 인격 + 확정 조항 해석 + 일지 최근 문단 + 라운드 브리프).
 모델·도구는 `cast.json` 의 `llm`·`disallow` 가 정한다(감사역은 Write·Edit 없음). 외부감사(`outside`)만 codex 별도 프로세스다.
+전에는 내부감사·운영이 실무가 부를 때만 뜨는 서브에이전트라 방을 듣지도 서로 부르지도 못했다 — "서로 대화 안 하는데?" (2026-09-01).
 
 모든 이벤트는 `team` 필드를 갖는다. 컴퓨터에서는 왼쪽 레일이 **안 보고 있는 팀**의
 상태(진행 중 / 대기 / 대표 호출)까지 함께 보여주고, 폰에서는 한 방씩 본다.
@@ -68,6 +69,8 @@ teams/<방>/
 **방마다 쓰는 자리가 다르다.** 위 목록은 있을 수 있는 자리 전부고, 어느 방이 어느 자리를
 쓰는지는 그 방의 `cast.json` 이 정한다. 마케팅은 `guide·review·outside`, 개발은
 `guide·ops·outside`(감사는 외부 하나), 총괄실은 `chief·outside` 다.
+**개발팀에 내부감사가 없는 이유**: 코드는 돌거나 안 돌거나라 외부감사가 실제로 실행해
+보는 것이 더 강한 검증이고, 대신 비어 있던 운영 자리를 채웠다.
 
 **외부감사는 서브에이전트가 아니다.** Claude Code 의 서브에이전트는 Claude 모델만
 받으므로 GPT 를 에이전트로 등록할 수 없다. `bus/outside.mjs` 가 codex CLI 를 별도
@@ -79,41 +82,41 @@ teams/<방>/
 
 말풍선 색·이름·모델은 `cast.json` 이 정한다. 별도 매핑 파일을 두지 않는다.
 
-**자리의 직책과 하는 일** — `cast.json agents[자리]` 의 `title`(직책, 짧은 명사) · `does`(하는 일, 한 줄).
-화면(사람 카드·헤더·툴팁)은 **`title` 만** 보여 주고 `does` 는 인격 파일·카드 안쪽용이다.
-`/api/actor` 는 둘 다 돌려준다.
+**자리의 직책과 하는 일** (요청 req_94013782, 결정 97·43 ⑥) — `cast.json agents[자리]` 의 `title`(직책, 짧은 명사) · `does`(하는 일, 한 줄).
+옛 `role` 한 칸("실무 · 만들고 고친다")을 첫 ` · ` 에서 갈라 옮긴 것이다. 화면(사람 카드·헤더·툴팁)은 **`title` 만** 보여 주고 `does` 는 인격 파일·카드 안쪽용이다.
+`/api/actor` 는 둘 다 돌려준다. 직책 글자를 바꾸는 것은 대표가 고른 뒤 따로(out/opsroom-words.md).
 
-**자리의 엔진·모델·추론 강도** — `cast.json agents[자리]` 의 아래 일곱 값. 대표가 관제탑 개인 카드에서 고친다(비용 직결 — 대표만).
+**자리의 엔진·모델·추론 강도** (결정 69) — `cast.json agents[자리]` 의 네 값. 대표가 관제탑 개인 카드에서 고친다(비용 직결 — 대표만).
 
 | 값 | 무엇 | 없으면 | 어디에 닿나 |
 | --- | --- | --- | --- |
 | `model` | 엔진 — `claude` · `gpt`(codex) · `gemini`(임시 외부 감사) | — | 자리의 세션 종류. claude 는 `server/session.mjs`, gpt·gemini 는 `bus/outside.mjs` |
 | `llm` | claude 모델 — `opus` · `sonnet` · `haiku` | 방의 모델(`state/teams.json`) | `claude --model` |
 | `codexModel` | codex 모델 — `CODEX_MODELS` 목록(`bus/bus.mjs`) | 환경 `PPANAM_CODEX_MODEL`, 그것도 없으면 목록 첫 것 | `codex exec -m` · `resume -c model=` (전엔 전 자리 공통 환경변수 하나) |
-| `geminiModel` | gemini 모델 — `GEMINI_MODELS` 목록(안 지킴 — 코드와 다름: `bus/bus.mjs` 의 실제 목록은 `gemini-3.8-flash` · `gemini-3.7-flash` · `gemini-3.6-flash` · `gemini-3.1-pro` 넷이다, 이 문서는 그중 둘만 적어 왔다) | 목록 첫 것(`gemini-3.8-flash`) | 물음 파일의 `model` |
+| `geminiModel` | gemini 모델 — `GEMINI_MODELS` 목록(`gemini-3.6-flash` · `gemini-3.1-pro`) | 목록 첫 것 | 물음 파일의 `model` |
 | `effort` | 추론 강도 — `low` · `medium` · `high` · `xhigh` | 엔진 기본(플래그 안 붙임) | `claude --effort` · `codex -c model_reasoning_effort=` (gemini 는 안 씀) |
 | `suspended` | 외부감사 자리만 — "지금 못 부른다" 를 명시(결정 118 ②). 값은 복귀 예정일 `YYYY-MM-DD`, `none` 으로 해제(파일에는 지워짐) | 없음(= 부른다) | 판정 흐름이 이 걸음을 건너뛰고 `skip` note 를 남긴다(5-1절). `endRefusal` 이 그의 카드를 안 요구한다. 라운드 기록에 `outsideAudited:false` · `outsideWhy:'suspended'` |
 | `fallback` | 기본 엔진이 못 돌면 누가 인계받나(결정 116 ②) — `gpt` · `gemini` · `none`(대표께 올림) | 다른 회사 엔진 중 나머지 하나(`bus.fallbackOf`) — 빈칸은 없다 | codex 계정 한도(쿨다운) 때 `outside.mjs` 가 이 호출을 폴백으로 돌리고 방에 한 번 알린다. 판정문 `meta.engine` 은 답한 엔진 |
 
-**"다른 회사 엔진"** 은 `gpt`·`gemini` 둘 — 코드는 `'gpt'` 를 직접 비교하지 않고 `bus.isForeign(model)` 하나를 쓴다.
-`engineName(model)` 이 사람 말(`codex` · `gemini` · `claude`)이고 판정문 `meta.engine` 에는 부른 이름이 아니라 **답한 것**을 적는다 — "gemini · gemini-3.6-flash".
-**gemini 자리의 길은 셋, 위에서부터 되는 것**(`outside.mjs runGemini`): ① **Antigravity CLI `agy`** — 진짜 길: `agy -p "<프롬프트>" --output-format json --model <slug> --effort <low|medium|high> --print-timeout 5m [--conversation <id>]`
+**"다른 회사 엔진"** 은 `gpt`·`gemini` 둘 — 코드는 `'gpt'` 를 직접 비교하지 않고 `bus.isForeign(model)` 하나를 쓴다(흩어진 비교가 하나 빠지면 그 자리가 조용히 죽는다 — 결정 77).
+`engineName(model)` 이 사람 말(`codex` · `gemini` · `claude`)이고 판정문 `meta.engine` 에는 부른 이름이 아니라 **답한 것**을 적는다(결정 78) — "gemini · gemini-3.6-flash".
+**gemini 자리의 길은 셋, 위에서부터 되는 것**(`outside.mjs runGemini`): ① **Antigravity CLI `agy`** — 진짜 길(09-14 실측 통과: `agy -p "<프롬프트>" --output-format json --model <slug> --effort <low|medium|high> --print-timeout 5m [--conversation <id>]`
 → stdout 에 `{ conversation_id, status, response, … }`, `--conversation` 으로 이어붙임. 인자는 `bus.agyArgs`(순수), 봉투는 `bus.parseAgy`. `--effort` 는 필수라 자리에 없으면 `medium`, 우리 `xhigh` 는 `high`.
 헤드리스 기본이 승인 필요한 도구를 거부해 읽기만 한다 — `--dangerously-skip-permissions` 는 안 붙인다. 설치 `curl -fsSL https://antigravity.google/cli/install.sh | bash`(→ `~/.local/bin/agy`), 첫 실행에 Google 로그인(대표 계정, Google AI Pro).
-연기 시험 `node bus/outside.mjs --check --engine agy "…"`(기록 안 남김) ② HTTP 다리 `PPANAM_GEMINI_URL`(`tools/antigravity-bridge`, agy 가 되니 안 쓴다) ③ 파일 왕복(아래 — agy 가 없을 때만).
+연기 시험 `node bus/outside.mjs --check --engine agy "…"`(기록 안 남김) ② HTTP 다리 `PPANAM_GEMINI_URL`(`tools/antigravity-bridge`, 가설 — agy 가 되니 안 쓴다) ③ 파일 왕복(아래 — agy 가 없을 때만).
 **파일 왕복**(하네스가 창을 몰던 임시 길): `outside.mjs runGemini` 가
 `state/gemini/ask/<id>.json { id, team, actor, model, prompt, resume, ts }` 를 쓰고(임시 파일 → rename), 하네스가 창을 몰아 `state/gemini/answer/<id>.json { id, answer, sessionId, ts }`
 (또는 `{ error }`)를 쓰면 2초마다 보던 outside.mjs 가 읽고 **둘 다 지운다**. `PPANAM_OUTSIDE_TIMEOUT`(기본 5분) 안에 답이 없으면 codex 실패와 같은 길(방에 note, exit 1) — 세션은 안 버린다.
 느리다(30초~1분, 하네스 세션이 돌 때만) — 판정 같은 큰 것에만. codex 계정 한도 쿨다운(`state/outside-cooldown.json`)은 gpt 자리에만 걸린다.
-**프롬프트 크기**: ① 다른 회사 엔진은 침묵·제3자 차례를 안 받는다(5-1절 4·5) ② gemini 는 인격·확정조항·일지를
-**대화마다 한 번** — 이어가는 호출(`resume`)엔 새 말만(codex 는 세션 압축 때문에 턴마다) ③ 방 대화록에서 `note` 와 밤 시계 깨우기는 뺀다, 시스템 말은 300자.
+**프롬프트 크기**(대표 지적 09-14 — 마크 첫 호출 17,126자, 67% 가 방 대화록): ① 다른 회사 엔진은 침묵·제3자 차례를 안 받는다(5-1절 4·5) ② gemini 는 인격·확정조항·일지를
+**대화마다 한 번** — 이어가는 호출(`resume`)엔 새 말만(codex 는 세션 압축 때문에 턴마다, M1 인격 이음) ③ 방 대화록에서 `note` 와 밤 시계 깨우기는 뺀다, 시스템 말은 300자.
 세션 칸 `state/outside-sessions.json` 에 `engine` 이 붙는다 — 이어붙임은 같은 엔진 것만(codex → gemini 로 바꾼 자리에 codex id 가 남아 있어도 안 쓴다).
 
 `POST /api/cast { team, actor, model?, llm?, codexModel?, geminiModel?, effort? }` — 순수 `bus.castChangeError(agent, patch)` 가 거르고(없는 자리·`boss`·`system`·
 목록 밖 값·엔진에 안 맞는 모델 → `400`), 통과하면 **서버가** `cast.json` 을 쓴다(`bus.updateCastAgent` — 파일은 C 잠금이라 화면 요청을 서버가
 대신 쓰는 것) + 방에 `note` "대표가 테라를 opus·high 로 바꿨습니다"(`meta.castChange { actor, from, to }`). **다음 턴부터** — claude 자리는
 도는 턴을 안 끊고 턴이 끝나면(놀고 있으면 바로) 세션을 내려서 다음 `send` 가 새 인자로 다시 띄운다(id 는 남겨 `--resume` 으로 잇는다);
-codex 자리는 `outside.mjs` 가 매번 `cast.json` 을 읽으니 저절로. **엔진(`model`) 을 바꾸면 그 자리의 세션 종류가 바뀐다** —
+codex 자리는 `outside.mjs` 가 매번 `cast.json` 을 읽으니 저절로. **엔진(`model`) 을 바꾸면 그 자리의 세션 종류가 바뀐다**(결정 69 ①) —
 codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>` 로 띄우고(그 자리 이름으로 말하고, 그 자리의 인격·일지·세션 칸
 `방:자리` 를 쓴다 — 외부감사는 옛 칸 이름 `방` 그대로), claude 자리로는 `outside.mjs` 가 뜨지 않는다(exit 2). 대표가 이름 없이 말했는데
 주인이 codex 자리면 `/api/say` 가 말풍선을 남기고 사회자를 깨운다(`conductor.wake`). 한 방의 codex 자리들은 한 번에 하나만 돈다(`outsideBusy`).
@@ -164,14 +167,14 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 연속된 같은 화자의 발언은 아바타를 생략하고 묶는다.
 
 - **출처**: `SubagentStop` 훅의 `last_assistant_message`
-- `meta.partial` — 계약 필드이나 **미구현**(안 지킴 — 타이핑 말풍선은 만들지 않았다. 자리만 있고 코드가 없다).
-- `meta.cards: ['dev', 'design', …]` — **팀 상황 카드를 말풍선 밑에**. 화면은 팀마다 `GET /api/card/<팀>`(모양은 `server/public/card.js` 머리 JSDoc)을 받아 `card.js teamCard` 로 그린다 — 글 세 줄 대신 카드. 여섯 장까지. 재료가 없으면(404) 그 장은 안 그린다. 세라의 06:30·18:30 보고가 이걸 싣는 건 서버(세라 세션·nightly) 몫.
+- `meta.partial` — 계약에만 있고 **미구현**이다. 타이핑 말풍선은 만들지 않았다 (2026-09-12 확인).
+- `meta.cards: ['dev', 'design', …]` — **팀 상황 카드를 말풍선 밑에**(카드-체계-0916 1절 "① 비서실 — 세라가 다섯 팀 카드를 올린다", C7 R32). 화면은 팀마다 `GET /api/card/<팀>`(솔라 C5, 모양은 `server/public/card.js` 머리 JSDoc)을 받아 `card.js teamCard` 로 그린다 — 글 세 줄 대신 카드. 여섯 장까지. 재료가 없으면(404) 그 장은 안 그린다. 세라의 06:30·18:30 보고가 이걸 싣는 건 서버(세라 세션·nightly) 몫.
 
-- `meta.hand: 'server' | 'cli'` — **나리(`system`) 말이 어느 손에서 왔나**. `server` = 총괄실 서버 세션(`hq:system`) → 이름 박스 노랑 · `cli` = `say.mjs --as system`(관리 창 나리) → 파랑. 찍는 건 서버, 화면은 `.row[data-hand]`. 없으면 색 없음.
-- `meta.roam: '<팀 id>'` — **다른 방에 한 답의 원본**(나리·세라 로밍, `callHomeElsewhere` 가 집 방 기록에 원본을 남기고 그 방엔 사본 `meta.via`). 집 방 화면에선 **접힌 말풍선**(`app.js foldBubble` — "개발 방에 답함 · 펼치기", 펼치면 원문 + 그 방 열기)로만. 찍는 건 서버. 인용(`meta.quote`)도 같은 부품.
-- **호명 칩**: 첫머리 `@이름`·`이름,`(mention.js)은 그 사람 색 박스(`.mention.mchip` — `.chip` 은 얼굴 칩이라 다른 이름)로, 옆에 읽음 표시 한 마디 — 칩 뒤에 그 사람 말풍선이 있거나 그 사람이 일하는 중이면 `@테라 · 읽음`(카카오톡·라인·슬랙 읽음 표시), 아니면 이름만 `@테라`(`app.js markMentions`, 화면에 있는 것만 본다). "받았어요" 문구는 안 쓴다. 입력창에서 `@` 를 치면 그 방 사람 목록(`.mpop`, 위아래·Enter·클릭)이 뜨고 고르면 `@이름, ` 이 들어간다 — 서버 판별은 그대로(글자만 넣는다).
+- `meta.hand: 'server' | 'cli'` — **나리(`system`) 말이 어느 손에서 왔나**(C16, 대표 09-16 11:0x "서버 나리는 노랑, 너는 파랑 박스 안에 이름"). `server` = 총괄실 서버 세션(N1, `hq:system`) → 이름 박스 노랑 · `cli` = `say.mjs --as system`(관리 창 나리) → 파랑. 찍는 건 서버(솔라), 화면은 `.row[data-hand]`. 없으면 색 없음.
+- `meta.roam: '<팀 id>'` — **다른 방에 한 답의 원본**(나리·세라 로밍, `callHomeElsewhere` 가 집 방 기록에 원본을 남기고 그 방엔 사본 `meta.via`). 집 방 화면에선 **접힌 말풍선**(`app.js foldBubble` — "개발 방에 답함 · 펼치기", 펼치면 원문 + 그 방 열기)로만(대표 09-16 12:59 총괄실 "왜 테라 솔라한테 한 말이 여기서 보여?"). 찍는 건 서버(솔라). C15 인용(`meta.quote`)도 같은 부품.
+- **호명 칩**(C13, 대표 09-16 11:0x "박스 안에 이름 … 멘션할 때 잘 안 보이더라"): 첫머리 `@이름`·`이름,`(mention.js)은 그 사람 색 박스(`.mention.mchip` — `.chip` 은 얼굴 칩이라 다른 이름)로, 옆에 읽음 표시 한 마디 — 칩 뒤에 그 사람 말풍선이 있거나 그 사람이 일하는 중이면 `@테라 · 읽음`(카카오톡·라인·슬랙 읽음 표시, 하영 사전 3-2-1), 아니면 이름만 `@테라`(`app.js markMentions`, 화면에 있는 것만 본다). "받았어요" 는 우리가 지은 말이라 뺐다(대표 09-16 16:35, 결정 181 ②). 입력창에서 `@` 를 치면 그 방 사람 목록(`.mpop`, 위아래·Enter·클릭)이 뜨고 고르면 `@이름, ` 이 들어간다 — 서버 판별은 그대로(글자만 넣는다).
 
-**팀 상황 카드는 부품 하나**(`server/public/card.js teamCard`, 모양은 `card.css`)가 세 곳에 선다: ① 채팅 맨 위 `#roomCard`(그 팀 한 장, 회차 줄 밑 — 총괄실·비서실은 없음) ② 대시보드 '전체' ④ 팀 칸(다섯 장 세로 — 재료가 아직이면 옛 줄·시간 띠로) ③ 비서실 말풍선(`meta.cards`). 문 셋: 파일 → `/out/<팀>/…` 새 창 · 자세히 → 그 팀 채팅 · 승인·반려 단추 → 기존 결재 팝업(사유 칸·대리 안내가 거기). 재료는 30초 캐시.
+**팀 상황 카드는 부품 하나**(`server/public/card.js teamCard`, 임시 모양 `card.css` — 토큰은 클레멘타인 C4 뒤)가 세 곳에 선다: ① 채팅 맨 위 `#roomCard`(그 팀 한 장, 회차 줄 밑 — 총괄실·비서실은 없음) ② 대시보드 '전체' ④ 팀 칸(다섯 장 세로 — 재료가 아직이면 옛 줄·시간 띠로) ③ 비서실 말풍선(`meta.cards`). 문 셋: 파일 → `/out/<팀>/…` 새 창 · 자세히 → 그 팀 채팅 · 승인·반려 단추 → 기존 결재 팝업(사유 칸·대리 안내가 거기 — 결정 길은 하나). 재료는 30초 캐시.
 
 ### `enter` — 등장 배너
 에이전트가 라운드에 합류. 가운데 작은 알약 모양.
@@ -186,65 +189,70 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 - **출처**: `PreToolUse` / `PostToolUse` 훅
 - `meta.tool`: 도구 이름, `meta.ok`: 성공 여부
 - 화면은 같은 사람의 **연속 도구 줄을 한 줄로 접는다** — "테라 · 파일 7개 읽고 11개 고치는 중 (app.js, style.css …)".
-  사람·동사·파일 이름만, 전체 경로는 펼쳐야 보인다. 다른 이벤트가 오면 "…중" 이 "…함" 이 된다. 대화록에는 한 건씩 그대로 남는다.
-- **도구 줄은 발언이 아니다.** 요약(`teamSummary`)의 `lastText·lastActor·lastAt` 는 마지막 `message`·`verdict` 다. 그 뒤에 온 도구 줄은 `lastTool { actor, tool, text, ts }`
+  사람·동사·파일 이름만, 전체 경로는 펼쳐야 보인다. 다른 이벤트가 오면 "…중" 이 "…함" 이 된다 (대표 결정 30 —
+  "Read · /Users/…" 18줄이 대표 화면을 채웠다). 대화록에는 한 건씩 그대로 남는다.
+- **도구 줄은 발언이 아니다.** 요약(`teamSummary`)의 `lastText·lastActor·lastAt` 는 마지막 `message`·`verdict` 다 — 관제탑
+  카드가 "/Users/…/world.mjs" 를 마지막 말로 보여 줬다 (독립검수 #10). 그 뒤에 온 도구 줄은 `lastTool { actor, tool, text, ts }`
   로 따로 실려 "테라 · app.js 고치는 중 · 2분 전" 한 줄이 된다.
 - **단계 목록** — 요약의 `milestones: [{ n, title, status, timebox }]`(계획표 그대로, `pass`·`now`·`wait`) 와 `roundsInMilestone`(지금 단계에서 닫힌 회차 수).
-  팀 카드의 "단계 N/M" 목록 — 끝난 것 채움 · 지금 굵은 테두리 + 회차 네모(채움 = 닫힌 회차 · 초록 테두리 = 지금 · 회색 = 남은 것, timebox 회차 수만큼) · 남은 것 점선.
+  헨리 팀 카드 2판-b(`team.svg`, 9단계 ①)의 "단계 N/M" 목록 — 끝난 것 채움 · 지금 굵은 테두리 + 회차 네모(채움 = 닫힌 회차 · 초록 테두리 = 지금 · 회색 = 남은 것, timebox 회차 수만큼) · 남은 것 점선.
   팀 카드는 그 밑에 "이 회차"(상황판 네 칸 글자 그대로) · "다른 팀에 부탁한 일 N"(이 팀이 연 요청 블록 중 열린 것) · "사람"(칩 · 이름 직책 · 하는 일 · N분 전에 움직임 · 알약).
-  맨 밑 말하기·회차 시작/마무리 줄은 대표 손잡이.
+  옛 카드의 마지막 발언·진행 막대·접힌 상황판은 시안에 없어 뺐다. 맨 밑 말하기·회차 시작/마무리 줄은 대표 손잡이라 그대로.
 
-### 생존 표시 — 누가 지금 일하는가
+### 생존 표시 — 누가 지금 일하는가 (대표 결정 28 ①·31 ①)
 요약의 `sessions[자리] = { alive, busy, queued, lastSignal }`. `lastSignal` 은 서버가 그 세션의 스트림 이벤트(도구 호출·출력)를
 마지막으로 받은 시각(10초 단위). 화면은 일하는 세션이 있으면 라운드 줄에 **"테라 작업 중 · 마지막 신호 2분 전"** 을 늘 띄우고
 30초마다 다시 센다. 헤더 둘째 줄은 자리마다 "테라 작업 중 · 솔라 듣는 중 · 레오 자는 중" — 폰에서는 상태 칩이 숨으므로 이 글자가
 전부다. 명단은 **이 방 사람만** — 총괄실 밖 방의 `cast.agents.chief` 는 옮겨온 말(5절 `meta.from`)의 화자로 빌린 것이라
 `from: 'hq'` 가 달려 있고 헤더·칩·참여 카드에서 뺀다. codex 자리는 세션이 없으므로 돌리는 중(`busy`)·차례(`turn`)가 아니면
-"자는 중" 이다 — 쉬는 codex 를 "듣는 중" 으로 그리지 않는다.
+"자는 중" 이다 — 쉬는 codex 를 "듣는 중" 으로 그리지 않는다 (레오 R15 감사).
 
-**생존 알림 `note`** (`session.mjs aliveNotes`): 일하는 세션이 있는데 그 방에 5분 동안 아무 줄도 안 남으면 서버가
+**생존 알림 `note`** (결정 31 ②, `session.mjs aliveNotes`): 일하는 세션이 있는데 그 방에 5분 동안 아무 줄도 안 남으면 서버가
 `{ actor: 'system', type: 'note', meta: { alive: true }, text: "테라 아직 작업 중 (7분째, 마지막: app.js 고치는 중)" }` 를 남긴다.
 서버가 5분 넘게 신호를 못 받았으면 "작업 중" 이라 하지 않고 "테라 6분째 신호 없음 (도구 호출도 출력도) — 15분이면 세션을
-닫습니다". 대표 화면용이다 — `meta.alive` 는 참여자 귀(`conductor.unheard`·`outside.mjs`)에 넣지 않는다. `/api/team` 의 `summary` 도 부팅·방송과 같은 모양이다(세션·차례 포함). 15분 신호가 없어 세션을 닫을 때의 안내는 "무응답" 이 아니라
-"15분 동안 신호 없음 — 세션을 닫았습니다. 다음 지시로 이어집니다".
+닫습니다". 대표 화면용이다 — `meta.alive` 는 참여자 귀(`conductor.unheard`·`outside.mjs`)에 넣지 않는다. `/api/team` 의 `summary` 도 부팅·방송과 같은 모양이다(세션·차례 포함) — 얇은 것을 주면 방에 들어간 직후 일하는
+사람이 "자는 중" 으로 보인다 (독립검수 #1). 15분 신호가 없어 세션을 닫을 때의 안내는 "무응답" 이 아니라
+"15분 동안 신호 없음 — 세션을 닫았습니다. 다음 지시로 이어집니다" (결정 31 ③).
 
-**세션이 죽으면 자동 재개** (`session.mjs deathPlan`): 클로드 세션 프로세스가 **턴 도중에** 끝나면(kill -9 → `SIGKILL 로 죽음` · 크래시 · result 없이 code 0)
+**세션이 죽으면 자동 재개** (8단계 ② · 결정 28 ②, `session.mjs deathPlan`): 클로드 세션 프로세스가 **턴 도중에** 끝나면(kill -9 → `SIGKILL 로 죽음` · 크래시 · result 없이 code 0)
 서버가 같은 턴을 **새 세션으로 한 번 다시 보낸다** — 줄 서 있던 턴도 같이 옮긴다. `note` "테라 세션이 끊겼습니다 (SIGKILL 로 죽음). 새 세션으로 같은 차례를 한 번 다시 보냅니다"
 (`meta.sessionRetry { actor, kind, rotten, why }`). 저장된 id 로 이어붙이려다 첫 턴도 못 끝냈으면 그 id 는 썩은 것(`rotten`) — 버리고 새 세션으로("저장된 세션을 버리고 …").
-두 번째도 죽으면 그때 버린다 — `note` "… 세션이 두 번 끊겼습니다 … 이 차례(<종류>)를 버립니다"(`meta.sessionRetry.gaveUp`). 15분 신호 없음(위)은 재개 대상이 아니다 — 다음 지시로 이어진다. 어느 길이든 턴 도중 끝난 세션은
-사회자에게 "턴 끝" 을 알려 그 자리의 나가 있던 차례(`_queue.inflight`)를 지운다.
-서버 자체가 죽으면 `state/conductor.json` `_queue` 의 대기·나가 있던 차례가 재시작 뒤 되살아난다.
+두 번째도 죽으면 그때 버린다 — `note` "… 세션이 두 번 끊겼습니다 … 이 차례(<종류>)를 버립니다"(`meta.sessionRetry.gaveUp`). 전엔 "다음 차례에 다시 붙습니다" 한 줄 남기고
+그 턴을 버렸다(R26: 재시작이 첫 턴을 죽여 방에 한 말이 통째로 사라짐). 15분 신호 없음(위)은 재개 대상이 아니다 — 다음 지시로 이어진다. 어느 길이든 턴 도중 끝난 세션은
+사회자에게 "턴 끝" 을 알려 그 자리의 나가 있던 차례(`_queue.inflight`)를 지운다 — 전엔 result 때만 알려 죽은 턴이 다음 재시작 때 옛 차례로 되살아났다.
+서버 자체가 죽으면 `state/conductor.json` `_queue` 의 대기·나가 있던 차례가 재시작 뒤 되살아난다(결정 104 — 5절).
 
-### 사람별 집계 `people` — 관제탑 개인 탭
+### 사람별 집계 `people` — 관제탑 개인 탭 (대표 결정 40 · M2)
 요약(`summaries[팀]`)의 `people[자리]` — 그 방의 사람마다 한 묶음. 열쇠는 `cast.json` 의 자리 이름(`guide`·`ops`·`outside` …)이고
-`system` 은 없다. 대표는 `people.boss` 로 따로 모양이 다르다(아래). 이름·색·자리 이름은 `cast` 에 이미 있으니 여기 다시 싣지 않는다.
+`system` 은 없다. 대표는 `people.boss` 로 따로 모양이 다르다(아래). 헨리 설계 `teams/design/out/opsroom-tower-tabs.md` 3절·7절이
+읽는 값이다. 이름·색·자리 이름은 `cast` 에 이미 있으니 여기 다시 싣지 않는다.
 
 | 필드 | 무엇 | 어디서 |
 | --- | --- | --- |
-| `busy` | 지금 일하는 중인가 | claude 자리는 `sessions[자리].busy`, codex 자리는 사회자의 `outsideBusy`(`server/conductor.mjs`) **또는** `outside.mjs` 가 도는 동안 두는 표시 `state/outside-running/<방>.<자리>.json`(`bus.outsideRunning`, pid 살아 있을 때만) — CLI `--ask` 호출은 사회자가 모르니 표시 파일이 잡는다 |
+| `busy` | 지금 일하는 중인가 | claude 자리는 `sessions[자리].busy`, codex 자리는 사회자의 `outsideBusy`(`server/conductor.mjs`) **또는** `outside.mjs` 가 도는 동안 두는 표시 `state/outside-running/<방>.<자리>.json`(`bus.outsideRunning`, pid 살아 있을 때만) — CLI `--ask` 호출은 사회자가 모르니 표시 파일이 잡는다. 대표가 "레오 세션 초기화 했어?" 하고 본 "쉼"(09-13 13:48) |
 | `alive` | 세션이 떠 있나 — true·false, codex 자리는 **null**(세션이 없다) | claude 자리는 `sessions[자리].alive` |
 | `lastSignal` | 마지막 신호 시각(ISO) 또는 null | claude 자리는 `sessions[자리].lastSignal`(10초 단위). codex 자리는 **대화록의 마지막 발언(`message`·`verdict`) 시각** — 스트림이 없으니 말한 시각이 신호다 |
-| `state` | 일 상태 — `working`·`bossCall`·`blocked`·`waiting`·`resting` | `bus.workStateOf(p, phase, now)` (아래). 화면은 이 값으로 알약을 고른다 — **마을 시계는 안 본다** |
+| `state` | 일 상태 — `working`·`bossCall`·`blocked`·`waiting`·`resting` | `bus.workStateOf(p, phase, now)` (아래). 화면은 이 값으로 알약을 고른다 — **마을 시계는 안 본다**(결정 58) |
 | `lastSaidAt` | 마지막 발언 시각 또는 null | 대화록 전체에서 그 자리의 마지막 `message`·`verdict`. `(패스)` 로 시작하는 줄은 발언이 아니다 |
 | `doing` | 지금 하는 일 한 줄 또는 null | 마지막 발언 **뒤에** 그 자리의 도구 줄이 있으면 `{ tool, text, ts }`(화면이 `toolPhrase` 로 "app.js 고치는 중" 을 만든다), 없으면 마지막 발언의 첫 문장 `{ text, ts }` |
 | `todaySay` | 오늘 발언 수 | 서버의 오늘(현지 날짜) `message` 수. `(패스)` 제외 |
 | `todayVerdict` | 오늘 판정 수 또는 null | `verdict` 수. 판정을 내는 자리(`review`·`outside`)만 숫자, 나머지는 **null** — 화면은 null 이면 항목을 안 그린다 |
-| `bossCall` | `{ id, ts, text }` 또는 null | 이 라운드에서 대표에게 **결정이나 손을 청했는데**(`asksBoss` — 대표를 부른 그 문단에 물음표·"정해 주세요·골라·답해" 나 부탁(주세요·주시면·부탁·허용·실행)이 있다) 그 뒤 대표가 말하지 않았고 **그 사람도 다시 말하지 않았다**(8절). 부르기만 한 보고("대표님, 정리했습니다.")는 여기 안 실리고 `bossNotes` 에만. `text` 는 대표에게 한 그 문단 첫 80자 — 카드의 `"손 하나 빌려도 될까…"`. 대표가 답하거나 그 사람이 다음 말을 하면 null. 팀 요약의 `bossCall` 과 같은 판별에 `text` 만 더한 것 |
-| `bossAsk` | `{ id, ts, text, replied }` 또는 null | **◂ 대표님이 부르셨어요 → 받았나** — 이 라운드에서 대표가 **직접**(`meta.via` 아님) 그 사람 이름을 첫머리에 부른(`addressees`) 마지막 말. `replied` 는 그 뒤 그 사람의 첫 발언 시각, 아직이면 null. 화면: 답했으면 "답했어요 · N분 전", 아니면 지금 상태로 — 일하는 중 = "받았어요, 답 쓰는 중" · 자리 비움 · 멈춤 = "못 와요 · 왜" |
-| `journalFirst` | 일지 맨 위 문단의 첫 문장 또는 null | `session.journalFirstSentence` — 마을 카드의 "어제 한 줄" 과 같은 값. 관제탑 사람 카드는 이 줄을 안 그린다 — 마을 카드만 |
+| `bossCall` | `{ id, ts, text }` 또는 null | 이 라운드에서 대표에게 **결정이나 손을 청했는데**(`asksBoss` — 대표를 부른 그 문단에 물음표·"정해 주세요·골라·답해" 나 부탁(주세요·주시면·부탁·허용·실행)이 있다, 결정 52·66) 그 뒤 대표가 말하지 않았고 **그 사람도 다시 말하지 않았다**(나리 결정 ①, 8절). 부르기만 한 보고("대표님, 정리했습니다.")는 여기 안 실리고 `bossNotes` 에만. `text` 는 대표에게 한 그 문단 첫 80자 — 카드의 `"손 하나 빌려도 될까…"`. 대표가 답하거나 그 사람이 다음 말을 하면 null. 팀 요약의 `bossCall` 과 같은 판별에 `text` 만 더한 것 |
+| `bossAsk` | `{ id, ts, text, replied }` 또는 null | **◂ 대표님이 부르셨어요 → 받았나**(헨리 사람 카드 2판 · 하영 2판 7절 ⑤, 9단계 ①) — 이 라운드에서 대표가 **직접**(`meta.via` 아님) 그 사람 이름을 첫머리에 부른(`addressees`) 마지막 말. `replied` 는 그 뒤 그 사람의 첫 발언 시각, 아직이면 null. 화면: 답했으면 "답했어요 · N분 전", 아니면 지금 상태로 — 일하는 중 = "받았어요, 답 쓰는 중" · 자리 비움 · 멈춤 = "못 와요 · 왜" |
+| `journalFirst` | 일지 맨 위 문단의 첫 문장 또는 null | `session.journalFirstSentence` — 마을 카드의 "어제 한 줄" 과 같은 값. 사람 카드(관제탑)는 2판에서 이 줄을 안 그린다 — 마을 카드만 |
 
 `people.boss` = `{ lastSaidAt, lastText, todaySay, todayDecisions }` — 이 방에서 대표가 마지막으로 한 지시(첫 200자)와 시각, 오늘 이 방에
 한 지시 수, 오늘 이 방의 승인 요청에 대표(`by: 'boss'`)가 내린 판정 수. 대표가 **직접 친 말만** — 총괄이 옮겨온 것(`meta.via`, 4절)은
 결정 원문이라 안 센다(`bus/dispatch.mjs lastBossSay` 와 같은 규칙). 대표는 한 사람이라 화면이 다섯 방의 값을 **합쳐서** 카드 하나로
 그린다 — 지시·판정은 합, 마지막 지시는 가장 늦은 것. 대표 카드의 상태 알약(`자리에`·`자리 비움`)은 화면이 마지막 지시 10분 안인지로 정한다.
-대표 카드의 "하는 일" 줄은 **대표 발언을 인용하지 않는다** — 화면이 `오늘 지시 N · 승인 대기 N ·
+대표 카드의 "하는 일" 줄은 **대표 발언을 인용하지 않는다**(결정 58 ② — 6시간 전 말이 "하는 일" 로 떴다) — 화면이 `오늘 지시 N · 승인 대기 N ·
 차례인 방 개발·디자인` 로 만든다(지시는 다섯 방 `todaySay` 합, 승인 대기는 대기 카드 수, 차례인 방은 종 배지와 같은 `needsBoss`·`bossCall` 방).
 `lastText` 는 계약에 남지만 관제탑은 안 쓴다.
 
 "오늘" 은 서버 프로세스의 현지 날짜다 — 마을 시계(`world.mjs`)의 `debugHour` 는 시각만 바꾸고 날짜는 안 바꾼다.
 
-**일 상태 `state`** — 관제탑은 마을 시계가 아니라 **일 상태**를 보여 준다.
-순수 함수 `bus/bus.mjs workStateOf(p, phase, now)` 가 정하고 서버가 `people[자리].state` 로 싣는다. 먼저 맞는 것이 이긴다:
+**일 상태 `state`** (결정 58 ①) — 관제탑은 마을 시계가 아니라 **일 상태**를 보여 준다. 일요일 저녁에 라운드가 돌아도 열넷이 "잠" 으로 뜨던
+버그. 순수 함수 `bus/bus.mjs workStateOf(p, phase, now)` 가 정하고 서버가 `people[자리].state` 로 싣는다. 먼저 맞는 것이 이긴다:
 
 | `state` | 알약 | 언제 |
 | --- | --- | --- |
@@ -257,36 +265,40 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 마을 시계(`night`·`rest`)는 마을 탭에만. 집계는 순수 함수 `bus/bus.mjs peopleOf(log, cast, { now })`·`workStateOf` 라 `round.mjs check` 가 돌려본다.
 사람 카드의 "하는 일" 줄(`doing`)은 `working` 이 아니면 뒤에 `· N분 전` 을 붙인다 — 옛 발언을 지금 일로 읽지 않게.
 
-**관제탑 탭 넷** — `전체`(첫 화면) · `팀`(지금의 팀 카드 다섯) · `개인`(위의 `people` 로 열넷 + 대표) · `요청`(팀 사이 요청 —
-데이터 없으면 빈 상태 문구). 마지막에 본 탭은 브라우저가 기억한다 — 단 **주소에 화면이 없이 열면 언제나 관제탑 `전체`** 가 첫 화면이다.
-방은 두 번째 — 주소 `#팀/room` 으로 돌아온다(방도 `/room` 을 적는다, 맨 `#팀` 은 화면 없음). `전체` 의 "오늘 보고" 줄은 요약의 `bossNotes[]` —
+**관제탑 탭 넷** (결정 40·50) — `전체`(첫 화면) · `팀`(지금의 팀 카드 다섯) · `개인`(위의 `people` 로 열넷 + 대표) · `요청`(팀 사이 요청 —
+M3 데이터 전까지 빈 상태 문구). 마지막에 본 탭은 브라우저가 기억한다 — 단 **주소에 화면이 없이 열면 언제나 관제탑 `전체`** 가 첫 화면이다
+(나리 usability-0916 U2, 결정 92 "30초 안에 할 일" — 전엔 대표 차례가 있을 때만 관제탑, 아니면 방이라 총괄실 대화 벽이 먼저 떴다). 방은 두 번째 —
+주소 `#팀/room` 으로 돌아온다(방도 `/room` 을 적는다, 맨 `#팀` 은 화면 없음). `전체` 의 "오늘 보고" 줄은 요약의 `bossNotes[]` —
 오늘 대표를 부른(`callsBoss`) 발언을 최근 것부터 30건까지 `{ id, ts, by, text(160자), ask }`. `ask` 는 결정이나 손이 필요한 말인가(`asksBoss` —
-물음표 · "정해 주세요·골라·답해" · 부탁, 8절) — 화면은 `ask` 가 아닌 것을 보고로 그린다. **종 배지(`bossCall`)도 같은 판별이다** —
-`ask` 인 말만 종이 되고, "대표님," 으로 시작해도 물음이 없으면 보고라 이 줄에만 남는다.
+물음표 · "정해 주세요·골라·답해" · 부탁, 결정 52·66, 8절) — 화면은 `ask` 가 아닌 것을 보고로 그린다. **종 배지(`bossCall`)도 같은 판별이다**(M4) —
+`ask` 인 말만 종이 되고, "대표님," 으로 시작해도 물음이 없으면 보고라 이 줄에만 남는다(하영·헨리 보고가 승인 요청으로 읽힌 09-13 17:28 건).
 승인 대기와 막힘은 말이 아니라 상태라 따로 뜬다 — 승인은 대기 카드(6절), 막힘은 `needsBoss`(5절).
 
-**"내가 할 일" 블록** — 관제탑 `전체` 의 첫 카드. 대표가 정하거나 눌러야 하는 것만: 알림 목록(아래)의 급한 종류
+**"내가 할 일" 블록** (결정 13·19-3) — 관제탑 `전체` 의 첫 카드. 대표가 정하거나 눌러야 하는 것만: 알림 목록(아래)의 급한 종류
 셋(대표 차례 → 승인 대기 → 막힘, 같은 순서)과 각 방 상황판 `progress.boss[]` 줄. 보고는 여기 안 오고 "오늘 보고" 줄로. 누르면 그 말풍선·승인 블록·방으로.
 
-**알림 패널** — 종을 누르면 패널이 열리고 **목록**이 보인다. 새 저장소는 없다:
+**알림 패널** (결정 68 — "배지만 있고 내용이 없으면 대충 구현") — 종을 누르면 패널이 열리고 **목록**이 보인다. 새 저장소는 없다:
 순수 함수 `server/public/notify.js notificationsOf({ teams, summaries, approvals }, { now, read, delegation })` 가 부팅·방송으로 이미 온 값에서
 목록을 만든다(화면과 `round.mjs check` 가 같은 것을 쓴다). 항목 `{ id, kind, team, by, text, ts, thumb, unread, mine, target }`:
 
 | `kind` | 어디서 | `text` | `mine` (대표 손이 필요한가) | `target` |
 | --- | --- | --- | --- | --- |
 | `boss` 대표 차례(빨강) | 팀 요약 `bossCall`(결정을 청했는데 답 없음, 8절) + `people[by].bossCall.text` | 그 말 앞머리 80자 | 예. 위임 중엔 돈·바깥·`.claude` 물음(`bossCall.forbidden` = `proxyForbidden`)만 | 그 방, 그 말풍선 |
-| `approval` 승인 대기 | `approvals` 대기 중 C(대표 판단)·B(톰·제리) | 대표 몫(`mine`)은 한 장씩 `what · 10분 안`(대리 못 하는 돈·바깥은 `what · 대표님만`). 나머지(B, 위임 중 대리될 C)는 **한 항목** `톰·제리가 보는 중 N건`(`id: approval:theirs`, `name: 톰·제리`, `team: hq`) — 원문째 늘어놓지 않는다 | C 만. 위임 중엔 대리 못 하는 C(`proxyable:false` — 서버가 `proxyEligible` 로 잰 것)만. 접힌 항목은 아니오 | 관제탑 맨 위 결재 띠(접힌 항목은 띠의 "톰·제리가 보는 중" 줄을 편다) |
+| `approval` 승인 대기 | `approvals` 대기 중 C(대표 판단)·B(톰·제리) | 대표 몫(`mine`)은 한 장씩 `what · 10분 안`(대리 못 하는 돈·바깥은 `what · 대표님만`). 나머지(B, 위임 중 대리될 C)는 **한 항목** `톰·제리가 보는 중 N건`(`id: approval:theirs`, `name: 톰·제리`, `team: hq`) — 원문째 늘어놓지 않는다, 배지와 같은 잣대(나리 usability-0916 U4) | C 만. 위임 중엔 대리 못 하는 C(`proxyable:false` — 서버가 `proxyEligible` 로 잰 것)만. 접힌 항목은 아니오 | 관제탑 맨 위 결재 띠(접힌 항목은 띠의 "톰·제리가 보는 중" 줄을 편다) |
 | `blocked` 막힘 | 팀 요약 `needsBoss`(`blocked`·`attempts`·`silent`) | 이유 한 줄(`BOSS_WHY`) | 예. 위임 중엔 아니오(톰·제리가 푼다) | 그 방 |
 | `report` 보고 | `bossNotes[]` 중 `ask` 아닌 것(오늘) | 그 말 앞머리 160자 | 아니오 — 읽을 것이지 누를 것이 아니다 | 그 방, 그 말풍선 |
 
 순서는 종류 순(대표 차례 → 승인 대기 → 막힘 → 보고), 같은 종류 안은 최근 것부터. `id` 는 `<kind>:<이벤트 id 또는 승인 id 또는 팀>` —
 같은 일은 한 항목. `thumb` 은 그 말에 `out/` 그림 경로가 있으면 첫 장의 `/out/` url, 없으면 null(화면은 방 아이콘). `unread` 는
 브라우저가 기억하는 읽음 목록(`localStorage`, id 집합)에 없는 것 — 항목을 누르거나 "모두 읽음" 이면 읽음. 종 배지 숫자는 **안 읽은 것 중 `mine` 인 수**,
-빨강은 그중 대표 차례·승인·막힘이 있을 때 — 보고·B 카드·위임 중 대리될 것은 패널에 남되 숫자엔 안 든다. `delegation` 은 boot 의 `state/delegation.json`(6절) — `until` 은 화면이 본다.
+빨강은 그중 대표 차례·승인·막힘이 있을 때 — 보고·B 카드·위임 중 대리될 것은 패널에 남되 숫자엔 안 든다(나리 결정 ②, 09-15 — "배지 숫자는 대표님이 눌러야 하는 것만",
+대표 물음 "결재 알림 왜 안 없어지냐": 넷이 서 있었는데 대표가 할 것은 0 이었다). `delegation` 은 boot 의 `state/delegation.json`(6절) — `until` 은 화면이 본다.
 항목 한 줄 = 팀 색 아바타(`by` 의 색, 없으면 팀) + 이름 · 한 줄 · "N분 전" · 오른쪽
 썸네일 또는 방 아이콘 · 안 읽음 점. 패널 머리는 "알림" + ⚙(설정 — 지금은 자리만) + "모두 읽음". 폰 412 에서 전체 폭.
 
-**막힌 것 — 한 목록**. 화면·보고서 탭은 **이 목록 하나**를 자른다(대표 차례를 세는 코드가 여럿으로 흩어지지 않게). 순수 함수 `server/public/notify.js blockedOf({ teams, summaries, approvals, requests, infra }, { now })`
+**막힌 것 — 한 목록** (결정 92 "뭐가 막혔나", M6 준비 — 화면은 도면(결정 100) 뒤, 낱말은 하영 몫이라 여기 이름은 임시).
+지금은 "대표 차례" 를 세는 코드가 셋(`bossTurns` · `notificationsOf` · 팀 줄 알약)이라 타일은 3, 내가 할 일은 5 가 뜬다(`out/m6-screen-findings.md` #6).
+새 화면·보고서 탭은 **이 목록 하나**를 자른다. 순수 함수 `server/public/notify.js blockedOf({ teams, summaries, approvals, requests, infra }, { now })`
 — 서버는 값을 재서 넘기기만 하고(`peopleOf` 와 같은 경계) 화면과 `round.mjs check` 가 같은 함수를 쓴다. 항목 `{ id, kind, where, team, teamName, by, waitOn, text, since, wait, state, target }`:
 
 | `kind` | 어디서 | `waitOn` (누가 움직여야 풀리나) | `since` |
@@ -300,16 +312,16 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 
 `wait` 는 `now - since`(ms) — 목록은 **오래 기다린 것이 위**(`since` 오름차순). 종류별 순서 없음 — 화면이 `waitOn` 으로 자른다(대표 것만 → "내가 할 일", 전부 → 관제탑).
 `infra` 는 잰 값이 없으면 항목도 없다(안 잰 것은 막힘이 아니다). `ok:false` 면 `state:'down'`, 잰 시각이 `timeout` 보다 오래됐으면 **`ok` 가 무엇이든** `state:'unknown'` —
-마지막 성공값이 남아 죽은 밑바닥이 산 것처럼 보이면 안 된다. `ok:true` 이고 시각이 신선하면 항목 없음. 잰 값에는 `at`·`timeout` 이 반드시 있다 — 없으면 `unknown`. 경계: 딱 `timeout` 은 신선, 넘으면 `unknown`.
-**미래 시각**도 허용 시차(`INFRA_SKEW_MS` 1분)를 넘으면 `unknown` — 시계가 크게 틀린 기계의 값이 영원히 살아 있으면 안 된다.
+마지막 성공값이 남아 죽은 밑바닥이 산 것처럼 보이면 안 된다(레오, R25). `ok:true` 이고 시각이 신선하면 항목 없음. 잰 값에는 `at`·`timeout` 이 반드시 있다 — 없으면 `unknown`. 경계: 딱 `timeout` 은 신선, 넘으면 `unknown`.
+**미래 시각**도 허용 시차(`INFRA_SKEW_MS` 1분)를 넘으면 `unknown` — 시계가 크게 틀린 기계의 값이 영원히 살아 있으면 안 된다(레오, R25).
 재는 쪽은 `server/infra.mjs` — **2분마다**(하네스 밤 시계와 같은 틱) 넷을 재고 `state/infra.json` 에 **덮어쓴다**(자라는 파일 아님). 서버는 자기 자신에게 HTTP(`/api/approvals` 200) ·
 codex 는 `which codex` · 세션은 메모리 맵의 좀비 수(`session.health`) · 디스크는 `df -k` 남은 양 3G 기준. 재기 하나가 10초 안에 안 끝나면 그 항목만 `ok:false`.
 `timeout` 은 세 틱(6분). 화면에는 `/api/boot.infra` · ws `hello.infra` 로 오고 **틱마다** ws `{ kind:'infra', infra }` 가 온다(값이 같아도 `at` 이 새로워야 한다).
 서버가 막 켜져 첫 재기 전이면 `null` — 안 잰 것은 막힘이 아니다.
 `id` 는 `<kind>:<이벤트 id · 승인 id · 요청 id · 팀 · infra 키>` — 같은 일은 한 항목이라 알림의 읽음 목록과 같은 열쇠를 쓴다.
 
-**한 것 — 한 목록** (위와 짝). "오늘 몇 번 말했나"(`people[].todaySay`)나 "마지막 한 문장"(`doing`) 말고
-**누가 무엇을 끝냈는지**를 보여 준다. 판정 카드·승인 판정·요청 블록·마일스톤·라운드에서 모은다. 순수 함수 `bus/bus.mjs doneOf(log, cast, { team, since, until, approvals })`
+**한 것 — 한 목록** (결정 92 "누가 뭘 했나", M6 준비 — 위와 짝). 지금 화면은 "오늘 몇 번 말했나"(`people[].todaySay`)와 "마지막 한 문장"(`doing`)뿐이라
+**누가 무엇을 끝냈는지**가 없다. 파일에는 다 있다 — 판정 카드·승인 판정·요청 블록·마일스톤·라운드. 순수 함수 `bus/bus.mjs doneOf(log, cast, { team, since, until, approvals })`
 가 팀 하나의 대화록과 승인 레코드에서 평평한 목록을 만들고(파일 안 읽음, `round.mjs check` 가 돌린다), 서버가 팀마다 불러 합친다. 항목 `{ id, kind, team, by, ts, text, ref }`, **`ts` 내림차순**(최근 것이 위):
 
 | `kind` | 어디서 | `by` | `ref` |
@@ -324,43 +336,44 @@ codex 는 `which codex` · 세션은 메모리 맵의 좀비 수(`session.health
 | `commit` 커밋 | `tool` 이벤트(`meta.tool: 'Bash'`) 의 첫 줄에 `git commit` — `-m` 뒤 글자(여는 따옴표와 같은 것이 닫는 것, 안의 다른 따옴표는 글자) | 그 자리 | — |
 | `file` 산출물 갱신 | `tool` 이벤트(`Write`·`Edit`·`NotebookEdit`) 가 `teams/<팀>/out/` 을 가리킴 — 같은 자리·같은 파일은 창 안 **마지막 한 번**. `Read` 와 out/ 밖은 안 센다 | 그 자리 | `teams/…` 경로 |
 
-**만든 것도 한 것이다** — 커밋·산출물도 이 목록에 잡힌다(승인·판정 카드만이 아니다). 커밋·산출물은 도구 줄에서 나오므로
+**만든 것도 한 것이다** (나리 09-15, 위임 136 — "지금 세는 게 승인·판정 카드뿐이라 만든 사람은 안 보이고 감사만 보인다. 커밋을 열 개 넘게 한 테라, 시안 여덟 장을 고친 헨리가 한 것 0"). 커밋·산출물은 도구 줄에서 나오므로
 **훅이 기록한 방에만** 선다 — 개발 실무가 마케팅 out/ 파일을 고치면 개발 방의 한 것이다(자리 기준). 관제탑 ② 사람 줄의 막대 길이는 이 수다.
 
 창은 `since ≤ ts < until`(비교는 UTC ms — `ts` 는 저장이 UTC 라 그대로 `Date.parse`), 기본은 **우리 시각(서울, +09:00 고정) 오늘 0시** ~ 지금 —
-`dayStartSeoul(now)`, 서버 프로세스 TZ 와 무관하다. 아침 보고서는 "어젯밤" 창으로, 개인 카드는 `by` 로, 라운드 카드는 `ts` 로 자른다.
+`dayStartSeoul(now)`, 서버 프로세스 TZ 와 무관하다(결정 101 의 아홉 시간 오류가 집계에서 다시 나지 않게, 레오 R25). 아침 보고서(결정 80)는 "어젯밤" 창으로, 개인 카드는 `by` 로, 라운드 카드는 `ts` 로 자른다.
 산출물 파일(`out/`)과 커밋은 여기 없다 — 누가 썼는지 파일이 말하지 않는다. 사람이 적은 `progress.done[]` 도 여기 안 온다(집계가 아니라 글이다).
 
-**탭 다섯 — 표준어.** 글자만 바뀌고 **속 이름(`data-view`·주소 `#팀/<view>`)은 그대로**라 이 문서의 관제탑·대시보드·보고서·분석이라는 말은 속 이름이다: `room`=**채팅** · `tower`=**대시보드**(옛 현황/관제탑) · `dashboard`=**타임라인**(옛 앞으로) · `report`=**리포트**(옛 보고서, 첫째 탭 "한 장") · `analysis`=리포트의 **둘째 탭 "분석"**(단추는 숨김, 리포트 머리의 서브탭 `repTabs`·`anTabs` 로 오가고 위 줄에선 리포트 단추가 켜진다) · `settings`=**설정**(새 화면 — 권한 현황 `teams/hq/out/권한-현황-0916.md` 표 · 낱말 사전 `teams/marketing/out/opsroom-words.md` 접힘 · 인격 파일 목록(`summaries[팀].cast` 로 `teams/<팀>/<자리>.md` 자리만) · 맨 아래 "숨김 화면 — 마을" 링크) · `world`=마을(탭 숨김, 9절). 읽기만 — 설정은 아무것도 안 바꾼다.
+**탭 다섯 — 표준어**(대표 09-16 07:4x "어디 회사나 서비스나 플랫폼에서 이런 단어를 사용하냐" → `카드-체계-0916.md` 4절 · 하영 사전 0-3, 나리 R32). 글자만 바뀌고 **속 이름(`data-view`·주소 `#팀/<view>`)은 그대로**라 이 문서의 관제탑·대시보드·보고서·분석이라는 말은 속 이름이다: `room`=**채팅** · `tower`=**대시보드**(옛 현황/관제탑) · `dashboard`=**타임라인**(옛 앞으로 — 줄기 × 작은 일 표는 34회차) · `report`=**리포트**(옛 보고서, 첫째 탭 "한 장") · `analysis`=리포트의 **둘째 탭 "분석"**(단추는 숨김, 리포트 머리의 서브탭 `repTabs`·`anTabs` 로 오가고 위 줄에선 리포트 단추가 켜진다) · `settings`=**설정**(새 화면 — 권한 현황 `teams/hq/out/권한-현황-0916.md` 표 · 낱말 사전 `teams/marketing/out/opsroom-words.md` 접힘 · 인격 파일 목록(`summaries[팀].cast` 로 `teams/<팀>/<자리>.md` 자리만) · 맨 아래 "숨김 화면 — 마을" 링크) · `world`=마을(탭 숨김, 9절). 읽기만 — 설정은 아무것도 안 바꾼다.
 
-**화면 넷 + 카드 — 무엇을 읽나.** 구조의 정본은 `teams/hq/out/화면이-답하는-질문.md` — **탭마다 질문 하나, 가르는 축은 시간.**
-여기는 그 탭이 **무엇을 읽나**만. 세는 코드는 `blockedOf`·`doneOf` 하나씩(위 목록 둘), 화면은 자르기만. 막힌 것은 **지금**이라 관제탑에 선다(대시보드가 아니다).
+**화면 넷 + 카드 — 무엇을 읽나 (결정 81·92, M6).** 구조의 정본은 `teams/hq/out/화면이-답하는-질문.md`(나리, 대표 위임 09-14, 톰·제리 B apr_95e50f49) — **탭마다 질문 하나, 가르는 축은 시간.**
+여기는 그 탭이 **무엇을 읽나**만 — 화면 모양은 헨리 시안 뒤(결정 93), 낱말은 하영 확정본(opsroom-words.md 7절). 세는 코드는 `blockedOf`·`doneOf` 하나씩(위 목록 둘), 화면은 자르기만.
+(첫 초안은 대시보드에 "뭐가 막혔나" 를 뒀다 — 정본이 뒤집었다. 막힌 것은 **지금**이라 관제탑이다.)
 
 | 자리 | 질문 · 시간 | 읽는 것 | 어떻게 자르나 | 없을 때 |
 | --- | --- | --- | --- | --- |
-| 관제탑 | 지금 무슨 일이 벌어지고 있나 · **지금** | `blockedOf(...)`(화면이 센다 — `summaries`·대기 승인·열린 요청·`infra`) · `GET /api/done?since`(다섯 방 `doneOf` 합, 기본 오늘 0시~) · `summaries` 팀 줄 + `progress` 네 칸 | 순서 고정, 위에서 아래로 넷뿐 — **① 뭐가 막혔나**(`waitOn !== 'boss'` 이고 `kind !== 'request'` — FAIL·상황판 막힘·결재 대기·밑바닥. **부탁 블록의 차례는 막힘이 아니다** — 요청 탭에. 오래된 것이 위, "N시간째"는 멈춤 뺀 것) **② 누가 뭘 했나 · 오늘**(팀원만 — 대표는 안 선다, 여섯 줄, 넘치면 "더 보기" — 오늘 안에서만, 어제는 보고서) **③ 내 차례**(`waitOn === 'boss'` = 결재 C·물어봄·FAIL + 상황판 `boss[]` — 종과 **같은 목록**) **④ 팀**(단계 N/M · 회차 · 알약, 누르면 상황판 네 칸 글자 그대로, 한 번 더 = 카드). 없으면 그 칸이 사라진다(②만 늘). 숫자는 넷뿐 — 막힌 것 수·내 차례 수·단계 N/M·회차(칸 제목에만). 통계 타일·오늘 보고 칸은 뺐다(②가 품는다). 그림 — 팀 줄 진행 막대·시간 띠, 막힌 것 줄 팀 점·빨간 점, ② 위 사람마다 시간 띠 | ①③ 칸 없음 · ② "오늘 끝낸 일이 아직 없어요." |
-| 대시보드 | 앞으로 언제 뭐가 되나 · **앞** | 팀마다 로드맵 `now`·`wait` 마일스톤(`pass` 는 지난 것 — 안 온다) + 그 팀 `rounds.jsonl`(회차 길이) + `round.json`(지금 회차 시작) + `state/pauses.json` | **앞날 띠** — 줄 = 팀(**총괄실**·마케팅·개발·디자인·경영 — 비서실은 대표↔세라 채팅방이라 계획표가 있을 자리가 아니다), 가로 = 앞으로의 시간, 칸 = 단계. 결정 188 뒤로 **시간 예측은 없다**(아래 참고) — 채움 = 지금·잡힌 예정, 점선 = 미정(대표님이 정한 뒤 / {무엇} 뒤), 빨강 = 막힘. 칸 오른쪽 점 둘 = 그 팀의 둘(`owners`, 머리글자 · 직책 색). 아래 "대표님이 여실 단계" 카드(대표 문인 gated 만 — 결재·대표 차례는 관제탑 ③). 누르면 왜(펼친 줄) → 계획표 카드. 칸 글자 **N단계** / **N단계 — 대표님이 정한 뒤** / **N단계 — {무엇} 뒤** / **N단계 — 막힘 ({이유})**, 펼친 줄 **N단계 {제목}** / 점선 **로드맵 조건 — "{timebox 원문}"** / 빨강 **{막힌 것 첫 줄}**. 다섯 팀이 **한 화면**, 폰 412 도. `teams/hq/out/plan-table.md` 는 그 아래 그대로 | 계획표 파일이 없으면 **계획표 아직 없어요**, 있는데 남은 단계가 없으면 **다음 단계 아직 없어요** — 누르면 **계획표가 적히면 여기 떠요**. 둘 다 대표 문이 아니다 |
-| 분석 | 왜 자꾸 이렇게 되나 · **뒤** | `GET /api/analysis?all=1` = `{ stuck, slowed, repeats }` — `bus.stuckOf`·`slowedOf`·`repeatsOf`(순수, `approvals`·`rounds.jsonl`·`state/pauses.json` 에서만) | 다섯 팀을 같은 자로, **칸 셋**, 칸마다 그림 하나 + 문장 하나: **① 어디서 자꾸 막히나** — 돌려보낸 결재 "{팀} a건 중 b" 다섯 팀 같은 순서, 팀마다 같은 자 띠(옅음 = 올린 결재 · 짙음 = 돌려보낸 것), 튀는 팀 하나만 빨강 **② 무엇이 느려졌나** — 회차 길이 "지난 회차 N → 이번 회차 M", 지난 회색 · 이번 위·아래 색, 제일 나빠진 팀·제일 좋아진 팀, "멈춘 N은 뺐어요" **③ 같은 일이 몇 번째인가** — 같은 카드 다시 올림("(2차 …)"·"(… 고침)" 꼬리 뗀 이름)·같은 단계 여러 회차, 회차 네모 겹침(수 = 값, 마흔 넘으면 …) 세 번째부터 빨강, 사이가 비면 "2회차부터 20회차 사이 18회차에 걸쳐". 숫자 하나는 안 온다 — **다른 숫자와 견줄 때만**. 세 겹: 누르면 펼친 줄(어느 카드·어느 회차) → 결재 카드(대기 중) / 그 방 | ① 없음(다섯 팀 늘 선다) · ② "견줄 회차가 아직 없어요 — 회차 둘이 끝나면 떠요" · ③ "같은 자리를 두 번 간 일이 없어요" |
-| 보고서 | 어제 하루가 어땠나 · **어제 하루** | `doneOf` 를 창으로(어젯밤 = 어제 18시~오늘 9시 · 날짜 고름) + `progress.next[]` + `out/**` 그림(`listOut`, 창 안 mtime) + 대리 결정(`note meta.proxy`) + 사람 글(`teams/hq/out/reports/<날짜>.md`) | 다섯 절, 폰에서 30초 — ① 사이 있었던 일 ② 대표님이 보실 것(= 관제탑 ① 과 같은 목록) ③ 오늘 각 방이 할 일 ④ 한마디(글 있는 날만) ⑤ 사이 나온 그림 + 맨 위 "대표님 대신 정한 것". **틀은 경영팀** — 개발은 아래층(집계)만 | "이 사이엔 한 일이 없어요." |
-| 카드 | 이 하나를 더 보고 싶다 · (깊이) | `GET /api/actor` · 승인 레코드 · 마일스톤 · 방 요약 | 탭이 아니라 **문** — 어느 화면에서든 **두 번 눌러** 닿는다(한 줄 → 펼친 줄 → 카드). 넷째 겹은 없다. 사람 카드는 정사각형(얼굴·이름·직책·열 줄 1번·상태 알약) | — |
+| 관제탑 | 지금 무슨 일이 벌어지고 있나 · **지금** | `blockedOf(...)`(화면이 센다 — `summaries`·대기 승인·열린 요청·`infra`) · `GET /api/done?since`(다섯 방 `doneOf` 합, 기본 오늘 0시~) · `summaries` 팀 줄 + `progress` 네 칸 | 헨리 시안 2판(`tower.svg`) 순서 고정, 위에서 아래로 넷뿐 — **① 뭐가 막혔나**(`waitOn !== 'boss'` 이고 `kind !== 'request'` — FAIL·상황판 막힘·결재 대기·밑바닥. **부탁 블록의 차례는 막힘이 아니다**(톰 09-15) — 요청 탭에. 오래된 것이 위, "N시간째"는 멈춤 뺀 것) **② 누가 뭘 했나 · 오늘**(팀원만 — 대표는 안 선다(톰 09-15), 여섯 줄, 넘치면 "더 보기" — 오늘 안에서만, 어제는 보고서(하영 내용 2판 9절 2 · 사전 3-5-1. R25 에 "어제까지" 라 적은 건 내 글자였지 정본이 아니었다)) **③ 내 차례**(`waitOn === 'boss'` = 결재 C·물어봄·FAIL + 상황판 `boss[]` — 종과 **같은 목록**) **④ 팀**(단계 N/M · 회차 · 알약, 누르면 상황판 네 칸 글자 그대로, 한 번 더 = 카드). 없으면 그 칸이 사라진다(②만 늘). 숫자는 넷뿐 — 막힌 것 수·내 차례 수·단계 N/M·회차(칸 제목에만 — 큰 숫자 타일은 하영 내용 2판 9절 5 로 뺐다, 톰 09-15). 통계 타일·오늘 보고 칸은 뺐다(②가 품는다). 그림은 헨리 numbers 한 벌 — 팀 줄 진행 막대·시간 띠, 막힌 것 줄 팀 점·빨간 점, ② 위 사람마다 시간 띠 | ①③ 칸 없음 · ② "오늘 끝낸 일이 아직 없어요." |
+| 대시보드 | 앞으로 언제 뭐가 되나 · **앞** | 팀마다 로드맵 `now`·`wait` 마일스톤(`pass` 는 지난 것 — 안 온다) + 그 팀 `rounds.jsonl`(회차 길이) + `round.json`(지금 회차 시작) + `state/pauses.json` | 헨리 시안 2판-b(`teams/design/out/screens/ui/dashboard.svg`) **앞날 띠** — 줄 = 팀(**총괄실**·마케팅·개발·디자인·경영 — 1판의 비서실은 대표↔세라 채팅방이라 계획표가 있을 자리가 아니다, 하영 T1), 가로 = 앞으로의 시간, 칸 = 단계. 채움 = 잡힌 예정, 점선 = 미정(대표님이 정한 뒤 / {무엇} 뒤), 빨강 = 늦음/멈춤(지금 선에서 오른쪽으로 자람). 예정 시각은 **timebox × 그 팀 회차 평균 길이**로 계산 — 손으로 안 적는다. 세는 숫자 없음. 칸 오른쪽 점 둘 = 그 팀의 둘(`owners`, 머리글자 · 직책 색). 아래 "대표님이 여실 단계" 카드(대표 문인 gated 만 — 결재·대표 차례는 관제탑 ③). 누르면 왜(펼친 줄) → 계획표 카드. 글자는 하영 화면 글 틀 1판(`teams/marketing/out/screen-text-frames.md` 1-2·1-4·6절) — 칸 **N단계 · {날}까지** / **N단계 — 대표님이 정한 뒤** / **N단계 — {무엇} 뒤** / **N단계 — {날}까지 못 끝남 ({이유})**, 빨간 띠 **N단계 N분 늦음**, 펼친 줄 **{때 h:mm} 시작 · 회차 평균 N시간 N분 × N회차 → {날} {때 h:mm}**(+ 늦으면 **예정보다 N시간 N분 지났어요 — 멈춘 시간은 뺐어요**) / 점선 **계획표에 적힌 조건 — "{timebox 원문}"** / 빨강 **{막힌 것 첫 줄}**. 때 경계 새벽 0~5 · 아침 6~9 · 낮 10~16 · 저녁 17~19 · 밤 20~23(`server/public/when.js`, 순수). 다섯 팀이 **한 화면**, 폰 412 도. plan-table.md(결정 128 1판) 는 그 아래 그대로 | 계획표 파일이 없으면 **계획표 아직 없어요**, 있는데 남은 단계가 없으면 **다음 단계 아직 없어요** — 누르면 **계획표가 적히면 여기 떠요**. 둘 다 대표 문이 아니다(총괄실 계획표는 톰이, 경영 다음 단계는 노라가 적는다 — T7) |
+| 분석 | 왜 자꾸 이렇게 되나 · **뒤** | `GET /api/analysis?all=1` = `{ stuck, slowed, repeats }` — `bus.stuckOf`·`slowedOf`·`repeatsOf`(순수, `approvals`·`rounds.jsonl`·`state/pauses.json` 에서만) | 헨리 분석 1판(`teams/design/out/screens/ui/analysis.svg`, 09-16) — 다섯 팀을 같은 자로, **칸 셋**, 칸마다 그림 하나 + 문장 하나(하영 화면 글 틀 1판 3절): **① 어디서 자꾸 막히나** — 돌려보낸 결재 "{팀} a건 중 b" 다섯 팀 같은 순서, 팀마다 같은 자 띠(옅음 = 올린 결재 · 짙음 = 돌려보낸 것), 튀는 팀 하나만 빨강 **② 무엇이 느려졌나** — 회차 길이 "지난 회차 N → 이번 회차 M", 지난 회색 · 이번 위·아래 색, 제일 나빠진 팀·제일 좋아진 팀, "멈춘 N은 뺐어요" **③ 같은 일이 몇 번째인가** — 같은 카드 다시 올림("(2차 …)"·"(… 고침)" 꼬리 뗀 이름)·같은 단계 여러 회차, 회차 네모 겹침(수 = 값, 마흔 넘으면 …) 세 번째부터 빨강, 사이가 비면 "2회차부터 20회차 사이 18회차에 걸쳐". 숫자 하나는 안 온다 — **다른 숫자와 견줄 때만**(나리 정본 `teams/hq/out/화면이-답하는-질문.md` 41~44행). 세 겹: 누르면 펼친 줄(어느 카드·어느 회차) → 결재 카드(대기 중) / 그 방. 옛 타일(끝난 회차·통과·대화 기록)·회차 표·발언 막대·단계·낸 것 표는 뺐다 — 자기 통계·하나짜리(나리 R29 실측). 항목을 `out/analysis-inventory.md` 에서 고르는 줄은 지웠다(09-16 — 안젤·하영: 정본 41~44행과 안 맞물리는 옛 문장) | ① 없음(다섯 팀 늘 선다) · ② "견줄 회차가 아직 없어요 — 회차 둘이 끝나면 떠요" · ③ "같은 자리를 두 번 간 일이 없어요" |
+| 보고서 | 어제 하루가 어땠나 · **어제 하루** | `doneOf` 를 창으로(어젯밤 = 어제 18시~오늘 9시 · 날짜 고름) + `progress.next[]` + `out/**` 그림(`listOut`, 창 안 mtime) + 대리 결정(`note meta.proxy`) + 사람 글(`teams/hq/out/reports/<날짜>.md`) | 결정 80 의 다섯 절, 폰에서 30초 — ① 사이 있었던 일 ② 대표님이 보실 것(= 관제탑 ① 과 같은 목록) ③ 오늘 각 방이 할 일 ④ 한마디(글 있는 날만) ⑤ 사이 나온 그림 + 맨 위 "대표님 대신 정한 것"(결정 85 ③). **틀은 경영팀**(대표 09-14) — 개발은 아래층(집계)만 | "이 사이엔 한 일이 없어요." |
+| 카드 | 이 하나를 더 보고 싶다 · (깊이) | `GET /api/actor` · 승인 레코드 · 마일스톤 · 방 요약 | 탭이 아니라 **문** — 어느 화면에서든 **두 번 눌러** 닿는다(한 줄 → 펼친 줄 → 카드). 넷째 겹은 없다. 사람 카드는 결정 130 ① 의 정사각형(얼굴·이름·직책·열 줄 1번·상태 알약) | — |
 
-**결정 188 — 앞날 띠에서 시간은 없다.** 시간 눈금(오늘·내일·모레·이번 주)·**{날}까지**·빨간 띠 **N분 늦음**·**{때} 시작 · 회차 평균 × N회차 → {날}**·**예정보다 N 지났어요** 같은 timebox 로 지어낸 앞날 예측은 화면이 더는 안 그린다(`app.js loadDashboardBand`). 남는 것은 위 대시보드 행의 모양(순서대로 같은 폭 칸, 시간 없는 글자). 서버 문의 `plannedFrom/To`·`late`·`roundMs`·`roundLengthMs`·`endAfterWork` 도 걷었다(`bus.plansOf` 간소화) — 지금 `/api/dashboard` 는 이 값들을 내려주지 않는다.
+**결정 188(대표 09-16 17:0x "모든 시간 관련된거 다 폐기해") — 앞날 띠에서 시간은 없다.** 위 표의 시간 눈금(오늘·내일·모레·이번 주)·**N단계 · {날}까지**·빨간 띠 **N분 늦음**·펼친 줄의 **{때} 시작 · 회차 평균 × N회차 → {날}**·**예정보다 N 지났어요** 는 우리가 timebox 로 지어낸 앞날이라 화면이 안 그린다(`app.js loadDashboardBand`, R33). 남는 것: 줄 = 팀, 칸 = 단계를 **순서대로 같은 폭**(지금 단계 → 다음), 칸 글자 **N단계** / **N단계 — 대표님이 정한 뒤** / **N단계 — {무엇} 뒤** / **N단계 — 막힘 ({이유})**, 펼친 줄 **N단계 {제목}** / 점선 **로드맵 조건 — "{timebox 원문}"** / 빨강 **{막힌 것 첫 줄}**, 담당 점 둘, 아래 "대표 결정 대기" 카드. 서버 문의 `plannedFrom/To`·`late`·`roundMs` 도 걷었다(`bus.plansOf` 간소화, `roundLengthMs`·`endAfterWork` 삭제, 솔라) — 아래 문 설명이 그 뒤 모양이다. 실물 `teams/dev/out/shots/r33-timeline-notime-412.png`.
 
 서버 문(결정 188 뒤로 시각 예측 없음): `GET /api/dashboard` → `{ text, at, now, teams: [{ id, name, room, color, hasRoadmap, owners: [{ actor, name, initial, color }], stages: [{ n, title, status, blockedWhy, gate, gateWhat, gateBoss }] }], bossGates: [{ kind, team, what, id }] }`
-— `hasRoadmap` 은 `teams/<팀>/roadmap.json` 이 있나(빈 줄 말 둘을 가른다). `owners` 는 그 팀 cast 에서 다른 회사(외부 감사)·대표·안내를 뺀 둘, 팀장(`roomRules.owner`) 먼저(`bus.ownersOf`, 순수 — 계획표 `owner` 칸은 마케팅만 있어 cast 가 정본). `gate` 는 timebox 원문(펼친 줄), `gateWhat` 은 칸 글자 — "대표" 가 들면 **대표님이 정한 뒤**, 아니면 조건의 **{무엇} 뒤**("1 라운드 — 테라 붙인 뒤" → "테라 붙인 뒤", `bus.gateWhatOf`), `gateBoss` 는 대표 문인가(카드 "대표님이 여실 단계" 는 이것만).
-— `text` 는 `plan-table.md` 인데 **`## 팀별 단계` 절만 서버가 roadmap 에서 만들어 바꿔 끼운 것**(`bus.stageTable` + `bus.swapSection`) — 나머지 두 표(대표님이 물으신 것·대표님 손에 있는 것)는 글자 그대로. `at` 은 파일 mtime. 정본은 표 파일 + roadmap 둘이 한 화면에 있는 것. `stages` 는 맨 밑 줄 순서만(시각 없음): `status` = `running`(지금 단계, 채움) · `planned`(잡힌 예정, 채움 옅게) · `gated`(대표 답 뒤, 점선 — `gate` 에 무엇) · `blocked`(FAIL 로 막힘, 빨강) · `blockedWhy` 한 줄.
-timebox 에 조건("대표" · "… 뒤")이 있으면 `gated` — **단, 지금 단계(`status: 'now'`, 착수 카드가 통과된 것)는 문이 아니다**(문은 열렸다). timebox 가 아예 없는 단계는 문이 아니라 **잡히지 않은 것** — `planned`(지어내지 않는다). `blockedWhy` 가 비면 **검토에서 멈춤 — 대표님 판단 기다림**. 계산은 순수 함수 `bus.plansOf({ roadmap, state, progress })` — `round.mjs check` 가 돌린다.
-`bossGates` = **대표 문인 gated 단계만**(`kind:'stage'`, `gateBoss` — 대표 답이 있어야 열리는 단계, 띠의 점선 칸 중 "대표님이 정한 뒤" 인 것. "테라 붙인 뒤" 같은 다른 조건은 점선이되 카드엔 안 온다). C 승인·상황판 `boss[]` 는 여기 **안 온다** — 그건 관제탑 ③ 내 차례의 목록이고, 같은 것을 두 군데 두지 않는다. 칸 이름은 **"대표님이 여실 단계"**.
+— `hasRoadmap` 은 `teams/<팀>/roadmap.json` 이 있나(빈 줄 말 둘을 가른다). `owners` 는 그 팀 cast 에서 다른 회사(외부 감사)·대표·안내를 뺀 둘, 팀장(`roomRules.owner`) 먼저(`bus.ownersOf`, 순수 — 계획표 `owner` 칸은 마케팅만 있어 cast 가 정본, 하영 1-3). `gate` 는 timebox 원문(펼친 줄), `gateWhat` 은 칸 글자 — "대표" 가 들면 **대표님이 정한 뒤**, 아니면 조건의 **{무엇} 뒤**("1 라운드 — 테라 붙인 뒤" → "테라 붙인 뒤", `bus.gateWhatOf`), `gateBoss` 는 대표 문인가(카드 "대표님이 여실 단계" 는 이것만).
+— `text` 는 결정 128 1판(plan-table.md)인데 **`## 팀별 단계` 절만 서버가 roadmap 에서 만들어 바꿔 끼운 것**(`bus.stageTable` + `bus.swapSection`, 톰 09-14 "손으로 세는 건 썩는다") — 톰이 쓰는 건 위(대표님이 물으신 것)·아래(대표님 손에 있는 것) 두 표뿐이고 그건 글자 그대로. `at` 은 파일 mtime. 정본은 표 파일 + roadmap 둘이 한 화면에 있는 것. `stages` 는 헨리 시안 맨 밑 줄 순서만(시각 없음): `status` = `running`(지금 단계, 채움) · `planned`(잡힌 예정, 채움 옅게) · `gated`(대표 답 뒤, 점선 — `gate` 에 무엇) · `blocked`(FAIL 로 막힘, 빨강) · `blockedWhy` 한 줄.
+timebox 에 조건("대표" · "… 뒤")이 있으면 `gated` — **단, 지금 단계(`status: 'now'`, 착수 카드가 통과된 것)는 문이 아니다**(문은 열렸다 — 나리 실측 09-15: 경영 2단계가 착수됐는데 "대표가 정한 뒤" 로 섰다). timebox 가 아예 없는 단계는 문이 아니라 **잡히지 않은 것** — `planned`(지어내지 않는다). `blockedWhy` 가 비면 **검토에서 멈춤 — 대표님 판단 기다림**(T8). 계산은 순수 함수 `bus.plansOf({ roadmap, state, progress })` — `round.mjs check` 가 돌린다. 시각 예측(예정 끝·늦음·회차 평균)은 결정 188 뒤로 없다 — 옛 계산(`roundLengthMs`·`endAfterWork`·`plannedFrom/To`·`late`·`roundMs`)은 커밋 로그에.
+`bossGates` = **대표 문인 gated 단계만**(`kind:'stage'`, `gateBoss` — 대표 답이 있어야 열리는 단계, 띠의 점선 칸 중 "대표님이 정한 뒤" 인 것. "테라 붙인 뒤" 같은 다른 조건은 점선이되 카드엔 안 온다, T4). C 승인·상황판 `boss[]` 는 여기 **안 온다** — 그건 관제탑 ③ 내 차례의 목록이고, 같은 것을 두 군데 두지 않는다(톰 req_2749e30e, 09-15). 칸 이름 **"대표님이 여실 단계"**(하영 사전 4절, 09-15 23:57 — 전 이름 "대표 답이 있어야 열리는 단계" 는 사전 밖 말이었다). ·
 `GET /api/report?since&until` → `{ done: [팀별], next: {팀: []}, images: [], proxy: [], chief: md|null, nightly: { day, file, md }|null, blocked: [], teams: [] }` · 관제탑은 지금처럼 `summaries`(+`infra`, `blockedOf` 는 화면이 센다).
-**보고서 탭** (`#<팀>/report`, `app.js renderReport`). 절 다섯 + 한마디: ① **오늘 정하실 것 N** — 현황 ③ 과 **같은 목록**(`blockedOf` waitOn boss + 상황판 `boss[]`, 화면이 센다 — 두 군데서 다르게 세지 않는다), 결재는 그 자리에서 카드 팝업 ② **톰·제리가 대표님 대신 정했어요 — 되돌리시려면 방에 한마디** — 창 안 `proxy` ③ **막힌 것 N · 한 것은 점, 멈춤은 빨간 띠** — 팀마다 시간 띠 한 줄(창 = 가로, 점 = `done` 항목, 빨간 띠 = `blocked` 구간), 그 밑에 구간 하나씩("저녁 6시 → 아침 9시 · 지금은 풀렸어요", 기다린 시간은 멈춤 뺀 것) ④ **팀마다 한 것 — 누르면 세 줄**(한 것 · 막힌 것 · 검토 결과) — 줄 = 방 이름 · N단계 제목 · N회차 · 진행 막대 N/M · 한 줄 · 그림 셋 ⑤ **오늘 — 각 방이 먼저 할 일** — `next[팀][0]` 을 실무 이름으로 · **한마디** — `chief`(사람 글) 첫 문단 + " — 톰" + 전부 읽기.
-`blocked` = `bus.blockedSpansOf(log, cast, { team, since, until, now, pauses })`(순수, check) — `[{ team, teamName, kind: 'fail'|'ask', from, to|null, text, by, name, ref }]`: FAIL 구간(note `meta.blocked` → note `meta.resumed`) · 답 없는 물음(`asksBoss` 말 → 그 뒤 첫 대표 말(via 제외)/대리 답) · **라운드가 닫히거나 새로 열리면 그 라운드의 막힘·물음은 거기서 끝난다**(닫힘이 곧 풀림) · 창과 겹치는 것만 · **멈춘 구간(`state/pauses.json`)은 잘라낸다** — 창이 통째로 멈춤이면 막힌 것 0 이고 화면이 "이 창은 쉰 시간이에요 — 낮 1:35 → 밤 9:13" 한 줄을 띠 밑에 둔다 · 총괄실·비서실은 안 센다(대표와 1:1). `teams` = 방마다 `{ id, name, room, color, office, milestone, milestoneTitle, round, done, total, phase, guide }`(비서실 뺌). 시각 글자는 `whenKo` — "아침 8:41 · 낮 12:13 · 저녁 6시 · 밤 10:50"(우리 시각).
-셋 다 **파일을 새로 만들지 않는다** — 있는 것을 읽어 조립할 뿐. 사람 글이 없어도 탭은 뜬다(아래층이 정본, 글은 그 위 한 문단). 자정 마감 한 장(아래)만 예외 — 그건 서버가 자정에 쓰는 파일이다.
+**보고서 탭(새 7단계, 헨리 report 1판 — `#<팀>/report`, `app.js renderReport`).** 절 다섯 + 한마디, 낱말은 하영 5판 3-5-1: ① **오늘 정하실 것 N** — 현황 ③ 과 **같은 목록**(`blockedOf` waitOn boss + 상황판 `boss[]`, 화면이 센다 — 두 군데서 다르게 세지 않는다), 결재는 그 자리에서 카드 팝업 ② **톰·제리가 대표님 대신 정했어요 — 되돌리시려면 방에 한마디** — 창 안 `proxy` ③ **막힌 것 N · 한 것은 점, 멈춤은 빨간 띠** — 팀마다 시간 띠 한 줄(창 = 가로, 점 = `done` 항목, 빨간 띠 = `blocked` 구간), 그 밑에 구간 하나씩("저녁 6시 → 아침 9시 · 지금은 풀렸어요", 기다린 시간은 멈춤 뺀 것) ④ **팀마다 한 것 — 누르면 세 줄**(한 것 · 막힌 것 · 검토 결과) — 줄 = 방 이름 · N단계 제목 · N회차 · 진행 막대 N/M · 한 줄 · 그림 셋 ⑤ **오늘 — 각 방이 먼저 할 일** — `next[팀][0]` 을 실무 이름으로 · **한마디** — `chief`(사람 글) 첫 문단 + " — 톰" + 전부 읽기.
+`blocked` = `bus.blockedSpansOf(log, cast, { team, since, until, now, pauses })`(순수, check) — `[{ team, teamName, kind: 'fail'|'ask', from, to|null, text, by, name, ref }]`: FAIL 구간(note `meta.blocked` → note `meta.resumed`) · 답 없는 물음(`asksBoss` 말 → 그 뒤 첫 대표 말(via 제외)/대리 답) · **라운드가 닫히거나 새로 열리면 그 라운드의 막힘·물음은 거기서 끝난다**(닫힘이 곧 풀림) · 창과 겹치는 것만 · **멈춘 구간(`state/pauses.json`)은 잘라낸다** — 창이 통째로 멈춤이면 막힌 것 0 이고 화면이 "이 창은 쉰 시간이에요 — 낮 1:35 → 밤 9:13" 한 줄을 띠 밑에 둔다(나리 09-15: 멈춘 하루가 "네 팀이 밤새 막혔다" 로 읽혔다) · 총괄실·비서실은 안 센다(대표와 1:1). `teams` = 방마다 `{ id, name, room, color, office, milestone, milestoneTitle, round, done, total, phase, guide }`(비서실 뺌). 시각 글자는 `whenKo` — "아침 8:41 · 낮 12:13 · 저녁 6시 · 밤 10:50"(3-5-1, 우리 시각).
+셋 다 **파일을 새로 만들지 않는다** — 있는 것을 읽어 조립할 뿐. 사람 글이 없어도 탭은 뜬다(아래층이 정본, 글은 그 위 한 문단 — `out/m6-screen-inventory.md` 3절). 자정 마감 한 장(아래)만 예외 — 그건 서버가 자정에 쓰는 파일이다.
 
-### 자정 마감 — 하루 한 장 (chief.md "하루 마감 — 자정")
+### 자정 마감 — 하루 한 장 (M7 · 결정 45 ③ · chief.md "하루 마감 — 자정")
 
-**시각으로 정한 일은 없다 — 결정 187.** "자정에 마감한다"는 정해 둔 시각이라 오늘부로 없다 — 하루 한 장이 필요하면 **대표님이 열 때 최신이면 된다**(열 때 조립, 아래 "언제" 절의 자정 틱은 안 쓴다). 아래는 코드가 남아 있는 동안의 기록이다.
+**시각으로 정한 일은 없다 — 결정 187**(대표 09-16 16:5x "지금 모든팀에 몇시에 한다고 정해진거 다 파기해라. 나는 몇시에 뭘 하라고 한적이 없어"). "자정에 마감한다"는 우리가 정한 시각이라 오늘부로 없다 — 하루 한 장이 필요하면 **대표님이 열 때 최신이면 된다**(열 때 조립, 아래 "언제" 절의 자정 틱은 안 쓴다). 아래는 코드가 남아 있는 동안의 기록이다.
 
-**기본은 꺼짐** — 만든 코드는 두되 켜지 않는다. 켜는 스위치는 `state/nightly.json` 의 `{ "on": true }`(파일이라 재시작 없이 다음 틱부터, 10초에 한 번 읽음). 꺼져 있으면 아래는 하나도 안 돈다 — 미리보기 `round.mjs nightly` 만 된다.
+**기본은 꺼짐.** 나리 결정(09-15 22:2x, 위임 136): "세라 아침 한 장·톰 일일보고서와 같은 걸 세 번째로 만드는 거라 — 만든 코드는 두되 켜지 않는다." 켜는 스위치는 `state/nightly.json` 의 `{ "on": true }`(파일이라 재시작 없이 다음 틱부터, 10초에 한 번 읽음). 꺼져 있으면 아래는 하나도 안 돈다 — 미리보기 `round.mjs nightly` 만 된다.
 
 **언제.** 서버 틱이 우리 시각 날짜가 바뀐 것을 보면(`bus.dayStartSeoul`) **지난 하루**를 마감한다. 서버가 자정에 죽어 있었으면 다시 뜬 뒤 첫 틱에 마감한다 —
 대표가 아침에 보는 것이니 빠뜨리지 않는다(빠진 날이 여럿이면 마지막 하루만, 그 앞은 파일이 없는 채로 남는다 — 지어내지 않는다). 한 날 한 번 — 파일이 이미 있으면 다시 쓰지 않는다
@@ -382,20 +395,20 @@ timebox 에 조건("대표" · "… 뒤")이 있으면 `gated` — **단, 지금
 `problems` 는 막힌 것 중 **대표 손이 필요한 것**만 — `blocked`(FAIL 방) · `approval`(C 대기) · `bossCall`(답 없는 호출) · `attempts`(반박 상한). 상황판 `blocked[]` 와 B 대기는 문제가 아니라 팀·톰 몫이라 "막힌 것" 절에만 선다.
 
 **총괄실 한 장 = 대표용.** `teams/hq/out/nightly/<YYYY-MM-DD>.md` — 맨 위 한 줄(문제 없음 / 문제 N건 — 팀·무엇, 그 팀 파일 링크) · `## 대표님 대신 정한 것`(그날 `proxy-decisions.md` 줄, 없으면 "없음") ·
-`## 팀마다`(팀당 한 줄: 라운드·판정·승인·막힌 것 수 + 파일 경로) · `## 톰의 자정 일지`(아래). **문제 없으면 읽고 넘기고, 문제면 그때 개입.** `teams/hq/out/daily/` 는 톰이 손으로 쓰는 아침 글이라 건드리지 않는다(`/api/report` 의 `chief`).
+`## 팀마다`(팀당 한 줄: 라운드·판정·승인·막힌 것 수 + 파일 경로) · `## 톰의 자정 일지`(아래). 결정 45 ③ 그대로 — **문제 없으면 읽고 넘기고, 문제면 그때 개입.** `teams/hq/out/daily/` 는 톰이 손으로 쓰는 아침 글이라 건드리지 않는다(`/api/report` 의 `chief`).
 
 **총괄실 자정 일지.** 총괄실은 라운드가 없어 톰의 일지가 한 번도 안 걷혔다(`teams/hq/journal/` 에 `chief.md` 없음). 자정 마감이 톰 세션에 `⟦일지⟧` 턴(`bus.journalPrompt` 와 같은 문장, 라운드 대신 날짜)을 보내 한 문단을 받아
 `teams/hq/journal/chief.md` 에 붙인다(`appendJournal`, 3분 초과·`(패스)`·빈 답은 없음 — 총괄실에 note). 다음 톰 세션이 뜰 때 `assemblePrompt` 가 이 문단을 인격 뒤에 붙인다 — 팀 자리와 같은 세 층.
 
 **대표에게.** 총괄실에 `note`(system, `meta.nightly { day, problems, file }`) 한 줄 — "자정 마감 <날짜> — 문제 없음 · <파일>" 또는 "문제 N건". 문제가 있으면 그 뒤 톰에게 차례를 준다(`called`, 지시: 대표께 한 문장으로 **물어라** —
-물음이어야 종이 울린다). 종·`needsBoss` 는 새 장치가 아니라 있는 것 — 막힌 방은 이미 `needsBoss`, C 대기는 이미 관제탑 ③ 에 선다. 자정 마감은 그걸 **한 장으로 모아** 아침 첫 화면에 놓는 것이다.
+물음이어야 종이 울린다, 결정 52). 종·`needsBoss` 는 새 장치가 아니라 있는 것 — 막힌 방은 이미 `needsBoss`, C 대기는 이미 관제탑 ③ 에 선다. 자정 마감은 그걸 **한 장으로 모아** 아침 첫 화면에 놓는 것이다.
 `/api/report` 는 창의 끝 날 총괄 페이지를 `nightly` 로 싣는다 — 보고서 탭 "어제 하루가 어땠나" 의 아래층 맨 위.
 문이 있는 자리(지금): 작전실 말풍선의 얼굴·이름과 오른쪽 참여 줄 → 관제탑 사람 카드가 팝업으로(`app.js openPersonPop`, 부품은 `personCard` 하나) · 마을 인형 → `/api/actor` 카드 · 관제탑 사람 탭은 카드 자체. 대표는 카드 없음. 나리(system 자리)는 세션이 없어 이름·직책만 — 인격 파일이 생기면 그 첫 줄이 붙는다.
-관제탑 "전체" 에는 통계 타일이 없다. "내 차례"·팀 줄은 관제탑에 남는다 — 같은 것을 두 군데 두지 않는다. **상황판 탭은 없앤다** — 네 칸은 관제탑 팀 줄 안으로(낱말·파일·`progress.mjs` 그대로, 아래 절).
+관제탑 "전체" 의 타일은 뺀다(결정 92 — 통계 타일 탈락). "내 차례"·팀 줄은 관제탑에 남는다 — 같은 것을 두 군데 두지 않는다(findings #5·#7). **상황판 탭은 없앤다** — 네 칸은 관제탑 팀 줄 안으로(낱말·파일·`progress.mjs` 그대로, 아래 절).
 
-통과 조건(감사역이 잰다): 화면마다 질문 **하나** · 관제탑에서 막힌 것이 **스크롤 없이** · 대시보드에 다섯 팀 예정이 **한 화면** · 어디서든 **두 번 눌러 카드** · 상황판이라는 독립 자리 없음.
+통과 조건(정본 맨 밑, 감사역이 잰다): 화면마다 질문 **하나** · 관제탑에서 막힌 것이 **스크롤 없이** · 대시보드에 다섯 팀 예정이 **한 화면** · 어디서든 **두 번 눌러 카드** · 상황판이라는 독립 자리 없음.
 
-**상황판 — 지금 어디까지 왔나.** 팀마다 `teams/<팀>/progress.json`
+**상황판 — 지금 어디까지 왔나** (결정 23 — "상황판은 업데이트도 안 되고 이상한 걸로 채워져 있고"). 팀마다 `teams/<팀>/progress.json`
 하나. 로드맵이 목적지라면 이건 현재 위치다. **실무가 턴 끝·라운드 닫기마다 갱신한다** — `node bus/progress.mjs --team <팀> --doing "…"
 --blocked "…" --boss "…" --next "…"`(플래그는 여러 번, 준 항목만 통째로 바뀌고 안 준 항목은 그대로, `--clear <항목>` 으로 비움).
 파일은 서버가 읽어 요약 `progress` 로 싣고(`summaries[팀].progress`), 세 곳이 쓴다:
@@ -405,7 +418,7 @@ timebox 에 조건("대표" · "… 뒤")이 있으면 `gated` — **단, 지금
 | `at` · `by` · `round` | 갱신 시각(ISO) · 갱신한 자리 이름 · 그때 라운드 |
 | `doing[]` | 지금 하는 것 — 한 줄씩 |
 | `blocked[]` | 막힌 것 — 왜 막혔는지 한 줄씩. 없으면 빈 배열 |
-| `boss[]` | 대표 차례 — 대표가 정하거나 눌러야 하는 것. 없으면 빈 배열. **빈 배열이면 그 팀의 방 발언 대표 차례(`bossCall`, 종·사람 카드·자정 마감)도 없다**. 파일이 없는 방은 대화록만. 실무가 물었으면 칸도 채운다 |
+| `boss[]` | 대표 차례 — 대표가 정하거나 눌러야 하는 것. 없으면 빈 배열. **빈 배열이면 그 팀의 방 발언 대표 차례(`bossCall`, 종·사람 카드·자정 마감)도 없다**(나리 결정 ③, 09-15 — 답 끝난 뒤에도 마지막 호명 발언이 서 있었다). 파일이 없는 방은 대화록만. 실무가 물었으면 칸도 채운다 |
 | `next[]` | 다음 — 이 라운드 뒤에 할 것 |
 | `done[]` | (선택) 한 것 — 옛 모양의 `done`·`left`·`issues` 는 읽을 때 `done`·`next`·`blocked` 로 본다 |
 
@@ -414,15 +427,15 @@ timebox 에 조건("대표" · "… 뒤")이 있으면 `gated` — **단, 지금
 ② **모든 자리의 프롬프트**에 붙는다(`session.mjs briefOf` 의 `## 상황판` 절 — codex 자리도 같은 조립) — 팀원이 읽고, 실무는 쓰라는 한 줄이 같이.
 ③ 관제탑 팀 카드의 "상황" 접기(같은 값). `round.mjs end` 는 이 라운드 동안 갱신이 없으면 경고 한 줄(거부는 아니다).
 
-**화면 자리 ① 은 없앤다** — 관제탑이 답하는 질문과 같아서, 네 칸은 관제탑 팀 줄을 펼치면(③) 글자 그대로 보인다. **파일·②(프롬프트 절)·`progress.mjs` 는 그대로** — 지우면 다섯 팀이 다 멈춘다.
+M6(화면이-답하는-질문.md, 톰·제리 B): **화면 자리 ① 은 없앤다** — 관제탑이 답하는 질문과 같아서, 네 칸은 관제탑 팀 줄을 펼치면(③) 글자 그대로 보인다. **파일·②(프롬프트 절)·`progress.mjs` 는 그대로** — 지우면 다섯 팀이 다 멈춘다(나리 덧붙임).
 
-**대표 화면 글은 사람 말 한 줄, 60자 안.** 자는 `server/public/bosswords.js` 하나(`JARGON`·`bossOk`·`NOT_YET`) — 화면·`tools/boss-words-check.mjs`·버스가 같은 것을 import 한다. 하네스 낱말(카드 번호·경로·결정 번호·회차/단계·PASS/REVISE·해시)이 하나라도 있거나 60자를 넘으면 그 줄은 **화면에 안 낸다** — 글 대신 **"아직 쉬운 말로 안 적음"**, 원문은 눌러 펼침(`app.js bossLine`). 세 근원이 전부 이 하나를 지난다: ① 상황판 네 칸(방 오른쪽 첫 카드 · 현황 ④ 펼친 줄 · 팀 탭 카드 · 현황 ③/보고서 ① 의 `boss[]` 줄) ② 결재 제목 — 올린 사람이 `--boss "한 줄"` 로 적은 `boss` 가 자에 맞으면 그것, 없으면 `what` 을 잰다. 띠의 한 줄과 팝업 카드 둘 다, 카드에선 원문이 `<details>` "원문" 으로 ③ 누가 뭘 했나(`/api/done` 항목 글) 와 현황 ①·③ 의 막힘·차례 줄. 파일(`progress.json`·`approvals.jsonl`)은 그대로 — 글을 지우지 않고 화면만 가린다. `--boss` 플래그는 `approve.mjs`·`requestApproval` 몫(버스).
+**대표 화면 글은 사람 말 한 줄, 60자 안**(결정 140 — 대표 09-16 "가시성 가독성 사용성 0점" · 나리 사용성-0916 2절 ①, 3절 2·5, R32). 자는 `server/public/bosswords.js` 하나(`JARGON`·`bossOk`·`NOT_YET`) — 화면·`tools/boss-words-check.mjs`·버스가 같은 것을 import 한다(when.js 와 같은 자리). 하네스 낱말(카드 번호·경로·결정 번호·회차/단계·PASS/REVISE·해시)이 하나라도 있거나 60자를 넘으면 그 줄은 **화면에 안 낸다** — 글 대신 **"아직 쉬운 말로 안 적음"**, 원문은 눌러 펼침(`app.js bossLine`). 세 근원이 전부 이 하나를 지난다: ① 상황판 네 칸(방 오른쪽 첫 카드 · 현황 ④ 펼친 줄 · 팀 탭 카드 · 현황 ③/보고서 ① 의 `boss[]` 줄) ② 결재 제목 — 올린 사람이 `--boss "한 줄"` 로 적은 `boss` 가 자에 맞으면 그것, 없으면 `what` 을 잰다. 띠의 한 줄과 팝업 카드 둘 다, 카드에선 원문이 `<details>` "원문" 으로 ③ 누가 뭘 했나(`/api/done` 항목 글) 와 현황 ①·③ 의 막힘·차례 줄. 파일(`progress.json`·`approvals.jsonl`)은 그대로 — 글을 지우지 않고 화면만 가린다. `--boss` 플래그는 `approve.mjs`·`requestApproval` 몫(버스).
 
 ### `verdict` — 판정 카드
 감사 결과. 말풍선이 아니라 **가운데 카드**로 크게 표시한다. 라운드의 분기점이므로
 스크롤에서 한눈에 찾을 수 있어야 한다.
 
-**모양은 `card.js verdictCard`**: 머리 **승인 / 반려 / 보류**(초록·주황·빨강, 영어 PASS·REVISE 는 안 보인다) · 누가 → 누구 · 시각, **사람 말 한 줄**, 자세히(접힘 — 떨어뜨릴 이유 셋과 반박), 반려일 때만 반박 N/3. 한 줄은 `meta.line`(서버가 주면) 아니면 **본문 첫 줄** — 첫 줄이 "떨어뜨릴 이유…" 로 시작하면 감사 글이라 한 줄 없음("요약 없음"). 그러니 **감사는 첫 줄에 사람 말 한 줄(60자, 자에 맞게)** 을 쓰고 그 다음 줄부터 떨어뜨릴 이유 셋 — 판정 지시문(`bus.verdictInstruction`)이 그렇게 시킨다.
+**모양은 `card.js verdictCard`**(G3 R33 — 대표 09-16 07:0x "Pass Revise 이거 양식도 이상함", 카드-체계-0916 2절 · 하영 card-words 2판): 머리 **승인 / 반려 / 보류**(초록·주황·빨강, 영어 PASS·REVISE 는 안 보인다) · 누가 → 누구 · 시각, **사람 말 한 줄**, 자세히(접힘 — 떨어뜨릴 이유 셋과 반박), 반려일 때만 반박 N/3. 한 줄은 `meta.line`(서버가 주면) 아니면 **본문 첫 줄** — 첫 줄이 "떨어뜨릴 이유…" 로 시작하면 감사 글이라 한 줄 없음("요약 없음"). 그러니 **감사는 첫 줄에 사람 말 한 줄(60자, 자에 맞게)** 을 쓰고 그 다음 줄부터 떨어뜨릴 이유 셋 — 판정 지시문(`bus.verdictInstruction`)이 그렇게 시킨다(솔라). 옛 도장의 빨간 테두리·`stamp__label` 은 뺐고 `.stamp` 은 정렬·폭만.
 
 | `meta.verdict` | 의미 | 다음 동작 |
 | --- | --- | --- |
@@ -435,7 +448,7 @@ timebox 에 조건("대표" · "… 뒤")이 있으면 `gated` — **단, 지금
 - `meta.attempt`: 이 **마일스톤**의 몇 번째 반박인지 (1~3). **3에서 자동 `FAIL`.** 라운드를 닫고 다시 열어도
   이어진다(`round.json` 의 `attempts[마일스톤]`, 다음 `startRound` 가 물려받는다). 0 으로 돌리는 것은 감사 `PASS`
   카드와 대표의 재개(`resumeRound`)뿐이다.
-- **받아들인 지적은 반박이 아니다.**
+- **받아들인 지적은 반박이 아니다** (결정 84 — "개발팀 멈추는 거 짜증나는데": 09-13 세 번 다 실무가 동의하고 고쳤는데 멈췄다).
   `REVISE` 가 반박으로 세는 건 **실제로 갈릴 때만** — `bus.countsAsDispute(앞 REVISE, 이번)`: ① 앞 `REVISE` 뒤 **고친 커밋 없이**
   같은 `meta.sha` 로 다시 받았다(고치지 않고 다시 보인 것 = "그건 틀렸다"), 또는 ② 같은 지적이 되풀이된다(첫 줄이 같다, `sameIssue`).
   고쳐서(새 sha) 다른 지적을 받으면 `attempt` 는 그대로고 카드에 `meta.counted: false` 가 붙는다. 무한 루프 방지는 남는다 —
@@ -460,7 +473,7 @@ timebox 에 조건("대표" · "… 뒤")이 있으면 `gated` — **단, 지금
 
 ---
 
-## 3-1. 방에 그림 올리기 (대표 결정 130 ②)
+## 3-1. 방에 그림 올리기 (대표 결정 130 ② — "이미지 업로드하고싶은데 안 되네")
 
 `POST /api/upload { team, mime, data(base64) }` 가 `teams/<팀>/in/<자동 이름>.<png|jpg|gif|webp>` 로 저장하고,
 `그림을 올렸습니다: in/<파일>` 을 텍스트로 하는 `message` 이벤트(actor `boss`)를 남긴다 — 배달 규칙(idle 채팅·FAIL 풀기·호명·codex 자리)은 `/api/say` 와 같다.
@@ -520,22 +533,25 @@ timebox 에 조건("대표" · "… 뒤")이 있으면 `gated` — **단, 지금
 없으므로**(둘 다 방 주인이 불러야 한다), 방 주인의 귀에 "이 말은 누구에게 한
 것인지"를 함께 넣어 그가 불러주게 한다.
 
-**여러 명을 불렀으면 전부 차례를 받는다** (`addressees()`). 첫머리뿐 아니라 문단(빈 줄) 첫머리의 호명도
-본다 — "대표님, … / 안젤, … / 다니엘, …" 이면 안젤·다니엘 순서로. 같은 사람은 한 번. (왕복 브레이크는 없다.)
+**여러 명을 불렀으면 전부 차례를 받는다** (`addressees()`, 결정 22). 첫머리뿐 아니라 문단(빈 줄) 첫머리의 호명도
+본다 — "대표님, … / 안젤, … / 다니엘, …" 이면 안젤·다니엘 순서로. 같은 사람은 한 번. (왕복 브레이크는 결정 120 으로 없다.)
 
-**대표를 부른 말** — `callsBoss()`: 대표 이름 외에 "대표님·대표·댄" 도 호명이다. 화면은 그 말풍선에 멘션 표시를 한다.
-**보고와 결정 요청은 다르다** — `asksBoss(text, cast)` = 대표를 부른 **그 문단** 안에 물음표·"정해 주세요·골라·답해", 또는
-대표에게 해 달라는 부탁(주세요·주시면·해 주세요·부탁·허용·실행)이 있다 — "zip 받아 풀어 주시면" 도 종이다. "올렸습니다·됐습니다" 는 보고.
-"대표님, 보고드립니다.\n\n솔라, 이 수치 맞아?" 는 솔라에게 물은 것이라 보고다. **이름 없는 다음 문단도 안 센다** —
-호명이 없는 문단은 앞 문단의 상대에게 이어진다고 보지 않는다. 글 가운데의 "대표님" 은 0.
+**대표를 부른 말** — `callsBoss()`: 대표 이름 외에 "대표님·대표·댄" 도 호명이다. 화면은 그 말풍선에 멘션 표시를 한다 (결정 19-2).
+**보고와 결정 요청은 다르다** (결정 52·66) — `asksBoss(text, cast)` = 대표를 부른 **그 문단** 안에 물음표·"정해 주세요·골라·답해", 또는
+대표에게 해 달라는 부탁(주세요·주시면·해 주세요·부탁·허용·실행)이 있다 — 헨리 "zip 받아 풀어 주시면" 도 종이다. "올렸습니다·됐습니다" 는 보고.
+"대표님, 보고드립니다.\n\n솔라, 이 수치 맞아?" 는 솔라에게 물은 것이라 보고다(레오 REVISE R23). **이름 없는 다음 문단도 안 센다**(나리 결정 ①, 09-15 —
+전엔 앞 문단의 상대에게 이어진다고 봤는데 톰의 "대표님, 비교가 나왔습니다. … ⏎⏎ 그때 정해 주시면 됩니다" 셋째 문단과 세라가 캐스트 밖 나리에게 한
+"나리, 검토 부탁해요" 가 대표 차례로 서서 대표 종에 넷이 남았다 — 대표 물음 "결재 알림 왜 안 없어지냐"). 글 가운데의 "대표님" 은 0.
 요약(`teamSummary.bossCall`, `bus.bossCallOf`)에는 "이 라운드에서 대표에게 결정을 청했는데 그 뒤 대표가 말하지 않은" 발언만 실리고, 탭 줄의 "대표 차례"
-배지·종·빨간 점이 그것을 따른다. **물은 사람이 그 뒤 다시 말했으면 그 물음은 지나간 것**((패스) 는 말한 것이 아니다) — 사람 카드 `people[자리].bossCall` 과 보고서의 물음 구간(`blockedSpansOf` `ask`, 그 말에서 닫힘)도 같은 선.
+배지·종·빨간 점이 그것을 따른다. **물은 사람이 그 뒤 다시 말했으면 그 물음은 지나간 것**(같은 결정 ① — 마지막 호명 발언이 답 끝난 뒤에도 서 있었다;
+(패스) 는 말한 것이 아니다) — 사람 카드 `people[자리].bossCall` 과 보고서의 물음 구간(`blockedSpansOf` `ask`, 그 말에서 닫힘)도 같은 선.
 부르기만 한 보고는 멘션 표시까지고, 관제탑 "오늘 보고" 줄(`bossNotes`, 3절)로 간다.
 
-**총괄실에서 다른 방 사람을 부르면 그 방에도 같은 말이 남는다** (`conductor.crossPost`). 화자는 그대로(`chief`),
+**총괄실에서 다른 방 사람을 부르면 그 방에도 같은 말이 남는다** (`conductor.crossPost`, 결정 21). 화자는 그대로(`chief`),
 `meta.from: 'hq'` · `meta.origin: <원본 id>`. 그 방의 사회자가 사본을 보고 불린 사람을 깨운다. 사본은 다시 옮기지
 않는다. 그 방이 닫혀 있어도(idle) 간다 — 서버가 그 방의 훅에 "이번 턴은 적어라" 표시(`bus.allowIdleChat`, 10분)를 켜고 사본을 남긴 뒤
-불린 사람에게 직접 차례를 준다(사회자는 idle 이면 차례를 안 돌린다) — `/api/say` 의 닫힌 방 채팅과 같은 길. 막힌 방(blocked)은 사본만 남는다 — 차례는 대표가 풀고 난 다음 차례의 "못 들은 말" 로 듣는다(대표 판단 대기를
+불린 사람에게 직접 차례를 준다(사회자는 idle 이면 차례를 안 돌린다) — `/api/say` 의 닫힌 방 채팅과 같은 길(결정 127 ②, R26). 전엔 총괄실에
+`note` "…옮기지 못했습니다" 만 남겼다. 막힌 방(blocked)은 사본만 남는다 — 차례는 대표가 풀고 난 다음 차례의 "못 들은 말" 로 듣는다(대표 판단 대기를
 총괄 말로 풀지 않는다). 배달(`dispatch.mjs`)도 닫힌 방에 보낸다 — 막힌 방만 거른다. 대표 발언은 옮기지 않는다 — 지시는 배달(4절)로.
 
 ## 5-1. 사회자 — 누가 언제 말하는가
@@ -549,59 +565,62 @@ timebox 에 조건("대표" · "… 뒤")이 있으면 `gated` — **단, 지금
 | 1 호명 | 첫머리가 X 의 이름이면 X 차례. 대표가 부른 사람은 `/api/say` 가 바로 그에게 넣는다 |
 | 2 판정 | `⟦판정 요청⟧` 턴은 서버가 만든다 (`/api/verdict`) |
 | 3 대표 | 대표 발언은 주인(또는 대표가 부른 사람)에게 바로. 사회자는 다시 주지 않는다 |
-| 4 침묵 | `PPANAM_LULL_MS`(기본 90초) 동안 message·tool 이 없고 아무도 busy 아니면, 가장 오래 침묵한 **클로드 자리** 한 명. (패스) 가능. 방당 시간당 `PPANAM_LULL_PER_HOUR`(기본 30) — 장부는 **파일** `state/budget.json`(`bus.takeLull`)이라 서버 재시작에 0 이 안 된다. 닿으면 `note` "침묵 차례가 시간당 상한(30회)에 닿았습니다…"(`meta.cap { kind:'lull', used, cap }`, 한 시간에 한 번). **다른 회사 엔진(codex·gemini)은 침묵·제3자 차례를 안 받는다** — 판정과 이름 불린 말에만 |
-| 5 잡담 브레이크 | **일하는 대화는 안 끊는다**. 안 세는 것: 이름을 불러 오간 차례(호명)·판정·요청 블록 안의 왕복 — 100번 오가도 그대로. 세는 것: **아무도 안 부른 침묵 차례(자동 응답)** 뿐 — 같은 둘이 침묵 차례로만 `PPANAM_MAX_CHAT`(3)회씩 오가면 누가 이름을 부르거나 다른 사람이 말할 때까지 침묵 차례를 안 준다(`chatLoop`, note "잡담이 길어져 잠시 쉽니다"). 어느 말이 침묵 차례에서 나왔는지는 사회자가 마지막으로 준 차례 종류(`lastGiven`)로 안다. 비용 선은 4 의 시간당 30 그대로 — 호명 왕복은 그 수에 안 든다. 한 자리에 한 번에 한 턴 |
-| 6 문 | 라운드가 idle 이면 차례 없음(총괄실 예외). blocked 면 대표만. 세상의 시계(마을)가 근무 시간 밖의 침묵 차례를 끈다. **닫히는 중에 쌓인 차례는 버리지 않고 다음 라운드 첫 턴으로**(`carried` — 7절 "닫는 정본") |
+| 4 침묵 | `PPANAM_LULL_MS`(기본 90초) 동안 message·tool 이 없고 아무도 busy 아니면, 가장 오래 침묵한 **클로드 자리** 한 명. (패스) 가능. 방당 시간당 `PPANAM_LULL_PER_HOUR`(기본 30, 결정 6) — 장부는 **파일** `state/budget.json`(`bus.takeLull`, 8단계 ④)이라 서버 재시작에 0 이 안 된다. 닿으면 `note` "침묵 차례가 시간당 상한(30회)에 닿았습니다…"(`meta.cap { kind:'lull', used, cap }`, 한 시간에 한 번). **다른 회사 엔진(codex·gemini)은 침묵·제3자 차례를 안 받는다** — 판정과 이름 불린 말에만(대표 지적 09-14: "(패스) 한 마디 받자고 17,000자") |
+| 5 잡담 브레이크 | **일하는 대화는 안 끊는다**(결정 120·121 — 대표 "3번 넘으면 대화 못하게 하는 거 철회해" → "몇 번 제한을 둔다는 아이디어는 괜찮은데, 그게 일을 망치면 안 되지"). 안 세는 것: 이름을 불러 오간 차례(호명)·판정·요청 블록 안의 왕복 — 100번 오가도 그대로. 세는 것: **아무도 안 부른 침묵 차례(자동 응답)** 뿐 — 같은 둘이 침묵 차례로만 `PPANAM_MAX_CHAT`(3)회씩 오가면 누가 이름을 부르거나 다른 사람이 말할 때까지 침묵 차례를 안 준다(`chatLoop`, note "잡담이 길어져 잠시 쉽니다"). 어느 말이 침묵 차례에서 나왔는지는 사회자가 마지막으로 준 차례 종류(`lastGiven`)로 안다. 비용 선은 4 의 시간당 30 그대로 — 호명 왕복은 그 수에 안 든다. 한 자리에 한 번에 한 턴 |
+| 6 문 | 라운드가 idle 이면 차례 없음(총괄실 예외). blocked 면 대표만. 세상의 시계(마을)가 근무 시간 밖의 침묵 차례를 끈다. **닫히는 중에 쌓인 차례는 버리지 않고 다음 라운드 첫 턴으로**(`carried`, 결정 25 — 7절 "닫는 정본") |
 
 **판정 규약 — 첫 줄 한 단어.** 사회자가 `⟦판정 요청⟧ <대상>` 턴을 주면(`/api/verdict` · `round.mjs verdict`) 답의 첫 줄이
 `PASS` / `REVISE` / `FAIL` 이다. 훅이 `UserPromptSubmit` 에서 턴 종류를 `state/turn/<방>.<자리>` 에 적고 `Stop` 에서 읽어
 판정 카드(`recordVerdict`)로 남긴다 — 클로드 자리도 codex 도 같다. `say.mjs --verdict` 는 호환용이다. 첫 줄에 판정이 없으면
 말로 남고(`meta.noVerdict`) 사회자가 한 번 더 묻는다.
-**PASS 의 모양.** 판정 지시문은 `bus.verdictInstruction` 하나(클로드 `conductor` · codex/gemini `outside.mjs` 같은 글) —
+**PASS 의 모양**(대표 07:2x "했다 ≠ 완성 퀄리티", 점검-0916 3-9, R31 ⑥⑦): 판정 지시문은 `bus.verdictInstruction` 하나(클로드 `conductor` · codex/gemini `outside.mjs` 같은 글) —
 먼저 **떨어뜨릴 이유 셋**을 대표가 원한 퀄리티에서 찾고 각각 한 줄로 반박한 뒤에만 PASS, 못 열면 첫 줄에 "못 열었다 — 판정 아님". 카드 본문에
 `떨어뜨릴 이유 1~3: … — 반박: …` 줄 셋이 없거나 정형문("빠진 것 0건 · 더해진 것 0건")이면 `recordVerdict` 가 **PASS 를 REVISE 로 되돌린다**
 (`bus.passShapeError`, `meta { shape, said: 'PASS' }`, 반박으로 안 세고 횟수도 안 건드림, 방에 `note`(`meta.verdictShape`)). 흐름은 `meta.shape` 카드를 보면
-실무를 부르지 않고 그 자리에 한 번 더 묻고, 두 번째도 그러면 `abort`(`reason: 'shape'`). 총괄실(제리의 결재 대조)은 안 본다 — 그건 물건 감사가 아니다. 순서는 안 걸음 → (PASS 면) 외부감사 — 안 걸음은 **이 회차의 감사 자리**(`round.json` `auditor` — 아래 "감사 자리")이고, 없으면 `review` 자리(있으면), 그것도 없으면 외부감사만. 둘 다 PASS 면 `note`
+실무를 부르지 않고 그 자리에 한 번 더 묻고, 두 번째도 그러면 `abort`(`reason: 'shape'`). 총괄실(제리의 결재 대조)은 안 본다 — 그건 물건 감사가 아니다. 순서는 안 걸음 → (PASS 면) 외부감사 — 안 걸음은 **이 회차의 감사 자리**(`round.json` `auditor`,
+결정 125 — 아래 "감사 자리")이고, 없으면 `review` 자리(있으면), 그것도 없으면 외부감사만. 둘 다 PASS 면 `note`
 (`meta.verdictFlow: 'pass'`) — 라운드를 닫는 것은 실무나 대표다. `meta.stale` 카드(옛 라운드의 늦은 답)는 흐름에
-세지 않고 계속 기다린다 — 지난 라운드의 PASS 가 이번 완료 note 를 만들면 안 된다.
-**누가 봤나는 기계가 읽는 칸에**: 흐름의 note 마다 `meta: { verdictFlow, steps, skipped, reason }` — `verdictFlow` 는 `start` · `skip`(외부감사 걸음을 건너뜀) ·
+세지 않고 계속 기다린다 — 지난 라운드의 PASS 가 이번 완료 note 를 만들면 안 된다 (레오 감사, 2026-09-13).
+**누가 봤나는 기계가 읽는 칸에**(결정 118 ①): 흐름의 note 마다 `meta: { verdictFlow, steps, skipped, reason }` — `verdictFlow` 는 `start` · `skip`(외부감사 걸음을 건너뜀) ·
 `pass` · `abort` · `timeout` · `auto`, `steps` 는 실제로 물은 자리, `skipped` 는 건너뛴 자리, `reason` 은 `suspended`(중단 — 1절 `suspended`) · `not-foreign`(자리 엔진이 클로드) · `no-seat`.
-**말로 부른 판정은 10분 뒤 서버가 흐름으로 돌린다**: 실무가 흐름 없이 "레오, … 판정 …" 하고 첫머리에 외부감사를 부르면 `called` 차례만 가서
-"재보겠습니다" 로 끝나고 카드가 안 온다. 사회자가 그 말을 `_queue.<방>.verdictAsk { at, by, text, round }` 로 적어 두고(`conductor.asksVerdict` —
+**말로 부른 판정은 10분 뒤 서버가 흐름으로 돌린다**(나리 점검-0916 3-7, R31): 실무가 흐름 없이 "레오, … 판정 …" 하고 첫머리에 외부감사를 부르면 `called` 차례만 가서
+"재보겠습니다" 로 끝나고 카드가 안 온다(마크 89% · 다니엘 100%). 사회자가 그 말을 `_queue.<방>.verdictAsk { at, by, text, round }` 로 적어 두고(`conductor.asksVerdict` —
 "판정" 낱말), `AUTO_VERDICT_MS`(기본 10분, `PPANAM_AUTO_VERDICT_MS`) 안에 외부감사의 `verdict` 카드(stale 아닌 것)도 흐름도 없으면 `auto` note(`meta { verdictFlow:'auto', askedBy, askedAt, waitedMs }`)
 를 남기고 `startVerdict(방, 그 말)` — 판정 대상은 부른 말 그대로(거기 적힌 `out/…` 경로가 닫을 때 산출물 검사에 쓰인다). 카드가 오거나 흐름이 돌면 기록을 비운다. 회차가 닫혔거나 막혔으면 안 돌린다.
 **건너뛸 때는 조용히 빠지지 않는다** — `skip` note 가 방에 남는다("외부 감사 없이 판정합니다 — 레오 중단 중, 9/20 복귀 예정", CLAUDE.md "외부 모델이 연결돼 있지 않으면 작전실에 남긴다").
 흐름은 `state/conductor.json` `_queue.<방>.flow` 에 저장돼 재시작에 살아남고(같은 라운드만), 기다리는 자리가 **호출 상한의 두 배**(기본 10분) 안에 판정을 안 내면
-`timeout` note 와 함께 놓는다.
+`timeout` note 와 함께 놓는다 — 전엔 메모리에만 있고 상한이 없어 `waiting:'outside'` 로 굳고 다음 `/verdict` 가 "이미 돌고 있습니다" 로 거부됐다(09-14 아침 실제).
 
 **일지 — 라운드가 끝날 때 한 문단.** 서버가 라운드를 닫기 전에 이번 라운드에 말한 자리마다 `⟦일지⟧` 턴을 보내 한 문단을 받아
 `teams/<방>/journal/<자리>.md` 맨 위에 붙인다(최신이 위). 대화록에는 남지 않는다. 외부감사는 `outside.mjs --turn journal` 이
 제 일지에 쓴다. 다음 세션이 뜰 때 최근 문단이 인격 뒤에 붙는다(`assemblePrompt`). 세 층 중 자라는 층이 이것이다.
-한 자리라도 못 받으면(시간 초과·빈 답·`(패스)`) `note` 를 남기고 그 자리에게만 한 번 더 묻는다. 두 번째도 못 받으면 `note` 로 밝히고 그대로 닫는다 — 조용히 0 으로 세지 않는다.
-**비용 상한 — 마을 하루 60** (`PPANAM_VILLAGE_PER_DAY`): 일지는 마을 턴이다. 하루는 서울 0시부터. 자리마다 장부에서 하나씩 쓰고, 닿으면 그 자리부터 건너뛴다 — `note` "마을 하루 상한(60회)에 닿아 일지 차례 N건(이름)을 건너뜁니다 …"(`meta.cap { kind:'village', used, cap, skipped }`).
-**건너뛰는 순서는 마을 턴부터**: 마을(제일 값싼 것) > 침묵(위 4) > 호명·판정·대표 지시(상한 없음 — 일은 안 끊는다).
+한 자리라도 못 받으면(시간 초과·빈 답·`(패스)`) `note` 를 남기고 그 자리에게만 한 번 더 묻는다. 두 번째도 못 받으면 `note` 로 밝히고 그대로 닫는다 — 조용히 0 으로 세지 않는다 (M1 인격 이음, 2026-09-13).
+**비용 상한 — 마을 하루 60**(결정 6 · 8단계 ④, `PPANAM_VILLAGE_PER_DAY`): 일지는 마을 턴이다(결정 6 의 "계획 15·마주침 30·일지 15" 중 지금 코드에 있는 것은 일지뿐 — 계획·마주침이 생기면 같은 장부 `bus.takeVillage(what)` 를 쓴다).
+하루는 서울 0시부터(결정 101). 자리마다 장부에서 하나씩 쓰고, 닿으면 그 자리부터 건너뛴다 — `note` "마을 하루 상한(60회)에 닿아 일지 차례 N건(이름)을 건너뜁니다 …"(`meta.cap { kind:'village', used, cap, skipped }`).
+'왕복 3회' 는 결정 120 으로 철회(121). **건너뛰는 순서는 마을 턴부터**: 마을(제일 값싼 것) > 침묵(위 4) > 호명·판정·대표 지시(상한 없음 — 일은 안 끊는다).
 
 외부감사(codex)는 `bus/outside.mjs --turn <종류>` 로 깨운다 — 자기 커서(`state/outside-sessions.json` 의 `lastSeen`)로 못 들은 말을 붙인다.
 **인격은 턴마다 앞에 붙는다** — 클로드 자리가 시스템 프롬프트로 받는 것과 같은 조립(`assemblePrompt(team, 'outside')`: 인격 + 확정 조항 + 일지 + 라운드 브리프). 첫 턴에만 주면 세션이 라운드를 넘기며 압축될 때 인격이 먼저 밀려난다. `--dry` 를 붙이면 codex 를 부르지 않고 그 턴이 받을 입력만 찍는다(기록·커서 이동 없음).
-**엔진이 죽어도 차례가 사라지지 않는다.** 두 겹이다. ⓐ 안쪽 `outside.mjs`(`bus.withRetry`): 엔진 호출이 던지면(kill -9 → `codex SIGKILL 로 죽음` · exit≠0 · 시간 초과)
+**엔진이 죽어도 차례가 사라지지 않는다**(8단계 ① — "codex 를 강제로 죽여도 1회 재시도 후 note + 큐"). 두 겹이다. ⓐ 안쪽 `outside.mjs`(`bus.withRetry`): 엔진 호출이 던지면(kill -9 → `codex SIGKILL 로 죽음` · exit≠0 · 시간 초과)
 `note` "…을 부르지 못했습니다 — <왜>. 한 번 더 부릅니다 (1/2)"(`meta.retry { actor, attempt, of, why }`) 를 남기고 **한 번 더** 부른다 — 이어붙이던 codex 세션은 버리고 새로 조립해서(`PPANAM_OUTSIDE_TRIES`, 기본 2).
 계정 한도는 재시도 없이 쿨다운으로. 두 번째도 실패면 `note` "…을 2번 불러도 답이 없습니다 … 이 차례는 못 냈습니다"(`meta.retry.gaveUp`) 와 **exit 1**. 종료 코드 약속: 0 됨 · 1 엔진 실패(재시도까지 하고 못 냄) · 2 사용법 · 3 일지 없음 · **4 건너뜀**(쿨다운·엔진 없음·대조 거부 — 다시 불러도 같다).
 ⓑ 바깥 사회자(`conductor.outsideFailed`): exit 1 이거나 프로세스 자체가 signal 로 죽었으면 `note` "…이 답을 못 냈습니다 — <왜>. 이 차례(<종류>)를 큐에 남기고 3분 뒤 다시 줍니다 (1/2)"(`meta.outsideRetry { actor, kind, tries, of, notBefore, why }`) —
 `pending` 에 `notBefore` 를 달아 두고 그 시각 전엔 안 준다(`PPANAM_OUTSIDE_RETRY_MS`, 기본 3분). 큐에서 준 것도 못 내면(`PPANAM_OUTSIDE_MAX_TRIES`, 기본 2) `note` "…을 2번 띄워도 답이 없습니다 … 이 차례를 버립니다"(`meta.outsideRetry.gaveUp`) —
 판정 흐름이 그를 기다리던 중이면 흐름도 놓는다(`meta.verdictFlow: 'abort'`, 다시 부르면 된다). exit 4 는 큐에 안 남긴다. 저장(`_queue`)에는 재시도 표시가 안 남아 서버 재시작 뒤엔 처음처럼 바로 준다.
+남들이 깨진 자리를 코드로 막은 것이다 — 작별 인사 20회 루프, 쳇바퀴, 감사 인사 무한 (`docs/cases.md` 1·11·17·20·33).
 
 ## 6. 승인 큐 — 대표가 없어도 팀이 달린다
 
 `state/approvals.jsonl`. 대화록과 같이 **append-only** 다. 요청 한 줄, 판정 한 줄씩 쌓이고
 읽을 때 접는다 (`bus/bus.mjs` 의 `listApprovals()`). 경로는 `bus.approvalsPath()` — `round.mjs check` 만 `PPANAM_APPROVALS_PATH` 로
-임시 방(`teams/_check/approvals.jsonl`) 을 주어 자가 시험의 요청·무효 줄이 진짜 큐에 안 쌓인다.
+임시 방(`teams/_check/approvals.jsonl`) 을 주어 자가 시험의 요청·무효 줄이 진짜 큐에 안 쌓인다(R31 전엔 209줄이 쌓였다, 나리 점검-0916 3-4).
 서버·CLI 는 그 env 를 쓰지 않는다.
 
 | 등급 | 무엇 | 누가 승인 | 대기 중이면 |
 | --- | --- | --- | --- |
 | **A 자동** | 브랜치 안 커밋 · 산출물 쓰기 · 라운드 열고 닫기 · 감사역 부르기 | 실무 혼자 | — |
-| **B 총괄** | 방향 안의 일 — 원격 푸시 · 다음 마일스톤 착수 · 팀 사이 요청(6-1절) · 세션 재시작 · 마일스톤 순서 조정 · 인격 파일 재생성 · 화면 문구 · 브랜딩 글 | **총괄실(hq) 자체 카드만 결정 자리 + 제리 대조**(둘 다 PASS) — 팀 카드(dev·design·marketing·finance)는 **결정 자리 혼자**, 대신 서는 사람 없음(대표 09-16 "제리는 총괄실만"). 결정 자리는 평소 톰(`chief`), **위임 중**(`state/delegation.json` `to:'system'`)엔 나리(`system`) — 톰은 운영·기록·배분만. `bus.needsOf(r, 위임)` 이 `r.team` 으로 가른다 | 결정 자리(·hq 카드면 제리도)가 답할 때까지 |
-| **B 작은** (`--small`, 레코드 `small: true`) | 재시작 · 요청 블록(`--to`) · 문구 한 줄 · 임시 파일 태그 — **실행 대상 없는 B, 팀 사이 요청, 재시작만**(`--push`·`--next`·`--roadmap` 과는 못 씀, C 는 안 됨) | **결정 자리 혼자**(`bus.needsOf` — 제리 대조 생략). 작은 게 아니면 REVISE 로 돌려보내 큰 카드로 | 결정 자리가 답할 때까지 |
+| **B 총괄** | 방향 안의 일 — 원격 푸시 · 다음 마일스톤 착수 · 팀 사이 요청(6-1절) · 세션 재시작 · 마일스톤 순서 조정 · 인격 파일 재생성 · 화면 문구 · 브랜딩 글 | **결정 자리** **+** 제리 대조. **둘 다 PASS**. 결정 자리는 평소 톰(`chief`), **위임 중**(`state/delegation.json` `to:'system'`)엔 나리(`system`) — 대표 09-16 06:5x "대리 판단은 나리 너가 한다. 톰이 하던 기존 방향을 너가 하는걸로 바꿈"; 톰은 운영·기록·배분만. `bus.needsOf(r, 위임)`. 그 팀 감사가 방에서 토론 | 결정 자리·제리가 답할 때까지 |
+| **B 작은** (`--small`, 레코드 `small: true`) | 재시작 · 문구 한 줄 · 임시 파일 태그 — **실행 대상 없는 B 만**(`--push`·`--next`·`--roadmap`·`--to` 와 못 씀, C 는 안 됨) | **결정 자리 혼자**(`bus.needsOf` — 제리 대조 생략, 점검-0916 3-9 "감사 무게 나누기": 밤 99건 중 재시작 15장에도 둘 다 대조). 작은 게 아니면 REVISE 로 돌려보내 큰 카드로 | 결정 자리가 답할 때까지 |
 
 결정 칸은 **하나**다(`bus.sameSlot` — `chief`·`system` 은 같은 칸): 위임 전에 톰이 닫은 카드는 위임 뒤에도 통과 그대로이고(다시 '대기' 로 안 살아남), 톰이 답한 카드에 나리가 또 찍으면
 "이미 판정했습니다", 위임 중 톰의 B 판정은 "지금은 나리가 정합니다" 로 거부, 위임 없이 나리는 "톰이 정합니다" 로 거부. 남은 판정자는 `bus.leftOf` — 재촉(notifier)·자정 마감·CLI 가 같은 셈.
@@ -609,7 +628,9 @@ timebox 에 조건("대표" · "… 뒤")이 있으면 `gated` — **단, 지금
 방 세션이 `--as system` 을 대면 전처럼 "너는 'guide' 다" 로 막힌다 — 위조 방지는 그대로.
 | **C 대표** | 방향만 — 로드맵 목적지 변경 · 컷 리스트 · 비용 상한 · 외부 발송 · 본책 병합 | 대표만 | **큐에 남기고 다음 일감으로.** 관제탑 첫 화면 |
 
-대표는 하루 보고서로 읽는다. 인격 파일(`teams/<팀>/<자리>.md`)의 승인 표 문구는 이 표를 따라 고친다 — 그 파일들을 고치는 것 자체가 B 다.
+등급 문구는 대표 결정 46 (2026-09-13) — "방향만 맞으면 내가 승인하지 않아도 검수자들과의 토론으로 최소한의 승인절차로 진행해".
+대표는 하루 보고서로 읽는다. 전에는 인격 파일 수정과 로드맵 변경 전부가 C 였다 — 방향(목적지·컷)만 남기고 나머지는 B 로 내려왔다.
+인격 파일(`teams/<팀>/<자리>.md`)의 승인 표 문구는 이 표를 따라 고친다 — 그 파일들을 고치는 것 자체가 B 다.
 
 책(에이전틱 코딩 15장) 원칙 5 그대로다 — *아키텍처 결정·보안 변경·통합 지점·최종 검증은 사람.*
 *"이 감독 지점은 병목이 아니라 큰 대가를 치르는 실수를 막는 품질 게이트다."*
@@ -617,16 +638,15 @@ timebox 에 조건("대표" · "… 뒤")이 있으면 `gated` — **단, 지금
 요청과 결과는 요청한 방에 `note` 로도 남는다 (`meta.approval`, `meta.grade`, `meta.status`).
 새 이벤트 타입을 만들지 않는다 — 큐 파일이 진실이고 대화록은 흔적이다.
 
-**흐름.** 실무가 요청 → B 면 총괄실 귀에 들어감(들려주기) → 결정 자리(나리, 위임 없으면 톰)가 결정하고
-— hq 자체 카드면 제리가 대조까지, 팀 카드면 그걸로 끝 → 통과면 요청한 방 귀에 "통과" → 실무 진행.
-C 면 관제탑 카드에 뜨고 대표가 누른다.
+**흐름.** 실무가 요청 → B 면 총괄실 귀에 들어감(들려주기) → 톰이 결정하고 제리가 대조 →
+둘 다 PASS 면 요청한 방 귀에 "통과" → 실무 진행. C 면 관제탑 카드에 뜨고 대표가 누른다.
 
-**다음 마일스톤 착수는 서버가 올린다.** 라운드가 PASS 로 닫히며 그 마일스톤이 `pass` 가 되면
+**다음 마일스톤 착수는 서버가 올린다**(eaca922, 대표 실측 09-14 — 마케팅이 6단계 통과 뒤 여섯 시간 섰다). 라운드가 PASS 로 닫히며 그 마일스톤이 `pass` 가 되면
 `endRound` 가 그 자리에서 `{ type:'milestone', n, title, autoOpen:true }` 행동을 단 **B 요청을 자동으로 올린다**(`by:'guide'`, 같은 요청이 떠 있으면 안 올림) —
 닫힌 방엔 차례가 안 와서 실무가 `--next` 를 걸 수 없는 닫힌 고리 때문이다. 문(톰·제리)은 그대로. 통과하면 `notifier.applyAction` 이 `now` 로 옮기고
 **라운드까지 연다**(`autoOpen` — 누가 먼저 열어 뒀으면 그대로). `bus/approve.mjs --request B --next` 로 손으로 올리는 길도 남아 있다.
 
-**같은 단계면 회차가 닫히자마자 서버가 바로 잇는다.** 라운드가 닫혔는데
+**같은 단계면 회차가 닫히자마자 서버가 바로 잇는다**(나리 실측 09-16 — 세 방이 45~95분씩 서서 손으로 다섯 번 열었다). 라운드가 닫혔는데
 그 마일스톤이 이번에 `pass` 가 된 게 아니면(위 문단과 겹치지 않는다) `endRound` 가 그 자리에서 같은 마일스톤으로 `startRound` 를 바로 부른다 —
 승인 없이, B 문도 없이. 로드맵의 그 마일스톤이 이미 `pass` 면(사람이 정리 작업으로 번호를 지정해 다시 연 것) 열지 않는다 —
 그런 재개는 `--milestone` 을 손으로 준 사람의 몫 그대로다. `end --next`(위 --next 문단)로 부른 쪽이 이미 다음 라운드를 열 참이면
@@ -634,13 +654,14 @@ C 면 관제탑 카드에 뜨고 대표가 누른다.
 
 **무효.** 잘못 들어간 요청은 지우지 않는다. `void` 줄을 한 줄 더 써서 접을 때 빠지게 한다
 (`voidApproval(id, reason)` · `approve.mjs --void` — 총괄실에서만). 대화록과 같은 원칙이다.
+하네스 검증 데이터 6건이 이렇게 무효가 됐다 (2026-09-02).
 
 **누가 말하는지는 인자가 아니라 환경이 정한다.** 클로드 세션의 요청자·판정자는 서버가 넣는
 `PPANAM_TEAM` 으로 정해진다 (총괄실이면 chief, 팀 방이면 guide). **방이 지정되지 않은 셸은
 요청도 판정도 못 한다.** `--as` 가 환경과 다르면 거부된다. codex(제리·레오·다니엘)는 환경이
 없다 — `outside.mjs` 가 자기 `--team` 을 대고 `decideApproval` 을 부르고, **bus 가 그 방을 검사한다**:
 B 의 chief·outside 판정은 `team === 'hq'` 여야 한다. 자리 이름 `outside` 는 방마다 있어서
-이 검사가 없으면 개발팀의 레오가 제리 몫의 대조를 기록할 수 있었다.
+이 검사가 없으면 개발팀의 레오가 제리 몫의 대조를 기록할 수 있었다 (Fable 감사, 2026-09-02).
 대표는 화면(`POST /api/approvals`)으로만 판정한다.
 제리는 codex 샌드박스 안이라 파일을 못 쓴다 — 그녀의 첫 줄 PASS/REVISE 를 `outside.mjs` 가
 그녀 이름으로 큐에 남긴다. 그 프로세스가 곧 그녀다.
@@ -652,27 +673,29 @@ B 의 chief·outside 판정은 `team === 'hq'` 여야 한다. 자리 이름 `out
 
 `action` 은 `approve.mjs --request B --push` 로 요청할 때 그 순간의
 `{ type: 'push', remote: 'origin', branch, sha }` 가 요청 레코드에 박힌 것이다.
-실행자는 **이 값만 믿는다.** 자유 텍스트를 정규식으로 훑어 푸시인지 짐작하지 않는다.
+실행자는 **이 값만 믿는다.** 자유 텍스트를 정규식으로 훑어 푸시인지 짐작하지 않는다 —
+그렇게 하던 첫 판은 레오가 FAIL 냈다 (2026-09-02: `detail` 의 push 도, "푸시하지 마라" 도 걸렸다).
 실행 시점에 HEAD 의 브랜치·SHA 가 승인된 것과 하나라도 다르면 밀지 않고 `executed: 'stale'`
 note 를 내며 "다시 요청하세요" 라고 한다 — 톰·제리는 그 SHA 를 통과시킨 것이지 지금 HEAD 가 아니다.
 같을 때만 `git push origin <sha>:refs/heads/<branch>` 로 **승인된 SHA 를 못 박아** 민다 — 대조와 푸시
-사이에 브랜치가 움직여도 origin 에는 톰·제리가 본 커밋만 간다.
+사이에 브랜치가 움직여도 origin 에는 톰·제리가 본 커밋만 간다 (레오 2차 감사가 재현한 틈).
 총괄실에 들려주는 요청문에도 `대상: origin/<branch> @ <sha8>` 이 실린다. 결과는 요청한 방과 총괄실 둘 다에
 `note` 로 남는다 (`meta.executed`: `pushed` · `push-failed` · `stale` · `invalid` · `unreviewed`).
-**푸시 문 — 외부감사 PASS 뒤에만** (결정 63). 톰·제리는 "올려도 되나" 를 보지 코드를 감사하지
+**푸시 문 — 외부감사 PASS 뒤에만** (대표 결정 63, 2026-09-13 — "외부감사가 왜 있냐"). 톰·제리는 "올려도 되나" 를 보지 코드를 감사하지
 않는다. 그래서 B 푸시는 **레오(그 방의 `outside`) 가 그 커밋을 PASS 한 뒤에만** 걸 수 있다. 순서: 레오 PASS → `--request B --push` → 톰·제리 → 실행자.
 장치: 판정 카드(`verdict`)에 **감사가 본 커밋**을 `meta.sha` 로 박는다 — `outside.mjs` 가 감사를 **시작할 때** HEAD 를 잡아 `recordVerdict` 에
-넘긴다(답이 돌아온 뒤의 HEAD 를 찍으면 감사 도중 들어온 커밋이 안 본 채로 PASS 가 된다). 안 넘기는 경로는 그 순간의
+넘긴다(답이 돌아온 뒤의 HEAD 를 찍으면 감사 도중 들어온 커밋이 안 본 채로 PASS 가 된다 — 레오 REVISE, R22). 안 넘기는 경로는 그 순간의
 `headSha()`(git 이 없으면 null). 요청(`requestApproval`)과
 실행자(`executor.mjs`) 둘 다 `pushGateError(현재 라운드 이벤트, sha)` 를 본다 — 이 라운드의 **마지막** 외부감사 카드(`stale` 아닌 것)가 `PASS` 이고 그
 `meta.sha` 가 미는 SHA 와 같아야 한다. 카드가 없으면 "레오 PASS 뒤에", 마지막이 REVISE 면 "PASS 뒤에", SHA 가 다르면 "PASS 뒤에 커밋했다 —
 다시 감사받으라" 로 거부한다. 라운드가 닫혀 있으면(idle) 카드가 없으니 자연히 거부 — 푸시는 라운드 안에서 건다. 총괄실은 라운드가 없어 B 푸시를
 못 건다(총괄실 코드는 팀 방에서 민다). 실행자는 큐 파일이 손으로도 써지므로 실행 직전에 **요청 레코드의 `round`** 이벤트로 다시 본다 —
 못 열면 밀지 않고 `executed: 'unreviewed'` note.
-`meta.sha` 없는 옛 카드는 문을 못 연다.
+`meta.sha` 없는 옛 카드는 문을 못 연다 — 오늘(09-13) 나간 두 푸시(ce1614c·785c461)는 이 문 전의 것이고 새 가지라 되돌리지 않는다.
 
 **원격 기본 브랜치는 B 로 못 민다** — 메인 병합은 C 다. 어느 브랜치인지는 `bus.mjs` 의 `protectedBranch()` 하나가
-`git symbolic-ref refs/remotes/origin/HEAD` 에서 읽고, 요청(`pushAction`)과 실행자(`invalidAction`) 둘 다 그것을 본다(`main`·`master` 를 박아 두지 않는다 — 기본 브랜치 이름은 저장소마다 다르다).
+`git symbolic-ref refs/remotes/origin/HEAD` 에서 읽고, 요청(`pushAction`)과 실행자(`invalidAction`) 둘 다 그것을 본다.
+`main`·`master` 를 박아 두던 때는 기본 브랜치 이름이 다른 이 저장소에서 아무것도 못 막았다 (대표 결정 9, 2026-09-13).
 origin/HEAD 가 없으면 요청도 실행도 거부한다 — `git remote set-head origin -a`.
 승인 대조(`outside.mjs --ask "… apr_x …"`)는 총괄실 세션(`PPANAM_TEAM=hq`)만 시킬 수 있다. 다른 방도, 환경 없는 셸도
 codex 를 부르기 전에 `note` 로 거부된다.
@@ -684,15 +707,18 @@ codex 를 부르기 전에 `note` 로 거부된다.
 
 **알림은 서버의 일이다** (`server/notifier.mjs`). 폴링 틱마다 큐를 접어 아직 안 알린 것만 알린다 — B 요청은 총괄실 귀에,
 결말(통과·반려·무효)과 실행 결과는 요청한 방 귀에. 알린 것은 `state/notifier.json` 에 남아 재시작해도 두 번 알리지 않는다.
-팀 방은 라운드가 열려 있을 때만 들려주고, 닫혀 있으면 열릴 때 알린다.
+팀 방은 라운드가 열려 있을 때만 들려주고, 닫혀 있으면 열릴 때 알린다. 전에는 알림이 요청·판정한 프로세스의 부수 효과라
+서버가 꺼져 있을 때 올린 요청은 영영 총괄실에 안 닿았고(`apr_d25aaf62`), 제리가 마지막에 판정하면 실무는 통과를 못 들었다.
 
-**카드는 읽고 누를 수 있어야 한다.** 승인/반려 버튼만 있는 카드는 없다. 카드에 펼치는 것:
+**카드는 읽고 누를 수 있어야 한다** (대표 결정 20-2 — "뭐에 대한 승인인지 주제·목적·이유 없이 승인 반려만 있다").
+승인/반려 버튼만 있는 카드는 없다. 카드에 펼치는 것:
 
-- **주제** `what` · **왜·바뀌는 것** `detail` — 줄바꿈 그대로(한 줄로 잘라 요약을 안 보여 준다). 요청자는 `--detail` 에 "왜 · 바뀌는 것" 을 대표 말로 적는다.
-  카드 팝업은 `detail` 을 두 칸으로 편다 — **왜** = 첫 문장 한 줄(`app.js oneLine`, 마침표 없이 160자를
-  넘으면 `…`) · **N이 쓴 원문** = `detail` 전부, 줄이지 않는다. 같은 글이 두 번 찍히지 않게: 원문이 왜 한 줄과
+- **주제** `what` · **왜·바뀌는 것** `detail` — 줄바꿈 그대로(한 줄로 잘라 "옛 M4~M6 픽셀 타일은 컷" 이 `…` 뒤에 숨었다,
+  독립검수 #2). 요청자는 `--detail` 에 "왜 · 바뀌는 것" 을 대표 말로 적는다 (결정 33 의 5줄 규칙과 같은 내용).
+  카드 팝업(헨리 approval 1판-b)은 `detail` 을 두 칸으로 편다 — **왜** = 첫 문장 한 줄(`app.js oneLine`, 마침표 없이 160자를
+  넘으면 `…`) · **N이 쓴 원문** = `detail` 전부, 줄이지 않는다(하영 5판 3-5-1). 같은 글이 두 번 찍히지 않게: 원문이 왜 한 줄과
   같으면 원문 칸을 숨기고, 왜가 주제와 같으면 왜 칸을 숨긴다. `detail` 이 없으면 왜 칸에 "왜 하는지가 안 적혔어요 — 올린 사람에게
-  물어보세요".
+  물어보세요"(하영 196행) — R31 ①, 나리 09-16 새벽.
 - **요청자 원문** — 요청 레코드의 `note` 가 그 방에 남은 요청 `note` 의 이벤트 id 다. 카드의 "방에서 보기" 가 거기로 건너간다.
 - **행동** `action` 을 서버가 읽을 때 `preview` 로 풀어 싣는다 (`bus.approvalPreview`, `GET /api/boot`·`/api/approvals` 만 —
   큐 파일에는 안 쓴다). 종류별로:
@@ -701,28 +727,30 @@ codex 를 부르기 전에 `note` 로 거부된다.
   - `milestone` → `{ n, title, deliverable }` 로드맵에서. 카드: "마일스톤 N 착수 — 제목 · 통과 조건: …".
   - `roadmap` → 제안 파일의 `{ destination, milestones: [{ n, title, status }], cutList }`. 카드에 마일스톤 표와 컷 목록을
     펼친다. 파일을 못 읽으면 `{ error }` — 그대로 보여 준다(모르면서 승인하게 두지 않는다).
-- 폰 폭에서는 등급 칩이 띠가 되고, `.apr__what` 은 전체 폭, `.approvals` 는 40vh 안에서 스크롤(CSS).
-- **산출물** `artifacts` — 그 요청이 가리키는 `out/` 파일들.
+- 폰 폭에서 등급 칩이 띠가 되고 팀 라벨이 밖으로 밀리던 것(독립검수 #8)과 승인이 쌓이면 방 대화가 사라지던 것(#13)은 CSS —
+  `.apr__what` 은 전체 폭, `.approvals` 는 40vh 안에서 스크롤.
+- **산출물** `artifacts` — 그 요청이 가리키는 `out/` 파일들 (대표 결정 36 — "디자인 그림이 없는데 내가 어떻게 승인해").
   서버가 카드를 줄 때 붙인다(`bus.approvalArtifacts`, 큐 파일에는 안 쓴다): 요청의 `files`(`approve.mjs --out a.png,b.md`,
   `teams/<팀>/out/` 기준 상대 경로, 요청 시 있어야 한다) 와 `what`·`detail` 에 적힌 `out/…`·`teams/<팀>/out/…` 경로를 모아
   `[{ team, rel, url, kind, size?, at?, missing? }]`. `kind` 는 `image`(png·jpg·jpeg·gif·webp·svg) · `md` · `text`(txt·json·jsonl·csv) · `file`.
   카드는 목록을 링크로 펼치고, 그림은 카드 안에 그리고, md·text 는 눌러 펼쳐 읽는다. 없는 파일은 "파일이 없습니다" 로 —
   모르면서 승인하게 두지 않는다.
-- **대표 단추** 확인 · 돌려보냄은 C 카드에만, 그리고 **늘 있다** — 대표가 누르는 길은 위임 중에도 안 닫는다. **위임 중**(`boot.delegation`, `notify.delegated`)이고
+- **대표 단추** 확인 · 돌려보냄은 C 카드에만, 그리고 **늘 있다** — 대표가 누르는 길은 위임 중에도 안 닫는다(136 원문 "일단 승인버튼
+  눌렀는데 다음부턴 너가 처리해" · 결정 80 "대표 버튼 답 둘", 톰 apr_e3e08ac8). **위임 중**(`boot.delegation`, `notify.delegated`)이고
   카드가 대리 가능(`proxyable`, 돈·바깥 아님)이면 단추 **위에** **지금은 톰·제리가 정해요 · 직접 누르셔도 돼요** 한 줄(`.apr__proxy`),
-  안내에서 "10분 안 누르시면 …" 줄만 뺀다(바로 대리되므로) — **되돌리시려면 방에 한마디.** 는 남는다. 돈·바깥 C 는 위임 중에도 단추만.
+  안내에서 "10분 안 누르시면 …" 줄만 뺀다(바로 대리되므로) — **되돌리시려면 방에 한마디.** 는 남는다. 돈·바깥 C 는 위임 중에도 단추만. R31 ②, 나리.
 
-**산출물은 화면에서 열린다.** 서버가 `teams/<팀>/out/**` 을 **읽기 전용**으로 `GET·HEAD /out/<팀>/<경로>` 에 내보낸다
+**산출물은 화면에서 열린다** (대표 결정 36). 서버가 `teams/<팀>/out/**` 을 **읽기 전용**으로 `GET·HEAD /out/<팀>/<경로>` 에 내보낸다
 (`bus.outFile` — `..`·숨김 파일·없는 팀은 404, 쓰기 없음, `cache-control: no-cache`; HEAD 는 머리만 — `curl -I` 가 되게). md·txt·jsonl·csv 는 `text/plain` 으로
 그대로 보이고, 그림은 그림으로, 모르는 확장자는 내려받기. 발언(`bubble`)과 승인 카드의 `what`·`detail` 에 적힌 `out/…` 경로는
 링크가 된다 — 팀이 안 적힌 `out/…` 은 그 방의 것, `teams/<팀>/out/…` 은 그 팀의 것. 경로 찾기는 화면·서버·자가 시험이 같은
 `server/public/outlink.js` 를 쓴다. 발언 밑에는 그림·md 미리보기가 최대 6개까지 붙는다(관제탑 카드의 마지막 말에는 안 붙는다).
 
-### 대리 결정 — 대표가 10분 넘게 답이 없으면 톰·제리가 대신 (결정 85)
+### 대리 결정 — 대표가 10분 넘게 답이 없으면 톰·제리가 대신 (대표 결정 85)
 
-**이미 도는 B 길을 그대로 탄다** — 서버(`notifier.mjs`)가
+"내가 10분 이상 반응이 없으면, 대리로 나 대신 톰이랑 제리가 결정하게 해." **이미 도는 B 길을 그대로 탄다** — 서버(`notifier.mjs` (e))가
 틱마다 대표 차례를 보고, 10분 넘게 기다린 것을 총괄실에 `[등급 B]` 승인 요청 "대리 결정 — …" 으로 올린다(`action { type: 'proxy', kind, team, ref }`).
-톰 결정 + 제리 대조 **둘 다 PASS** 여야 실행된다(하나라도 반대면 대표를 기다린다 — 반려된 대리 요청은 다시 올리지 않는다).
+톰 결정 + 제리 대조 **둘 다 PASS** 여야 실행된다(① 하나라도 반대면 대표를 기다린다 — 반려된 대리 요청은 다시 올리지 않는다).
 
 | `kind` | 언제 | 통과하면 서버가 |
 | --- | --- | --- |
@@ -731,11 +759,11 @@ codex 를 부르기 전에 `note` 로 거부된다.
 | `answer` | 대표에게 결정을 청한 말(`bossCall`)이 10분 넘게 답 없음 | 그 방에 note "대리 결정 — 톰·제리: <톰의 이유>"(`meta.proxyAnswer: <그 말 id>`) — 요약·개인 카드의 `bossCall` 은 이 note 로 답한 것으로 본다 |
 
 10분은 **둘 다** 여야 한다 — 그 일이 10분 넘게 기다렸고, 대표가 어느 방에서도 10분 넘게 말이 없었다(`bossQuietFor`).
-**위임 스위치**(결정 136): `state/delegation.json` `{ to, until, decision }` 이 있고 지금이 `until` 안이면 **C 카드는 기다리지 않는다** — 10분·대표 조용 조건 없이 바로 총괄실 B "대리 결정 — …" 으로(`proxyCandidates` 의 `immediate`, 순수 판별은 `delegationActive`). 대리 요청 detail 과 판정 note·이유에 " — 대리, 나리 위임 136" 이 붙는다(`delegationTag`). 돈·바깥·`.claude`(`proxyForbidden`)는 위임 중에도 대표만. `until` 이 지나면 파일이 있어도 평소대로. 방의 물음(`answer`)·FAIL 풀기(`unblock`)는 위임 중에도 10분 규칙 그대로(나리가 정한 건 C 카드뿐). 화면은 `boot.delegation` 으로 받아 종 배지가 위임 중엔 돈·바깥만 센다(3절 알림 패널 `mine`). 같은 일에 대리 요청은 한 번(`state/notifier.json`
-`proxied[열쇠]`). 방에는 늘 "대리 결정" 이라는 말이 남는다. `teams/hq/out/proxy-decisions.md` 맨 위에 그날 대리 결정을 한 줄씩 적는다 —
-자정 보고서가 "대표님 대신 정한 것" 절로 맨 위에 싣는다, 대표가 아침에 보고 뒤집을 수 있게. **돈이 나가는 것과 바깥으로 나가는 것은 대리 대상이
-아니다, `.claude` 밑도** — `proxyForbidden(text)`: 비용·상한·결제·돈·유료·외부·발송·메일·공개·병합·`.claude` 가 있으면 안 올린다(`.claude` 는 경로 글자로만, "클로드"·"훅" 낱말은 안 걸린다). C 승인은 **`what` 만**(`proxyEligible` — `detail` 은 요청자의 설명 글이라 안 훑는다. `action.type` 이 `cost`·`send`·`merge` 도 제외),
-방의 물음(`answer`)은 **그 말 자체**로 — "유료 결제를 허용해 주세요" 를 질문 경로로 대리하면 금지선을 우회한다. 그건 대표만.
+**위임 스위치**(결정 136 — 대표 09-15 "12시간 맡긴다" · "다음부턴 너가 처리해"): `state/delegation.json` `{ to, until, decision }` 이 있고 지금이 `until` 안이면 **C 카드는 기다리지 않는다** — 10분·대표 조용 조건 없이 바로 총괄실 B "대리 결정 — …" 으로(`proxyCandidates` 의 `immediate`, 순수 판별은 `delegationActive`). 대리 요청 detail 과 판정 note·이유에 " — 대리, 나리 위임 136" 이 붙는다(`delegationTag`). 돈·바깥·`.claude`(`proxyForbidden`)는 위임 중에도 대표만. `until` 이 지나면 파일이 있어도 평소대로. 방의 물음(`answer`)·FAIL 풀기(`unblock`)는 위임 중에도 10분 규칙 그대로(나리가 정한 건 C 카드뿐). 화면은 `boot.delegation` 으로 받아 종 배지가 위임 중엔 돈·바깥만 센다(3절 알림 패널 `mine`, 나리 결정 ②). 같은 일에 대리 요청은 한 번(`state/notifier.json`
+`proxied[열쇠]`). ② 방에는 늘 "대리 결정" 이라는 말이 남는다. ③ `teams/hq/out/proxy-decisions.md` 맨 위에 그날 대리 결정을 한 줄씩 적는다 —
+자정 보고서(M7)가 "대표님 대신 정한 것" 절로 맨 위에 싣는다, 대표가 아침에 보고 뒤집을 수 있게. ④ **돈이 나가는 것과 바깥으로 나가는 것은 대리 대상이
+아니다, `.claude` 밑도** — `proxyForbidden(text)`: 비용·상한·결제·돈·유료·외부·발송·메일·공개·병합·`.claude` 가 있으면 안 올린다(`.claude` 는 결정 136 원문 "돈·바깥·.claude 는 대표만" 의 셋째 — 경로 글자로만, "클로드"·"훅" 낱말은 안 걸린다. 제리 REVISE apr_4fb49ab6). C 승인은 **`what` 만**(`proxyEligible` — `detail` 은 요청자의 설명 글이라 안 훑는다: "돈·바깥이 아니라 대리 대상" 이라 적은 로드맵 카드가 '돈' 에 걸려 빠졌다, 톰 09-15 apr_1bf1b266. 설명에 숨긴 부탁은 톰·제리가 대리 판정하며 읽는다. `action.type` 이 `cost`·`send`·`merge` 도 제외),
+방의 물음(`answer`)은 **그 말 자체**로 — "유료 결제를 허용해 주세요" 를 질문 경로로 대리하면 금지선을 우회한다(레오 R23). 그건 대표만.
 빠진 것도 조용히 사라지지 않는다 — 10분 넘게 기다린 것이면 총괄실에 note "대리로 정하지 않습니다 — 돈·바깥이라 대표만" 을 한 번 남긴다(`proxied[열쇠].excluded`).
 
 ## 6-1. 요청 블록 — 팀이 팀에게 직접 (대표 결정 45 ①·49·51·47)
@@ -778,7 +806,7 @@ codex 를 부르기 전에 `note` 로 거부된다.
 `what` · `why` · `due` · `goal` · 스레드 최근 3줄(누르면 전체) · 산출물(`done` 의 `out/…`, 6절 `artifacts` 와 같은 모양). 대표는 카드에서 안 누른다 —
 대표 자리는 없다(결정 46 — 방향 안의 일은 B+토론). 데이터는 `GET /api/requests[?team=]` (접은 블록 목록, 최근 순) 과 `summaries[팀].requests`
 (`{ open, closed }` 두 수 — 그 팀이 요청했거나 받은 것). 관제탑 `전체` 의 "요청 진행 / 완료" 타일은 다섯 방 합이 아니라 블록 수다(한 블록이 두 방에 걸친다).
-하루 보고서에 "요청 N건 · 완료 M건" 은 이 수다.
+하루 보고서(M6)에 "요청 N건 · 완료 M건" 은 이 수다.
 
 **팀원·인물 추가 요청도 같은 길이다** (결정 45 ①). `--to marketing "인물 하나 — 개발팀 새 자리 '기록' 의 인물사전"` 처럼. 인물의 배정은 마케팅
 방의 일이고, 인격 파일 생성은 여전히 B(결정 46 ①) — 블록은 요청과 대화를 나르지 권한을 바꾸지 않는다.
@@ -828,15 +856,16 @@ codex 를 부르기 전에 `note` 로 거부된다.
 회차가 닫히면 비워진다 — 다음 회차에 다시 정한다.
 
 **판정 카드를 낼 수 있는 자리**(`bus.verdictSeats(team, state)`): `outside` · `review`(자리가 있으면) · `auditor`. 그 밖의 자리가 낸 판정은 `recordVerdict` 가
-거부한다 — 훅은 그 답을 "[PASS — 판정으로 세지 않음: …]" 말로 남기고, `say.mjs --verdict` 도 같은 문에서 막힌다.
+거부한다 — 훅은 그 답을 "[PASS — 판정으로 세지 않음: …]" 말로 남기고, `say.mjs --verdict` 도 같은 문에서 막힌다. 전엔 `say.mjs` 가 `review` 만 받아
+`review` 자리가 없는 방(개발·디자인)은 안 걸음이 아예 없었다.
 
 만든 사람이 판정하지 않는다는 규칙은 그대로다 — 감사 자리도 **자기가 고친 파일은 못 본다**(아래 닫는 조건 6). 그래서 같은 파일을 둘이 잡지 않는다.
 
 막힌 방은 **대표가 그 방에 말하면 풀린다** — 입력창은 대표의 것이고 그 말이 곧 판단이다. 서버가 `/api/say` 에서
 `resumeRound` 를 불러 `running`·반박 0 으로 되돌리고 `note`(`meta.resumed`)를 남긴다. 들려주기(quiet)는 풀지 않는다.
 풀린 뒤에야 "라운드 닫기". 총괄실은 라운드가 없어 막히지 않는다 — 거기서 FAIL 은 한 마디일 뿐이다.
-`needsBoss` 는 마지막 판정이 아니라 상태다. 셋 중 하나면
-참이고 `needsBossWhy` 에 이유가 실린다: `blocked` · `attempts`(열린 라운드의 반박이 상한) ·
+`needsBoss` 는 마지막 판정이 아니라 상태다 (전에는 FAIL 뒤 PASS 가 오면 경고가 꺼졌다 — 개발팀 09-02). 셋 중 하나면
+참이고 `needsBossWhy` 에 이유가 실린다 (G-UX, 2026-09-13): `blocked` · `attempts`(열린 라운드의 반박이 상한) ·
 `silent`(열린 라운드에서 하루 넘게 message·verdict 가 없음 — `lastSpokeAt`).
 
 ### 라운드를 PASS 로 닫는 조건
@@ -846,25 +875,27 @@ codex 를 부르기 전에 `note` 로 거부된다.
 1. 이 라운드에 `stale` 아닌 판정 카드가 있다.
 2. 그중 마지막 카드가 `PASS` 다. 마지막이 `REVISE`·`FAIL` 이면 거부.
 3. 그 카드 뒤에 사회자의 판정 완료 `note`(`meta.verdictFlow: 'pass'`)가 있다 — 판정은 `/verdict` 흐름으로 받는다.
-4. **카드의 자리를 본다**(결정 118 ②) — 외부감사 자리가 다른 회사 엔진이고 중단(`suspended`)이 아니면 **그의 PASS 카드**가 있어야 한다. 중단이면 없이 닫히되 기록에 남는다(아래).
-5. **산출물이 비어 있지 않다**(부분 성공이 통과로 위장되지 않는다). 판정은 PASS 인데 물건이 없는 라운드를 막는다. `bus.artifactsOf` 가
+4. **카드의 자리를 본다**(결정 118 ②) — 외부감사 자리가 다른 회사 엔진이고 중단(`suspended`)이 아니면 **그의 PASS 카드**가 있어야 한다. 전엔 안 봐서
+   review 자리가 있는 방은 내부감사 클로드 혼자 단계를 넘길 수 있었다. 중단이면 없이 닫히되 기록에 남는다(아래).
+5. **산출물이 비어 있지 않다**(8단계 실패 수습 — "부분 성공이 통과로 위장되지 않는다"). 판정은 PASS 인데 물건이 없는 라운드를 막는다. `bus.artifactsOf` 가
    둘을 모은다 — ⓐ 판정 시작 `note` 의 `meta.target`(판정 대상 글)에 적힌 `out/…` 경로(확장자 있는 것만 · `teams/<팀>/out/…` 도 그 방 것으로) ⓑ 이 라운드의
    도구 줄(`type: tool`, `meta.tool` 이 `Edit`·`Write`·`NotebookEdit`)이 `teams/<팀>/out/` 밑에 쓴 파일. 모은 경로마다 **있고 0바이트가 아니어야** 한다 —
    하나라도 없거나 비었으면 거부(`산출물이 비었습니다 — …`), 하나도 안 모이면 거부(`이 라운드의 산출물이 없습니다`). 판정 대상 글의 줄임말 경로
    (`shots/a/b-412.png` 처럼 하나로 셋을 뜻하는 것)는 실제 경로로 적는다 — 거부되면 그 경로가 메시지에 나온다. `teams/<팀>/out/` 밖 경로(코드·docs)는 안 센다.
-6. **마지막 카드의 자리가 자기 것을 통과시킨 게 아니다**(만든 사람이 자기 걸 통과시키는 것 막기 + 결정 125). 이 라운드의 도구 줄에서
+6. **마지막 카드의 자리가 자기 것을 통과시킨 게 아니다**(대표 지시 R25 "만든 사람이 자기 걸 통과시키는 것 막기" + 결정 125). 이 라운드의 도구 줄에서
    자리마다 고친 파일을 모은다(`bus.editsOf` — `Edit`·`Write`·`NotebookEdit` 의 경로, 체크아웃 접두는 뗀다). 마지막 PASS 카드의 자리 A 가 파일을 고쳤으면 —
    ⓐ 그 파일을 다른 자리도 고쳤으면 거부(`같은 파일을 고쳤습니다` — 같은 파일은 둘 다 못 본다) ⓑ 아니면 A 가 고친 것을 본 **다른 자리의 PASS 카드**
    (A 와 파일이 안 겹치는 자리 — 외부감사는 늘)가 있어야 한다. 없으면 거부(`만든 사람이 판정하지 않습니다`). 다른(안 고친) 자리가 그 뒤에 새 PASS 를
-   내면 그게 마지막 카드가 되어 스스로 풀린다.
+   내면 그게 마지막 카드가 되어 스스로 풀린다. 전엔 A 가 무엇이든 고쳤으면 거부라 둘이 나란히 일하며 서로 보는 것(125)이 불가능했다.
 
 거부되면 방에 `note`(`meta.endRefused`)가 남고 서버는 `409 { refused: true }` 를 돌려준다. 서버는 닫기를 미루기(202) 전에
-먼저 본다. 통과한 `PASS` 는 로드맵의 그 마일스톤을 `pass` 로 옮긴다. `rounds.jsonl` 은 고치지 않는다.
+먼저 본다. 통과한 `PASS` 는 로드맵의 그 마일스톤을 `pass` 로 옮긴다 — R3·R6·R8 의 "마일스톤 1 통과"(2026-09-12)는
+이 조건이 없던 때 카드 없이, 또는 REVISE 카드 뒤에 찍힌 것이다. `rounds.jsonl` 은 고치지 않는다.
 **누가 봤나가 기록에 남는다**(결정 118 ①): `milestone` 이벤트 `meta` 와 `rounds.jsonl` 행에 `auditors: [{ actor, verdict, sha, engine, ts }]`(이 라운드의 stale 아닌 카드,
 자리당 마지막 하나 — `bus.auditorsOf`) · `outsideAudited: true|false` · 없으면 `outsideWhy`(`suspended` · `not-foreign` · `no-seat` · `no-card`). 판정 카드 `meta.engine` 은
-답한 엔진(`codex · gpt-5.1` · `gemini · …` · `claude`). 라운드당 한 줄이라 "외부 감사 없이 통과한 단계" 를 한 번에 뽑는다.
-**무엇을 냈나도 남는다**: 같은 두 자리에 `artifacts: [{ path, bytes }]` — 조건 5 가 본 파일들(방 기준 상대 경로 `out/…`). 판정 시작 `note` 는 `meta.target` 에
-판정 대상 글을 그대로 싣는다.
+답한 엔진(`codex · gpt-5.1` · `gemini · …` · `claude`). 라운드당 한 줄이라 "외부 감사 없이 통과한 단계" 를 한 번에 뽑는다 — 20일에 codex 가 돌아오면 그것만 다시 본다.
+**무엇을 냈나도 남는다**(8단계): 같은 두 자리에 `artifacts: [{ path, bytes }]` — 조건 5 가 본 파일들(방 기준 상대 경로 `out/…`). 판정 시작 `note` 는 `meta.target` 에
+판정 대상 글을 그대로 싣는다(전엔 `text` 에만 섞여 있었다).
 
 ### 라운드를 닫는 정본은 서버다
 
@@ -875,19 +906,22 @@ codex 를 부르기 전에 `note` 로 거부된다.
   훅에서 버려진다 — `round.json` 이 이미 idle 이라서. 실무의 마무리 보고는 그 라운드의 것이다.
 - **닫은 뒤 그 방의 세션 컨텍스트를 비우는 것은 서버만 할 수 있다** (`session.reset`). CLI 로 닫으면 세션 id 가 남아
   다음 라운드가 지난 컨텍스트를 안고 떴다.
-- **받았다고 바로 답하고 뒤에서 닫는다** (`202 { accepted: true }`, 결정 26). 일지는 자리당 최대 3분이라 응답을 기다리지 않는다 —
+- **받았다고 바로 답하고 뒤에서 닫는다** (`202 { accepted: true }`, 결정 26). 일지는 자리당 최대 3분이라 응답을 기다리게
+  하면 CLI 가 5초 만에 "서버 없음" 으로 보고 직접 닫았고, 서버는 뒤늦게 "라운드 없음" 으로 던져 비우기를 건너뛰었다(R13).
   끝나면 `note` "라운드 N 닫힘 — 일지 K편" (`meta.closed`). CLI 는 연결 거부(ECONNREFUSED)일 때만 직접 닫고, 시간 초과에는
   직접 닫지 않는다. 닫는 중에 또 닫으면 `409`.
 
 **닫으면서 다음 라운드를 이어 연다** (결정 25) — `round.mjs end --next [--milestone N] [--topic …]` → `{ action:'end', next: { milestone, topic } }`.
-서버가 닫기(일지 → 닫기 → 비우기)를 끝낸 **그 자리에서** `startRound` 를 부른다 — 미룬 닫기(`deferred`)도 같다. 마일스톤은 지정하지 않으면 로드맵의 `now`(같은 마일스톤을
+서버가 닫기(일지 → 닫기 → 비우기)를 끝낸 **그 자리에서** `startRound` 를 부른다 — 미룬 닫기(`deferred`)도 같다. 마케팅 R22 가
+로드맵 교체 뒤 스스로 닫히고 다음 라운드를 여는 손이 없어 방이 멈춘 일. 마일스톤은 지정하지 않으면 로드맵의 `now`(같은 마일스톤을
 잇는다) — `PASS` 로 닫아 `now` 가 없어졌으면 `startRound` 가 거부하고(다음 착수는 B) 서버는 `note` "닫았지만 다음 라운드를 열지
 못했습니다 — …" 로 남긴다. 실무가 혼자 다음 마일스톤을 당겨오는 길은 아니다. 응답은 `{ accepted, round, next: true }`.
 
 **닫히는 중 버려지는 차례는 다음 라운드 첫 턴으로 넘어간다** (결정 25, 5-1절 6 문) — 사회자가 `pending` 을 `carry` 로 옮기고
 `note` "차례 N건(이름)을 다음 라운드 첫 턴에 넘깁니다", 다음 라운드가 열리면 그 자리에 `carried` 턴을 준다. 이 턴의 들려주기는
 **닫힌 라운드의 못 들은 말부터** 잇는다(커서 뒤, 라운드 경계를 넘어) — 세션은 비워졌으니 무엇에 답하는지 귀에 있어야 한다.
-닫힌 라운드의 호명이 `round_end`·`round_start` 와 **한 폴링에** 오면 그것도 새 라운드의 보통 호명이 아니라 넘어온 차례다(`staleCalls`) — 보통 호명으로 주면 들려주기가 새 라운드만 읽어 그 말을 못 듣는다.
+닫힌 라운드의 호명이 `round_end`·`round_start` 와 **한 폴링에** 오면 그것도 새 라운드의 보통 호명이 아니라 넘어온 차례다(`staleCalls`,
+레오 REVISE R23) — 보통 호명으로 주면 들려주기가 새 라운드만 읽어 그 말을 못 듣는다.
 서버가 그 사이 재시작하면 넘길 것도 사라진다 — `note` 가 무엇이 넘어가려 했는지의 기록이다.
 
 열린 라운드 위에 또 열지 않고(`startRound` 거부), 닫힌 라운드를 또 닫지 않는다(`endRound` 는 `phase` 를 본다).
@@ -923,10 +957,10 @@ codex 를 부르기 전에 `note` 로 거부된다.
 
 작전실·관제탑·분석 옆 네 번째 화면. 도트 마을에서 캐릭터가 자리에 앉아 있고, 발언이 말풍선으로 뜬다.
 
-**탭은 대표 화면에서 숨긴다** — 오류가 많아 대표가 보면 안 된다. `index.html` 의 마을 단추는 `hidden`, 설정 탭 맨 아래 "숨김 화면 — 마을" 링크나 주소 `#팀/world` 로 열면 그때부터 보인다(`app.js setView`). 화면 자체·소켓·`tools/screen-shot.mjs` 의 `world` 는 그대로다.
+**탭은 대표 화면에서 숨긴다**(대표 09-16 07:2x '마을은 최최최최후', 나리 R32) — 오류가 많아 대표가 보면 안 된다. `index.html` 의 마을 단추는 `hidden`, 설정 탭 맨 아래 "숨김 화면 — 마을" 링크나 주소 `#팀/world` 로 열면 그때부터 보인다(`app.js setView`). 화면 자체·소켓·`tools/screen-shot.mjs` 의 `world` 는 그대로다.
 
 **원칙 하나. 마을은 대화록의 시각화다.** 캐릭터가 어디 있고 무엇을 하는지는 기록된 사건과 지도의 자리 표에서만 나온다.
-LLM 이 좌표나 행동을 정하는 채널은 없다. 그래서 비용이 0 이고 어긋날 수 없다.
+LLM 이 좌표나 행동을 정하는 채널은 없다 (Project Sid 의 "말과 행동 불일치" — `docs/cases.md` 22). 그래서 비용이 0 이고 어긋날 수 없다.
 사람인 대표만 예외다 — 방향키로 움직이고, 옆 사람에게 Enter 로 말을 건다. 그 말은 작전실과 같은 `/api/say` 로 간다.
 
 | 것 | 어디 | 무엇 |
@@ -942,7 +976,7 @@ LLM 이 좌표나 행동을 정하는 채널은 없다. 그래서 비용이 0 �
 
 | 사건 | 연출 |
 | --- | --- |
-| `message` (자리) | 화자 위 말풍선 — 만화처럼 **조각으로**: `speech.js splitSpeech` 가 줄바꿈·문장 끝에서 자르고 짧은 문장은 60자 안에서 붙여, 2.4초마다 하나씩 띄운다. 한 사람에 최대 셋(오래된 것부터 진다), 조각은 여섯까지 — 넘치면 마지막에 `…`, 전문은 ↗ 작전실. 누르면 좀 더 머문다. 같은 말이 1분 안에 또 오면(원문 배달로 세 방에 같이 기록) 한 번만. 첫머리에 이름을 불렀으면 그 사람을 바라본다 |
+| `message` (자리) | 화자 위 말풍선 — 만화처럼 **조각으로**(대표 원문 R25 "박스를 여러개로"): `speech.js splitSpeech` 가 줄바꿈·문장 끝에서 자르고 짧은 문장은 60자 안에서 붙여, 2.4초마다 하나씩 띄운다. 한 사람에 최대 셋(오래된 것부터 진다), 조각은 여섯까지 — 넘치면 마지막에 `…`, 전문은 ↗ 작전실. 누르면 좀 더 머문다. 같은 말이 1분 안에 또 오면(원문 배달로 세 방에 같이 기록) 한 번만. 첫머리에 이름을 불렀으면 그 사람을 바라본다 |
 | `message` (boss) | 댄이 그 방 문(총괄실은 대표실 문)에 나타나 말한다. 댄이 직접 움직이는 중이면 그 자리에서. 조각 규칙은 같다 |
 | `message` (마을에서 댄이 Enter 로 말 건 사람의 답) | 그 사람이 댄 옆까지 걸어와 마주 보고 말한다 |
 | `message` (system) · `note` | 방 위에 띠 |
