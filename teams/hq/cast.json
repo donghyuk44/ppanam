@@ -16,7 +16,8 @@
       "does": "원문과 배분을 맞춰본다",
       "model": "gemini",
       "geminiModel": "gemini-3.6-flash",
-      "effort": "low"
+      "effort": "low",
+      "fallback": "gpt"
     },
     "secretary": {
       "name": "세라",

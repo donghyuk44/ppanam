@@ -31,7 +31,8 @@
       "title": "외부 감사",
       "does": "기술감사 · 외부 시각",
       "model": "gemini",
-      "geminiModel": "gemini-3.6-flash"
+      "geminiModel": "gemini-3.6-flash",
+      "fallback": "gpt"
     },
     "boss": {
       "name": "함동혁(댄)",

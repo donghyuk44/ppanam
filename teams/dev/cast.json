@@ -24,7 +24,8 @@
       "title": "외부 감사",
       "does": "실제로 돌려본다",
       "model": "gemini",
-      "geminiModel": "gemini-3.6-flash"
+      "geminiModel": "gemini-3.6-flash",
+      "fallback": "gpt"
     },
     "boss": {
       "name": "함동혁(댄)",
