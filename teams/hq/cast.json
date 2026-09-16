@@ -23,7 +23,7 @@
       "color": "#2f6f8f",
       "title": "비서",
       "does": "대표에게 가는 말을 골라 대표 말로 바꿔 전한다",
-      "model": "claude"
+      "model": null
     },
     "boss": {
       "name": "함동혁(댄)",
