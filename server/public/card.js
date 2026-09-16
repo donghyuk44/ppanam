@@ -29,7 +29,7 @@ import { bossOk, NOT_YET } from '/bosswords.js';
 /* ── 글자 — card-words.md 2판 머리 ── */
 
 const STATE_WORD = { working: '진행 중', blocked: '차단됨', boss: '승인 대기' };
-const BLOCK_WORD = { doing: '진행 중', next: '다음', later: '예정', done: '된 것', blocked: '막힌 것', boss: '승인 대기' };   // 진행 중·다음·예정 — 대표 원문(나리 16:2x)
+const BLOCK_WORD = { doing: '진행 중', now: '지금', next: '다음', later: '그 뒤', done: '된 것', blocked: '막힌 것', boss: '승인 대기' };   // 세 줄 머리는 하영 사전 "지금 · 다음 · 그 뒤"(카드 apr_b676e5c2 제리 ② 대조, 나리 16:3x) — 알약 '진행 중' 은 상태, 이 셋은 일
 const VERDICT_WORD = { PASS: '승인', REVISE: '반려', FAIL: '보류' };
 const BTN = { PASS: '승인', REVISE: '반려' };
 const MORE = '자세히 →';
@@ -145,10 +145,10 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
   const t = timeNode(d.at); if (t) head.appendChild(t);
   card.appendChild(head);
 
-  // 진행 중 · 다음 · 예정 — 팀별 세 줄(대표 15:1x "팀별로 지금 하는 것·다음·그 뒤를 볼 수가 없다", 머리 글자는 대표 원문 "진행 중 · 다음 · 예정" — 나리 16:2x).
-  // 재료는 하영 팀별-세줄.md(팀장이 맞다고 한 글자가 정본, d.three) — 있으면 그 줄이 '진행 중' 이고 없으면 상황판 doing. 자에 안 맞는 줄은 안 그린다(지어 쓰지 않는다)
+  // 지금 · 다음 · 그 뒤 — 팀별 세 줄(대표 15:1x "팀별로 지금 하는 것·다음·그 뒤를 볼 수가 없다"; 머리 글자는 하영 사전 그대로, 나리 16:3x — 글자는 하영 몫).
+  // 재료는 하영 팀별-세줄.md(팀장이 맞다고 한 글자가 정본, d.three) — 있으면 그 줄이 '지금' 이고 없으면 상황판 doing 을 '진행 중' 으로. 자에 안 맞는 줄은 안 그린다(지어 쓰지 않는다)
   const three = d.three ?? {};
-  if (three.now && bossOk(three.now)) card.appendChild(block('doing', [el('span', 'card__text', three.now)]));
+  if (three.now && bossOk(three.now)) card.appendChild(block('now', [el('span', 'card__text', three.now)]));
   else if (d.doing?.text) card.appendChild(block('doing', [personLine(d.doing.who, said(d.doing.text))]));
   if (three.next && bossOk(three.next)) card.appendChild(block('next', [el('span', 'card__text', three.next)]));
   if (three.later && bossOk(three.later)) card.appendChild(block('later', [el('span', 'card__text', three.later)]));
