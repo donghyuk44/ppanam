@@ -1098,24 +1098,81 @@ $('composerNl').addEventListener('click', () => {
   fitInput(); input.focus();
 });
 
-// 그림 올리기 (결정 130 ② — 대표가 방에 그림을 올릴 수 있어야 한다). 버튼이 숨은 file input 을 누르고, 고르면 바로 올린다.
-$('uploadBtn').addEventListener('click', () => $('uploadFile').click());
-$('uploadFile').addEventListener('change', async () => {
-  const f = $('uploadFile').files?.[0];
-  $('uploadFile').value = '';   // 같은 파일 다시 골라도 change 가 나게
+// 그림 올리기 (결정 130 ② — 대표가 방에 그림을 올릴 수 있어야 한다). 버튼 · 끌어다 놓기 · 붙여넣기 셋이 같은 길(C17, 대표 09-16 11:07 "채팅창에 바로 이미지 드랍해서 첨부하는 것").
+// 올리는 동안 입력창 위에 미리보기 한 장 — 올라가면 방에 말풍선으로 뜬다(서버).
+async function uploadImage(f) {
   if (!f || !active) return;
+  if (!/^image\/(png|jpe?g|gif|webp)$/.test(f.type)) return say('이미지 파일만 — png·jpg·gif·webp');
+  const box = $('composerMsg');
+  const pv = el('div', 'composer__pv'); const img = el('img'); img.alt = f.name || '그림'; img.src = URL.createObjectURL(f); pv.appendChild(img); pv.appendChild(el('span', null, '업로드 중'));
+  box.replaceChildren(pv); box.hidden = false;
   const data = await new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(r.result);
     r.onerror = () => reject(r.error);
     r.readAsDataURL(f);
   }).catch(() => null);
-  if (!data) return say('이미지 로딩 실패');
-  say('업로드 중', 0);
+  if (!data) { URL.revokeObjectURL(img.src); return say('이미지 로딩 실패'); }
   const r = await post('/api/upload', { team: active, mime: f.type, data }).catch(() => null);
+  URL.revokeObjectURL(img.src);
   if (!r?.ok) return say(r?.data?.error ?? '이미지 업로드 실패');
   say('업로드 완료');
+}
+$('uploadBtn').addEventListener('click', () => $('uploadFile').click());
+$('uploadFile').addEventListener('change', () => { const f = $('uploadFile').files?.[0]; $('uploadFile').value = ''; uploadImage(f); });   // 같은 파일 다시 골라도 change 가 나게
+// 끌어다 놓기 — 대화 창·입력창 어디든. 붙여넣기 — 클립보드의 그림(스크린샷 Cmd+V).
+for (const zone of [$('feed'), $('composer')]) {
+  zone.addEventListener('dragover', (e) => { if ([...(e.dataTransfer?.types ?? [])].includes('Files')) { e.preventDefault(); app.dataset.drop = '1'; } });
+  zone.addEventListener('dragleave', () => { app.dataset.drop = '0'; });
+  zone.addEventListener('drop', (e) => { const f = e.dataTransfer?.files?.[0]; if (!f) return; e.preventDefault(); app.dataset.drop = '0'; uploadImage(f); });
+}
+input.addEventListener('paste', (e) => {
+  const item = [...(e.clipboardData?.items ?? [])].find((it) => it.kind === 'file' && /^image\//.test(it.type));
+  if (!item) return;
+  e.preventDefault(); uploadImage(item.getAsFile());
 });
+
+/* ── / 명령 (C13 — 대표 09-16 그림: 입력창 "/ 입력 시 명령어" 자리, 오르카 모양·구조 참고만). "/" 를 치면 명령 목록이 뜨고 고르면 그대로 실행.
+ * 이름은 하영이 사전 낱말로 정한다 — 그때 이 표의 글자만 바꾼다. 아직 길이 없는 것(사진·검색)은 목록에 두되 '준비 중'. ── */
+const SLASH_COMMANDS = [
+  { id: 'open', name: '회차 시작', hint: '이 방에 새 회차를 연다', run: () => { input.value = ''; fitInput(); showOpen(true, {}); } },
+  { id: 'close', name: '회차 종료', hint: '이번 회차를 닫는다 — 판정·일지', run: () => { input.value = ''; fitInput(); $('roundBtn').click(); } },
+  { id: 'verdict', name: '판정 부르기', hint: '외부 감사에게 이번 산출물 판정을 청한다', run: () => { const o = Object.entries(cast.agents ?? {}).find(([id]) => id === 'outside')?.[1]; input.value = `${o?.name ?? '레오'}, 판정 부탁해요 — `; fitInput(); input.focus(); input.selectionStart = input.selectionEnd = input.value.length; } },
+  { id: 'mention', name: '부르기', hint: '이 방 사람을 @ 로 부른다', run: () => { input.value = '@'; fitInput(); input.focus(); input.selectionStart = input.selectionEnd = 1; renderMentionPop(); } },
+  { id: 'shot', name: '사진', hint: '준비 중 — 화면 사진은 아직 나리 손', disabled: true },
+  { id: 'search', name: '검색', hint: '준비 중 — 대화 검색은 아직 없다', disabled: true },
+];
+const slashPop = el('div', 'mpop mpop--slash'); slashPop.hidden = true; slashPop.setAttribute('role', 'listbox');
+$('composer').appendChild(slashPop);
+let slashSel = 0;
+const slashQuery = () => { const m = /^\/([가-힣A-Za-z ]*)$/.exec(input.value); return m ? m[1].trim() : null; };
+const slashList = (q) => SLASH_COMMANDS.filter((c) => !q || c.name.includes(q) || c.id.startsWith(q.toLowerCase()));
+function renderSlashPop() {
+  const q = slashQuery();
+  if (q == null) { slashPop.hidden = true; return; }
+  const list = slashList(q);
+  if (!list.length) { slashPop.hidden = true; return; }
+  slashSel = Math.min(slashSel, list.length - 1);
+  slashPop.replaceChildren();
+  list.forEach((c, i) => {
+    const b = el('button', 'mpop__row'); b.type = 'button'; b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(i === slashSel)); b.disabled = !!c.disabled;
+    b.appendChild(el('b', null, `/${c.name}`)); b.appendChild(el('span', 'mpop__t', c.hint));
+    b.addEventListener('mousedown', (e) => { e.preventDefault(); runSlash(c); });
+    slashPop.appendChild(b);
+  });
+  slashPop.hidden = false;
+}
+function runSlash(c) { slashPop.hidden = true; slashSel = 0; if (c.disabled) return say(c.hint); c.run(); }
+input.addEventListener('input', renderSlashPop);
+input.addEventListener('blur', () => { setTimeout(() => { slashPop.hidden = true; }, 120); });
+input.addEventListener('keydown', (e) => {
+  if (slashPop.hidden || e.isComposing) return;
+  const list = slashList(slashQuery() ?? '');
+  if (e.key === 'ArrowDown') { e.preventDefault(); slashSel = (slashSel + 1) % list.length; renderSlashPop(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); slashSel = (slashSel - 1 + list.length) % list.length; renderSlashPop(); }
+  else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); e.stopImmediatePropagation(); if (list[slashSel]) runSlash(list[slashSel]); }
+  else if (e.key === 'Escape') slashPop.hidden = true;
+}, true);   // capture — 보내기(Enter) 핸들러보다 먼저
 
 async function sendSay(text) {
   // 말풍선은 여기서 그리지 않는다. 지시가 세션에 들어가면 훅이 남긴다.
