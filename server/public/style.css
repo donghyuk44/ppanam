@@ -5,13 +5,13 @@
    컴퓨터에서는 여러 팀을 한눈에, 폰에서는 방 하나만. */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   --ground:   #F7F5F0;
   --panel:    #FFFFFF;
   --panel-2:  #EFEBE3;
-  --rail:     #efe8db;
-  --sunk:     #f0ebe0;
+  --rail:     #EFEBE3;
+  --sunk:     #EFEBE3;
   --line:     #E3DED4;
   --line-2:   #E3DED4;
   --ink:      #1B2430;
@@ -35,12 +35,12 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root[data-theme="dark"] {
     --ground:   #151A21;
     --panel:    #1D232C;
     --panel-2:  #252C36;
-    --rail:     #1a1712;
-    --sunk:     #2e281f;
+    --rail:     #252C36;
+    --sunk:     #252C36;
     --line:     #2C343F;
     --line-2:   #2C343F;
     --ink:      #EDEAE3;
@@ -885,7 +885,7 @@ body {
 .dash__tile[data-alert="1"] b { color: var(--bad); }
 /* min-width: 0 — 세로 flex 안의 카드·줄은 안 그러면 제일 긴 낱말(`node tools/pixel/…` 같은 경로) 폭으로 벌어져 412 에서 오른쪽이 잘렸다 (R21 첫 스크린샷). */
 .dash__card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; min-width: 0; }
-.dash__k { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .12em; color: var(--ink-4); padding-bottom: 6px; }
+.dash__k { font-size: 12px; font-weight: 700; color: var(--ink-4); padding-bottom: 6px; }
 .dash__row {
   display: flex; flex-direction: column; gap: 2px; align-items: stretch; text-align: left; width: 100%; min-width: 0;
   font: inherit; font-size: 12.5px; color: var(--ink-2); background: none; border: 0; border-top: 1px solid var(--line-2);
