@@ -910,6 +910,13 @@ export function progressFresh(team) {
  */
 export const CLAUDE_MODELS = ['opus', 'sonnet', 'haiku'];
 export const CODEX_MODELS = ['gpt-5.6-sol', 'gpt-5.1'];
+// 나리(system) 자리만 더 넓게 고른다(N2, 대표 원문 09-16 "claude 의 fable까지, gpt 는 astra까지") — 다른 자리는 위 둘 그대로.
+// astra 는 codex CLI 목록에서 실측을 못 했다(이 세션은 codex 를 맨 명령으로 못 돌리고 ~/.codex 설정도 못 읽는다) — 실측되면 이 배열에 한 줄만 추가.
+export const CLAUDE_MODELS_SYSTEM = [...CLAUDE_MODELS, 'fable'];
+export const CODEX_MODELS_SYSTEM = [...CODEX_MODELS];
+/** 이 자리가 고를 수 있는 클로드·codex 모델 목록 — system(나리)만 넓다(N2). */
+export const claudeModelsFor = (actorId) => (actorId === 'system' ? CLAUDE_MODELS_SYSTEM : CLAUDE_MODELS);
+export const codexModelsFor = (actorId) => (actorId === 'system' ? CODEX_MODELS_SYSTEM : CODEX_MODELS);
 // Gemini 는 임시 외부 감사(대표 결정, 09-14 — codex 계정 한도 엿새). 명령줄이 없어 파일로 주고받는다(outside.mjs runGemini · 창은 하네스가 몬다).
 export const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3.1-pro'];
 export const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
@@ -976,7 +983,9 @@ export function parseAgy(stdout) {
  */
 export function castChangeError(actorId, agent, patch) {
   if (!agent) return `'${actorId}' 자리가 없습니다.`;
-  if (actorId === 'boss' || actorId === 'system') return `'${actorId}' 는 사람이거나 장치라 엔진이 없습니다.`;
+  // boss(대표)는 사람이라 엔진이 없다. system(나리)은 N1 로 서버 세션이 됐다 — 이제 엔진을 고를 수 있다(N2),
+  // 다만 목록이 더 넓다(claudeModelsFor·codexModelsFor).
+  if (actorId === 'boss') return `'${actorId}' 는 사람이라 엔진이 없습니다.`;
   const keys = Object.keys(patch ?? {}).filter((k) => patch[k] !== undefined);
   if (!keys.length) return '바꿀 값이 없습니다 (model · llm · codexModel · geminiModel · effort).';
   const bad = keys.find((k) => !CAST_FIELDS.includes(k));
@@ -986,8 +995,8 @@ export function castChangeError(actorId, agent, patch) {
     // 외부감사만은 다른 회사 모델이어야 한다 — CLAUDE.md "클로드 둘이 사이좋게 같이 틀릴 때, 그건 다른 엔진에게만 보인다". codex 든 gemini 든 클로드만 아니면 된다.
     if (actorId === 'outside' && !isForeign(patch.model)) return '외부감사(outside)는 다른 회사 모델이어야 합니다 — 클로드가 외부감사인 척하지 않습니다 (CLAUDE.md).';
   }
-  if (patch.llm !== undefined && !CLAUDE_MODELS.includes(patch.llm)) return `claude 모델은 ${CLAUDE_MODELS.join(' · ')} 중 하나입니다: ${patch.llm}`;
-  if (patch.codexModel !== undefined && !CODEX_MODELS.includes(patch.codexModel)) return `codex 모델은 ${CODEX_MODELS.join(' · ')} 중 하나입니다: ${patch.codexModel}`;
+  if (patch.llm !== undefined && !claudeModelsFor(actorId).includes(patch.llm)) return `claude 모델은 ${claudeModelsFor(actorId).join(' · ')} 중 하나입니다: ${patch.llm}`;
+  if (patch.codexModel !== undefined && !codexModelsFor(actorId).includes(patch.codexModel)) return `codex 모델은 ${codexModelsFor(actorId).join(' · ')} 중 하나입니다: ${patch.codexModel}`;
   if (patch.geminiModel !== undefined && !GEMINI_MODELS.includes(patch.geminiModel)) return `gemini 모델은 ${GEMINI_MODELS.join(' · ')} 중 하나입니다: ${patch.geminiModel}`;
   if (patch.fallback !== undefined && patch.fallback !== 'none' && !isForeign(patch.fallback)) return `폴백은 다른 회사 엔진(gpt · gemini) 또는 'none'(대표께 올림)입니다: ${patch.fallback}`;
   if (patch.suspended !== undefined) {

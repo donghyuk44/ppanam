@@ -873,6 +873,16 @@ switch (cmd) {
         out.push(['자리 엔진·모델·강도(결정 69)', eWant && uWant && swWant && cWant && txt === '대표가 테라를 opus·high 로 바꿨습니다 — 다음 턴부터.' && txt2.startsWith('대표가 안젤을')
           ? '✓ 거르기 10경우(외부감사→claude 만 거부) · cast.json 에 씀(바뀐 값만) · 실무→codex 전환 · note 글 을/를 · codex 인자 resume/새 세션' : '✗ ' + JSON.stringify({ errs, up, sw, txt, ca, cb })]);
       }
+      // 나리(system) 는 더 넓은 목록을 고른다(N2, 대표 원문 09-16 "claude 는 fable 까지, gpt 는 astra 까지") — 다른 자리는 그대로.
+      {
+        const { claudeModelsFor, codexModelsFor } = await import('./bus.mjs');
+        const sysFable = castChangeError('system', { model: 'claude' }, { llm: 'fable' });
+        const guideFable = castChangeError('guide', { model: 'claude' }, { llm: 'fable' });
+        const bossStill = castChangeError('boss', { model: 'claude' }, { llm: 'opus' });
+        const n2Want = sysFable === null && claudeModelsFor('system').includes('fable') && !claudeModelsFor('guide').includes('fable')
+          && guideFable?.includes('claude 모델은') && bossStill?.includes('사람이라 엔진이 없습니다') && codexModelsFor('system').length >= codexModelsFor('guide').length;
+        out.push(['나리(system) 모델 목록이 더 넓음(N2)', n2Want ? '✓ system 은 fable 통과 · 다른 자리는 여전히 거부 · boss 는 여전히 막힘' : '✗ ' + JSON.stringify({ sysFable, guideFable, bossStill })]);
+      }
       // codex 자리에 귀로 넣는 말은 방에 note 로 남는다 (레오 FAIL R23 → 대표 "수도꼭지 한 군데만") — session.send 안에서. 대화록에 있어야 codex 가 다음 차례에 읽고,
       // 부른 쪽(알림자·요청 블록·quiet)은 그대로. claude 아닌 사람(boss)은 refused. 임시 방 cast 의 outside 는 gpt — 프로세스는 안 뜬다.
       {

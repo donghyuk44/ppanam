@@ -252,8 +252,12 @@ const server = http.createServer((req, res) => {
       pauses: bus.readPauses(),   // 멈춘 구간(state/pauses.json) — 화면이 기다린 시간에서 뺀다(blockedOf). 자주 안 바뀌어 boot 로만
       delegation: bus.readDelegation(),   // 위임(결정 136) { to, until, decision } 또는 null — 종 배지가 위임 중 돈·바깥만 센다(나리 결정 ②). until 은 화면이 본다
 
-      // 개인 카드의 엔진·모델·강도 고르기 (결정 69) — 목록은 bus.mjs 하나.
-      castOptions: { engines: bus.ENGINES, claude: bus.CLAUDE_MODELS, codex: bus.CODEX_MODELS, gemini: bus.GEMINI_MODELS, efforts: bus.EFFORTS },
+      // 개인 카드의 엔진·모델·강도 고르기 (결정 69) — 목록은 bus.mjs 하나. system(나리)만 더 넓다(N2) — bySeat 에 자리별
+      // 예외만 담는다(없는 자리는 위 기본값을 그대로 쓴다는 뜻 — claude·codex 는 매 자리 다시 안 채운다).
+      castOptions: {
+        engines: bus.ENGINES, claude: bus.CLAUDE_MODELS, codex: bus.CODEX_MODELS, gemini: bus.GEMINI_MODELS, efforts: bus.EFFORTS,
+        bySeat: { system: { claude: bus.CLAUDE_MODELS_SYSTEM, codex: bus.CODEX_MODELS_SYSTEM } },
+      },
     });
   }
 
