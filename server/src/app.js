@@ -36,7 +36,7 @@ let pauses = [];              // 멈춘 구간(state/pauses.json, boot.pauses) �
 let delegation = null;        // 위임(state/delegation.json, boot.delegation, 결정 136) — 종 배지가 위임 중엔 돈·바깥만 센다(나리 결정 ②)
 let done = { since: null, items: [], fetchedAt: 0, more: false };   // 누가 뭘 했나(/api/done) — 관제탑 ②. more = "더 보기" 펼침(오늘 안에서만 — 어제는 보고서)
 let work = { data: null, fetchedAt: 0 };   // 작업 보드(/api/work = bus.timelineOf, state/work.json) — 대시보드 맨 위 보드 블록(카드-체계 1-1) · 타임라인 탭. 404 면 블록이 안 뜬다
-const cards = { byTeam: {}, fetchedAt: {} };   // 팀 상황 카드 재료(/api/card/<팀>, 솔라 C5 — card.js 머리 JSDoc 모양). 30초 캐시. 채팅 맨 위·대시보드·비서실이 같은 재료
+const cards = { byTeam: {}, fetchedAt: {}, inflight: {}, waiting: {} };   // 팀 상황 카드 재료(/api/card/<팀>, 솔라 C5 — card.js 머리 JSDoc 모양). 30초 캐시, waiting = fetch 끝나면 부를 화면들(솔라 감사 ②). 채팅 맨 위·대시보드·비서실이 같은 재료
 let openTeamRows = new Set();  // 관제탑 ④ 팀 줄 — 펼쳐 둔 팀(상황판 네 칸)
 let requestsAll = [];         // 요청 블록 접은 목록 (6-1절) — 관제탑 요청 탭·전체 탭 타일
 let requestsLoaded = false;
@@ -880,6 +880,7 @@ function connect() {
       if (msg.summaries && active) {
         summaries = msg.summaries; summary = summaries[active] ?? summary;
         renderRail(); renderHead(); renderSide();
+        cards.fetchedAt[active] = 0; renderRoomCard();   // 붙을 때도 카드 — 조용한 방은 다음 요약이 안 와서 빈 채로 남았다(솔라 감사 ①, 독립검수 #1 과 같은 자리)
       }
       return;
     }
@@ -1526,12 +1527,18 @@ function loadWork() {
 }
 /* ── 팀 상황 카드(카드-체계-0916 1절 · C7) — 부품은 card.js teamCard, 재료는 /api/card/<팀>. 세 곳이 같은 것: 채팅 맨 위(그 팀 하나) · 대시보드 ④(다섯) · 비서실 말풍선(meta.cards). ── */
 
-/** 카드 재료 하나 — 30초 캐시. 받으면 rerender 를 부른다(있을 때만). 404·오류면 그 팀은 null 로 두고 안 그린다. */
+/**
+ * 카드 재료 하나 — 30초 캐시. 받으면 기다리던 rerender 를 **전부** 부른다 — 채팅 카드와 대시보드 카드가 같은 팀을 거의 동시에 청하면
+ * 나중 쪽은 캐시에 걸려 fetch 를 안 하는데, 그 콜백을 안 남기면 먼저 온 fetch 가 끝나도 나중 쪽 화면이 안 갱신됐다(솔라 감사 ②). 404·오류면 그 팀은 null 로 두고 안 그린다.
+ */
 function loadCard(team, rerender = null) {
+  if (rerender) (cards.waiting[team] ??= new Set()).add(rerender);
   const at = cards.fetchedAt[team] ?? 0;
-  if (Date.now() - at < 30_000) return;
-  cards.fetchedAt[team] = Date.now();
-  fetch(`/api/card/${encodeURIComponent(team)}`).then((r) => (r.ok ? r.json() : null)).then((d) => { cards.byTeam[team] = d && d.team ? d : null; if (rerender) rerender(); }).catch(() => {});
+  if (Date.now() - at < 30_000) { if (!cards.inflight[team] && cards.byTeam[team] !== undefined) cards.waiting[team]?.delete(rerender); return; }   // 재료가 이미 있으면 부른 쪽이 지금 그린다
+  cards.fetchedAt[team] = Date.now(); cards.inflight[team] = true;
+  fetch(`/api/card/${encodeURIComponent(team)}`).then((r) => (r.ok ? r.json() : null)).then((d) => { cards.byTeam[team] = d && d.team ? d : null; })
+    .catch(() => { cards.byTeam[team] = null; })
+    .finally(() => { cards.inflight[team] = false; const w = cards.waiting[team] ?? new Set(); cards.waiting[team] = new Set(); for (const fn of w) { try { fn(); } catch { /* 한 화면이 실패해도 나머지는 그린다 */ } } });
 }
 /** 카드 노드 — 재료가 아직 없으면 null. 문 셋: 파일 → 새 창, 자세히 → 그 팀 채팅, 결재 단추 → 기존 결재 팝업(사유 칸·대리 안내가 거기 있다 — 결정 길은 하나). */
 function teamCardNode(team, rerender = null) {
