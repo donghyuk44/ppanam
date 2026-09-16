@@ -12,7 +12,7 @@ import { findOutPaths, linkOutPaths } from '/outlink.js';
 import { notificationsOf, blockedOf, pausedMs, delegated, deciders } from '/notify.js';
 import { dayWord, timeWord, clockWord, spanWord } from '/when.js';
 import { parseMention } from '/mention.js';
-import { bossOk, doingWord, gateLine } from '/bosswords.js';   // doingWord·gateLine — 자(boss-words-check)가 화면과 같은 글을 재게 공용. NOT_YET 은 화면에서 안 쓴다(opus ④ — 가린 글 대신 팀 진행 중 줄이나 빈 자리)
+import { bossOk, doingWord, gateLine, NOT_YET } from '/bosswords.js';   // doingWord·gateLine — 자(boss-words-check)가 화면과 같은 글을 재게 공용. NOT_YET 은 화면에 안 찍는다(opus ④) — 서버가 그 글자로 준 줄을 거르는 데만 쓴다
 import { teamCard, verdictCard } from '/card.js';   // 카드 부품(C6) — 팀 상황 카드는 채팅 맨 위·대시보드·비서실 세 곳(C7), 판정 카드는 방의 도장 자리(G3)
 
 const $ = (id) => document.getElementById(id);
@@ -1775,11 +1775,11 @@ function loadDone() {
   done.since = since; done.fetchedAt = Date.now();
   fetch(`/api/done?since=${since}`).then((r) => r.json()).then((r) => { done.items = r.items ?? []; if (view === 'tower' && towerTab === 'all') renderTower(); else if (view === 'analysis') loadAnalysis(); const sl = $('statLine'); if (sl) sl.replaceChildren(statBand(dashStats(), 'line')); }).catch(() => {});   // 분석 첫 층 그림·채팅 머리 띠도 같은 점을 쓴다
 }
-/** 작업 보드 — 30초마다. /api/work 가 없으면(솔라 배선 전 404) data 는 null 로 두고 블록을 안 그린다. */
+/** 작업 보드 — 30초 캐시. 3판 '오늘 끝난 것' 은 여기 doneAt(오늘 통과로 바뀐 일, 결정 192)로 센다. /api/work 가 없으면 data 는 null. */
 function loadWork() {
   if (Date.now() - work.fetchedAt < 30_000) return;
   work.fetchedAt = Date.now();
-  fetch('/api/work').then((r) => (r.ok ? r.json() : null)).then((r) => { const had = !!work.data; work.data = r?.streams ? r : null; if ((had || work.data) && view === 'tower' && towerTab === 'all') renderTower(); }).catch(() => {});
+  fetch('/api/work').then((r) => (r.ok ? r.json() : null)).then((r) => { const had = !!work.data; work.data = r?.streams ? r : null; if ((had || work.data) && view === 'tower' && towerTab === 'all') renderTower(); const sl = $('statLine'); if (sl) sl.replaceChildren(statBand(dashStats(), 'line')); }).catch(() => {});
 }
 /* ── 팀 상황 카드(카드-체계-0916 1절 · C7) — 부품은 card.js teamCard, 재료는 /api/card/<팀>. 세 곳이 같은 것: 채팅 맨 위(그 팀 하나) · 대시보드 ④(다섯) · 비서실 말풍선(meta.cards). ── */
 
@@ -1878,7 +1878,7 @@ function teamCardNode(team, rerender = null) {
 function renderStatLine() {
   const box = $('statLine');
   if (!box) return;
-  loadDone();
+  loadDone(); loadWork();
   box.replaceChildren(statBand(dashStats(), 'line'));
 }
 function renderRoomCard() {
@@ -1915,7 +1915,7 @@ function renderTowerAll(grid) {
   // 뺀 것: 이슈 블록(막힌 것은 팀 카드의 빨간 띠로) · 작업 보드 · 최근 활동 · 시각. 숫자 하나 = 목록 하나 = 정본 하나(제안 2절).
   const goRoom = (t) => async () => { await selectTeam(t.id); setView('room'); };
   const { mine, fromBoard } = bossItems();
-  loadDone();
+  loadDone(); loadWork();
   const stat = dashStats({ mine, fromBoard });
   const jump = (block) => () => { grid.querySelector(`[data-block="${block}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
 
@@ -1963,7 +1963,7 @@ function renderTowerAll(grid) {
     const row = el('button', 'dash__row dash__row--done'); row.type = 'button';
     const dot = el('span', 'dot'); dot.style.background = teamColor(it.team); row.appendChild(dot);
     row.appendChild(el('span', 'dash__sub', it.line));
-    row.addEventListener('click', () => { if (it.kind === 'board') jumpTo(it.team, null); else if (it.kind === 'decision' || it.kind === 'proxy') jump('mine')(); else jumpTo(it.team, String(it.id).split(':')[1] ?? null); });   // 상황판 줄은 이벤트가 없다 — 방만 연다(code-review)
+    row.addEventListener('click', () => { if (it.kind === 'work') setView('dashboard'); else jumpTo(it.team, null); });   // 보드 일은 타임라인으로, 상황판 줄은 그 방으로(이벤트가 없다 — code-review)
     sec2.appendChild(row);
   }
   if (stat.doneList.length > 8) {
@@ -1996,18 +1996,20 @@ function dashStats({ mine = null, fromBoard = null, day0 = dayStartSeoulMs(Date.
     const list = d ? (d.blocked ?? []).map((x) => x.text) : (summaries[t.id]?.progress?.blocked ?? []);
     return n + list.filter(okLine).length;
   }, 0);
-  // 오늘 끝난 것 = 상황판 done 줄(팀 카드 재료, 자 통과분) + 오늘 통과 판정(ui-spec 12절 "상황판 done + 판정 통과"). /api/done 전부(커밋·글·보고…)는 안 센다 — 실측 800줄.
+  // 오늘 끝난 것 = 작업 보드에서 오늘 통과로 바뀐 일(doneAt — 톰 목표·사전 191행; 판정 PASS 가 advanceWorkOnPass 로 찍는다) + 상황판 done 줄(팀 카드 재료, 자 통과분 — 보드에 없는 일).
+  // /api/done 전부(커밋·글·보고…)는 안 센다(실측 800줄). 손으로 '통과' 로 바꾼 옛 항목은 doneAt 이 없어 안 든다.
   const doneList = [];
+  for (const s of work.data?.streams ?? []) {
+    for (const it of s.items ?? []) {
+      if (!it.doneAt || new Date(it.doneAt).getTime() < day0) continue;
+      const line = String(it.what ?? '').trim();
+      if (line && line !== NOT_YET && okLine(line)) doneList.push({ id: `work:${it.id}`, kind: 'work', team: it.team, line });
+    }
+  }
   for (const t of teams.filter((x) => x.id !== 'sera')) {
     const d = cards.byTeam[t.id];
     const lines = d ? (d.done ?? []).map((x) => x.text) : (summaries[t.id]?.progress?.done ?? []);
     for (const s of lines.filter(okLine)) doneList.push({ id: `board:${t.id}:${s}`, kind: 'board', team: t.id, line: s });
-  }
-  for (const it of done.items) {
-    if (it.kind !== 'verdict' || it.by === 'boss' || new Date(it.ts).getTime() < day0 || !/^승인/.test(String(it.text ?? ''))) continue;   // 대표는 안 선다(톰 09-15)
-    const who = summaries[it.team]?.cast?.[it.by]?.name ?? it.by;
-    const line = `${teams.find((t) => t.id === it.team)?.name ?? it.team} · ${who} 판정 승인`;
-    if (okLine(line)) doneList.push({ ...it, line });
   }
   return { decide: mine.length + fromBoard.length, stuck, done: doneList.length, doneList };
 }

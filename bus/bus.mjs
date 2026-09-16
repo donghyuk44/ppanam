@@ -1936,7 +1936,7 @@ export function advanceWorkOnPass(team, seat, { workId = null, file = WORK_PATH 
       ? items.findIndex((it) => it.id === workId && it.status !== '통과')
       : items.findIndex((it) => it.team === team && it.seat === seat && it.status === '진행');
     if (idx === -1) return null;
-    items[idx] = { ...items[idx], status: '통과' };
+    items[idx] = { ...items[idx], status: '통과', doneAt: new Date().toISOString() };   // doneAt — 대시보드 3판 '오늘 끝난 것' 셈(결정 192 · ui-spec 12절, 테라). 손으로 '통과' 로 바꾼 옛 항목엔 없다
     if (writeWorkIfUnchanged(work, before, file)) return items[idx];
     // 그 사이 다른 팀의 PASS 훅이 먼저 썼다 — 새로 읽어 다시(2판 #12).
   }
@@ -1993,7 +1993,7 @@ export function timelineOf() {
   for (const it of items) {
     let s = byName.get(it.stream);
     if (!s) { s = { name: it.stream, items: [], counts: Object.fromEntries([...WORK_STATUSES.map((k) => [k, 0]), ['시작가능', 0]]) }; byName.set(it.stream, s); streams.push(s); }
-    s.items.push({ id: it.id, what: it.what, team: it.team, seat: it.seat, status: it.status, bottleneck: it.bottleneck ?? null });
+    s.items.push({ id: it.id, what: it.what, team: it.team, seat: it.seat, status: it.status, bottleneck: it.bottleneck ?? null, doneAt: it.doneAt ?? null });
     if (s.counts[it.status] !== undefined) s.counts[it.status]++;
     if (isReady(it)) s.counts.시작가능++;
   }
