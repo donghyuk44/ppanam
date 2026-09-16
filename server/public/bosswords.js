@@ -20,7 +20,9 @@ export const FILE_TOOLS = new Set(['Read', 'Edit', 'Write', 'NotebookEdit', 'Mul
 export function doingWord(doing, { live = true, toolPhrase = null, firstLine = (s) => String(s ?? '').split(/\n/)[0] } = {}) {
   if (!doing) return '완료 없음';
   if (doing.tool) return FILE_TOOLS.has(doing.tool) && toolPhrase ? toolPhrase(doing, live) : '작업 중';
-  return String(firstLine(doing.text) ?? '').trim() || '작업 중';
+  // 말의 첫 문장 — 60자를 넘으면 잘라 "…"(마지막 말 여덟 중 대부분이 긴 문장이라 전부 "요약 없음" 으로 가려졌다, 솔라 실측 bed1224). 자른 것도 사람 말이다.
+  const s = String(firstLine(doing.text) ?? '').trim() || '작업 중';
+  return s.length > MAX_LEN ? s.slice(0, MAX_LEN - 1).trimEnd() + '…' : s;
 }
 /** 작업 보드 병목 줄 — work.json 의 "server(솔라)"·"app.js(테라)" 는 괄호 안 사람의 "손", "나리 판정"·"재시작" 은 그대로. "솔라 손 뒤에 7건 — 유진·노라 기다림". */
 export function gateLine(bottleneck, count, who = '') {
