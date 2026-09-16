@@ -2194,8 +2194,13 @@ export function teamSummary(team) {
     : (running && state.attempt >= MAX_ATTEMPTS) ? 'attempts'
       : silentDay ? 'silent' : null;
 
+  // 단계 숫자 정본(opus 적대 검수 3절 #3, 09-16) — milestoneStageOf 는 이미 팀 카드(/api/card)에서 로드맵 pass
+  // 수로 세는데, 여기(teamSummary — 왼쪽 레일·전체 탭·리포트가 다 이걸 읽는다)는 여태 state.milestone 을 그대로
+  // 냈다. 총괄실처럼 라운드를 안 타는 방은 그 값이 안 올라가 "총괄 1단계"에 굳어 있었다 — 카드만 맞고 나머지는 틀림.
+  const stageNow = milestoneStageOf(roadmap);
   return {
     ...state,
+    milestone: stageNow?.n ?? state.milestone,
     lastVerdict,
     lastAt: last?.ts ?? null,
     lastText: last?.text ?? null,

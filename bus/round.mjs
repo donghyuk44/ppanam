@@ -830,6 +830,20 @@ switch (cmd) {
           ? '✓ pass 수 + 1(지금 것) · 전부 pass 면 전체에서 멈춤 · 마일스톤 없으면 null'
           : '✗ ' + JSON.stringify({ ms1, ms2, ms3, ms4 })]);
       }
+      // 단계 숫자 정본(opus 적대 검수 3절 #3, 09-16) — teamSummary 가 여태 state.milestone 을 그대로 내서, 그
+      // 값이 로드맵과 갈라지면(총괄실처럼 라운드를 안 타 안 올라가는 방) 왼쪽 레일·전체 탭·리포트가 카드(이미
+      // milestoneStageOf 를 썼다)와 다른 수를 보여 줬다. teamSummary().milestone 도 이제 같은 공식이어야 한다.
+      {
+        const stBefore3 = fs.readFileSync(paths(T).state, 'utf8');
+        const rmBefore3 = fs.readFileSync(paths(T).roadmap, 'utf8');
+        fs.writeFileSync(paths(T).roadmap, JSON.stringify({ milestones: [{ n: 1, status: 'pass' }, { n: 2, status: 'pass' }, { n: 3, status: 'pass' }, { n: 4, title: '넷째', status: 'now' }, { n: 5, status: 'wait' }] }));
+        fs.writeFileSync(paths(T).state, JSON.stringify({ round: 9, milestone: 1, topic: '굳은 값 시험', phase: 'running' }));   // 옛 버그처럼 1 에 굳음
+        const tsStale = teamSummary(T);
+        fs.writeFileSync(paths(T).state, stBefore3);
+        fs.writeFileSync(paths(T).roadmap, rmBefore3);
+        const staleWant = tsStale.milestone === 4 && tsStale.milestonesDone === 3 && tsStale.milestonesTotal === 5;
+        out.push(['teamSummary 단계도 정본(milestoneStageOf 따름)', staleWant ? '✓ state.milestone 이 1 에 굳어도 pass 3 + 1 = 4 를 냄 — 카드·레일·리포트 다 같은 수' : '✗ ' + JSON.stringify(tsStale)]);
+      }
       // 판정 대상 자리 찾기(테라 code-review 지적, dea1182 — 훅이 target 을 'guide' 로 고정해서 서로 감사(결정 125)로
       // ops 등이 평가받아도 항상 guide 로 찍혔다) — verdictTargetActor(team, flowTargetText) 순수: 자유 글에서
       // 먼저 나오는 이름의 자리를 돌려주고, 아무도 안 나오면 예전처럼 'guide'.
