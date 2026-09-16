@@ -2395,7 +2395,8 @@ export function doneOf(log, cast, { team = null, since = null, until = null, app
         if (msg != null) msg = msg.replace(/[\s\\]+$/, '') || null;
         // 커밋 글은 " — " 나 "(" 앞 머리만 — 뒤는 해시·경로라 대표 말이 아니다. 머리도 자에 안 맞으면 기본 글(화면이 원문을 펼칠 수 있게 ref 에 전문)
         const head = msg ? one(msg.split(/\s—\s|\(/)[0], 48) : '';
-        out.push({ id: `commit:${e.id}`, kind: 'commit', team, by: e.actor, ts: e.ts, text: `고쳐 올렸어요${head && bossOk(head) ? ' — ' + head : ''}`, ref: msg ? one(msg, 200) : null });
+        const headOk = head && bossOk(head) && /[가-힣A-Za-z0-9][\s\S]*[가-힣A-Za-z0-9]/.test(head);   // "$" 한 글자 같은 머리는 글이 아니다(나리 R32 ①: '고쳐 올렸어요 — $')
+        out.push({ id: `commit:${e.id}`, kind: 'commit', team, by: e.actor, ts: e.ts, text: `고쳐 올렸어요${headOk ? ' — ' + head : ''}`, ref: msg ? one(msg, 200) : null });
       } else if ((tool === 'Write' || tool === 'Edit' || tool === 'NotebookEdit') && /\/teams\/[^/]+\/out\//.test(text)) {
         const rel = text.slice(text.indexOf('/teams/') + 1);   // teams/<팀>/out/… 부터
         const key = `file:${e.actor}:${rel}`;

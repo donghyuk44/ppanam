@@ -452,6 +452,9 @@ function bossLines(lines, none) {
 const bossTitle = (r) => bossOk(r.boss) ? r.boss : r.what;
 
 function renderSide() {
+  // 비서실(세라 방)은 상황판·회차·로드맵이 없다 — "상황판 없음 · 진행 중인 회차 없음 · 로드맵 없음" 빈 블록 셋을 대표가 보고 화냈다(나리 R32 ④). 참여·일지만 남긴다.
+  const quiet = active === 'sera';
+  for (const id of ['cardProgress', 'cardRound', 'cardRoadmap']) $(id).hidden = quiet;
   // 첫 카드 — 지금 어디까지 왔나 (결정 23, 계약 3절 "상황판"). 실무가 progress.mjs 로 쓴 것을 그대로. 안 썼으면 안 쓴 채로 보이게.
   const pg = $('cardProgress');
   pg.replaceChildren();
@@ -1203,6 +1206,18 @@ async function loadSettings() {
   const list = [...people.values()];
   const files = await Promise.all(list.map((p) => fetch(`/api/actor?team=${encodeURIComponent(p.team)}&actor=${encodeURIComponent(p.seat)}`).then((r) => r.ok ? r.json() : null).then((r) => (r?.persona ? `teams/${p.team}/${p.seat}.md` : null)).catch(() => null)));
   list.forEach((p, i) => row(p.name, p.title, p.teamWord, files[i]));
+  // ③-1 모델 — 자리마다 엔진·모델·추론 강도(결정 69, castRow). 사람 카드에서 여기로(나리 R32 ②). 세션이 있는 자리만(system·대표는 없다).
+  body.appendChild(el('div', 'set__k', '모델 — 자리마다 엔진 · 모델 · 추론 강도 (다음 턴 적용)'));
+  const ml = el('ul', 'set__list');
+  for (const t of teams) {
+    for (const [seat, a] of Object.entries(summaries[t.id]?.cast ?? {})) {
+      if (seat === 'boss' || seat === 'system' || !a.model) continue;
+      const li = el('li'); li.append(`${t.name} · ${a.name ?? seat} `);
+      li.appendChild(castRow(t, seat, a));
+      ml.appendChild(li);
+    }
+  }
+  body.appendChild(ml);
   // ④ 숨김 화면 — 마을은 탭에서 뺐다(대표 09-16 '마을은 최최최최후'). 여기 링크로만.
   const hid = el('p', 'set__hidden');
   const a = el('a', null, '마을 열기'); a.href = `#${active ?? 'hq'}/world`; hid.append('마을(준비 중) ', a);
@@ -1545,7 +1560,9 @@ function teamCardNode(team, rerender = null) {
   loadCard(team, rerender);
   const d = cards.byTeam[team];
   if (!d) return null;
-  return teamCard(d, {
+  // 이름·색은 화면이 아는 것으로 채운다 — 서버가 옛 판(2dacf61)이면 name 이 없어 카드 머리에 hq·dev 가 그대로 섰다(나리 R32 ③)
+  const t = teams.find((x) => x.id === team);
+  return teamCard({ ...d, name: d.name ?? t?.name ?? team, color: d.color ?? teamColor(team) }, {
     onOpen: async (file) => {
       if (file) { window.open(`/out/${encodeURIComponent(team)}/${String(file).replace(/^out\//, '').split('/').map(encodeURIComponent).join('/')}`, '_blank', 'noopener'); return; }
       if (team !== active) await selectTeam(team);
@@ -1594,7 +1611,10 @@ function workBoardBlock() {
   }
   for (const b of (w.topBlockers ?? []).slice(0, 2)) {
     const who = (b.waiting ?? []).map((x) => nameOf(x.team, x.seat)).filter((v, i, a) => a.indexOf(v) === i).join('·');
-    sec.appendChild(el('div', 'dash__empty work__wait', `${b.bottleneck} 뒤에 ${b.count}건${who ? ` — ${who} 기다림` : ''}`));
+    // 병목 글자는 work.json 그대로("server(솔라)"·"app.js(테라)"·"나리 판정"·"재시작") — 괄호 안 사람이 있으면 "솔라 손", 없으면 그 말 그대로(나리 R32 ⑤: 'server(솔라) 뒤에 7건' 이 대표 화면에 섰다)
+    const m = /^(.*?)\s*\((.+?)\)\s*$/.exec(String(b.bottleneck ?? ''));
+    const gate = m ? `${m[2]} 손` : String(b.bottleneck ?? '');
+    sec.appendChild(bossLine(`${gate} 뒤에 ${b.count}건${who ? ` — ${who} 기다림` : ''}`, 'dash__empty work__wait'));
   }
   return sec;
 }
@@ -1882,9 +1902,11 @@ function personCard(t, id, a, p) {
     // 쉬는 중 · 자리 비움 — 짧게 한 줄: 왜 · N분 전에 움직임(시안 노라·레오 줄)
     card.appendChild(el('div', 'pcard__why', [why, moved(p.lastSignal)].filter(Boolean).join(' · ')));
   } else {
-    // 2줄 지금 하는 일 — 마지막 발언 뒤 도구 줄이면 "app.js 고치는 중", 아니면 마지막 발언 첫 문장. 3줄 "N분 전에 움직임"(결정 31 안죽었어요).
-    const doing = p.doing ? (p.doing.tool ? toolPhrase(p.doing, p.busy) : firstLine(p.doing.text)) : '완료 없음';
-    card.appendChild(el('div', 'pcard__doing', doing));
+    // 2줄 지금 하는 일 — 마지막 발언 뒤 도구 줄이면 "app.js 고치는 중"(파일 도구만 — Bash 명령 글자(say.mjs…, null | sort…)가 그대로 섰다, 나리 R32 ①), 아니면 마지막 발언 첫 문장.
+    // 사람 말 검사(결정 140)를 지난다 — 안 맞으면 "요약 없음" + 원문 펼침. 3줄 "N분 전에 움직임"(결정 31 안죽었어요).
+    const FILE_TOOLS = new Set(['Read', 'Edit', 'Write', 'NotebookEdit', 'MultiEdit']);
+    const doing = p.doing ? (p.doing.tool ? (FILE_TOOLS.has(p.doing.tool) ? toolPhrase(p.doing, p.busy) : '작업 중') : firstLine(p.doing.text)) : '완료 없음';
+    card.appendChild(bossLine(doing.trim() || '작업 중', 'pcard__doing'));
     card.appendChild(el('div', 'pcard__nums', moved(p.lastSignal)));
     if (why) card.appendChild(el('div', 'pcard__why', why));
   }
@@ -1904,8 +1926,7 @@ function personCard(t, id, a, p) {
     c.addEventListener('click', () => jumpTo(t.id, q.id));
     card.appendChild(c);
   }
-  // 엔진 · 모델 · 추론 강도 (결정 69) — 대표가 카드 안에서 고른다. 바꾸면 서버가 cast.json 에 쓰고 다음 턴부터.
-  card.appendChild(castRow(t, id, a));
+  // 엔진 · 모델 · 추론 강도 줄(결정 69)은 설정 탭으로 옮겼다(나리 R32 ② — 대표 화면의 사람 카드에 claude/codex/gemini·opus 고르기가 서 있었다). castRow 는 loadSettings 가 쓴다.
   return card;
 }
 /**
