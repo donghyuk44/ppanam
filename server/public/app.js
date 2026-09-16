@@ -1101,11 +1101,20 @@ $('composerNl').addEventListener('click', () => {
 
 // 그림 올리기 (결정 130 ② — 대표가 방에 그림을 올릴 수 있어야 한다). 버튼 · 끌어다 놓기 · 붙여넣기 셋이 같은 길(C17, 대표 09-16 11:07 "채팅창에 바로 이미지 드랍해서 첨부하는 것").
 // 올리는 동안 입력창 위에 미리보기 한 장 — 올라가면 방에 말풍선으로 뜬다(서버).
+// 문서도 된다(C17 둘째, 대표 09-16 11:10 "pdf 같은 문서 첨부도 되야겠다") — pdf·md·txt·csv·docx·xlsx·pptx. 서버가 teams/<팀>/in/ 에 두고 "파일을 올렸습니다: in/…" 로 말하면 화면은 파일 카드(outFileNode). 서버 쪽 형식 허용은 솔라(/api/upload UPLOAD_MIME).
+const UPLOAD_OK = /^(image\/(png|jpe?g|gif|webp)|application\/pdf|text\/(plain|markdown|csv)|application\/(vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)))$/;
+const uploadKind = (f) => /^image\//.test(f.type) ? '그림' : '파일';
 async function uploadImage(f) {
   if (!f || !active) return;
-  if (!/^image\/(png|jpe?g|gif|webp)$/.test(f.type)) return say('이미지 파일만 — png·jpg·gif·webp');
+  // 브라우저가 type 을 비워 주는 것(md·txt·csv·docx·xlsx·pptx 가 OS 에 따라 그렇다)은 확장자로 채운다 — code-review 지적: 고르기 목록엔 있는데 여기서 거절되던 것
+  const EXT_MIME = { md: 'text/markdown', txt: 'text/plain', csv: 'text/csv', pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' };
+  const mime = f.type || EXT_MIME[(f.name ?? '').split('.').pop()?.toLowerCase()] || '';
+  if (!UPLOAD_OK.test(mime)) return say('그림(png·jpg·gif·webp)이나 문서(pdf·md·txt·csv·docx·xlsx·pptx)만');
   const box = $('composerMsg');
-  const pv = el('div', 'composer__pv'); const img = el('img'); img.alt = f.name || '그림'; img.src = URL.createObjectURL(f); pv.appendChild(img); pv.appendChild(el('span', null, '업로드 중'));
+  const pv = el('div', 'composer__pv');
+  if (uploadKind(f) === '그림') { const img = el('img'); img.alt = f.name || '그림'; img.src = URL.createObjectURL(f); pv.appendChild(img); pv.dataset.url = img.src; }
+  else pv.appendChild(el('b', null, f.name || '문서'));
+  pv.appendChild(el('span', null, '업로드 중'));
   box.replaceChildren(pv); box.hidden = false;
   const data = await new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -1113,10 +1122,11 @@ async function uploadImage(f) {
     r.onerror = () => reject(r.error);
     r.readAsDataURL(f);
   }).catch(() => null);
-  if (!data) { URL.revokeObjectURL(img.src); return say('이미지 로딩 실패'); }
-  const r = await post('/api/upload', { team: active, mime: f.type, data }).catch(() => null);
-  URL.revokeObjectURL(img.src);
-  if (!r?.ok) return say(r?.data?.error ?? '이미지 업로드 실패');
+  const done = () => { if (pv.dataset.url) URL.revokeObjectURL(pv.dataset.url); };
+  if (!data) { done(); return say(`${uploadKind(f)} 로딩 실패`); }
+  const r = await post('/api/upload', { team: active, mime, name: f.name || null, data }).catch(() => null);   // name — 서버가 원래 파일 이름을 카드에 쓸 수 있게(지금은 안 봐도 됨)
+  done();
+  if (!r?.ok) return say(r?.data?.error ?? `${uploadKind(f)} 업로드 실패`);
   say('업로드 완료');
 }
 $('uploadBtn').addEventListener('click', () => $('uploadFile').click());
@@ -1128,7 +1138,7 @@ for (const zone of [$('feed'), $('composer')]) {
   zone.addEventListener('drop', (e) => { const f = e.dataTransfer?.files?.[0]; if (!f) return; e.preventDefault(); app.dataset.drop = '0'; uploadImage(f); });
 }
 input.addEventListener('paste', (e) => {
-  const item = [...(e.clipboardData?.items ?? [])].find((it) => it.kind === 'file' && /^image\//.test(it.type));
+  const item = [...(e.clipboardData?.items ?? [])].find((it) => it.kind === 'file');   // 그림이든 문서든 — 형식은 uploadImage 가 가른다
   if (!item) return;
   e.preventDefault(); uploadImage(item.getAsFile());
 });
