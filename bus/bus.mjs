@@ -1562,8 +1562,12 @@ export function endRound(team, { verdict = null, summary = null, next = null } =
   const artifacts = artifactsOf(team, roundEvents).paths;   // 무엇을 냈나(8단계) — PASS 면 endRefusal 이 이미 비어 있지 않음을 봤다
 
   // PASS 로 닫혔으면 이 마일스톤은 끝났다 — 사실 기록. 다음 것을 now 로 옮기는 것은 B 승인의 일이다.
+  // 이미 pass 인 마일스톤은 다시 세지 않는다 — 계획표가 다 끝난 뒤 연 "다음 계획표 대기" 회차(아래
+  // waitingRoadmap)가 같은(이미 pass 인) 번호를 그대로 쓰므로, 그 회차를 PASS 로 닫으면 setMilestoneStatus
+  // 가 (상태가 이미 그거라도) true 를 돌려 "N 통과" 알림·세션 청소·대기 회차 열기가 또 돌았다(2판 #9).
   let milestonePassed = false;
-  if (String(verdict ?? '').toUpperCase() === 'PASS' && state.milestone) {
+  const alreadyPassed = (readRoadmap(team).milestones ?? []).find((m) => m.n === state.milestone)?.status === 'pass';
+  if (String(verdict ?? '').toUpperCase() === 'PASS' && state.milestone && !alreadyPassed) {
     if (setMilestoneStatus(team, state.milestone, 'pass')) {
       milestonePassed = true;
       emit(team, { type: 'milestone', actor: 'system', text: `마일스톤 ${state.milestone} 통과 — 로드맵에 pass 로 기록${outsideAudited ? '' : ' (외부 감사 없이 — ' + outsideWhy + ')'}`,

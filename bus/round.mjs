@@ -1131,6 +1131,33 @@ switch (cmd) {
           && selfWhy?.includes('만든 사람') && closed3 === true && shared?.includes('같은 파일') && shared.includes('bus/z.mjs') && early?.includes('만든 사람');
         out.push(['감사 자리 · 서로 감사(결정 125)', want ? '✓ editsOf(접두 뗌·Read 안 셈) · verdictSeats · outside/명단 밖 거부 · 안 정하면 카드 거부 · auditor ops → 카드 ✓ · 자기 파일은 남이 봐야(먼저 외부 문) · 레오 PASS → 닫힘·auditor 비움 · 같은 파일 거부 · 고치기 전 PASS 는 안 본 것' : '✗ ' + JSON.stringify({ edWant, seatsWant, badSeat, badName, noSeat, stAud, unseen, selfWhy, closed3, shared, early })]);
       }
+      // 계획표 다 끝난 뒤 연 "다음 계획표 대기" 회차를 또 PASS 로 닫아도 "N 통과"가 두 번 안 뜬다(2판 #9) —
+      // setMilestoneStatus 가 이미 pass 인 마일스톤에도 true 를 돌려줘 endRound 가 milestonePassed 를 또
+      // 세던 것을, 닫기 전에 이미 pass 인지 먼저 보고 막았다.
+      {
+        fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
+        const milestoneEvts = () => readLog(T).filter((e) => e.type === 'milestone' && e.meta?.index === 2).length;
+        const count0 = milestoneEvts();   // T 의 대화록은 이 check 실행 내내 쌓인다 — 절대 수가 아니라 이 블록이 늘린 만큼만 본다
+        setMilestoneStatus(T, 2, 'now');   // 남은 건 2뿐인 계획표를 흉내
+        startRound(T, { milestone: 2, topic: '9번 시험' });
+        artifact();
+        recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: shaped('됐다') });
+        emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['outside'], skipped: [], reason: null } });
+        endRound(T, { verdict: 'PASS' });   // 마일스톤 2 pass — 다른 마일스톤이 없어 "다음 계획표 대기" 회차가 열린다
+        const count1 = milestoneEvts() - count0;
+        // 방금 연 대기 회차를 또 PASS 로 닫는다 — 판정 카드가 있어야 하니 하나 더
+        artifact('물건2.md');
+        recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: shaped('또 됐다') });
+        emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['outside'], skipped: [], reason: null } });
+        endRound(T, { verdict: 'PASS' });
+        const count2 = milestoneEvts() - count0;
+        setMilestoneStatus(T, 2, 'wait');
+        if (readState(T).phase !== 'idle') endRound(T, { summary: '정리' });
+        for (const r of listApprovals({ team: T, status: 'pending' })) voidApproval(r.id, '자가 시험');
+        out.push(['대기 회차 PASS 닫기 — N 통과 두 번 안 뜸(2판 #9)', count1 === 1 && count2 === 1
+          ? '✓ 첫 PASS 만 마일스톤 통과로 세고, 대기 회차를 또 PASS 로 닫아도 안 늘어남'
+          : `✗ count1=${count1} count2=${count2}`]);
+      }
       // codex 가 도는 중 표시 — outside.mjs 가 두고 지우는 파일. 내 pid 로 두면 참, 지우면 null, 죽은 pid 는 무시(SIGKILL 로 못 지운 표시).
       {
         markOutsideRunning(T, 'outside');
