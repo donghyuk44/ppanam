@@ -1799,7 +1799,8 @@ function loadCard(team, rerender = null) {
 /** 오늘 쓴 것(토큰 장부 T1) — /api/dashboard 의 teams[].usage 를 팀별로 60초 캐시. 팀 카드 꼬리 '오늘 쓴 것 N번 $X' 가 쓴다(나리: 현황 '오늘 쓴 것' 은 테라). */
 const usage = { byTeam: {}, fetchedAt: 0 };
 // 오늘 쓴 것 — 12:5x 에 잠시 숨겼던 것(장부가 세션 누적값을 그대로 더해 총괄 $329 중 $214 가 거품, 나리 대리 결정)을 솔라가 세션별 델타(server/usage.mjs withCostDeltas, 레오 33회차 통과)로 고쳐 다시 켠다(나리 34회차 첫 손, 17:2x).
-const SHOW_USAGE = true;
+// → 다시 끔(대표 18:10 "갑자기 달러?? 무슨말이지?" — 정액 요금제라 달러는 내실 돈이 아닌 추정치, 나리·세라 정정 · 3판 꼬리는 "끝난 수/전체 · 지금 N단계" 뿐). 장부는 리포트·설정 쪽 몫.
+const SHOW_USAGE = false;
 function loadUsage(rerender = null) {
   if (Date.now() - usage.fetchedAt < 60_000) return;
   usage.fetchedAt = Date.now();
@@ -1928,7 +1929,8 @@ function renderTowerAll(grid) {
   if (!stat.decide) sec3.appendChild(el('div', 'dash__empty', '오늘은 없어요'));
   for (const it of mine) {
     const row = el('button', 'dash__row'); row.type = 'button';
-    row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '승인 필요' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));
+    const who = it.name ?? (it.by ? (summaries[it.team]?.cast?.[it.by]?.name ?? summaries.hq?.cast?.[it.by]?.name ?? null) : null);   // 누가 올렸나 — 글이 자에 걸려 머리만 남을 때 카드 둘이 같은 줄로 보이지 않게(톰 ②)
+    row.appendChild(el('b', null, `${it.teamName}${who ? ' · ' + who : ''} · ${it.kind === 'approval' ? '승인 필요' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));
     putLine(row, it.text, 'dash__sub', it.team);   // 대표 몫은 행은 남기고(누를 수 있어야) 글만 — 없으면 머리 한 줄(opus ④)
     row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '확인' : '채팅 열기'));
     row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (it.kind === 'approval') { const r = approvals.find((a) => a.id === (tg.approval ?? String(it.id).split(':')[1])); if (r) openApprovalPop(r); else document.querySelector('.approvals')?.scrollIntoView({ block: 'start' }); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
