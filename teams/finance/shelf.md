@@ -6,6 +6,7 @@
 
 ## 읽을 것 (경로만 먼저 보고, 필요한 절만)
 
+- `teams/hq/out/규칙.md` (42줄 · 5.5KB) — 지금 살아 있는 규칙 한 장(결정 189). 뒤집힌 결정은 여기 없다 — 원문은 `teams/dev/decisions.md` 에서 번호로. 세션 시작에 먼저, 통째 가능.
 - `teams/finance/out/daily-template.md` (96줄 · 10KB) — 아침 한 장 틀·재료·본보기. 4단계 동안 정본, 통째 가능.
 - `teams/finance/out/report/아침한장-잣대.md` (22줄) · `daily-first-check.md` — 잣대 두 줄과 첫 실물 검수표. 짧다.
 - `teams/hq/out/daily/<오늘>.md` — 검수 대상 실물. 어제 것(`2026-09-15-경영틀.md`·`2026-09-15.md`·`2026-09-14.md`)은 비교할 때만 — 밤에 daily 넷을 2~3번씩 읽었다, 한 번이면 된다.
