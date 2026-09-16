@@ -1317,6 +1317,35 @@ switch (cmd) {
           if (bBefore != null) fs.writeFileSync(bPath, bBefore); else clearBudget();
         }
       }
+      // 토큰 장부 델타(T1) — costUsd 는 세션 시작부터의 누적값. sessionId 가 있는 줄은 세션별로, 없는 줄(엔진이 안 줌)도
+      // 자리(team:actor)가 곧 프로세스 하나(N1 이전엔 sessionId 없는 엔진뿐)라 같은 식으로 묶어야 부풀지 않는다
+      // (나리 실측 09-16: 총괄 chief 가 sessionId 없이 12.9→14.3→14.6 을 그냥 더해 $214 로 부풀었다).
+      {
+        const { withCostDeltas } = await import('../server/usage.mjs');
+        const noSid = [
+          { ts: '2026-09-16T01:00:00Z', team: 'hq', actor: 'chief', sessionId: null, costUsd: 12.9 },
+          { ts: '2026-09-16T01:10:00Z', team: 'hq', actor: 'chief', sessionId: null, costUsd: 14.3 },
+          { ts: '2026-09-16T01:20:00Z', team: 'hq', actor: 'chief', sessionId: null, costUsd: 14.6 },
+          { ts: '2026-09-16T01:05:00Z', team: 'hq', actor: 'secretary', sessionId: null, costUsd: 3.0 },   // 딴 자리는 안 섞인다
+        ];
+        const dNoSid = withCostDeltas(noSid);
+        const noSidWant = Math.abs(dNoSid[0].costDelta - 12.9) < 1e-9 && Math.abs(dNoSid[1].costDelta - 1.4) < 1e-9
+          && Math.abs(dNoSid[2].costDelta - 0.3) < 1e-9 && Math.abs(dNoSid[3].costDelta - 3.0) < 1e-9;
+        const withSid = [
+          { ts: '2026-09-16T02:00:00Z', team: 'dev', actor: 'guide', sessionId: 's1', costUsd: 5 },
+          { ts: '2026-09-16T02:10:00Z', team: 'dev', actor: 'guide', sessionId: 's1', costUsd: 6 },
+        ];
+        const dSid = withCostDeltas(withSid);
+        const sidWant = dSid[0].costDelta === 5 && dSid[1].costDelta === 1;
+        const restart = withCostDeltas([   // 프로세스가 바뀌어 누적값이 작아지면 0 (과소평가는 해도 과대평가는 안 한다)
+          { ts: '2026-09-16T03:00:00Z', team: 'hq', actor: 'chief', sessionId: null, costUsd: 20 },
+          { ts: '2026-09-16T03:10:00Z', team: 'hq', actor: 'chief', sessionId: null, costUsd: 2 },
+        ]);
+        const restartWant = restart[0].costDelta === 20 && restart[1].costDelta === 0;
+        out.push(['토큰 장부 델타(T1 — sessionId 없는 줄)', noSidWant && sidWant && restartWant
+          ? '✓ sessionId 없어도 team:actor 로 묶어 델타 · sessionId 있으면 세션별 · 딴 자리 안 섞임 · 재시작(값 작아짐) 은 0'
+          : '✗ ' + JSON.stringify({ dNoSid, dSid, restart })]);
+      }
       // claude 자리로 codex 를 띄우면 거부 (결정 69 ① — --actor 는 cast.json 이 gpt 인 자리만). 진짜 방(dev)의 guide 는 claude 다. --dry 라 codex 는 안 뜬다.
       const devGuide = readCast('dev').agents?.guide?.model;
       const j2 = spawnSync('node', [path.join(ROOT, 'bus', 'outside.mjs'), '--team', 'dev', '--actor', 'guide', '--turn', 'called', '--dry'], { cwd: ROOT, encoding: 'utf8', timeout: 20_000 });

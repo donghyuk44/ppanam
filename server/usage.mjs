@@ -41,20 +41,25 @@ function readRows(file) {
  * 아니다. T2(회차가 닫혀도 세션을 안 버림) 뒤로는 한 세션이 여러 회차·여러 날을 살 수 있어, 이 줄들을
  * 그냥 더하면 같은 세션의 턴마다 이미 앞 턴의 비용까지 얹힌 값을 또 더하게 된다(독립검수 실측 — 3.8배
  * 부풀었다). 세션(sessionId)별로 시각순 정렬해 이전 값과의 차이만 그 턴이 실제로 쓴 돈이다 — 첫 턴은
- * 이전 값이 0 이라 그대로. sessionId 가 없는(엔진이 안 준) 줄은 델타를 못 구하니 그 줄 자체를 그 턴의
- * 값으로 본다(과소평가는 해도 3.8배 같은 과대평가는 안 한다). 입력·출력 토큰은 턴마다의 실제 값이라
- * (세션 누적이 아니다) 그대로 더한다 — 부푸는 건 costUsd 뿐이다.
+ * 이전 값이 0 이라 그대로. sessionId 가 없는(엔진이 안 준) 줄도 같은 자리(session.mjs 가 team·actor 마다
+ * 프로세스 하나만 띄운다)가 이어 쓴 누적값이라 똑같이 부푼다(나리 실측 09-16: 총괄 chief 12.9→14.3→14.6 을
+ * 그냥 더해 총괄 $329 중 $214 가 이 몫이었다) — team:actor 로 묶어 같은 델타를 낸다. 재시작으로 프로세스가
+ * 바뀌면 누적값이 작아질 수 있는데, 그때는 Math.max(0, …)이 0으로 막아 과소평가는 해도 과대평가는 안 한다.
+ * 입력·출력 토큰은 턴마다의 실제 값이라(세션 누적이 아니다) 그대로 더한다 — 부푸는 건 costUsd 뿐이다.
  * @returns rows 와 같은 길이 — 각 줄에 { ...row, costDelta } 를 붙인다. 순수 함수(round.mjs check 가 돌려본다).
  */
 export function withCostDeltas(rows) {
-  const bySession = new Map();
-  for (const r of rows) if (r.sessionId) (bySession.get(r.sessionId) ?? bySession.set(r.sessionId, []).get(r.sessionId)).push(r);
-  for (const group of bySession.values()) {
+  const byKey = new Map();
+  for (const r of rows) {
+    const key = r.sessionId ?? `${r.team}:${r.actor}`;
+    (byKey.get(key) ?? byKey.set(key, []).get(key)).push(r);
+  }
+  for (const group of byKey.values()) {
     group.sort((a, b) => new Date(a.ts) - new Date(b.ts));
     let prev = 0;
     for (const r of group) { const cur = r.costUsd ?? prev; r.costDelta = Math.max(0, cur - prev); prev = cur; }
   }
-  return rows.map((r) => r.sessionId ? r : { ...r, costDelta: r.costUsd ?? 0 });
+  return rows;
 }
 
 /**
