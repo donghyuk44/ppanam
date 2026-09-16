@@ -372,7 +372,7 @@ function renderHead() {
   const rb = $('roundBtn');
   // 막힌 방(FAIL)은 대표가 말해 풀기 전엔 닫히지 않는다 — 버튼을 보여 주면 누르고 거부당한다 (가드 R13).
   rb.hidden = office || blocked;
-  rb.textContent = open ? '회차 종료' : '회차 시작';
+  rb.textContent = open ? '회차 마무리' : '회차 시작';   // 사전 1절 확정 글자(마무리) — /마무리 와 같은 말(하영 req_1a45175b). L2 표 137행 '종료' 는 1절과 어긋나 1절을 따른다
   if (office) $('roundOpen').hidden = true;
 
   // 라운드 밖에서도 쓸 수 있다. 보내면 첫 줄이 주제로 채워진 열기 폼이 뜨고, 열리면 그 말이 첫 지시로 들어간다 (결정 19).
@@ -577,7 +577,7 @@ function renderSide() {
   j.appendChild(el('div', 'card__k', '일지'));
   const entries = Object.entries(journal);
   if (!entries.length) {
-    j.appendChild(el('div', 'card__note', '일지 없음 — 회차 종료 시 생성'));
+    j.appendChild(el('div', 'card__note', '일지 없음 — 회차 마무리 시 생성'));
   } else {
     for (const [id, text] of entries) {
       const d = el('details', 'jr');
@@ -2389,7 +2389,7 @@ function renderTowerTeams(grid) {
       (office || running) ? doSay() : doRound();
     });
 
-    const btn = el('button', 'tcard__r', running ? '회차 종료' : '회차 시작');
+    const btn = el('button', 'tcard__r', running ? '회차 마무리' : '회차 시작');   // 사전 1절 "28회차 마무리"
     btn.type = 'button';
     btn.hidden = office || s.phase === 'blocked';   // 막힌 방은 대표가 말해 풀기 전엔 닫히지 않는다
     btn.addEventListener('click', doRound);

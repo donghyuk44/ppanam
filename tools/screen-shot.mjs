@@ -37,6 +37,10 @@ await send('Emulation.setDeviceMetricsOverride', { width: Number(W), height: Num
 await send('Page.navigate', { url: `${SERVER}/#${HASH}` });
 await sleep(4000);
 if (TAB) { await ev(`(()=>{const b=document.querySelector('#towerTabs button[data-tab="${TAB}"]'); if(b){b.click();return 'clicked'} return 'no tab'})()`); await sleep(1500); }
+// 찍기 전 손질 한 줄(선택) — 8번째 인자 또는 PPANAM_SHOT_PREP: 페이지에서 돌릴 JS. 메뉴를 연 채로 찍을 때(예: 슬래시 메뉴 — 하영 req_1a45175b "/ 친 상태 412 한 장").
+//   node tools/screen-shot.mjs out.png dev/room 412 915 '' 9612 "const i=document.getElementById('input'); i.value='/'; i.dispatchEvent(new Event('input')); i.focus()"
+const PREP = process.argv[8] || process.env.PPANAM_SHOT_PREP || '';
+if (PREP) { const r = await ev(`(()=>{ try { ${PREP}; return 'prep ok' } catch (e) { return 'prep ERR ' + e.message } })()`); console.log('prep', r); await sleep(800); }
 const view = await ev(`document.getElementById('app')?.dataset.view ?? null`);
 const tab = await ev(`document.querySelector('#towerTabs button[aria-current="true"]')?.dataset.tab ?? null`);
 const vw = await ev('innerWidth');
