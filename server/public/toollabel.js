@@ -19,7 +19,7 @@ export function toolLabel(items, live, names = 3) {
   // 어간 + 어미: 앞은 "읽고", 마지막은 "읽는 중" 또는 끝난 꼴 "읽음"(어간을 포함한 온전한 말 — 어간을 다시 붙이지 않는다).
   const verbs = parts.map(([v, n], i) => `${n}개 ${i < parts.length - 1 ? v + '고' : live ? v + '는 중' : DONE[v]}`).join(' ');
   const uniq = [...new Set(items.map((it) => baseName(it.text)).filter(Boolean))];
-  const shown = uniq.slice(0, names).join(', ') + (uniq.length > names ? ' …' : '');
+  const shown = names > 0 ? uniq.slice(0, names).join(', ') + (uniq.length > names ? ' …' : '') : '';   // names 0 = 이름 없이 수만(접힌 줄 — 폴드 QA #12, 이름은 펼칠 때)
   return `파일 ${verbs}${shown ? ` (${shown})` : ''}`;
 }
 

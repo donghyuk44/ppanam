@@ -68,7 +68,7 @@ const roomAgents = () => Object.entries(cast.agents ?? {}).filter(([id, a]) => i
  * codex 자리는 세션이 없다 — 부를 때만 프로세스가 뜬다. 사회자가 돌리는 중이면 busy, 차례가 잡혔으면 turn, 아니면
  * off 다. 쉬는 codex 를 "듣는 중" 으로 그렸었다 (레오 R15 감사).
  */
-const STATE_LABEL = { off: '오프라인', idle: '수신 중', busy: '진행 중', turn: '답변 대기' };   // "일하는 중" 은 관제탑 알약과 같은 글자(하영 ③)
+const STATE_LABEL = { off: '오프라인', idle: '대기', busy: '진행 중', turn: '답변 대기' };   // 사전 0-3 폴드7 QA 표(3aa853b): 수신 중 → 대기   // "일하는 중" 은 관제탑 알약과 같은 글자(하영 ③)
 function stateOf(id) {
   const c = summary.conductor ?? {};
   const a = cast.agents?.[id];
@@ -690,7 +690,7 @@ function draw(e) {
 let toolGroup = null;   // { actor, node, sum, list, items: [{tool, text}] }
 
 // 문자열은 /toollabel.js 가 만든다 — node 에서도 돌려볼 수 있게 (bus/round.mjs check).
-const groupLabel = (g, live) => `${who(g.actor).name} · ${toolLabel(g.items, live)}`;
+const groupLabel = (g, live) => `${who(g.actor).name} · ${toolLabel(g.items, live, 0)}`;   // 접힌 줄엔 수만 — 영어 파일 이름은 펼칠 때(폴드 QA #12)
 
 function closeToolGroup() {
   if (!toolGroup) return;
@@ -1516,7 +1516,7 @@ function previewNode(r) {
  * 줄 = 누가 · 어디 · 결재 기다림 · N분 전 → 주제 → [읽고 답하기]. 누르면 카드가 팝업으로(approvalCard) — 왜 → 바뀌는 것 → N이 쓴 원문 → 낸 것 → 확인 / 돌려보냄.
  * 누른 뒤엔 카드가 사라지지 않고 그 줄이 "됐어요 — 확인, 개발에 전해졌어요 · 밤 10:50" 로 남는다(evt_f054428919 "전송이 안 된 거야?" 의 답, 5판 3-5-1). 낱말은 하영 5판. */
 const decidedLines = [];   // 이 화면에서 누른 것 — [{ id, text }] 새로 고침 전까지
-const GRADE_WORD = { A: '자동 승인', B: '검토 중', C: '대표 승인' };   // 하영 1절 — 대표가 B·C 를 외울 이유가 없다
+const GRADE_WORD = { A: '자동 승인', B: '총괄이 봄', C: '대표 승인' };   // 하영 1절 120행·0-3 폴드7 QA 표 — 대표가 B·C 를 외울 이유가 없다
 /** 시각을 때와 같이 — "아침 8:41 · 낮 12:13 · 새벽 3시 · 저녁 6시 · 밤 10:50"(하영 5판 3-5-1, 결정 101 우리 시각). :00 이면 "N시". */
 function whenKo(ts) {
   const d = new Date(ts); if (Number.isNaN(d.getTime())) return '';
@@ -1542,6 +1542,8 @@ function renderApprovals() {
   const mine = approvals.filter((r) => r.grade === 'C' && (!dg || r.proxyable === false));
   const theirs = approvals.filter((r) => !mine.includes(r));
   if (!theirs.length) theirsOpen = false;
+  // 대표 몫(mine)이 없으면 판 자체를 안 띄운다(폴드 QA #1 — "결재 · 결재 대기 1건 · 보기" 판이 모든 탭 첫 줄에 늘 서서 리포트를 열어도 첫 줄이 결재였다). 총괄 몫 수는 종 목록에 있다
+  if (!mine.length && !decidedLines.length) { box.hidden = true; return; }
   box.appendChild(el('div', 'approvals__k', mine.length ? `결재 ${mine.length}건` : '결재'));
   const line = (r) => {
     const row = el('button', 'apr apr--line'); row.type = 'button';
@@ -1558,7 +1560,7 @@ function renderApprovals() {
   for (const r of mine) box.appendChild(line(r));
   if (theirs.length) {
     const fold = el('button', 'apr apr--fold'); fold.type = 'button'; fold.setAttribute('aria-expanded', String(theirsOpen));
-    fold.appendChild(el('span', 'apr__what', `검토 중 ${theirs.length}건`));
+    fold.appendChild(el('span', 'apr__what', `결재 대기 ${theirs.length}건`));   // 사전 0-3 폴드7 QA 표: 검토 중 → 결재 대기(검토는 감사 동작 이름)
     fold.appendChild(el('span', 'apr__go', theirsOpen ? '접기' : '보기'));
     fold.addEventListener('click', () => { theirsOpen = !theirsOpen; renderApprovals(); });
     box.appendChild(fold);
@@ -1813,11 +1815,13 @@ function workBoardBlock() {
   sec.appendChild(el('div', 'dash__k', '작업 보드'));
   const nameOf = (team, seat) => summaries[team]?.cast?.[seat]?.name ?? summaries.hq?.cast?.[seat]?.name ?? seat;
   const streams = w.streams.filter((s) => s.items?.length && (s.items.length !== (s.counts?.['통과'] ?? 0) + (s.counts?.['안 함'] ?? 0)));   // 다 끝난 줄기는 안 그린다
+  // 흐름 이름은 사람 말(사전 0-3 폴드7 QA 표 3aa853b, #7 — work.json stream 은 그대로): 토큰→비용 · 카드 체계→카드 · 시안 대 실물→시안 맞춤 · 인격·자리→사람 설정
+  const STREAM_WORD = { '토큰': '비용', '권한': '권한', '화면 글': '화면 글', '카드 체계': '카드', '시안 대 실물': '시안 맞춤', '운영': '운영', '인격·자리': '사람 설정', '인격': '사람 설정' };
   for (const s of streams.slice(0, 7)) {
     const c = s.counts ?? {};
     const row = el('button', 'dash__row work__row'); row.type = 'button';
     const head = el('span', 'dash__head');
-    head.appendChild(el('b', null, s.name));
+    head.appendChild(el('b', null, STREAM_WORD[s.name] ?? s.name));
     const bits = [];
     if (c['진행']) bits.push(`진행 ${c['진행']}`);
     if (c['감사 대기']) bits.push(`감사 대기 ${c['감사 대기']}`);
@@ -1893,37 +1897,9 @@ function renderTowerAll(grid) {
     grid.appendChild(sec);
   }
 
-  // ② 누가 뭘 했나 · 오늘 — 숲: **사람마다 한 줄, 한 번씩**(톰 req_0964bae9 — 톰이 방마다 한 줄씩 두 번 섰고, 라운드 닫힘·마일스톤처럼 사람이 없는 것이 '개발·마케팅' 줄로
-  // 섰다. 그건 팀 것이라 ④ 팀 칸 몫). 막대 길이 = 오늘 한 것 수(가장 많이 한 사람이 끝까지), 옆에 그 수 — 시간 띠는 배경이 꽉 차 보여 아무 말도 안 했다.
-  // 나무: 여섯 줄, 넘치면 "더 보기"(오늘 안에서만)
+  // ② 최근 활동 · 오늘 — 여섯 줄, 넘치면 "더 보기"(오늘 안에서만). 사람별 막대(숲)는 뺐다 — 숫자 없는 게이지가 관제탑 내용 규칙 ④ "자기 통계 줄 0" 과 부딪혔다(폴드 QA #8, 나리 14:4x "내용 규칙 ④가 이김").
   const sec2 = el('section', 'dash__card'); sec2.dataset.block = 'done';
   sec2.appendChild(el('div', 'dash__k', '최근 활동 · 오늘'));
-  const byPerson = new Map();
-  for (const it of today) {
-    if (!it.by) continue;   // 사람이 없는 한 것(라운드 닫힘·마일스톤·부탁 닫힘) — 아래 여섯 줄엔 남는다
-    // 열쇠는 **사람** — 자리 이름만 쓰면 하영·테라(둘 다 guide)가 한 줄로 합쳐진다(나리 실측 22:57: 테라가 사라짐). 총괄실 사람(톰·세라·나리, 승인 판정·대리 결정의 제리)은
-    // 어느 방 일이든 한 사람이라 hq 로, 나머지는 방:자리. 이름은 서버가 같은 선으로 푼다(index.mjs doneName — 제리가 "레오" 로 서서 레오가 둘이던 것, 나리 실측 23:57).
-    const home = ['chief', 'secretary', 'system'].includes(it.by) || it.kind === 'decision' || it.kind === 'proxy' ? 'hq' : it.team;
-    const k = `${home}:${it.by}`;
-    if (!byPerson.has(k)) byPerson.set(k, { team: home, by: it.by, name: it.name ?? it.by, items: [] });
-    byPerson.get(k).items.push(it);
-  }
-  if (byPerson.size) {
-    const bands = el('div', 'bands');
-    const people = [...byPerson.values()].sort((a, b) => b.items.length - a.items.length).slice(0, 8);
-    const max = people[0].items.length;
-    for (const p of people) {
-      const line = el('div', 'bands__row');
-      const lab = el('span', 'bands__who'); const d = el('span', 'dot'); d.style.background = seatColor(p.team, p.by); lab.appendChild(d); lab.append(p.name); line.appendChild(lab);
-      // 수는 글자로 안 적는다 — '오늘 한 것 N' 은 M2 에서 뺀 자기 통계(하영 req_0964bae9 · 내용 2판 9절 5). 길이만, 손 올리면 한 줄
-      const cell = el('span', 'bands__bar');
-      const bar = progressBar(p.items.length, max, seatColor(p.team, p.by)); bar.title = `${p.name} · 오늘 ${p.items.length}건`; bar.style.width = 'min(100%, 160px)';
-      cell.appendChild(bar);
-      line.appendChild(cell);
-      bands.appendChild(line);
-    }
-    sec2.appendChild(bands);
-  }
   const all = done.items.filter((it) => it.by !== 'boss');
   const items = all.slice(0, done.more ? 60 : 6);
   if (!items.length) sec2.appendChild(el('div', 'dash__empty', done.fetchedAt ? '완료 없음' : '로딩 중'));
@@ -1962,7 +1938,7 @@ function renderTowerAll(grid) {
     }
     for (const b of fromBoard) {
       const row = el('button', 'dash__row'); row.type = 'button';
-      row.appendChild(el('b', null, `${b.teamName} · 상황판`));
+      row.appendChild(el('b', null, b.teamName));   // 머리는 팀 이름 한 번 — '상황판' 은 어디서 왔나지 제목이 아니다(폴드 QA #4, daily-words 1절)
       row.appendChild(bossLine(b.text, 'dash__sub'));
       row.addEventListener('click', goRoom(teams.find((t) => t.id === b.team)));
       sec3.appendChild(row);
@@ -2042,7 +2018,7 @@ function whyStopped(t, p) {
   if (p.state === 'blocked') return BOSS_WHY[s.needsBossWhy] ?? '답변 필요';
   // 세션이 안 떠 있는 것(alive false)은 '재시작 필요' 가 아니다 — 서버가 켜진 직후엔 다 그렇고 첫 차례에 다시 뜬다(T2·sessions.json). 대표가 켠 직후 '다 죽었다' 로 읽으셨다(나리 12:3x, 새는 것 ⑥).
   if (p.state === 'waiting') return s.phase !== 'running' ? '진행 중인 회차 없음' : '대기 — 멘션 시 응답';
-  if (p.state === 'resting') return p.alive === null ? '대기 — 5분 이상 멘션 없음' : '대기 — 멘션 시 다시 뜸';
+  if (p.state === 'resting') return p.alive === null ? '대기 — 5분 이상 멘션 없음' : '대기 — 부르면 와요';   // 사전 0-3 폴드7 QA 표: 다시 뜸 → 부르면 와요
   return '';
 }
 
@@ -2527,19 +2503,19 @@ function loadDashboardBand(r) {
     if (s.status === 'blocked') return s.blockedWhy ?? '';
     if (!s.plannedFrom) return `${stageNo(s)} ${s.title}`;   // timebox 없는 단계 — 날짜를 지어내지 않는다
     const base = `${timeWord(s.plannedFrom, now)} 시작 · 회차 평균 ${spanWord(t.roundMs)}${s.rounds != null ? ` × ${roundsWord(s.rounds)}회차` : ''} → ${timeWord(s.plannedTo, now)}`;
-    return s.late > 0 ? `${base} · 예정 대비 ${spanWord(s.late)} 지연 — 중단 시간 제외` : base;
+    return s.late >= 60_000 ? `${base} · 예정 대비 ${spanWord(s.late)} 지연 — 중단 시간 제외` : base;   // 1분 미만은 지연 아님(폴드 QA #15)
   };
   for (const t of r.teams ?? []) {
     const row = el('div', 'band__row'); row.dataset.team = t.id;
     const label = el('div', 'band__team');
     label.appendChild(el('b', null, t.room ?? t.name));
     const nowStage = t.stages.find((s) => s.status === 'running' || s.status === 'blocked');
-    label.appendChild(el('span', null, nowStage ? `${nowStage.n}단계 ${shortTitle(nowStage)}` : '마일스톤 없음'));
+    label.appendChild(el('span', null, nowStage ? `${nowStage.n}단계 ${shortTitle(nowStage)}` : '단계 없음'));   // 사전 1절 125행 — 단계(마일스톤은 0-3 후보로만, 폴드 QA #14)
     row.appendChild(label);
     const lane = el('div', 'band__lane'); lane.style.setProperty('--team', t.color ?? 'var(--ink-4)');
     lane.style.setProperty('--seg', `${seg}%`);   // 칸 선 — 눈금 수에 맞춰(폰 넷·컴퓨터 다섯 + 뒤 한 칸)
     if (!t.stages.length) {   // 빈칸 말 둘(1-2) — 계획표 파일이 없다 / 있는데 남은 단계가 없다. 대표 문이 아니다 — 총괄실 계획표는 톰이, 경영 다음 단계는 노라가 적는다(T7)
-      const g = el('button', 'band__box band__box--gated', t.hasRoadmap === false ? '로드맵 없음' : '다음 마일스톤 없음'); g.type = 'button'; g.style.left = '0'; g.style.width = '48%';
+      const g = el('button', 'band__box band__box--gated', t.hasRoadmap === false ? '로드맵 없음' : '다음 단계 없음'); g.type = 'button'; g.style.left = '0'; g.style.width = '48%';
       g.addEventListener('click', () => openWhy(row, '로드맵 등록 시 표시'));
       lane.appendChild(g);
     }
@@ -2558,7 +2534,8 @@ function loadDashboardBand(r) {
       b.style.left = `${left}%`; b.style.width = `${width}%`;
       b.addEventListener('click', () => openWhy(row, `${whyOf(t, s)} — 로드맵은 현황 팀 카드에`));
       lane.appendChild(b);
-      if (s.late > 0) { const lt = el('span', 'band__late', `${stageNo(s)} ${spanWord(s.late)} 지연`); lt.style.setProperty('--w', `${Math.max(3, Math.min(40, x(now + s.late)))}%`); lane.appendChild(lt); row.classList.add('band__row--late'); }
+      // 1분 미만은 지연이 아니다 — "0분 지연" 빨간 글자(폴드 QA #15)
+      if (s.late >= 60_000) { const lt = el('span', 'band__late', `${stageNo(s)} ${spanWord(s.late)} 지연`); lt.style.setProperty('--w', `${Math.max(3, Math.min(40, x(now + s.late)))}%`); lane.appendChild(lt); row.classList.add('band__row--late'); }
     }
     row.appendChild(lane);
     // 담당 점 둘(1-3, 결정 128 "누가") — 그 팀의 둘, 머리글자 · 직책 색. 서버 owners(cast 에서 다른 회사 뺀 둘, 팀장 먼저)
@@ -2572,7 +2549,8 @@ function loadDashboardBand(r) {
   const bg = (r.bossGates ?? []).filter((g) => g.kind === 'stage');
   if (bg.length) {
     gates.appendChild(el('div', 'gates__k', `대표 결정 대기 ${bg.length}`));
-    for (const g of bg) { const c = el('div', 'gates__card'); c.appendChild(el('b', null, teams.find((t) => t.id === g.team)?.name ?? g.team)); c.append(' ' + g.what); gates.appendChild(c); }
+    // 꼬리가 두 번("— 대표가 고른 뒤 — 대표가 고른 뒤", 폴드 QA #16 — 로드맵 제목에 이미 든 조건을 서버가 한 번 더 붙임) → 하나로
+    for (const g of bg) { const c = el('div', 'gates__card'); c.appendChild(el('b', null, teams.find((t) => t.id === g.team)?.name ?? g.team)); c.append(' ' + String(g.what ?? '').replace(/( — [^—]+?)\s*\1$/, '$1')); gates.appendChild(c); }
   }
 }
 
@@ -2583,10 +2561,8 @@ async function loadDashboard() {
   if (dashMark === mark) return;   // 안 바뀌었으면 다시 안 그린다(펼친 줄이 닫히지 않게 — 다른 탭과 같은 습관)
   dashMark = mark;
   if (r?.teams) loadDashboardBand(r);
+  // 아래층 '예정 작업 표 (톰)' — 톰 문서(plan-table.md) 원문을 통째로 붙이던 것은 뺐다(폴드 QA #17 못 씀: 대표 화면에 작업 문서 원문·옛 말 "관제탑·방·마을"). 위 띠가 그 표다. 줄기 × 작은 일 표(작업보드)는 34회차.
   body.replaceChildren();
-  if (!r?.text) { body.appendChild(el('p', 'tcard__quiet', '아직 예정 작업 표가 없어요 — teams/hq/out/plan-table.md 가 오면 여기 뜹니다.')); return; }
-  body.appendChild(el('div', 'gates__k', '예정 작업 표 (톰)'));
-  body.appendChild(mdToDom(r.text));
 }
 
 /* ══ 보고서 — "어제 하루가 어땠나" (나리 정본 · 헨리 report 1판 · 결정 80·81, 새 7단계) ══
@@ -2638,7 +2614,7 @@ function renderReport(r) {
       row.addEventListener('click', () => { const tg = it.target ?? {}; if (it.kind === 'approval') { const a = approvals.find((x) => x.id === (tg.approval ?? String(it.id).split(':')[1])); if (a) openApprovalPop(a); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
       sec.appendChild(row);
     }
-    for (const b of fromBoard) { const row = el('button', 'dash__row'); row.type = 'button'; row.appendChild(el('b', null, `${b.teamName} · 상황판`)); row.appendChild(bossLine(b.text, 'dash__sub')); row.addEventListener('click', () => jumpTo(b.team, null)); sec.appendChild(row); }
+    for (const b of fromBoard) { const row = el('button', 'dash__row'); row.type = 'button'; row.appendChild(el('b', null, b.teamName)); row.appendChild(bossLine(b.text, 'dash__sub')); row.addEventListener('click', () => jumpTo(b.team, null)); sec.appendChild(row); }   // 머리는 팀 이름 한 번(폴드 QA #4)
     body.appendChild(sec);
   }
 
@@ -2706,7 +2682,7 @@ function renderReport(r) {
     const head = el('span', 'dash__head');
     const d = el('span', 'dot'); d.style.background = colorOf(t.id); head.appendChild(d);
     head.appendChild(el('b', null, t.room ?? t.name));
-    head.appendChild(el('span', 'dash__stage', t.milestone ? `${t.milestone}단계 ${t.milestoneTitle ?? ''}`.slice(0, 22) + (t.round ? ` · ${t.round}회차` : '') : '마일스톤 없음'));
+    head.appendChild(el('span', 'dash__stage', t.milestone ? `${t.milestone}단계 ${t.milestoneTitle ?? ''}`.slice(0, 22) + (t.round ? ` · ${t.round}회차` : '') : '단계 없음'));
     if (!t.office && t.total) { head.appendChild(progressBar(t.done, t.total, colorOf(t.id))); head.appendChild(el('span', 'bars__n', `${t.done}/${t.total}`)); }
     row.appendChild(head);
     row.appendChild(el('span', 'dash__sub', made.length ? made.slice(0, 2).map((it) => it.text.replace(/^(커밋|산출물) — /, '')).join(' · ') : '완료 없음'));

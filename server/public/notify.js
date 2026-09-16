@@ -160,7 +160,7 @@ export function blockedOf({ teams = [], summaries = {}, approvals = [], requests
   for (const r of approvals) {
     if (r.grade !== 'C' && r.grade !== 'B') continue;
     push({ id: `approval:${r.id}`, kind: 'approval', where: 'approval', team: r.team, by: r.by, waitOn: r.grade === 'C' ? 'boss' : 'chief', state: r.grade,
-      text: `승인 [${r.grade}] ${oneLine(r.what, 120)}`, since: r.ts, target: { view: 'tower', team: r.team, approval: r.id } });
+      text: `${r.grade === 'C' ? '결재 대기' : '총괄이 봄'} · ${oneLine(r.what, 120)}`, since: r.ts, target: { view: 'tower', team: r.team, approval: r.id } });   // 사전 1절 120행·0-3 폴드7 QA 표(#20): 등급 글자 [B] 대신 사람 말
   }
   // 요청 블록 — 상태가 곧 누구 차례인지다(bus/requests.mjs foldRequest): open 은 받는 쪽(done 을 내야), done 은 요청한 쪽(ack), acked 는 톰(confirm).
   for (const r of requests) {

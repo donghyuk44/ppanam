@@ -182,7 +182,7 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
     const foot = el('footer', 'card__foot');
     const bits = [];
     if (d.stage) {
-      if (d.stage.n != null) bits.push(d.stage.total != null ? `마일스톤 ${d.stage.n}/${d.stage.total}` : `마일스톤 ${d.stage.n}`);   // 사전 62행(L1·L2) — 단계 → 마일스톤, 낱말이 먼저
+      if (d.stage.n != null) bits.push(d.stage.total != null ? `${d.stage.n}/${d.stage.total} 단계` : `${d.stage.n}단계`);   // 사전 1절 125행·0-3 폴드7 QA 표(3aa853b): 단계(마일스톤은 후보로만)
       if (d.stage.round != null) bits.push(`${d.stage.round}회차`);
     }
     if (d.usage && (d.usage.turns > 0 || d.usage.costUsd > 0)) bits.push(`오늘 쓴 것 ${d.usage.turns ?? 0}번${d.usage.costUsd > 0 ? ` $${Number(d.usage.costUsd).toFixed(2)}` : ''}`);
