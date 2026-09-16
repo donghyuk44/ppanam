@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed, readRoadmap, listApprovals, readWork } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, verdictTargetActor, withVerdictTarget, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed, readRoadmap, listApprovals, readWork } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { ga, eul } from './public/toollabel.js';
 
@@ -278,7 +278,9 @@ function giveTurn(team, actor, kind, tries = 1) {
   }
 
   const { lines, last } = unheard(team, actor, kind === 'carried' ? { fromRound: r.carryFrom } : {});
-  const instruction = kind === 'verdict' ? VERDICT_INSTRUCTION(target, nameOf(team, session.ownerOf(team))) : INSTRUCTION[kind];
+  // 만든 사람 — 예전엔 늘 방 주인이었다(테라). 서로 감사(결정 125)로 ops 등이 평가받을 땐 틀린 이름이었다 —
+  // target 글에 이미 박힌 '대상:' 표시(startVerdict)를 그대로 읽으면 맞는 자리가 나온다.
+  const instruction = kind === 'verdict' ? VERDICT_INSTRUCTION(target, nameOf(team, verdictTargetActor(team, target))) : INSTRUCTION[kind];
   // 턴마다 이름을 한 번 불러 준다 — 긴 세션에서 말투가 모델 기본값으로 흘러가는 것을 막는 닻 (docs/cases.md 24·25).
   const anchor = kind === 'verdict' ? '' : `너는 ${nameOf(team, actor)}다. `;
   const body = (lines.length ? `그동안 이 방에서 오간 말:\n\n${lines.join('\n')}\n\n---\n` : '') + anchor + instruction;
@@ -483,7 +485,10 @@ export function startVerdict(team, target) {
   if (!steps.length) throw new Error('이 방에는 감사역이 없습니다.');
   r.round = state.round;
   r.verdictAsk = null;   // 흐름이 돌면 말로 부른 기록은 할 일을 다했다
-  r.flow = { target: String(target ?? '').trim() || '이번 라운드 산출물', steps, i: 0, asked: 0, skipped: outsideWhy && out ? ['outside'] : [], reason: outsideWhy };
+  // 대상을 여기서 한 번 정해 글에 박는다(세라 조건 — 판정 요청마다 '대상:' 명시, apr_132205cc) — 클로드
+  // 감사역(giveTurn)도 codex·gemini 감사역(bus/outside.mjs)도 같은 이 글을 받으니 어느 길이든 같은 값이다.
+  const targetText = String(target ?? '').trim() || '이번 라운드 산출물';
+  r.flow = { target: withVerdictTarget(team, targetText).text, steps, i: 0, asked: 0, skipped: outsideWhy && out ? ['outside'] : [], reason: outsideWhy };
   // meta.target — 판정 대상 글 그대로. 닫을 때 bus.artifactsOf 가 여기서 out/ 경로를 읽어 산출물이 비었는지 본다(8단계).
   emit(team, { actor: 'system', type: 'note', text: `판정 시작 — ${r.flow.target}. ${steps.map((s) => nameOf(team, s)).join(' → ')} 순서.`, meta: { verdictFlow: 'start', steps, skipped: r.flow.skipped, reason: outsideWhy, target: r.flow.target } });
   if (out && outsideWhy) {

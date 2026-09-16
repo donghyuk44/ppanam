@@ -364,8 +364,9 @@ function splitVerdict(text) {
   return { verdict: null, body: text };
 }
 
-/** 판정 차례. 첫 줄 PASS/REVISE 규약 — 클로드 자리와 같다. 글은 bus.verdictInstruction 하나 — 떨어뜨릴 이유 셋 먼저(점검-0916 3-9 ⑥). */
-const VERDICT_TURN = (target) => verdictInstruction(target);
+/** 판정 차례. 첫 줄 PASS/REVISE 규약 — 클로드 자리와 같다. 글은 bus.verdictInstruction 하나 — 떨어뜨릴 이유 셋 먼저(점검-0916 3-9 ⑥).
+ * 만든 사람 이름은 target 글에 이미 박힌 '대상:' 표시(server/conductor.mjs startVerdict)에서 읽는다 — 늘 주인이 아니다(결정 125 서로 감사). */
+const VERDICT_TURN = (team, target) => verdictInstruction(target, readCast(team).agents?.[verdictTargetActor(team, target)]?.name ?? null);
 /** 일지 차례. 답은 대화록이 아니라 journal/outside.md 에 간다. 지시문은 클로드 자리와 같은 것(bus.mjs journalPrompt) — 첫 문장 "나는 …". */
 const JOURNAL_TURN = journalPrompt;
 
@@ -452,7 +453,7 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   // 이어지는 세션에는 짧은 닻 한 줄만 준다(personaAnchor) — 인격을 잊었다는 신호(빗나간 말투 등)가 보이면 --reset 으로 새 세션을 열어 전문을 다시 태운다.
   const persona = personaOf(team);
   const instruction = turn === 'verdict'
-    ? VERDICT_TURN(text || question)
+    ? VERDICT_TURN(team, text || question)
     : turn === 'journal'
       ? JOURNAL_TURN(round)
       : turn

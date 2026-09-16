@@ -720,6 +720,19 @@ switch (cmd) {
         out.push(['판정 대상 자리 찾기(target 고정 버그)', vt1 === 'ops' && vt2 === 'guide' && vt3 === 'ops' && vt4 === 'guide' && vt5 === 'ops' && vt6 === 'guide'
           ? '✓ 이름 있으면 그 자리 · 없으면 guide · 글 순서로 먼저 나온 이름 · boss·system 은 후보 아님 · 감사역(outside·review) 도 후보 아님(2판 #1)'
           : '✗ ' + JSON.stringify({ vt1, vt2, vt3, vt4, vt5, vt6 })]);
+        // 대상 없는 판정 요청 0건(세라 조건, apr_132205cc) — withVerdictTarget 이 target 글에 '· 대상: <자리>' 를 박고,
+        // verdictTargetActor 는 그 표시를 이름 찾기보다 먼저 읽는다 — 왕복해도 같은 자리, 그리고 표시 자체가 늘 있다.
+        const { withVerdictTarget } = await import('./bus.mjs');
+        const w1 = withVerdictTarget(T, '솔라 서버 것 봐줘');           // 이름이 있어도
+        const w2 = withVerdictTarget(T, '이번 라운드 산출물');          // 이름이 없어도(guide 로 박힘)
+        const w3 = withVerdictTarget(T, '레오, 솔라 서버 것 봐줘');      // 감사역이 먼저 나와도
+        const hasMark = (s) => /· 대상: [a-z]+/.test(s);
+        const roundTrip = (w) => verdictTargetActor(T, w.text) === w.seat;
+        const wWant = w1.seat === 'ops' && w2.seat === 'guide' && w3.seat === 'ops'
+          && hasMark(w1.text) && hasMark(w2.text) && hasMark(w3.text) && roundTrip(w1) && roundTrip(w2) && roundTrip(w3);
+        out.push(['대상 없는 판정 요청 0건(withVerdictTarget)', wWant
+          ? '✓ 글마다 · 대상: <자리> 를 박음 · 없는 경우 없음 · verdictTargetActor 왕복해도 같은 자리'
+          : '✗ ' + JSON.stringify({ w1, w2, w3 })]);
       }
       // 닫히는 중 쌓인 차례는 다음 라운드로 (결정 25) — 호명·제3자만 넘기고 판정·침묵·점심은 버린다. 순수 함수 pickCarry.
       const { pickCarry, staleCalls, mergeCarry } = await import('../server/conductor.mjs');
