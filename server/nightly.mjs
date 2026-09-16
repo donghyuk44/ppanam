@@ -127,16 +127,23 @@ export const yesterdayKey = (now = Date.now()) => dayKeySeoul(dayStartOf(dayKeyS
 // 사람 말 한 줄(결정 140, server/public/bosswords.js bossOk)에 안 맞는 재료는 지어 쓰지 않고 NOT_YET 으로 낸다 —
 // 자동이 "사람 말을 만들어내는" 게 아니라 "이미 사람이 사람 말로 써 둔 것만 고른다"가 이 장의 계약이다.
 
-const MORNING_OFFSET_MS = 6.5 * 3600_000;   // 06:30 — 우리 시각 그날 0시로부터
 const dailyDir = () => path.join(paths('hq').out, 'daily');
 const dailyFileOf = (day) => path.join(dailyDir(), `${day}.md`);
 const dailyAutoFileOf = (day) => path.join(dailyDir(), `${day}-자동.md`);
 const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
 
-/** 오늘 06:30(KST) 이 지났으면 그 날짜, 아직이면 null — `yesterdayKey` 의 짝(저긴 지난 자정, 여긴 지난 06:30). */
-export function morningDueDay(now = Date.now()) {
-  const day = dayKeySeoul(now);
-  return now >= dayStartOf(day) + MORNING_OFFSET_MS ? day : null;
+/**
+ * 가장 최근 회차 닫힘 또는 판정 시각 — "지금 다시 만들 이유가 있나"의 재료(결정 188, 대표 09-16 17:0x
+ * "몇 시에 한다고 정해진 거 다 파기해라" — 06:30 이 아니라 회차가 닫히거나 결정이 나면 다시 만드는 한 장).
+ * 사건이 없으면 0.
+ */
+function latestActivityAt() {
+  let latest = 0;
+  for (const t of rooms()) {
+    for (const r of listRounds(t.id)) { const e = Date.parse(r.endedAt ?? ''); if (Number.isFinite(e) && e > latest) latest = e; }
+    for (const a of listApprovals({ team: t.id })) { const d = Date.parse(a.decidedAt ?? ''); if (Number.isFinite(d) && d > latest) latest = d; }
+  }
+  return latest;
 }
 
 /** 대표 화면에 낼 수 있으면 그 줄, 아니면 null(자에 안 맞음 — 지어 쓰지 않는다). */
@@ -144,11 +151,12 @@ const line = (s) => { const v = String(s ?? '').trim(); return v && bossOk(v) ? 
 
 /**
  * 아침 한 장 — 팀당 한 줄 셋(된 것 · 막힌 것 · 대표님 손) + 조건부 대리 결정. 읽기만, 쓰지 않는다.
- * @param day    'YYYY-MM-DD'(우리 시각) — 창은 그 전날 06:30 ≤ ts < 그날 06:30
+ * @param day    'YYYY-MM-DD'(우리 시각, 파일 이름·머리글만 — 창 경계가 아니다)
+ * @param now    창은 지금부터 24시간 앞(회차 닫힘·결정이 다시 만들 때마다 "요즘 하루"를 담는다 — 06:30 경계 없음, 결정 188)
  * @returns { day, md, counts: { blocked, boss }, skipped: [{ team, text }] }  skipped = 자에 안 맞아 뺀 재료(규칙 4, 팀 방에 알릴 것)
  */
 export function buildMorning(day, { now = Date.now() } = {}) {
-  const end = dayStartOf(day) + MORNING_OFFSET_MS, start = end - 86_400_000;
+  const end = now, start = end - 86_400_000;
   const inWin = (ts) => { const t = Date.parse(ts ?? ''); return Number.isFinite(t) && t >= start && t < end; };
   const teams = rooms();
   const delegating = !!readDelegation(now);   // 위임 중이면 C 카드 줄은 안 낸다(유진 틀 2절 표 4행) — 톰·제리가 대리한다
@@ -206,33 +214,38 @@ export function buildMorning(day, { now = Date.now() } = {}) {
 }
 
 let morningRunning = false;
-let morningClosedFor = null;   // 이 프로세스가 이미 쓴 날 — 틱마다 파일을 안 열게
 let morningRetryAt = 0;
 
 /**
- * 틱마다. 오늘 06:30(우리 시각) 이 지났고 아직 안 썼으면 쓴다. 겹치지 않는다. 자정 마감과 같은 스위치(state/nightly.json.on)를 쓴다 —
- * 나리 결정(09-15, 위임 136): "코드는 두되 켜지 않는다" 는 자정만이 아니라 서버가 자동으로 내는 장 전체에 건 스위치다.
+ * 틱마다. 06:30 같은 시각이 아니라 **회차가 닫히거나 결정이 나면** 다시 만든다(결정 188) — 마지막으로 쓴
+ * 파일보다 더 최근 사건(latestActivityAt)이 있을 때만. 사건이 없으면(마감 뒤 아무 일도 없으면) 안 쓴다 —
+ * "대표님이 열 때 최신이면 된다"(계약 371~373행)와 같은 원칙, 다만 여긴 열기 전에 미리 준비해 둔다.
+ * 자정 마감과 같은 스위치(state/nightly.json.on)를 쓴다 — 나리 결정(09-15, 위임 136): "코드는 두되 켜지
+ * 않는다" 는 자정만이 아니라 서버가 자동으로 내는 장 전체에 건 스위치다.
  * @param session  자리 채우기용(runNightly 와 자리 맞춤) — 정적 요약이라 실제로는 안 부른다.
  */
 export async function runMorning({ now = Date.now(), session = null } = {}) {
-  const day = morningDueDay(now);
-  if (!day || morningRunning || morningClosedFor === day || now < morningRetryAt) return null;
+  if (morningRunning || now < morningRetryAt) return null;
   if (!nightlyOn()) return null;
+  const activity = latestActivityAt();
+  if (!activity) return null;   // 회차도 결정도 아직 없으면 만들 이유가 없다
+  const day = dayKeySeoul(now);
   const file = dailyFileOf(day);
   let target = file, auto = false;
-  if (fs.existsSync(file)) { target = dailyAutoFileOf(day); auto = true; if (fs.existsSync(target)) { morningClosedFor = day; return null; } }
+  if (fs.existsSync(file)) { target = dailyAutoFileOf(day); auto = true; }   // 손 글이 있으면 자동 판은 따로 — 손 글을 덮지 않는다
+  let mtime = 0; try { mtime = fs.statSync(target).mtimeMs; } catch { /* 아직 없음 */ }
+  if (mtime >= activity) return null;   // 마지막으로 쓴 뒤로 새 사건이 없다 — 이미 최신
   morningRunning = true;
   try {
     const out = buildMorning(day, { now });
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, out.md);
     writeStore({ ...readStore(), morning: { day, at: new Date(now).toISOString(), auto, blocked: out.counts.blocked, boss: out.counts.boss } });
-    morningClosedFor = day;
 
     for (const s of out.skipped) emit(s.team, { actor: 'system', type: 'note', text: `아침 한 장 자에 안 맞아 뺀 줄 — 다시 쓰면 다음 장에 실립니다: ${s.text}`.slice(0, 200) });
     emit('hq', {
       actor: 'system', type: 'note',
-      text: `아침 한 장 ${day} — 막힌 것 ${out.counts.blocked} · 대표님 손 ${out.counts.boss} · ${rel(target)}${auto ? ' (손 글이 있어 자동 판을 따로 냄)' : ''}`,
+      text: `아침 한 장 ${day} 다시 만듦 — 막힌 것 ${out.counts.blocked} · 대표님 손 ${out.counts.boss} · ${rel(target)}${auto ? ' (손 글이 있어 자동 판을 따로 냄)' : ''}`,
       meta: { morning: { day, file: rel(target), auto, blocked: out.counts.blocked, boss: out.counts.boss } },
     });
     return { day, file: rel(target), auto, ...out.counts };
