@@ -1133,13 +1133,13 @@ input.addEventListener('paste', (e) => {
 });
 
 /* ── / 명령 (C13 — 대표 09-16 그림: 입력창 "/ 입력 시 명령어" 자리, 오르카 모양·구조 참고만). "/" 를 치면 명령 목록이 뜨고 고르면 그대로 실행.
- * 이름은 하영이 사전 낱말로 정한다 — 그때 이 표의 글자만 바꾼다. 아직 길이 없는 것(사진·검색)은 목록에 두되 '준비 중'. ── */
+ * 이름은 하영 사전 3-2-1(6a7a239, 나리 R32): /시작 /마무리 /검토 /스크린샷 /검색 다섯 + @ 는 '멘션'. 아직 길이 없는 것(스크린샷·검색)은 목록에 두되 '준비 중'. ── */
 const SLASH_COMMANDS = [
-  { id: 'open', name: '회차 시작', hint: '이 방에 새 회차를 연다', run: () => { input.value = ''; fitInput(); showOpen(true, {}); } },
-  { id: 'close', name: '회차 종료', hint: '이번 회차를 닫는다 — 판정·일지', run: () => { input.value = ''; fitInput(); $('roundBtn').click(); } },
-  { id: 'verdict', name: '판정 부르기', hint: '외부 감사에게 이번 산출물 판정을 청한다', run: () => { const o = Object.entries(cast.agents ?? {}).find(([id]) => id === 'outside')?.[1]; input.value = `${o?.name ?? '레오'}, 판정 부탁해요 — `; fitInput(); input.focus(); input.selectionStart = input.selectionEnd = input.value.length; } },
-  { id: 'mention', name: '부르기', hint: '이 방 사람을 @ 로 부른다', run: () => { input.value = '@'; fitInput(); input.focus(); input.selectionStart = input.selectionEnd = 1; renderMentionPop(); } },
-  { id: 'shot', name: '사진', hint: '준비 중 — 화면 사진은 아직 나리 손', disabled: true },
+  { id: 'start', name: '시작', hint: '이 방에 새 회차를 연다', run: () => { input.value = ''; fitInput(); showOpen(true, {}); } },
+  { id: 'end', name: '마무리', hint: '이번 회차를 닫는다 — 검토·일지', run: () => { input.value = ''; fitInput(); $('roundBtn').click(); } },
+  { id: 'review', name: '검토', hint: '외부 감사에게 이번 산출물 검토를 청한다', run: () => { const o = Object.entries(cast.agents ?? {}).find(([id]) => id === 'outside')?.[1]; input.value = `${o?.name ?? '레오'}, 검토 부탁해요 — `; fitInput(); input.focus(); input.selectionStart = input.selectionEnd = input.value.length; } },
+  { id: 'mention', name: '멘션', hint: '이 방 사람을 @ 로 부른다', run: () => { input.value = '@'; fitInput(); input.focus(); input.selectionStart = input.selectionEnd = 1; renderMentionPop(); } },
+  { id: 'screenshot', name: '스크린샷', hint: '준비 중 — 화면 사진은 아직 나리 손', disabled: true },
   { id: 'search', name: '검색', hint: '준비 중 — 대화 검색은 아직 없다', disabled: true },
 ];
 const slashPop = el('div', 'mpop mpop--slash'); slashPop.hidden = true; slashPop.setAttribute('role', 'listbox');
