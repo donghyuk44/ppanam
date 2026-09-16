@@ -68,7 +68,7 @@ const me = whoAmI();
 /* ── 인자 ── */
 
 const argv = process.argv.slice(2);
-const o = { team: null, mode: null, grade: null, id: null, as: null, decision: null, detail: '', all: false, push: false, next: false, restart: false, roadmap: null, out: [], to: null, why: '', due: null, untilMilestone: false, small: false };
+const o = { team: null, mode: null, grade: null, id: null, as: null, decision: null, detail: '', all: false, push: false, next: false, restart: false, roadmap: null, out: [], to: null, why: '', due: null, untilMilestone: false, small: false, boss: '' };
 const words = [];
 
 for (let i = 0; i < argv.length; i++) {
@@ -78,6 +78,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--decide' || a === '-d') { o.mode = 'decide'; o.id = argv[++i]; }
   else if (a === '--as') o.as = argv[++i];
   else if (a === '--detail') o.detail = argv[++i];
+  else if (a === '--boss') o.boss = argv[++i];   // --decide 의 사람 말 한 줄(대리 결정 리포트 요약, 테라 code-review 지적 #5) — reason 은 카드 번호·경로가 섞여 자 검사에 걸린다
   else if (a === '--push') o.push = true;
   else if (a === '--next') o.next = true;
   else if (a === '--restart') o.restart = true;
@@ -111,8 +112,9 @@ function usage() {
                  --detail 에 적힌 out/… 경로도 같이 붙는다.
       --small    작은 B — 재시작·문구 한 줄·임시 파일 태그처럼 실행 대상 없는 것. 결정 자리 혼자 보면 닫힌다(제리 대조 생략, 점검-0916 3-9).
                  --push·--next·--roadmap·--to 와는 같이 못 쓴다 — 그건 큰 것.
-  --decide <id> --as <chief|system|outside|boss> <PASS|REVISE> "<이유>"
+  --decide <id> --as <chief|system|outside|boss> <PASS|REVISE> "<이유>" [--boss "사람 말 한 줄"]
                  결정 자리는 평소 톰(chief), 위임 중(state/delegation.json to:system)엔 나리(system) — 대표 09-16. --as system 은 환경 없는 셸(나리)에서만.
+                 --boss — 대리 결정처럼 이유에 카드 번호·경로가 섞이는 판정에 사람 말 한 줄. 방 note·리포트 요약이 이걸 먼저 쓴다.
   --list [--all]        대기 중인 것 (--all 이면 전부)
   --show <id>
   --void <id> "<이유>"   잘못 들어온 요청을 무효로 (총괄실만)
@@ -229,7 +231,7 @@ if (o.mode === 'decide') {
   const decision = words[0];
   const reason = words.slice(1).join(' ');
   let r;
-  try { r = decideApproval(o.id, { by, decision, reason, team: who.team }); }
+  try { r = decideApproval(o.id, { by, decision, reason, team: who.team, boss: o.boss }); }
   catch (e) { console.error('오류: ' + e.message); process.exit(1); }
 
   console.log(fmt(r));

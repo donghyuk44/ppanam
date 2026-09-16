@@ -564,7 +564,7 @@ export function voidApproval(id, reason = '') {
   return listApprovals().find((x) => x.id === id);
 }
 
-export function decideApproval(id, { by, decision, reason = '', team = null, proxy = null, delegation = readDelegation() }) {
+export function decideApproval(id, { by, decision, reason = '', team = null, proxy = null, delegation = readDelegation(), boss = '' }) {
   const r = listApprovals().find((x) => x.id === id);
   if (!r) throw new Error(`그런 요청이 없습니다: ${id}`);
   if (r.status !== 'pending') throw new Error(`이미 끝난 요청입니다 (${r.status}).`);
@@ -586,13 +586,17 @@ export function decideApproval(id, { by, decision, reason = '', team = null, pro
   }
   if (r.decisions.some((x) => sameSlot(x.by, by))) throw new Error(`${by} 는 이미 판정했습니다.${DECIDERS.has(by) ? ' (결정 칸은 톰·나리 하나)' : ''}`);
   // 대리 결정 (결정 85) — by 는 boss 지만 정한 건 톰·제리다. 줄에 남겨 아침에 대표가 뒤집을 수 있게.
-  appendApproval({ kind: 'decision', id, by, decision: d, reason: String(reason ?? '').trim(), ts: new Date().toISOString(), ...(proxy ? { proxy } : {}) });
+  // boss — 판정 자리가 적는 사람 말 한 줄(테라 code-review 지적 #5: reason 은 카드 번호·경로가 섞여 자
+  // 검사에 걸리고, doneOf 의 plain() 이 " — " 로 자르며 "대리 결정" 다섯 글자만 남겨 요약이 비어 보였다).
+  // 있으면 방 note 와 doneOf 둘 다 이걸 먼저 쓴다 — /api/card 의 pending.boss 와 같은 자리.
+  const bossLine = String(boss ?? '').trim();
+  appendApproval({ kind: 'decision', id, by, decision: d, reason: String(reason ?? '').trim(), ts: new Date().toISOString(), ...(proxy ? { proxy } : {}), ...(bossLine ? { boss: bossLine } : {}) });
   const after = listApprovals().find((x) => x.id === id);
   if (after.status !== 'pending') {
     emit(r.team, {
       actor: 'system', type: 'note',
-      text: `${proxy ? '대리 결정 — ' : ''}승인 ${after.status === 'passed' ? '통과' : '반려'} [${r.grade}] ${r.what}${reason ? ' — ' + reason : ''}`,
-      meta: { approval: id, grade: r.grade, status: after.status, ...(proxy ? { proxy } : {}) },
+      text: `${proxy ? '대리 결정 — ' : ''}승인 ${after.status === 'passed' ? '통과' : '반려'} [${r.grade}] ${r.what}${bossLine ? ' — ' + bossLine : reason ? ' — ' + reason : ''}`,
+      meta: { approval: id, grade: r.grade, status: after.status, ...(proxy ? { proxy } : {}), ...(bossLine ? { boss: bossLine } : {}) },
     });
   }
   return after;
@@ -2507,7 +2511,11 @@ export function doneOf(log, cast, { team = null, since = null, until = null, app
       const tail = plain(String(e.text).split(' — ').slice(1).join(' — '), 44);   // "요청 블록 req_x 닫힘 — 톰 확인" 의 뒷말만
       out.push({ id: `request:${m.request}`, kind: 'request', team, by: null, ts: e.ts, text: `부탁 하나를 닫았어요${tail ? ' — ' + tail : ''}`, ref: m.request });
     } else if (e.type === 'note' && m.proxy) {
-      out.push({ id: `proxy:${e.id}`, kind: 'proxy', team, by: 'chief', ts: e.ts, text: plain(e.text) ?? '대표님 대신 정했어요', ref: m.approval ?? m.proxyAnswer ?? null });
+      // meta.boss(--boss 로 적은 사람 말, 테라 code-review 지적 #5) 를 먼저 쓴다 — plain() 은 글 안의
+      // " — " 마다 자르는데, 이 글은 "대리 결정 — 승인 통과 [C] … — 사람 말" 이라 그 첫 " — " 앞의
+      // "대리 결정" 다섯 글자만 남아 요약이 없는 것처럼 보였다.
+      const bossText = m.boss ? one(m.boss, 60) : null;
+      out.push({ id: `proxy:${e.id}`, kind: 'proxy', team, by: 'chief', ts: e.ts, text: (bossText && bossOk(bossText) ? bossText : plain(e.text)) ?? '대표님 대신 정했어요', ref: m.approval ?? m.proxyAnswer ?? null });
     } else if (e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && agents[e.actor] && callsBoss(e.text, agents) && !asksBoss(e.text, agents)) {
       out.push({ id: `report:${e.id}`, kind: 'report', team, by: e.actor, ts: e.ts, text: plain(e.text) ?? '대표님께 보고했어요', ref: null });
     } else if (e.type === 'tool' && agents[e.actor]) {

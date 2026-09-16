@@ -465,6 +465,13 @@ switch (cmd) {
       const { bossOk: bossOk140 } = await import('../server/public/bosswords.js');
       const dnBad = dn.filter((x) => !bossOk140(x.text)).map((x) => x.text);
       out.push(['한 것 — 글은 사람 말(결정 140)', !dnBad.length ? '✓ 여덟 줄 다 자에 맞음 · 60자 안 · 경로·번호는 ref' : '✗ ' + JSON.stringify(dnBad)]);
+      // 대리 결정 보고 요약 — meta.boss 를 먼저 쓴다(테라 code-review 지적 #5, decideApproval --boss).
+      // 없으면 plain() 이 글 안 첫 " — " 앞만 남겨 "대리 결정" 다섯 글자로 잘려 요약이 빈 것처럼 보였다.
+      const dnBoss = doneOf([
+        { id: 'pb1', ts: at(9), actor: 'system', type: 'note', text: '대리 결정 — 승인 통과 [C] apr_9f8e7d6c 요청 — 로드맵 3단계 착수', meta: { proxy: ['chief', 'outside'], approval: 'apr_p', boss: '로드맵 다음 단계로 넘어갑니다' } },
+      ], pcast, { team: 'dev', approvals: [], now: d0.getTime() + 20 * 60_000 });
+      out.push(['대리 결정 보고 요약 — meta.boss 우선(테라 지적 #5)', dnBoss[0]?.text === '로드맵 다음 단계로 넘어갑니다'
+        ? '✓ boss 있으면 그대로 씀 · plain() 의 " — " 자르기를 안 탐' : '✗ ' + JSON.stringify(dnBoss)]);
       // 창 — since·until 로 자르면 "어젯밤" 보고서(결정 80)가 된다. 어제 말(e0)과 어제 판정(boss) 만.
       const dy = doneOf([...dlog, { id: 'd9', ts: new Date(d0.getTime() - 20 * 3600_000).toISOString(), actor: 'ops', type: 'message', text: '대표님, 어젯밤에 서버 살렸습니다.' }], pcast,
         { team: 'dev', approvals: dApr, since: d0.getTime() - 30 * 3600_000, until: d0.getTime() - 3600_000 });
@@ -887,14 +894,16 @@ switch (cmd) {
         const dTom = smallOk?.id ? refuses(() => decideApproval(smallOk.id, { by: 'chief', decision: 'PASS', team: 'hq', delegation: dgOnB }), '나리가 정합니다') : '✗ 카드 없음';
         const dNariNoRoom = smallOk?.id ? refuses(() => decideApproval(smallOk.id, { by: 'system', decision: 'PASS', team: null, delegation: dgOnB }), '총괄실에서만') : '✗';
         const dNariNoDg = smallOk?.id ? refuses(() => decideApproval(smallOk.id, { by: 'system', decision: 'PASS', team: 'hq', delegation: null }), '톰이 정합니다') : '✗';
-        let dNari = null; try { dNari = smallOk?.id ? decideApproval(smallOk.id, { by: 'system', decision: 'PASS', reason: '됐다', team: 'hq', delegation: dgOnB }) : null; } catch (e) { dNari = { err: e.message }; }
+        let dNari = null; try { dNari = smallOk?.id ? decideApproval(smallOk.id, { by: 'system', decision: 'PASS', reason: '됐다', team: 'hq', delegation: dgOnB, boss: '작은 재시작 하나 통과시켰어요' }) : null; } catch (e) { dNari = { err: e.message }; }
         const closedBySystem = smallOk?.id ? listQ().find((x) => x.id === smallOk.id)?.status === 'passed' : false;
+        // --boss 한 줄이 결정 레코드에 그대로 남나(테라 code-review 지적 #5) — approve.mjs --boss 로 심는 값.
+        const bossStored = smallOk?.id ? listQ().find((x) => x.id === smallOk.id)?.decisions?.find((d) => d.by === 'system')?.boss === '작은 재시작 하나 통과시켰어요' : false;
         // 옛 카드(톰 PASS + 제리 PASS)가 위임 뒤에도 통과로 남나 — 결정 칸은 하나(sameSlot). 톰 통과 뒤 나리가 또 찍으면 거부.
         let old = null; try { old = requestApproval(T, { grade: 'B', what: '옛 카드 — 톰이 통과시킨 것', action: null }); decideApproval(old.id, { by: 'chief', decision: 'PASS', team: 'hq', delegation: null }); decideApproval(old.id, { by: 'outside', decision: 'PASS', team: 'hq', delegation: null }); } catch (e) { old = { err: e.message }; }
         const oldStill = old?.id ? listQ().find((x) => x.id === old.id)?.status === 'passed' : false;
         const dupSlot = old?.id ? refuses(() => decideApproval(old.id, { by: 'system', decision: 'PASS', team: 'hq', delegation: dgOnB }), '이미 끝난') : '✗';
-        const dcWant = dTom === '✓ 거부' && dNariNoRoom === '✓ 거부' && dNariNoDg === '✓ 거부' && dNari?.status === 'passed' && closedBySystem && oldStill && dupSlot === '✓ 거부';
-        out.push(['결정 자리 — 위임 중 나리(대표 09-16)', dcWant ? '✓ 위임 중 톰 거부 · 방 없는 나리 거부 · 위임 없이 나리 거부 · 총괄실 나리 통과로 작은 B 닫힘 · 톰이 닫은 옛 카드는 그대로 통과 · 끝난 카드 재판정 거부' : '✗ ' + JSON.stringify({ dTom, dNariNoRoom, dNariNoDg, dNari: dNari?.status ?? dNari, closedBySystem, oldStill, dupSlot })]);
+        const dcWant = dTom === '✓ 거부' && dNariNoRoom === '✓ 거부' && dNariNoDg === '✓ 거부' && dNari?.status === 'passed' && closedBySystem && bossStored && oldStill && dupSlot === '✓ 거부';
+        out.push(['결정 자리 — 위임 중 나리(대표 09-16)', dcWant ? '✓ 위임 중 톰 거부 · 방 없는 나리 거부 · 위임 없이 나리 거부 · 총괄실 나리 통과로 작은 B 닫힘 · --boss 한 줄 저장(지적 #5) · 톰이 닫은 옛 카드는 그대로 통과 · 끝난 카드 재판정 거부' : '✗ ' + JSON.stringify({ dTom, dNariNoRoom, dNariNoDg, dNari: dNari?.status ?? dNari, closedBySystem, bossStored, oldStill, dupSlot })]);
         if (smallOk?.id && !closedBySystem) voidApproval(smallOk.id, '자가 시험');
         // requestApproval 이 only:['message'] 방(비서실 꼴)에서도 안 죽는가(점검-코드리뷰-0916 #5) — emit 이 type:'note'
         // 를 버려(null) rec.note = ev.id 가 TypeError 로 승인 자체가 기록 안 됐다. 임시 팀을 teams.json 에 등록해 실물로 시험.
