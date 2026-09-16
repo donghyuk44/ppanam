@@ -1132,10 +1132,10 @@ button.dash__row:hover b { text-decoration: underline; }
   .an__body { padding: 12px; }
   .rail__list {
     flex: 1 1 0; min-width: 96px; flex-direction: row; overflow-x: auto; overflow-y: hidden;   /* 방 칩 띠 — 탭이 커져도 96px 은 남는다 */
-    padding: 8px 52px 8px 10px; gap: 6px; scrollbar-width: none;   /* 오른쪽은 종 자리 */
+    padding: 8px 8px 8px 10px; margin-right: 52px; gap: 6px; scrollbar-width: none;   /* 종 자리는 margin — 띠의 보이는 끝이 종 앞에서 끝나야 칩이 종 밑에 안 들어간다(375·412 실측: 마지막 칩 왼쪽 반이 종 밑이라 눌러도 종이 눌렸다, 적대검수 09-16) */
   }
-  /* 가로로 밀리는 줄의 padding-right 는 스크롤 끝에서 무시된다 — 마지막 칸("마케팅")이 종 밑에 들어갔다(하네스 실측 R23 ②). 여백을 실제 요소로 둔다. */
-  .rail__list::after { content: ''; flex: none; width: 52px; }
+  /* 스크롤 끝 여백은 실제 요소로(padding-right 는 스크롤 끝에서 무시됨 — R23 ②) */
+  .rail__list::after { content: ''; flex: none; width: 8px; }
   /* 띠 밖에 방이 더 있다는 힌트 (검수 #4) — 종 왼쪽에 작은 알약 "밖 N". 데스크톱은 세로라 없다. */
   .rail { position: relative; }
   .rail__more {
