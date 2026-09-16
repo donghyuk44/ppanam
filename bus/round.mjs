@@ -258,18 +258,29 @@ switch (cmd) {
         const row = listRounds(T).find((x) => x.round === 1);
         const ms = readLog(T).find((e) => e.type === 'milestone' && e.round === 1);
         const artWant = row?.artifacts?.length === 2 && ms?.meta?.artifacts?.length === 2 && row.artifacts.every((a) => a.bytes > 0);
-        out.push(['정식 흐름 → 닫힘 + 로드맵 pass', readRoadmap(T).milestones[0].status === 'pass' && readState(T).phase === 'idle' && artWant ? '✓ + 행·milestone 이벤트에 artifacts 둘' : '✗ ' + JSON.stringify({ status: readRoadmap(T).milestones[0].status, phase: readState(T).phase, row: row?.artifacts, ms: ms?.meta?.artifacts })]);
+        // 긴급 수정(나리 위임, 09-16 — 마케팅·디자인이 B 승인을 기다리며 방째 죽었다): PASS 로 마일스톤이 닫히면
+        // 서버가 다음 마일스톤 회차를 바로 연다 — 더는 idle 로 안 남는다. milestones[1](n:2)도 이제 now.
+        const st = readState(T);
+        out.push(['정식 흐름 → 닫힘 + 로드맵 pass + 다음 회차 바로 엶', readRoadmap(T).milestones[0].status === 'pass' && readRoadmap(T).milestones[1].status === 'now'
+          && st.phase === 'running' && st.milestone === 2 && st.round === 2 && artWant ? '✓ + 행·milestone 이벤트에 artifacts 둘 · 안 죽고 R2 로 바로 이어짐' : '✗ ' + JSON.stringify({ ms0: readRoadmap(T).milestones[0].status, ms1: readRoadmap(T).milestones[1].status, st, row: row?.artifacts, ms: ms?.meta?.artifacts })]);
       }
-      // 닫힌 고리(대표 실측 09-14) — PASS 로 닫히며 다음 마일스톤이 있으면 서버가 "다음 마일스톤 착수" B 요청을 올린다(autoOpen). 진짜 큐에 남지 않게 바로 무효 처리.
+      // 닫힌 고리(대표 실측 09-14) — PASS 로 닫히며 다음 마일스톤이 있으면 서버가 "다음 마일스톤 착수" B 요청을 올린다(autoOpen).
+      // 이제 서버가 그 마일스톤을 이미 바로 열었지만(위), 이 기록은 감사 흔적으로 그대로 남는다 — 나중에 결정돼도
+      // notifier.applyAction 이 "이미 now·이미 열림" 을 보고 조용히 넘어간다. 진짜 큐에 안 남게 바로 무효 처리.
       {
         const auto = listApprovals({ team: T, status: 'pending' }).filter((r) => r.action?.type === 'milestone');
         const a0 = auto[0];
         const aWant = auto.length === 1 && a0.grade === 'B' && a0.action.n === 2 && a0.action.autoOpen === true && a0.what.includes('착수') && a0.by === 'guide'
           && readLog(T).some((e) => e.type === 'note' && e.meta?.approval === a0.id);
-        out.push(['PASS 닫힘 → 다음 착수 B 자동 요청', aWant ? `✓ ${a0.id} · 마일스톤 2 · autoOpen · 방에 note` : '✗ ' + JSON.stringify(auto.map((r) => [r.id, r.action]))]);
+        out.push(['PASS 닫힘 → 다음 착수 B 자동 요청(기록만, 이미 열림)', aWant ? `✓ ${a0.id} · 마일스톤 2 · autoOpen · 방에 note` : '✗ ' + JSON.stringify(auto.map((r) => [r.id, r.action]))]);
         for (const r of auto) voidApproval(r.id, '자가 시험');
       }
+      // "닫힌 방의 판정 → stale" 을 보려면 진짜 idle 이 있어야 한다 — 이제 PASS 닫힘이 바로 다음 회차를 열어서,
+      // 마일스톤 2 를 잠깐 pass 로 둬(자동 이어열기 ㉠도 stillOpen=false 로 안 걸리게) 닫고, 시험 뒤 다시 now 로 돌려 이어간다.
+      setMilestoneStatus(T, 2, 'pass');
+      endRound(T, { summary: '스테일 시험용 닫음' });
       out.push(['닫힌 방의 판정 → stale', recordVerdict(T, { actor: 'outside', verdict: 'REVISE', text: '늦음' }).meta.stale ? '✓' : '✗']);
+      setMilestoneStatus(T, 2, 'now');
       startRound(T, { milestone: 2 });
       // 결정 84 — 받아들여 고친 지적은 반박이 아니다. 첫 REVISE 는 안 세고, 같은 sha 로 다시 받으면(안 고침) 센다.
       const shaA = 'a'.repeat(40), shaB = 'b'.repeat(40), shaC = 'c'.repeat(40);
@@ -280,9 +291,10 @@ switch (cmd) {
       const dWant = d1.meta.counted === false && d1.meta.attempt === 0 && d2.meta.counted === false && d2.meta.attempt === 0
         && d3.meta.counted === true && d3.meta.attempt === 1 && d4.meta.counted === true && d4.meta.attempt === 2 && readState(T).phase === 'running';
       out.push(['받아들인 지적은 반박 아님(결정 84)', dWant ? '✓ 첫 REVISE 0 · 고친 뒤 다른 지적 0 · 같은 sha 다시 1 · 같은 지적 되풀이 2' : '✗ ' + JSON.stringify([d1.meta, d2.meta, d3.meta, d4.meta])]);
+      // 마일스톤 2 가 now 라 ㉠(같은 단계 자동 이어열기)가 이 닫기 뒤 바로 다음 회차를 연다 — 이제 손으로 다시 안 연다.
       endRound(T, { summary: '닫고' });
-      const s = startRound(T, { milestone: 2 });
-      out.push(['반박 횟수를 다음 라운드가 물려받음', s.attempt === 2 ? '✓ 2/3' : `✗ ${s.attempt}`]);
+      const s = readState(T);
+      out.push(['반박 횟수를 다음 라운드가 물려받음', s.phase === 'running' && s.attempt === 2 ? '✓ 2/3, ㉠ 로 바로 이어짐' : `✗ ${JSON.stringify(s)}`]);
       recordVerdict(T, { actor: 'outside', verdict: 'FAIL', text: '명백' });
       out.push(['FAIL(blocked) 뒤 닫기', refuses(() => endRound(T, {}), '대표가 이 방에 말해')]);
       resumeRound(T, { text: '풀어라' });
@@ -306,8 +318,7 @@ switch (cmd) {
         ];
         const gWant = g.slice(0, 5).every(Boolean) && g[5] === null && g[6] === null && !!g[7];
         out.push(['푸시 문(결정 63)', gWant ? '✓ 카드 없음·REVISE·sha 없음·다른 sha·내부감사만 거부, stale 무시' : '✗ ' + JSON.stringify(g)]);
-        // 실제 카드에 HEAD sha 가 박히고, 그 카드로 문이 열린다.
-        startRound(T, { milestone: 2 });
+        // 실제 카드에 HEAD sha 가 박히고, 그 카드로 문이 열린다. 마일스톤 2 가 now 라 앞의 닫기(301행)가 ㉠ 로 이미 이어 열었다.
         const card = recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: shaped('봤다') });
         const live = card.meta.sha && /^[0-9a-f]{40}$/.test(card.meta.sha) && pushGateError(readLog(T).filter((e) => e.round === readState(T).round), card.meta.sha) === null
           && pushGateError(readLog(T).filter((e) => e.round === readState(T).round), B)?.includes('다시 감사');
@@ -318,6 +329,10 @@ switch (cmd) {
         out.push(['카드 sha 는 감사 시작 때 것', seenCard.meta.sha === B && pushGateError(ctxNow, B) === null && pushGateError(ctxNow, card.meta.sha)?.includes('다시 감사') ? '✓ 넘긴 sha 로 찍힘 · 지금 HEAD 는 거부' : '✗ ' + JSON.stringify(seenCard.meta)]);
         endRound(T, { summary: '문 시험 닫음' });
       }
+      // 위 구간이 마일스톤 2 를 now 로 남겨서(긴급 수정 시험) ㉠ 이 방금 또 바로 이어 열었다 — 뒤따르는 시험들은
+      // 옛 가정(마일스톤 2 는 손으로 열 때만 now) 그대로라, 여기서 원래대로 되돌린다: wait 로 두고 그 회차를 닫는다.
+      setMilestoneStatus(T, 2, 'wait');
+      if (readState(T).phase !== 'idle') endRound(T, { summary: '긴급 수정 시험 정리' });
       // 호명 (결정 22 · 19-2). 문단 첫머리의 이름 전부, 부른 순서대로. "대표님" 은 대표 호명.
       const cast = { guide: { name: '하영' }, review: { name: '안젤' }, outside: { name: '다니엘' }, boss: { name: '함동혁(댄)' } };
       const multi = addressees('대표님, 정리했습니다.\n\n안젤, 근거 봐줘.\n\n다니엘, 숫자 대조 부탁.', cast);
@@ -632,8 +647,11 @@ switch (cmd) {
       // 그 마일스톤이 로드맵에서 여전히 now 면 승인 없이 바로 startRound. 이미 pass 면(사람이 번호로 재개한 것) 자동으로 안 잇는다.
       // --next 로 부른 쪽이 바로 이을 참이면(endRound({ next })) 여기서 먼저 안 열어 그쪽 startRound 와 안 겹친다.
       {
+        // 정리 먼저 — 앞 구간(T2 시험)이 PASS 로 닫으며 "다음 계획표 대기" 회차를 남겼을 수 있다(긴급 수정). wait 로
+        // 두고 닫아야(now 면 ㉠ 이 또 바로 이어 열어 아래 startRound 와 겹친다) 안전하게 idle 로 돌아간다.
+        setMilestoneStatus(T, 2, 'wait');
+        if (readState(T).phase !== 'idle') endRound(T, { summary: '자동 이어열기 전 정리' });
         setMilestoneStatus(T, 2, 'now');
-        if (readState(T).phase !== 'idle') endRound(T, { summary: '자동 이어열기 전 닫음' });
         const before2 = startRound(T, { milestone: 2, topic: '자동' }).round;
         endRound(T, { summary: '중간에 세워 둠' });   // verdict 없음 — milestone 은 그대로 now
         const after2 = readState(T);
@@ -945,10 +963,14 @@ switch (cmd) {
         const sus = updateCastAgent(T, 'outside', { suspended: '2026-09-20' });
         const susText = castChangeText('레오', sus.to);
         const bad = castChangeError('guide', readCast(T).agents.guide, { suspended: '2026-09-20' }), badDate = castChangeError('outside', readCast(T).agents.outside, { suspended: '내일' });
-        let closed = null; try { endRound(T, { verdict: 'PASS' }); closed = listRounds(T).find((x) => x.round === readState(T).round); } catch (e) { closed = { err: e.message }; }
+        // 닫히는 회차 번호를 먼저 잡는다 — 마일스톤이 다 끝난 PASS 닫힘은 이제 바로 "다음 계획표 대기" 회차를 여니
+        // (긴급 수정), endRound 뒤의 readState(T).round 는 그 새 회차 번호지 방금 닫힌 회차가 아니다.
+        const roundToClose = readState(T).round;
+        let closed = null; try { endRound(T, { verdict: 'PASS' }); closed = listRounds(T).find((x) => x.round === roundToClose); } catch (e) { closed = { err: e.message }; }
         const unsus = updateCastAgent(T, 'outside', { suspended: 'none' });
         fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
         setMilestoneStatus(T, 2, 'wait');
+        if (readState(T).phase !== 'idle') endRound(T, { summary: '정리' });   // 위 PASS 닫힘이 연 대기 회차를 치운다
         for (const r of listApprovals({ team: T, status: 'pending' })) voidApproval(r.id, '자가 시험');
         const sWant = refused === '✓ 거부' && susText === '대표가 레오를 중단(2026-09-20 복귀 예정) 로 바꿨습니다 — 다음 턴부터.' && bad?.includes('outside') && badDate?.includes('YYYY')
           && closed?.outsideAudited === false && closed?.outsideWhy === 'suspended' && closed?.auditors?.[0]?.actor === 'review' && closed.verdict === 'PASS'
@@ -975,6 +997,7 @@ switch (cmd) {
         let closed2 = null; try { endRound(T, { verdict: 'PASS' }); closed2 = true; } catch (e) { closed2 = e.message; }
         fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
         setMilestoneStatus(T, 2, 'wait');
+        if (readState(T).phase !== 'idle') endRound(T, { summary: '정리' });   // 위 PASS 닫힘이 연 대기 회차를 치운다
         for (const r of listApprovals({ team: T, status: 'pending' })) voidApproval(r.id, '자가 시험');
         const want = bWant && selfRefused === '✓ 거부' && closed2 === true;
         out.push(['만든 사람이 판정하지 않는다(R25)', want ? '✓ buildersOf(Edit·Write) · review 가 고치고 PASS → 거부 · 안 고친 outside 가 새 PASS → 회복' : '✗ ' + JSON.stringify({ bWant, selfRefused, closed2 })]);
@@ -1006,7 +1029,9 @@ switch (cmd) {
         const selfWhy = selfPassError(readLog(T).filter((e) => e.round === readState(T).round), readCast(T).agents);
         recordVerdict(T, { actor: 'outside', verdict: 'PASS', text: shaped('둘 다 봤다') });
         emit(T, { actor: 'system', type: 'note', text: '판정 완료', meta: { verdictFlow: 'pass', steps: ['ops', 'outside'], skipped: [], reason: null } });
-        let closed3 = null; try { endRound(T, { verdict: 'PASS' }); closed3 = readState(T).auditor === null && readState(T).phase === 'idle'; } catch (e) { closed3 = e.message; }
+        // 마일스톤이 다 끝난 PASS 닫힘은 이제 idle 로 안 남고 "다음 계획표 대기" 회차를 바로 연다(긴급 수정) — auditor 는
+        // 여전히 비워지고(writeState 가 매 닫음마다), 방은 running 으로 안 죽고 이어진다.
+        let closed3 = null; try { endRound(T, { verdict: 'PASS' }); closed3 = readState(T).auditor === null && readState(T).phase === 'running'; } catch (e) { closed3 = e.message; }
         // 같은 파일을 둘이 고치면 — 순수 함수로
         const shared = selfPassError([
           { type: 'tool', actor: 'guide', text: 'bus/z.mjs', meta: { tool: 'Edit' }, ts: 't1' },
@@ -1021,6 +1046,7 @@ switch (cmd) {
         ], {});
         fs.writeFileSync(paths(T).cast, JSON.stringify({ agents: { guide: { name: '테라', model: 'claude' }, outside: { name: '레오', model: 'gpt' }, boss: { name: '댄', model: null } } }));
         setMilestoneStatus(T, 2, 'wait');
+        if (readState(T).phase !== 'idle') endRound(T, { summary: '정리' });   // 위 PASS 닫힘이 연 대기 회차를 치운다
         for (const r of listApprovals({ team: T, status: 'pending' })) voidApproval(r.id, '자가 시험');
         const want = edWant && seatsWant && badSeat?.includes('outside') && badName?.includes('명단') && noSeat === '✓ 거부' && stAud && unseen === '✓ 거부'
           && selfWhy?.includes('만든 사람') && closed3 === true && shared?.includes('같은 파일') && shared.includes('bus/z.mjs') && early?.includes('만든 사람');

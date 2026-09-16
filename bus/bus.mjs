@@ -1616,7 +1616,6 @@ export function endRound(team, { verdict = null, summary = null, next = null } =
   writeState(team, { phase: 'idle', endedAt: new Date().toISOString(), auditor: null });
 
   // 같은 단계면 다음 회차를 자동으로 열어 차례가 끊기지 않게 한다(나리 실측 09-16 — 세 방이 45~95분씩 서서 손으로 다섯 번 열었다).
-  // 마일스톤이 이번에 pass 로 끝났으면(milestonePassed) 다음 단계는 B 승인이 정한다 — 여기서는 안 연다(위 블록이 이미 그 문을 연다).
   // next 가 있으면(--next, 결정 25) 부른 쪽이 바로 이어 연다 — 여기서 먼저 열면 그쪽 startRound 가 "이미 열려 있다" 로 던진다.
   if (!milestonePassed && !next && state.milestone) {
     const stillOpen = (readRoadmap(team).milestones ?? []).some((m) => m.n === state.milestone && m.status === 'now');
@@ -1627,6 +1626,31 @@ export function endRound(team, { verdict = null, summary = null, next = null } =
       } catch (e) {
         emit(team, { type: 'note', actor: 'system', text: `다음 회차를 자동으로 열지 못했습니다 — ${String(e.message).slice(0, 120)}. node bus/round.mjs start 로 여세요.` });
       }
+    }
+  }
+
+  // 마일스톤이 방금 pass 로 닫혔으면 여기서 바로 다음 회차를 연다 — 대표 위임(나리, 09-16 09:4x) 긴급 지시.
+  // 전에는 위에서 올린 B 승인이 결정될 때까지 기다렸는데, 그동안 방이 idle 이고 세션도 없어(milestonePassed →
+  // 위 외부감사 정리 + session.mjs reset) 아무도 그 방에서 차례를 못 받아 B 를 재촉할 사람이 없었다 — 마케팅·
+  // 디자인 두 방이 그렇게 통째로 죽었다. 다음 마일스톤이 있으면 그 번호로 바로 열고(명시 번호라 승인 없이도
+  // startRound 가 받는다) 로드맵도 now 로 옮긴다 — 위에서 올린 B 승인 기록은 그대로 남고, 나중에 결정되면
+  // notifier.applyAction 이 이미 맞는 상태를 보고 조용히 넘어간다(로드맵은 이미 now, 라운드는 이미 열림 —
+  // 그 둘 다 지금 되어 있는지 보고서야 손대는 코드다). 다음 마일스톤이 없으면(로드맵 전부 끝) 자리가 죽지
+  // 않게 "다음 계획표 대기" 회차를 이 마일스톤 번호 그대로 연다 — O1 ㉡(로드맵 전부 pass 순찰)의 앞줄이다.
+  if (milestonePassed && !next) {
+    const afterRoadmap = readRoadmap(team);
+    const nextMs = (afterRoadmap.milestones ?? []).find((m) => m.status !== 'pass' && m.status !== 'now') ?? null;
+    try {
+      if (nextMs) {
+        setMilestoneStatus(team, nextMs.n, 'now');
+        const st = startRound(team, { milestone: nextMs.n, topic: nextMs.title ?? null });
+        emit(team, { type: 'note', actor: 'system', text: `마일스톤 ${nextMs.n}${nextMs.title ? ' — ' + nextMs.title : ''} 을 바로 엽니다 — 라운드 ${st.round}. 착수 승인(B) 기록은 그대로 남습니다.`, meta: { autoContinue: true, milestone: nextMs.n } });
+      } else {
+        const st = startRound(team, { milestone: state.milestone, topic: '다음 계획표 대기' });
+        emit(team, { type: 'note', actor: 'system', text: `로드맵의 마일스톤이 모두 끝났습니다 — 자리가 죽지 않게 대기 회차 ${st.round} 을 엽니다. 다음 계획표가 오면 이어집니다.`, meta: { autoContinue: true, waitingRoadmap: true } });
+      }
+    } catch (e) {
+      emit(team, { type: 'note', actor: 'system', text: `다음 회차를 자동으로 열지 못했습니다 — ${String(e.message).slice(0, 120)}. node bus/round.mjs start 로 여세요.` });
     }
   }
 
