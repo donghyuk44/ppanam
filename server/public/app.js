@@ -13,7 +13,7 @@ import { notificationsOf, blockedOf, pausedMs, delegated, deciders } from '/noti
 import { dayWord, timeWord, clockWord, spanWord } from '/when.js';
 import { parseMention } from '/mention.js';
 import { bossOk, NOT_YET, doingWord, gateLine } from '/bosswords.js';   // doingWord·gateLine — 자(boss-words-check)가 화면과 같은 글을 재게 공용
-import { teamCard } from '/card.js';   // 팀 상황 카드 부품 하나(C6) — 채팅 맨 위·대시보드·비서실 세 곳이 같은 것을 그린다(카드-체계-0916 1절, C7)
+import { teamCard, verdictCard } from '/card.js';   // 카드 부품(C6) — 팀 상황 카드는 채팅 맨 위·대시보드·비서실 세 곳(C7), 판정 카드는 방의 도장 자리(G3)
 
 const $ = (id) => document.getElementById(id);
 const app = $('app'), feed = $('feed'), stream = $('stream');
@@ -610,23 +610,15 @@ function draw(e) {
     }
 
     case 'verdict': {
+      // 판정 도장(영어 PASS·REVISE + 감사 본문 그대로)을 판정 카드로(G3, 카드-체계 2절 · 대표 07:0x "Pass Revise 이거 양식도 이상함"): 승인/반려/보류 · 누가 → 누구 · 사람 말 한 줄 · 자세히 접힘 · 반려면 반박 N/3.
+      // 한 줄은 meta.line(서버가 주면) 아니면 본문 첫 줄 — 그게 "떨어뜨릴 이유" 로 시작하면 감사 글이라 한 줄 없음(카드가 '요약 없음' 을 찍고 자세히에 본문). 감사가 첫 줄에 사람 말 한 줄을 쓰는 건 판정 지시문 몫(계약 3절 verdict).
       lastActor = null;
       const v = e.meta?.verdict ?? 'REVISE';
-      const n = el('div', 'stamp' + (v === 'PASS' ? ' pass' : ''));
-      const top = el('div', 'stamp__top');
-      top.appendChild(el('div', 'stamp__label', v));
-      top.appendChild(el('div', 'stamp__meta', `${a.name} → ${who(e.meta?.target ?? 'guide').name}`));
-      n.appendChild(top);
-      n.appendChild(el('div', 'stamp__body', e.text));
-      if (v !== 'PASS') {
-        const max = e.meta?.max ?? 3, at = e.meta?.attempt ?? 0;
-        const foot = el('div', 'stamp__foot');
-        foot.appendChild(el('span', null, `반박 ${at} / ${max}`));
-        const ticks = el('div', 'ticks');
-        for (let i = 1; i <= max; i++) ticks.appendChild(el('div', 'tick' + (i <= at ? ' on' : '')));
-        foot.appendChild(ticks);
-        n.appendChild(foot);
-      }
+      const body = String(e.text ?? '');
+      const first = body.split('\n').map((s) => s.trim()).find(Boolean) ?? '';
+      const line = e.meta?.line ?? (/^(떨어뜨릴 이유|근거|반박)/.test(first) ? '' : first.split(/(?<=[.!?])\s|\s—\s(?=떨어뜨릴)/)[0]);
+      const n = el('div', 'stamp' + (v === 'PASS' ? ' pass' : ''));   // 겉 상자는 그대로(정렬·간격), 안은 카드 부품
+      n.appendChild(verdictCard({ verdict: v, from: a.name, to: who(e.meta?.target ?? 'guide').name, ts: e.ts, line, detail: body, attempt: v !== 'PASS' ? { n: e.meta?.attempt ?? 0, max: e.meta?.max ?? 3 } : null }));
       return n;
     }
 

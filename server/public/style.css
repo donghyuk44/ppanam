@@ -334,12 +334,11 @@ body {
 .toolgroup ul { margin: 4px 0 2px 15px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 1px; }
 .toolgroup li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* 판정 자리 — 겉 상자는 정렬·폭만(G3: 안은 card.js 판정 카드 — 승인/반려/보류·한 줄·자세히 접힘). 옛 도장(빨간 테두리·영어 PASS)은 뺐다 */
 .stamp {
   align-self: center; width: 100%; max-width: 440px; margin: 5px 0;
-  border: 2px solid var(--bad); background: var(--bad-bg);
-  border-radius: 4px; padding: 14px 16px 15px;
 }
-.stamp.pass { border-color: var(--good); background: var(--good-bg); }
+.stamp .card[data-card="verdict"] { margin: 0; }
 .stamp__top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .stamp__label { font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 17px; letter-spacing: .1em; color: var(--bad); }
 .stamp.pass .stamp__label { color: var(--good); }
