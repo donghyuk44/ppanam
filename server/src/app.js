@@ -2016,13 +2016,21 @@ function renderTowerPeople(grid) {
   bc.appendChild(el('div', 'pcard__doing', `결재 ${approvals.length} · 답 기다리는 방 ${rooms.length ? rooms.map((t) => t.name).join('·') : '없음'}`));
   grid.appendChild(bc);
 
+  // 나리(system)는 비서실 묶음에만 — 세라·나리 둘(대표 16:5x "나리가 또 이리저리 팀마다 다 들어가있다", 결정 185). 여섯 방 cast 가 다 system 을 갖고
+  // peopleOf 도 다 주지만(43daf85) 카드는 한 자리에만 세운다. 세션(노랑 손)은 hq 에 살아서 상태·하는 일은 hq 것을 쓴다 — 비서실 방엔 세라·대표 말만 남아 거기 people 은 비어 있다.
+  const NARI_HOME = 'sera';
   for (const t of teams) {
     const s = summaries[t.id] ?? {};
-    const cast = s.cast ?? {};
-    const people = Object.entries(s.people ?? {}).filter(([id]) => id !== 'boss' && cast[id] && !cast[id].from);
-    // 나리(hq:system, N1 세션) — 서버 people 이 아직 system 을 빼면(bus.peopleOf, 솔라 재시작 전) 총괄 칸에 카드 없이 서는 게 아니라 안 섰다(대표 12:13 "대시보드에 멤버쪽 나리가 없다").
-    // 세션 있는 자리(cast model)면 화면이 빈 상태로라도 세운다 — 서버가 주기 시작하면 그 값이 이긴다. 색은 C16 노랑(data-hand server).
-    if (t.id === 'hq' && cast.system?.model && !s.people?.system) { const ss = s.sessions?.system; people.push(['system', { state: ss?.busy ? 'working' : 'waiting', alive: !!ss?.alive, doing: null, lastSignal: null }]); }
+    const cast = { ...(s.cast ?? {}) };
+    const people = Object.entries(s.people ?? {}).filter(([id]) => id !== 'boss' && cast[id] && !cast[id].from && (id !== 'system' || t.id === NARI_HOME));
+    if (t.id === NARI_HOME && cast.system) {
+      const hq = summaries.hq ?? {};
+      if (hq.cast?.system?.model) cast.system = { ...cast.system, ...hq.cast.system };   // 노랑 손(C16)은 hq cast 의 model 로 정해진다
+      const ss = hq.sessions?.system;
+      const p = hq.people?.system ?? s.people?.system ?? { state: ss?.busy ? 'working' : 'waiting', alive: !!ss?.alive, doing: null, lastSignal: null };
+      const i = people.findIndex(([id]) => id === 'system');
+      if (i >= 0) people[i] = ['system', p]; else people.push(['system', p]);
+    }
     if (!people.length) continue;
     const box = el('details', 'pgroup');
     let open = true; try { open = localStorage.getItem(groupKey(t.id)) !== '0'; } catch { /* 기본은 펼침 */ }
