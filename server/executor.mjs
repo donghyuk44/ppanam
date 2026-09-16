@@ -57,9 +57,15 @@ export function anyBusy(sessionRows, geminiRows) {
   return sessionRows.some((x) => x.busy) || geminiRows.some((x) => x.busy);
 }
 
-/** 지금 이 순간 실제로 일하는 세션이 있는가 — 여섯 방의 claude 세션 + gemini 상주 풀. */
+/**
+ * 지금 이 순간 실제로 일하는 세션이 있는가 — 여섯 방의 claude 세션 + gemini 상주 풀.
+ * hq:system(나리 서버 자리)은 뺀다(톰 지적 09-16 18:4x — 그 자리는 늘 일해서 27분을 못 내렸다).
+ * 그 자리는 로밍 답·대리 판정으로 쉬지 않고 도니, "일하는 세션 없을 때" 기준에 넣으면 재시작이 영영 안 온다 —
+ * 도는 차례가 끝나는 대로 켜는 게 맞다(그 자리는 죽었다 뜬 뒤 다음 물음에 다시 잡힌다, 다른 자리와 같다).
+ */
 function liveAnyBusy() {
-  const sessionRows = listTeams().flatMap((t) => Object.values(session.statusAll(t.id)));
+  const sessionRows = listTeams().flatMap((t) => Object.entries(session.statusAll(t.id))
+    .filter(([actor]) => !(t.id === 'hq' && actor === 'system')).map(([, s]) => s));
   return anyBusy(sessionRows, gemini.status());
 }
 

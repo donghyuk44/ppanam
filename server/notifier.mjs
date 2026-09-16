@@ -152,7 +152,12 @@ export function applyAction(r, store) {
     return text;
   }
   if (r.grade === 'B' && a.type === 'request' && a.to?.team) {
-    // 팀 사이 요청 블록 (결정 49) — 파일을 열고 두 방에 시작 note. 같은 승인으로 두 번 열지 않는다(openRequest 가 본다).
+    // 팀 사이 요청 블록 (결정 49) — 파일을 열고 두 방에 시작 note. 같은 승인으로 두 번 열지 않는다(openRequest 가 본다) —
+    // 다만 notifier.json 의 t.applied 추적(gitignore, 서버 재시작마다 날아갈 수 있다)이 사라지면 이 손 자체가 다시
+    // 불려서, openRequest 가 새로 안 열어도(제 몫은 지킨다) 이 글자가 "열렸습니다" 를 또 냈다 — 옛 통과 카드가
+    // 방금 실행된 것처럼 보였다(톰 지적 09-16 18:4x, 하영 09-13 카드). 미리 있는지 보고 있으면 조용히 넘어간다.
+    const already = listRequests().find((q0) => q0.approval === r.id);
+    if (already) return `요청 블록 ${already.id} 은 이미 열려 있습니다 — 그때(${already.ts?.slice(0, 10) ?? '전'}) 결정.`;
     try {
       const q = openRequest(r);
       return `요청 블록 ${q.id} 이 열렸습니다 — ${q.to.team}/${q.to.actor} 와 1:1, 톰이 감시자. node bus/request.mjs --say ${q.id} "…"`;

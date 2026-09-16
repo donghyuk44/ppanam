@@ -1709,6 +1709,22 @@ switch (cmd) {
           ? '✓ pass 인 마일스톤은 now 로 안 돌아감 · 지금 도는 단계(now) 도 안 밀림 · note 로 왜인지 남김'
           : '✗ ' + JSON.stringify({ staleText, afterStale })]);
       }
+      // 요청 블록 두 번 열기 방지(톰 지적 09-16 18:4x) — notifier.json 의 t.applied 추적이 재시작으로
+      // 날아가면 applyAction 이 또 불리는데, openRequest 는 제 몫(파일 중복 안 만듦)을 지켜도 이 손의
+      // 글자가 무조건 "열렸습니다" 라 옛 통과 카드가 방금 실행된 것처럼 보였다(하영 09-13 카드).
+      {
+        const { applyAction: applyAction2 } = await import('../server/notifier.mjs');
+        const { REQUESTS_DIR } = await import('../bus/requests.mjs');
+        const apr = { id: 'apr_reqdup', team: T, by: 'guide', what: '중복 시험 부탁', grade: 'B', action: { type: 'request', to: { team: 'design', actor: 'guide' }, why: '', due: null, mode: 'once' } };
+        const first = applyAction2(apr, {});
+        const firstId = first.match(/요청 블록 (req_[0-9a-f]{8}) 이 열렸습니다/)?.[1];
+        const second = applyAction2(apr, {});
+        if (firstId) { try { fs.unlinkSync(path.join(REQUESTS_DIR, `${firstId}.jsonl`)); } catch { /* 이미 없음 */ } }
+        const reqDupWant = /이 열렸습니다/.test(first ?? '') && firstId && /이미 열려 있습니다/.test(second ?? '') && second.includes(firstId);
+        out.push(['요청 블록 두 번 열기 방지 — applyAction', reqDupWant
+          ? '✓ 처음엔 열렸습니다 · 다시 부르면(추적 없이도) 같은 id 로 이미 열려 있습니다, 새로 안 만듦'
+          : '✗ ' + JSON.stringify({ first, second, firstId })]);
+      }
       // claude 자리로 codex 를 띄우면 거부 (결정 69 ① — --actor 는 cast.json 이 gpt 인 자리만). 진짜 방(dev)의 guide 는 claude 다. --dry 라 codex 는 안 뜬다.
       const devGuide = readCast('dev').agents?.guide?.model;
       const j2 = spawnSync('node', [path.join(ROOT, 'bus', 'outside.mjs'), '--team', 'dev', '--actor', 'guide', '--turn', 'called', '--dry'], { cwd: ROOT, encoding: 'utf8', timeout: 20_000 });
