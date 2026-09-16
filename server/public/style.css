@@ -36,30 +36,30 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ground:   #1e1b17;
-    --panel:    #272219;
-    --panel-2:  #221e18;
+    --ground:   #151A21;
+    --panel:    #1D232C;
+    --panel-2:  #252C36;
     --rail:     #1a1712;
     --sunk:     #2e281f;
-    --line:     #3a3227;
-    --line-2:   #443b2e;
-    --ink:      #ece5d8;
-    --ink-2:    #cdc4b3;
-    --ink-3:    #9a9184;
-    --ink-4:    #7c7365;
-    --seal:     #4d9d8e;
+    --line:     #2C343F;
+    --line-2:   #2C343F;
+    --ink:      #EDEAE3;
+    --ink-2:    #A3A9B3;
+    --ink-3:    #A3A9B3;
+    --ink-4:    #A3A9B3;
+    --seal:     #8FB4E0;
     --seal-ink: #12201d;
-    --me:       #c9a63f;
+    --me:       #E0AA55;
     --me-line:  #a98a2c;
     --me-ink:   #1b1708;
-    --bad:      #e0776c;
+    --bad:      #F0846B;
     --bad-bg:   #2c1f1d;
     --bad-line: #5e3b36;
     --bad-dim:  #b08c86;
     --good:     #6cc48d;
     --good-bg:  #1a2921;
     --good-line:#33513f;
-    --archive:  #322b21;
+    --archive:  #2C343F;
     --live:     #4fae74;
   }
 }
@@ -320,7 +320,7 @@ body {
 .outf__fold { margin-top: 4px; font-size: 12px; }
 .outf__fold summary { cursor: pointer; color: var(--ink-3); }
 .outf__fold pre { margin: 6px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; background: var(--sunk); padding: 8px; border-radius: 6px; }
-.row.me .bub { background: var(--me); border-color: var(--me-line); color: var(--me-ink); border-radius: 14px 3px 14px 14px; }
+.row.me .bub { background: #fff7ea; border-color: var(--me); color: var(--ink); border-radius: 14px 3px 14px 14px; }
 .row.me.cont .bub { border-radius: 14px; }
 
 .tool {
@@ -784,7 +784,7 @@ body {
 
 .tcard {
   display: flex; flex-direction: column; gap: 10px;
-  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px;
 }
 .tcard[data-alert="1"] { border-color: var(--bad-line); background: var(--bad-bg); }
 
@@ -1148,6 +1148,10 @@ button.dash__row:hover b { text-decoration: underline; }
   .team { width: auto; flex: none; padding: 6px 11px; border-color: var(--line); background: var(--panel); }
   .team__sub { display: none; }
   .room { border-right: none; }
-  .stack { max-width: 82%; }
+  /* 회차 줄(폴드 QA 2 — 닫힘 411 에서 "세라 진행 중 · 방금 활동 · 기다리는 말 2 · 차례: …" 가 오른쪽에서 잘림): 넘치면 둘째 줄로 내려간다, 제목은 줄임표 그대로 */
+  .roundbar { flex-wrap: wrap; row-gap: 4px; }
+  .rwork { flex: 1 1 100%; order: 9; white-space: normal; overflow-wrap: anywhere; }
+  /* 펼침 750(폴드 QA 3 — 말풍선이 끝까지 늘어나 한 줄이 너무 길다): 폭은 넓어도 말풍선은 560px 까지. 옆에 상황판을 붙이는 건 디자인 판단 */
+  .stack { max-width: min(82%, 560px); }
   .crew { display: none; }
 }
