@@ -526,13 +526,14 @@
   {
    "id": "D3",
    "stream": "운영",
-   "what": "작업판 표 도구 — work.json 에서 따라가기 표를 뽑는 명령, 톰은 의견·결정·병목만",
+   "what": "작업판 표 도구 — work.json 에서 따라가기 표를 뽑음 → 확인: node tools/work-board.mjs",
    "team": "dev",
    "seat": "ops",
    "after": [],
    "bottleneck": "",
-   "status": "진행",
-   "note": "대표 승인 10:0x ③. 이름은 하영 사전 따름"
+   "status": "감사 대기",
+   "doneCheck": "tools/work-board.mjs",
+   "note": "대표 승인 10:0x ③. 이름은 하영 사전 따름 — 코드 616d225. 끝 — D3"
   },
   {
    "id": "D4",
