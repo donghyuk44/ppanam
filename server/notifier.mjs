@@ -98,11 +98,20 @@ function execText(r, d) {
   return `승인 ${r.id} 실행 결과 — ${d.ok ? '푸시 완료' : '밀지 않았습니다'}${out}`;
 }
 
-/** 통과한 요청에 박힌 행동 중 서버가 상태로 실행하는 것. 셸 실행(푸시)은 executor.mjs 의 몫이다. */
-function applyAction(r, store) {
+/** 통과한 요청에 박힌 행동 중 서버가 상태로 실행하는 것. 셸 실행(푸시)은 executor.mjs 의 몫이다. round.mjs check 가 돌려본다. */
+export function applyAction(r, store) {
   const a = r.action;
   if (!a) return null;
   if (r.grade === 'B' && a.type === 'milestone' && Number.isInteger(a.n)) {
+    // 늦게 결재된 옛 착수 요청 — 그사이 방이 이미 이 마일스톤을 pass 까지 마쳤으면 now 로 되돌리지 않는다.
+    // setMilestoneStatus(now) 는 조건 없이 다른 now 를 wait 로 내리니, 지나간 단계를 그대로 밀면 지금 도는
+    // 단계가 wait 로 밀려난다(2판 코드 점검 #3, 회차가 엉뚱한 단계에 섬).
+    const already = (readRoadmap(r.team).milestones ?? []).find((m) => m.n === a.n);
+    if (already?.status === 'pass') {
+      const text = `마일스톤 ${a.n} 은 이미 지나갔습니다(pass) — 늦게 결재된 옛 착수 요청이라 now 로 되돌리지 않았습니다.`;
+      emit(r.team, { actor: 'system', type: 'note', text, meta: { approval: r.id } });
+      return text;
+    }
     const ok = setMilestoneStatus(r.team, a.n, 'now');
     let text = ok ? `마일스톤 ${a.n} 착수 — 로드맵의 now 를 옮겼습니다.` : `마일스톤 ${a.n} 을 로드맵에서 찾지 못했습니다.`;
     emit(r.team, { actor: 'system', type: 'milestone', text, meta: { index: a.n, approval: r.id } });

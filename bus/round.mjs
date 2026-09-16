@@ -1398,6 +1398,25 @@ switch (cmd) {
           ? '✓ 다 조용하면 false · claude 세션 하나라도 busy 면 true · gemini 풀 하나라도 busy 면 true · 빈 방은 false'
           : '✗ ' + JSON.stringify({ none, claudeBusy, geminiBusy, empty })]);
       }
+      // 늦게 결재된 옛 착수 요청(2판 코드 점검 #3) — 그사이 방이 마일스톤을 이미 pass 까지 마쳤으면
+      // applyAction 이 now 로 되돌리지 않는다. setMilestoneStatus(now) 는 조건 없이 다른 now 를 wait 로
+      // 내리니, 지나간 단계를 그대로 밀면 지금 도는 단계가 밀려난다.
+      {
+        const { applyAction } = await import('../server/notifier.mjs');
+        const rmBefore = fs.readFileSync(paths(T).roadmap, 'utf8');
+        fs.writeFileSync(paths(T).roadmap, JSON.stringify({ milestones: [{ n: 1, status: 'pass' }, { n: 2, status: 'now' }, { n: 3, status: 'wait' }] }));
+        let staleText = null, afterStale = null;
+        try { staleText = applyAction({ id: 'apr_stale', team: T, grade: 'B', action: { type: 'milestone', n: 1 } }, {}); }
+        finally {
+          afterStale = JSON.parse(fs.readFileSync(paths(T).roadmap, 'utf8')).milestones;
+          fs.writeFileSync(paths(T).roadmap, rmBefore);
+        }
+        const m1 = afterStale.find((m) => m.n === 1), m2 = afterStale.find((m) => m.n === 2);
+        const staleWant = /이미 지나갔습니다/.test(staleText ?? '') && m1.status === 'pass' && m2.status === 'now';
+        out.push(['늦게 결재된 옛 착수 — now 로 안 되돌림(2판 #3)', staleWant
+          ? '✓ pass 인 마일스톤은 now 로 안 돌아감 · 지금 도는 단계(now) 도 안 밀림 · note 로 왜인지 남김'
+          : '✗ ' + JSON.stringify({ staleText, afterStale })]);
+      }
       // claude 자리로 codex 를 띄우면 거부 (결정 69 ① — --actor 는 cast.json 이 gpt 인 자리만). 진짜 방(dev)의 guide 는 claude 다. --dry 라 codex 는 안 뜬다.
       const devGuide = readCast('dev').agents?.guide?.model;
       const j2 = spawnSync('node', [path.join(ROOT, 'bus', 'outside.mjs'), '--team', 'dev', '--actor', 'guide', '--turn', 'called', '--dry'], { cwd: ROOT, encoding: 'utf8', timeout: 20_000 });
