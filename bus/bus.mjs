@@ -16,6 +16,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { findOutPaths, outItem } from '../server/public/outlink.js';
 import { bossOk } from '../server/public/bosswords.js';
+import { parseInsiderWords, insiderWordHit } from '../server/public/roomwords.js';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const TEAMS_PATH = path.join(ROOT, 'state', 'teams.json');
@@ -1315,14 +1316,31 @@ export function roundLineOf(team) {
  * 훅은 병렬로 실행되므로 여러 프로세스가 같은 파일에 동시에 쓴다.
  * appendFileSync 한 번으로 개행까지 붙여야 줄이 섞이지 않는다.
  */
+// 방 말 검사(대표 결정, 18:29 장부 198 ②) — 우리끼리 말이 방에 오르면 그 말풍선 밑에 "쉬운 말로 다시" 표시.
+// 대표 화면 자(bossOk)와 같은 원칙, 다만 여긴 막지 않고 표시만 붙인다. 낱말표는 하영이 쓴다 — 파일이 아직
+// 없으면(만드는 중) 아무것도 안 걸린다, 지어내지 않는다. 이름은 확인 전 짐작 — 다르면 이 한 줄만 바꾸면 된다.
+const INSIDER_WORDS_PATH = path.join(ROOT, 'teams', 'marketing', 'out', 'insider-words.md');
+let insiderWordsCache = { mtimeMs: -1, words: [] };
+function insiderWordsOf() {
+  let st; try { st = fs.statSync(INSIDER_WORDS_PATH); } catch { insiderWordsCache = { mtimeMs: -1, words: [] }; return []; }
+  if (st.mtimeMs === insiderWordsCache.mtimeMs) return insiderWordsCache.words;
+  const words = parseInsiderWords(safeRead(INSIDER_WORDS_PATH));
+  insiderWordsCache = { mtimeMs: st.mtimeMs, words };
+  return words;
+}
 export function emit(team, event) {
   // 방의 규칙(결정 132) — 비서실엔 대표·세라의 말만. 밖의 것은 오류가 아니라 버림(null): 훅·안내·승인 어느 길로 와도 못 들어온다. 버린 건 stderr 한 줄.
   const rules = roomRules(team);
-  if (!allowedIn(rules, { actor: event.actor || 'system', type: EVENT_TYPES.has(event.type) ? event.type : 'message' })) {
+  const type = EVENT_TYPES.has(event.type) ? event.type : 'message';
+  if (!allowedIn(rules, { actor: event.actor || 'system', type })) {
     process.stderr.write(`emit 버림 ${team}/${event.actor || 'system'} ${event.type ?? 'message'}\n`);
     return null;
   }
   const state = readState(team);
+  const text = typeof event.text === 'string' ? event.text : String(event.text ?? '');
+  // 말풍선(message)만 본다 — 도구 줄·안내·승인 note 는 사람이 쓴 말이 아니라 검사 대상이 아니다.
+  const plainWord = type === 'message' ? insiderWordHit(text, insiderWordsOf()) : null;
+  const meta = plainWord ? { ...(event.meta ?? {}), plainWord } : event.meta;
   const record = {
     id: 'evt_' + crypto.randomBytes(5).toString('hex'),
     ts: new Date().toISOString(),
@@ -1330,9 +1348,9 @@ export function emit(team, event) {
     round: event.round ?? state.round ?? 0,
     milestone: event.milestone ?? state.milestone ?? 0,
     actor: event.actor || 'system',
-    type: EVENT_TYPES.has(event.type) ? event.type : 'message',
-    text: typeof event.text === 'string' ? event.text : String(event.text ?? ''),
-    ...(event.meta ? { meta: event.meta } : {}),
+    type,
+    text,
+    ...(meta ? { meta } : {}),
   };
   const p = paths(team);
   fs.mkdirSync(p.dir, { recursive: true });

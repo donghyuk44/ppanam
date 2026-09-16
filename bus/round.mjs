@@ -483,6 +483,17 @@ switch (cmd) {
       const { bossOk: bossOk140 } = await import('../server/public/bosswords.js');
       const dnBad = dn.filter((x) => !bossOk140(x.text)).map((x) => x.text);
       out.push(['한 것 — 글은 사람 말(결정 140)', !dnBad.length ? '✓ 여덟 줄 다 자에 맞음 · 60자 안 · 경로·번호는 ref' : '✗ ' + JSON.stringify(dnBad)]);
+      // 방 말 검사(대표 결정 18:29 장부 198 ②) — 우리끼리 말이 방에 오르면 표시만(막지 않는다). 낱말표는 하영이 쓴다, 여긴 순수 함수만.
+      {
+        const { parseInsiderWords, insiderWordHit } = await import('../server/public/roomwords.js');
+        const wordsMd = '# 우리끼리 말\n\n- 롤백\n- 델타 · 비용 차\n- 세션\n# 주석 줄 — 안 낌\n\n엔진, 그 밖\n';
+        const words = parseInsiderWords(wordsMd);
+        const wordsOk = words.join(',') === '롤백,델타,세션,엔진';
+        const hitOk = insiderWordHit('롤백 경로 하나만 적어 둬요', words) === '롤백'
+          && insiderWordHit('오늘 쓴 돈이 늘었어요', words) === null
+          && insiderWordHit('', words) === null && insiderWordHit('아무 말', []) === null;
+        out.push(['방 말 검사 — 낱말표·찾기(roomwords.js)', wordsOk && hitOk ? '✓ 주석·빈 줄 버림 · "· ," 뒷말 버림 · 긴 낱말부터 · 없으면 null' : '✗ ' + JSON.stringify({ words, hitOk })]);
+      }
       // 대리 결정 보고 요약 — meta.boss 를 먼저 쓴다(테라 code-review 지적 #5, decideApproval --boss).
       // 없으면 plain() 이 글 안 첫 " — " 앞만 남겨 "대리 결정" 다섯 글자로 잘려 요약이 빈 것처럼 보였다.
       // hasBoss(세라 조건, O4 아침 한 장) — 진짜 --boss 없이 fallback 문장으로 채운 건 자를 통과해도
