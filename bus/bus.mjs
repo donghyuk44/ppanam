@@ -404,6 +404,13 @@ export function listApprovals({ team = null, status = null } = {}) {
         r.status = 'passed'; r.decidedAt = l.ts;
       }
     }
+    if (l.kind === 'boss-line') {
+      // 뒤늦은 사람 말 한 줄(나리 요청 — decide 가 끝난 옛 카드는 --boss 를 그때 못 실었다). 지우지 않고
+      // 한 줄 더 쓴다 — 대상 결정을 찾아 그 자리에서만 boss 를 채운다(같은 자리가 여러 번 오면 최신 것).
+      const r = byId.get(l.id);
+      const target = r?.decisions && (l.by ? r.decisions.find((d) => d.by === l.by) : r.decisions[r.decisions.length - 1]);
+      if (target) target.boss = l.boss;
+    }
   }
   let out = [...byId.values()];
   if (team) out = out.filter((r) => r.team === team);
@@ -600,6 +607,24 @@ export function decideApproval(id, { by, decision, reason = '', team = null, pro
     });
   }
   return after;
+}
+
+/**
+ * 뒤늦은 사람 말 한 줄 (나리 요청, 09-16 14:5x) — decideApproval 이 이미 끝난 옛 카드는 --boss 를 그때
+ * 못 실었다. 지우지 않고 boss-line 한 줄 더 써서 채운다 — listApprovals 의 fold 가 대상 결정에 boss 를
+ * 얹고, doneOf 의 대리 결정 처리가 그걸 찾아 쓴다(승인 id 로 교차 참조, 로그의 그 옛 note 는 못 고친다).
+ * by 를 안 주면 가장 최근 결정에 붙인다 — 대리 결정은 보통 둘(chief+outside) 중 마지막 하나로 카드가 닫힌다.
+ */
+export function attachBossLine(id, boss, { by = null } = {}) {
+  const r = listApprovals().find((x) => x.id === id);
+  if (!r) throw new Error(`그런 요청이 없습니다: ${id}`);
+  if (!r.decisions?.length) throw new Error(`${id} 에는 아직 결정이 없습니다 — 판정부터 나야 사람 말을 붙일 수 있습니다.`);
+  const target = by ? r.decisions.find((d) => d.by === by) : r.decisions[r.decisions.length - 1];
+  if (!target) throw new Error(`${id} 에 '${by}' 의 결정이 없습니다.`);
+  const line = String(boss ?? '').trim();
+  if (!line) throw new Error('사람 말 한 줄을 적으세요.');
+  appendApproval({ kind: 'boss-line', id, by: target.by, boss: line, ts: new Date().toISOString() });
+  return listApprovals().find((x) => x.id === id);
 }
 
 /* ── 대리 결정 (대표 결정 85) — 대표가 10분 넘게 답이 없으면 톰·제리 둘의 합의로 ── */
@@ -2511,10 +2536,13 @@ export function doneOf(log, cast, { team = null, since = null, until = null, app
       const tail = plain(String(e.text).split(' — ').slice(1).join(' — '), 44);   // "요청 블록 req_x 닫힘 — 톰 확인" 의 뒷말만
       out.push({ id: `request:${m.request}`, kind: 'request', team, by: null, ts: e.ts, text: `부탁 하나를 닫았어요${tail ? ' — ' + tail : ''}`, ref: m.request });
     } else if (e.type === 'note' && m.proxy) {
-      // meta.boss(--boss 로 적은 사람 말, 테라 code-review 지적 #5) 를 먼저 쓴다 — plain() 은 글 안의
-      // " — " 마다 자르는데, 이 글은 "대리 결정 — 승인 통과 [C] … — 사람 말" 이라 그 첫 " — " 앞의
-      // "대리 결정" 다섯 글자만 남아 요약이 없는 것처럼 보였다.
-      const bossText = m.boss ? one(m.boss, 60) : null;
+      // meta.boss(--boss 로 그때 적은 사람 말)를 먼저 쓴다 — plain() 은 글 안의 " — " 마다 자르는데, 이
+      // 글은 "대리 결정 — 승인 통과 [C] … — 사람 말" 이라 그 첫 " — " 앞의 "대리 결정" 다섯 글자만 남아
+      // 요약이 없는 것처럼 보였다(테라 code-review 지적 #5). 그때 못 실었으면(옛 카드) --boss-line 으로
+      // 뒤늦게 채운 값을 승인 레코드(approvals[].decisions[].boss)에서 찾는다.
+      const apr = m.approval ? approvals.find((a) => a.id === m.approval) : null;
+      const backfilled = apr?.decisions?.find((d) => d.boss)?.boss ?? null;
+      const bossText = m.boss || backfilled ? one(m.boss ?? backfilled, 60) : null;
       out.push({ id: `proxy:${e.id}`, kind: 'proxy', team, by: 'chief', ts: e.ts, text: (bossText && bossOk(bossText) ? bossText : plain(e.text)) ?? '대표님 대신 정했어요', ref: m.approval ?? m.proxyAnswer ?? null });
     } else if (e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && agents[e.actor] && callsBoss(e.text, agents) && !asksBoss(e.text, agents)) {
       out.push({ id: `report:${e.id}`, kind: 'report', team, by: e.actor, ts: e.ts, text: plain(e.text) ?? '대표님께 보고했어요', ref: null });

@@ -472,6 +472,24 @@ switch (cmd) {
       ], pcast, { team: 'dev', approvals: [], now: d0.getTime() + 20 * 60_000 });
       out.push(['대리 결정 보고 요약 — meta.boss 우선(테라 지적 #5)', dnBoss[0]?.text === '로드맵 다음 단계로 넘어갑니다'
         ? '✓ boss 있으면 그대로 씀 · plain() 의 " — " 자르기를 안 탐' : '✗ ' + JSON.stringify(dnBoss)]);
+      // 뒤늦은 사람 말(attachBossLine, 나리 요청 09-16 14:5x) — decide 가 끝난 옛 카드는 --boss 를 그때
+      // 못 실었다. boss-line 한 줄로 결정에 채우고, doneOf 는 meta.boss 가 없어도 approvals[] 교차 참조로
+      // 그 값을 찾는다(그 옛 로그 note 자체는 못 고치니까).
+      {
+        const { attachBossLine, decideApproval } = await import('./bus.mjs');
+        const blCard = requestApproval(T, { grade: 'B', what: '뒤늦은 사람 말 시험', small: true });
+        decideApproval(blCard.id, { by: 'chief', decision: 'PASS', team: 'hq', reason: 'apr_xyz 요청 처리', proxy: ['chief'], delegation: null });
+        const blBefore = attachBossLine(blCard.id, '작은 재시작 하나를 대신 통과시켰어요');
+        const blStored = blBefore.decisions.find((d) => d.by === 'chief')?.boss === '작은 재시작 하나를 대신 통과시켰어요';
+        const noBoss = refuses(() => attachBossLine('apr_없는카드', '아무거나'), '그런 요청이 없습니다');
+        const dnBackfilled = doneOf([
+          { id: 'pb2', ts: at(9), actor: 'system', type: 'note', text: '대리 결정 — 승인 통과 [B] 뒤늦은 사람 말 시험 — apr_xyz 요청 처리', meta: { proxy: ['chief'], approval: blCard.id } },
+        ], pcast, { team: 'dev', approvals: [blBefore], now: d0.getTime() + 20 * 60_000 });
+        const blWant = blStored && noBoss === '✓ 거부' && dnBackfilled[0]?.text === '작은 재시작 하나를 대신 통과시켰어요';
+        out.push(['뒤늦은 사람 말(attachBossLine)', blWant
+          ? '✓ boss-line 이 결정에 채워짐 · 없는 카드는 거부 · doneOf 가 approvals[] 교차 참조로 옛 카드도 채움'
+          : '✗ ' + JSON.stringify({ blStored, noBoss, dnBackfilled })]);
+      }
       // 창 — since·until 로 자르면 "어젯밤" 보고서(결정 80)가 된다. 어제 말(e0)과 어제 판정(boss) 만.
       const dy = doneOf([...dlog, { id: 'd9', ts: new Date(d0.getTime() - 20 * 3600_000).toISOString(), actor: 'ops', type: 'message', text: '대표님, 어젯밤에 서버 살렸습니다.' }], pcast,
         { team: 'dev', approvals: dApr, since: d0.getTime() - 30 * 3600_000, until: d0.getTime() - 3600_000 });

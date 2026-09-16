@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
-  ROOT, requestApproval, decideApproval, voidApproval, listApprovals, APPROVAL_GRADES, needsOf, leftOf,
+  ROOT, requestApproval, decideApproval, voidApproval, attachBossLine, listApprovals, APPROVAL_GRADES, needsOf, leftOf,
   defaultTeam, teamExists, listTeams, readCast, readRoadmap, paths, isOffice, pushAction, roomRules,
 } from './bus.mjs';
 import { untilOf } from './requests.mjs';
@@ -93,6 +93,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--all') o.all = true;
   else if (a === '--show' || a === '-s') { o.mode = 'show'; o.id = argv[++i]; }
   else if (a === '--void') { o.mode = 'void'; o.id = argv[++i]; }
+  else if (a === '--boss-line') { o.mode = 'boss-line'; o.id = argv[++i]; }   // decide 가 끝난 옛 카드에 뒤늦게 사람 말 한 줄(나리 요청, 09-16 14:5x)
   else if (a === '-h' || a === '--help') { usage(); process.exit(0); }
   else words.push(a);
 }
@@ -118,6 +119,7 @@ function usage() {
   --list [--all]        대기 중인 것 (--all 이면 전부)
   --show <id>
   --void <id> "<이유>"   잘못 들어온 요청을 무효로 (총괄실만)
+  --boss-line <id> "<사람 말>"   decide 가 이미 끝난 카드에 뒤늦게 사람 말 한 줄(--boss 를 그때 못 실었을 때)
 
 등급
 ${Object.entries(APPROVAL_GRADES).map(([g, x]) => `  ${g} ${x.label.padEnd(3)} ${x.needs.length ? x.needs.join('+') : '실무 혼자'}  — ${x.desc}`).join('\n')}`);
@@ -158,6 +160,12 @@ if (o.mode === 'void') {
   // 잘못 들어온 요청을 무효로 한다. 지우지 않고 한 줄 더 쓴다. 총괄실만.
   if (!me || me.team !== 'hq') { console.error('오류: 무효 처리는 총괄실에서만 합니다.'); process.exit(1); }
   try { console.log(fmt(voidApproval(o.id, words.join(' ')))); } catch (e) { console.error('오류: ' + e.message); process.exit(1); }
+  process.exit(0);
+}
+
+if (o.mode === 'boss-line') {
+  // decide 가 끝난 카드에 뒤늦게 사람 말 한 줄 — 지우지 않고 boss-line 한 줄 더 쓴다.
+  try { console.log(fmt(attachBossLine(o.id, words.join(' ')))); } catch (e) { console.error('오류: ' + e.message); process.exit(1); }
   process.exit(0);
 }
 
