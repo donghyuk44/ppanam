@@ -257,7 +257,15 @@ export async function runMorning({ now = Date.now(), session = null } = {}) {
     fs.writeFileSync(target, out.md);
     writeStore({ ...readStore(), morning: { day, at: new Date(now).toISOString(), auto, blocked: out.counts.blocked, boss: out.counts.boss } });
 
-    for (const s of out.skipped) emit(s.team, { actor: 'system', type: 'note', text: `아침 한 장 자에 안 맞아 뺀 줄 — 다시 쓰면 다음 장에 실립니다: ${s.text}`.slice(0, 200) });
+    // 자에 안 맞아 뺀 줄 — 팀마다 한 줄만(톰·나리 지적 09-16 18:4x: 서른 줄이 총괄실에 한꺼번에 섰다). 목록은 파일로.
+    if (out.skipped.length) {
+      const skippedFile = path.join(dailyDir(), `${day}-뺀줄.md`);
+      fs.mkdirSync(dailyDir(), { recursive: true });
+      fs.writeFileSync(skippedFile, `# 아침 한 장 ${day} — 자에 안 맞아 뺀 줄\n\n다시 쓰면 다음 장에 실립니다.\n\n${out.skipped.map((s) => `- ${s.team} · ${s.text}`).join('\n')}\n`);
+      const byTeam = new Map();
+      for (const s of out.skipped) byTeam.set(s.team, (byTeam.get(s.team) ?? 0) + 1);
+      for (const [team, n] of byTeam) emit(team, { actor: 'system', type: 'note', text: `아침 한 장 자에 안 맞아 ${n}줄 뺌 — 목록은 파일: ${rel(skippedFile)}` });
+    }
     emit('hq', {
       actor: 'system', type: 'note',
       text: `아침 한 장 ${day} 다시 만듦 — 막힌 것 ${out.counts.blocked} · 대표님 손 ${out.counts.boss} · ${rel(target)}${auto ? ' (손 글이 있어 자동 판을 따로 냄)' : ''}`,

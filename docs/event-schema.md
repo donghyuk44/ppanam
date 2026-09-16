@@ -170,7 +170,7 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 - `meta.cards: ['dev', 'design', …]` — **팀 상황 카드를 말풍선 밑에**. 화면은 팀마다 `GET /api/card/<팀>`(모양은 `server/public/card.js` 머리 JSDoc)을 받아 `card.js teamCard` 로 그린다 — 글 세 줄 대신 카드. 여섯 장까지. 재료가 없으면(404) 그 장은 안 그린다. 세라의 보고가 이걸 싣는 건 서버(세라 세션·nightly) 몫 — 정해 둔 시각은 없다(결정 187·188).
 - `meta.plainWord: '<낱말>'` — **방 말 검사**(대표 결정, 18:29 장부 198 ②). 우리끼리만 아는 낱말이 말풍선 글에 있으면 `bus.emit` 이 붙인다 —
   막지 않는다, 화면이 그 말풍선 밑에 "쉬운 말로 다시" 한 줄을 붙이는 재료만(대표 화면 자 `bossOk` 와 같은 원칙, 다른 자리). 낱말표는
-  `teams/marketing/out/insider-words.md`(하영, 한 줄에 하나 — 파일이 없으면 아무것도 안 걸린다). 순수 함수는 `server/public/roomwords.js`.
+  `teams/marketing/out/plain-words.md`(하영, 한 줄에 하나 — 파일이 없으면 아무것도 안 걸린다). 순수 함수는 `server/public/roomwords.js`.
 
 - `meta.hand: 'server' | 'cli'` — **나리(`system`) 말이 어느 손에서 왔나**. `server` = 총괄실 서버 세션(`hq:system`) → 이름 박스 노랑 · `cli` = `say.mjs --as system`(관리 창 나리) → 파랑. 찍는 건 서버, 화면은 `.row[data-hand]`. 없으면 색 없음.
 - `meta.roam: '<팀 id>'` — **다른 방에 한 답의 원본**(나리·세라 로밍, `callHomeElsewhere` 가 집 방 기록에 원본을 남기고 그 방엔 사본 `meta.via`). 집 방 화면에선 **접힌 말풍선**(`app.js foldBubble` — "개발 방에 답함 · 펼치기", 펼치면 원문 + 그 방 열기)로만. 찍는 건 서버. 인용(`meta.quote`)도 같은 부품.

@@ -1319,7 +1319,7 @@ export function roundLineOf(team) {
 // 방 말 검사(대표 결정, 18:29 장부 198 ②) — 우리끼리 말이 방에 오르면 그 말풍선 밑에 "쉬운 말로 다시" 표시.
 // 대표 화면 자(bossOk)와 같은 원칙, 다만 여긴 막지 않고 표시만 붙인다. 낱말표는 하영이 쓴다 — 파일이 아직
 // 없으면(만드는 중) 아무것도 안 걸린다, 지어내지 않는다. 이름은 확인 전 짐작 — 다르면 이 한 줄만 바꾸면 된다.
-const INSIDER_WORDS_PATH = path.join(ROOT, 'teams', 'marketing', 'out', 'insider-words.md');
+const INSIDER_WORDS_PATH = path.join(ROOT, 'teams', 'marketing', 'out', 'plain-words.md');   // 하영, req_fbfb6da7
 let insiderWordsCache = { mtimeMs: -1, words: [] };
 function insiderWordsOf() {
   let st; try { st = fs.statSync(INSIDER_WORDS_PATH); } catch { insiderWordsCache = { mtimeMs: -1, words: [] }; return []; }
