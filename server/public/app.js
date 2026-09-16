@@ -1923,10 +1923,10 @@ function renderTowerAll(grid) {
   // ① 띠 — 큰 숫자 셋(사전 191행 셈). 누르면 그 블록으로. 채팅 머리 한 줄(③)과 같은 값 하나(dashStats).
   grid.appendChild(statBand(stat, 'big', jump));
 
-  // ② 정할 것 N — 결재(C)·물어봄·FAIL 판단 + 상황판 '대표님이 보실 것' 줄. 0 이면 "오늘은 없어요"(나리 상시 대리 188 뒤 기본 모양).
+  // ② 정할 것 N — 결재(C)·물어봄·FAIL 판단만 센다(사전 208행 "결재 대기 + 답변 대기"). 상황판 '대표님이 보실 것' 줄은 안 세고 밑에만 붙는다(나리·톰 결재 카드 ③). 둘 다 없으면 "오늘은 없어요"(나리 상시 대리 188 뒤 기본 모양).
   const sec3 = el('section', 'dash__card'); sec3.dataset.block = 'mine'; if (stat.decide) sec3.dataset.alert = '1';
   sec3.appendChild(el('div', 'dash__k', `정할 것 ${stat.decide}`));
-  if (!stat.decide) sec3.appendChild(el('div', 'dash__empty', '오늘은 없어요'));
+  if (!stat.decide && !fromBoard.length) sec3.appendChild(el('div', 'dash__empty', '오늘은 없어요'));
   for (const it of mine) {
     // 결재는 카드 그대로(승인·반려 단추 · '대표님이 정함' 칩 — 헨리 diff-0916 11절 ①, 시안 5절 폭 384). 물어봄·FAIL 판단은 줄.
     if (it.kind === 'approval') {
@@ -1992,7 +1992,7 @@ function bossItems() {
 }
 /**
  * 띠 큰 숫자 셋 — 사전 191행(결정 192)의 셈, 값은 하나(대시보드 띠·채팅 머리 한 줄이 같이 쓴다).
- *   정할 것 = 대표님이 정하거나 눌러야 다음으로 가는 일(결재 대기 + 답변 대기 + 상황판 '보실 것' 줄) · 막힌 것 = 누가 풀어야 넘어가는 일(팀 카드 막힌 것, 자 통과분) ·
+ *   정할 것 = 대표님이 정하거나 눌러야 다음으로 가는 일(결재 대기 + 답변 대기 — 상황판 '보실 것' 줄은 안 센다, 블록 밑에 줄로만) · 막힌 것 = 누가 풀어야 넘어가는 일(팀 카드 막힌 것, 자 통과분) ·
  *   오늘 끝난 것 = 상황판 done 줄 + 오늘 통과 판정(작업 보드 doneAt 칸은 아직 없다 — 그 칸이 생기면 여기 한 줄로 바꾼다).
  */
 function dashStats({ mine = null, fromBoard = null, day0 = dayStartSeoulMs(Date.now()) } = {}) {
@@ -2018,7 +2018,7 @@ function dashStats({ mine = null, fromBoard = null, day0 = dayStartSeoulMs(Date.
     const lines = d ? (d.done ?? []).map((x) => x.text) : (summaries[t.id]?.progress?.done ?? []);
     for (const s of lines.filter(okLine)) doneList.push({ id: `board:${t.id}:${s}`, kind: 'board', team: t.id, line: s });
   }
-  return { decide: mine.length + fromBoard.length, stuck, done: doneList.length, doneList };
+  return { decide: mine.length, stuck, done: doneList.length, doneList };
 }
 
 /** 띠 한 줄 — size 'big'(대시보드: 카드 셋, 숫자 28/32) 또는 'line'(채팅 머리 한 줄 37, 숫자 15). 누르면 대시보드 그 블록. 글자는 사전 1절 "정할 것·막힌 것·오늘 끝난 것". */
@@ -2668,13 +2668,13 @@ function renderReport(r) {
   const teamOf = (id) => (r.teams ?? []).find((t) => t.id === id) ?? teams.find((t) => t.id === id) ?? { id, name: id };
   const colorOf = (id) => teamOf(id).color ?? teamColor(id);
 
-  // ① 오늘 정하실 것 N — 현황 ③ 과 같은 목록(결재 C · 대표님께 물어봄 · 멈춤 + 상황판 '대표님이 보실 것'). 없으면 칸이 사라진다
+  // ① 오늘 정하실 것 N — 현황 ③ 과 같은 목록(결재 C · 대표님께 물어봄 · 멈춤). 수는 대표님 몫만 — 상황판 '대표님이 보실 것' 줄은 안 세고 밑에만(결재 카드 ③, 대시보드 dashStats 와 같은 셈). 둘 다 없으면 칸이 사라진다
   const pendingAll = approvals.map((a) => ({ id: a.id, grade: a.grade, team: a.team, by: a.by, what: a.what, ts: a.requestedAt ?? a.ts }));
   const mine = blockedOf({ teams, summaries, approvals: pendingAll, requests: requestsAll.filter((q) => q.status !== 'closed'), infra }, { now, pauses }).filter((it) => it.waitOn === 'boss');
   const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
   if (mine.length || fromBoard.length) {
     const sec = el('section', 'dash__card rep__sec'); sec.dataset.block = 'mine'; sec.dataset.alert = '1';
-    sec.appendChild(el('div', 'dash__k', `승인 필요 ${mine.length + fromBoard.length}`));
+    sec.appendChild(el('div', 'dash__k', `승인 필요 ${mine.length}`));
     for (const it of mine) {
       const row = el('button', 'dash__row'); row.type = 'button';
       row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '승인 필요' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));
