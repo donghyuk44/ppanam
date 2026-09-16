@@ -168,7 +168,7 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
     a.appendChild(txt);
     return personLine(x.who, a);
   });
-  const doneSec = block('done', done); if (doneSec) card.appendChild(doneSec);
+  const doneSec = d.showDone ? block('done', done) : null; if (doneSec) card.appendChild(doneSec);   // 3판: 팀 카드는 세 줄 + 막힌 것 띠 — 된 것은 대시보드 '오늘 끝난 것' 블록 몫(헨리 diff-0916 11절). 재료·함수는 남김
 
   // 막힌 것 — 0~2(자에 맞는 줄만), "{무엇이 왜} — {누가} 풀어요". 3판(ui-spec 12절): 세 줄 밑 **빨간 띠**(.card__alert — 색·모서리는 card.css 몫)
   const blocked = (d.blocked ?? []).filter((x) => ok(x.text)).slice(0, 2).map((x) => {
