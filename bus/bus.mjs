@@ -422,12 +422,15 @@ export function listApprovals({ team = null, status = null } = {}) {
  * 누가 판정하나 — 등급의 needs. **작은 B**(`small`, 재시작·문구 한 줄·임시 파일 태그 — 실행 대상 없는 B)는 결정 자리 혼자, 제리 대조 생략
  * (나리 점검-0916 3-9 "감사 무게 나누기": 밤 99건 중 재시작 카드 15장에도 톰+제리 둘 다 대조라 큰 것에 힘이 안 남았다).
  * **결정 자리**는 평소 톰(chief), 위임 중(`state/delegation.json` to:'system')엔 나리(system) — 대표 09-16 06:5x "대리 판단은 나리 너가 한다.
- * 톰이 하던 기존 방향을 너가 하는걸로 바꿈". 톰은 운영·기록·배분만, 판정은 안 낸다. 순수(위임은 인자) — check 가 돌린다.
+ * 톰이 하던 기존 방향을 너가 하는걸로 바꿈". 톰은 운영·기록·배분만, 판정은 안 낸다.
+ * **제리(outside) 대조**는 총괄실(hq) 자체 카드만 — 대표 09-16 16:4x "제리는 여기 총괄실 내용만 감사하는걸로 바꾼다.
+ * 의미가 없다." 팀 카드(dev·design·marketing·finance)는 결정 자리 하나로 닫힌다, 대신 서는 사람 없음(결정 183·185).
+ * 순수(위임은 인자) — check 가 돌린다.
  */
 export const DECIDERS = new Set(['chief', 'system']);
 export const needsOf = (r, dg = readDelegation()) => {
   const decider = dg?.to === 'system' ? 'system' : 'chief';
-  if (r?.grade === 'B') return r?.small ? [decider] : [decider, 'outside'];
+  if (r?.grade === 'B') return (r?.small || r?.team !== 'hq') ? [decider] : [decider, 'outside'];
   return APPROVAL_GRADES[r?.grade]?.needs ?? [];
 };
 /** 결정 자리는 하나다 — 톰의 판정과 나리의 판정은 같은 칸을 채운다(옛 카드는 톰이, 위임 뒤는 나리가). 접을 때·중복 검사·남은 판정자 셈에 쓴다. */

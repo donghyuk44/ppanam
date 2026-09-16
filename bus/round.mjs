@@ -968,10 +968,14 @@ switch (cmd) {
         const { asksVerdict, AUTO_VERDICT_MS } = await import('../server/conductor.mjs');
         const av = [asksVerdict('레오, 산출물 out/m9-status.md 판정 부탁해요'), asksVerdict('마크, 판정해 주세요 — 얼굴 열일곱'), asksVerdict('레오, 이거 돌려봤어요?'), asksVerdict(''), asksVerdict(null)];
         out.push(['말로 부른 판정(asksVerdict)', av.join(',') === 'true,true,false,false,false' && AUTO_VERDICT_MS === 10 * 60_000 ? '✓ 판정 낱말이면 참 · 호명만이면 거짓 · 빈 글 거짓 · 기본 10분' : '✗ ' + JSON.stringify({ av, AUTO_VERDICT_MS })]);
-        // 작은 B(점검-0916 3-9 감사 무게 나누기) — needsOf: 작은 B 는 톰 혼자, 보통 B 는 톰+제리, C 는 대표. 요청은 실행 대상 있는 B·C 에 --small 을 거부(임시 큐라 진짜 큐에 안 남는다).
+        // 작은 B(점검-0916 3-9 감사 무게 나누기) — needsOf: 작은 B 는 톰 혼자, 보통 B 는 총괄실(hq) 카드만 톰+제리
+        // — 팀 카드(dev 등)는 톰 혼자, 대신 서는 사람 없음(대표 09-16 16:4x "제리는 총괄실만", 결정 183·185).
+        // C 는 대표. 요청은 실행 대상 있는 B·C 에 --small 을 거부(임시 큐라 진짜 큐에 안 남는다).
         // 위임은 인자로(null = 평소 톰) — 실제 state/delegation.json 이 켜져 있어도 check 는 흔들리지 않는다. 위임 중(to:system)엔 결정 자리가 나리.
-        const nd = [needsOf({ grade: 'B', small: true }, null), needsOf({ grade: 'B' }, null), needsOf({ grade: 'C', small: true }, null), needsOf({ grade: 'A' }, null)].map((x) => x.join('+'));
-        const ndDg = [needsOf({ grade: 'B', small: true }, { to: 'system' }), needsOf({ grade: 'B' }, { to: 'system' }), needsOf({ grade: 'C' }, { to: 'system' })].map((x) => x.join('+')).join(' / ');
+        const nd = [needsOf({ grade: 'B', small: true, team: 'hq' }, null), needsOf({ grade: 'B', team: 'hq' }, null), needsOf({ grade: 'C', small: true }, null), needsOf({ grade: 'A' }, null)].map((x) => x.join('+'));
+        const ndDg = [needsOf({ grade: 'B', small: true, team: 'hq' }, { to: 'system' }), needsOf({ grade: 'B', team: 'hq' }, { to: 'system' }), needsOf({ grade: 'C' }, { to: 'system' })].map((x) => x.join('+')).join(' / ');
+        // 팀 카드(hq 아님)는 보통 B 도 결정 자리 하나 — 제리 줄 없음.
+        const ndTeam = [needsOf({ grade: 'B', team: 'dev' }, null), needsOf({ grade: 'B', team: 'design' }, { to: 'system' })].map((x) => x.join('+'));
         const smallC = refuses(() => requestApproval(T, { grade: 'C', what: '작은 C', small: true }), '작은 B');
         const smallPush = refuses(() => requestApproval(T, { grade: 'B', what: '작은 푸시', small: true, action: { type: 'push' } }), '큰 것');
         let smallOk = null; try { smallOk = requestApproval(T, { grade: 'B', what: '재시작 — 시험', small: true }); } catch (e) { smallOk = { err: e.message }; }
@@ -980,7 +984,8 @@ switch (cmd) {
         // 다른 실행 대상(푸시 등)은 그대로 거부.
         let smallToOk = null; try { smallToOk = requestApproval(T, { grade: 'B', what: '작은 요청 블록 시험', small: true, action: { type: 'request', to: { team: 'design', actor: 'guide' }, why: '', due: null, mode: 'once' } }); } catch (e) { smallToOk = { err: e.message }; }
         let smallRestartOk = null; try { smallRestartOk = requestApproval(T, { grade: 'B', what: '작은 재시작 시험', small: true, action: { type: 'restart' } }); } catch (e) { smallRestartOk = { err: e.message }; }
-        const smallWant = nd.join(' / ') === 'chief / chief+outside / boss / ' && ndDg === 'system / system+outside / boss' && smallC === '✓ 거부' && smallPush === '✓ 거부' && smallOk?.small === true && needsOf(smallOk, null).join() === 'chief'
+        const smallWant = nd.join(' / ') === 'chief / chief+outside / boss / ' && ndDg === 'system / system+outside / boss' && ndTeam.join(' / ') === 'chief / system'
+          && smallC === '✓ 거부' && smallPush === '✓ 거부' && smallOk?.small === true && needsOf(smallOk, null).join() === 'chief'
           && smallToOk?.small === true && smallToOk?.action?.type === 'request'
           && smallRestartOk?.small === true && smallRestartOk?.action?.type === 'restart';
         // 결정 자리 실측(임시 큐) — 위임 중 톰의 판정은 거부('나리가 정합니다'), 방 없는 나리 거부, 총괄실 나리 통과 → 작은 B 는 그걸로 닫힘. 위임 없이 나리는 거부('톰이 정합니다').
@@ -993,8 +998,9 @@ switch (cmd) {
         const closedBySystem = smallOk?.id ? listQ().find((x) => x.id === smallOk.id)?.status === 'passed' : false;
         // --boss 한 줄이 결정 레코드에 그대로 남나(테라 code-review 지적 #5) — approve.mjs --boss 로 심는 값.
         const bossStored = smallOk?.id ? listQ().find((x) => x.id === smallOk.id)?.decisions?.find((d) => d.by === 'system')?.boss === '작은 재시작 하나 통과시켰어요' : false;
-        // 옛 카드(톰 PASS + 제리 PASS)가 위임 뒤에도 통과로 남나 — 결정 칸은 하나(sameSlot). 톰 통과 뒤 나리가 또 찍으면 거부.
-        let old = null; try { old = requestApproval(T, { grade: 'B', what: '옛 카드 — 톰이 통과시킨 것', action: null }); decideApproval(old.id, { by: 'chief', decision: 'PASS', team: 'hq', delegation: null }); decideApproval(old.id, { by: 'outside', decision: 'PASS', team: 'hq', delegation: null }); } catch (e) { old = { err: e.message }; }
+        // 옛 카드(톰 PASS 하나로 닫힘 — 팀 카드라 제리 줄이 없다, 16:4x)가 위임 뒤에도 통과로 남나 — 결정
+        // 칸은 하나(sameSlot). 톰 통과 뒤 나리가 또 찍으면 거부(이미 끝남).
+        let old = null; try { old = requestApproval(T, { grade: 'B', what: '옛 카드 — 톰이 통과시킨 것', action: null }); decideApproval(old.id, { by: 'chief', decision: 'PASS', team: 'hq', delegation: null }); } catch (e) { old = { err: e.message }; }
         const oldStill = old?.id ? listQ().find((x) => x.id === old.id)?.status === 'passed' : false;
         const dupSlot = old?.id ? refuses(() => decideApproval(old.id, { by: 'system', decision: 'PASS', team: 'hq', delegation: dgOnB }), '이미 끝난') : '✗';
         const dcWant = dTom === '✓ 거부' && dNariNoRoom === '✓ 거부' && dNariNoDg === '✓ 거부' && dNari?.status === 'passed' && closedBySystem && bossStored && oldStill && dupSlot === '✓ 거부';
@@ -1062,7 +1068,7 @@ switch (cmd) {
         const s1 = spliceBlock('a\nb\n', ['p1']), s2 = spliceBlock(s1, ['p2', 'p3']);
         const liWant = li.join(',') === 'teams/design/out/a.png,teams/dev/out/c.JPG' && s1.includes('\np1\n') && !s2.includes('p1') && s2.includes('p2\np3') && s2.split('>>>').length === 2 && s2.startsWith('a\nb\n');
         out.push(['out/ 큰 그림만 빼기(out-ignore)', liWant ? '✓ 100KB 넘는 그림만 · shots 안 셈 · md 안 뺌 · 대문자 확장자 · 블록 갈아 끼움' : '✗ ' + JSON.stringify({ li, s1, s2 })]);
-        out.push(['작은 B · 결정 자리(점검 3-9 · 대표 09-16)', smallWant ? '✓ 작은 B = 톰 혼자 · 보통 B = 톰+제리 · 위임 중엔 나리 / 나리+제리 · C·푸시 등엔 --small 거부 · --to·--restart 는 --small 됨(톰 배분·나리 지적) · 레코드 small:true' : '✗ ' + JSON.stringify({ nd, ndDg, smallC, smallPush, smallOk, smallToOk, smallRestartOk })]);
+        out.push(['작은 B · 결정 자리(점검 3-9 · 대표 09-16)', smallWant ? '✓ 작은 B = 톰 혼자 · 보통 B = hq 만 톰+제리, 팀 카드는 톰 혼자(제리 총괄실만, 16:4x) · 위임 중엔 나리 / 나리+제리 · C·푸시 등엔 --small 거부 · --to·--restart 는 --small 됨(톰 배분·나리 지적) · 레코드 small:true' : '✗ ' + JSON.stringify({ nd, ndDg, ndTeam, smallC, smallPush, smallOk, smallToOk, smallRestartOk })]);
       }
       // 자리의 엔진·모델·추론 강도 (결정 69) — 순수 castChangeError 가 거르고, updateCastAgent 가 임시 방 cast.json 에 쓴다. 엔진 바꾸기는 아직 거부(같은 값은 통과).
       {
@@ -1870,7 +1876,9 @@ switch (cmd) {
           ];
           const nApr = [
             { id: 'apr_c1', grade: 'C', what: '방향', team: 'dev', status: 'pending', ts: '2026-09-15T10:00:00Z', decisions: [] },
-            { id: 'apr_b1', grade: 'B', what: '푸시', team: 'dev', status: 'pending', ts: '2026-09-15T11:00:00Z', decisions: [{ by: 'chief', decision: 'PASS', ts: '2026-09-15T11:05:00Z' }] },
+            // team: 'hq' 로 둔다(대표 09-16 16:4x·결정 183·185 뒤로 팀 카드는 결정 자리 하나면 닫힌다 — 제리는
+            // 총괄실 카드만) — 톰 PASS 뒤에도 "제리 차례"로 남는 사례(사람 칸 사라짐)를 보려면 hq 카드가 맞다.
+            { id: 'apr_b1', grade: 'B', what: '푸시', team: 'hq', status: 'pending', ts: '2026-09-15T11:00:00Z', decisions: [{ by: 'chief', decision: 'PASS', ts: '2026-09-15T11:05:00Z' }] },
             { id: 'apr_b0', grade: 'B', what: '지난 것', team: 'dev', status: 'passed', ts: '2026-09-13T11:00:00Z', decidedAt: '2026-09-13T12:00:00Z', decisions: [{ by: 'chief', decision: 'PASS', ts: '2026-09-13T11:30:00Z' }, { by: 'outside', decision: 'PASS', ts: '2026-09-13T12:00:00Z' }] },
           ];
           const q = nightlyOf({ team: 'dev', name: '개발', day: '2026-09-15', log: [nLog[0], nLog[3]], rounds: nRounds, approvals: [], progress: { next: ['내일 첫 일'], blocked: [] }, state: { round: 25, phase: 'idle' }, cast: nCast, now: nNow });

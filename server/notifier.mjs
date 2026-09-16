@@ -71,6 +71,9 @@ function requestText(r) {
   // 결정 자리 — 평소 톰, 위임 중(대표 09-16 "대리 판단은 나리")엔 나리. 톰은 기록만. 글은 총괄실 세션(톰)에 들어가고 나리는 방을 읽는다.
   const decider = needsOf(r).find((w) => w === 'chief' || w === 'system') ?? 'chief';
   const dName = nameOf('hq', decider);
+  // 제리(outside) 대조는 총괄실(hq) 자체 카드만(대표 09-16 16:4x "제리는 여기 총괄실 내용만 감사", 결정 183·185) —
+  // 팀 카드(dev 등)는 결정 자리 하나로 닫히니 대조를 시키지도, 그 명령을 안내하지도 않는다.
+  const needsOutside = needsOf(r).includes('outside');
   return `승인 요청 ${r.id} [등급 B${r.small ? ' · 작은' : ''}] — ${r.team} 팀 ${who}: ${r.what}` +
     (decider === 'system' ? `\n결정은 ${dName}(위임) — 톰은 판정하지 않는다. ${dName}가 방에 "나리 판정: PASS/REVISE — 이유" 를 남기거나 --as system 으로 직접 적는다.` : '') +
     (r.small ? '\n작은 B — 재시작·문구·임시 파일 같은 것. 톰 혼자 보면 닫힌다, 제리 대조는 생략(점검-0916 3-9). 작은 게 아니면 REVISE 로 돌려보내 큰 카드로 다시 올리게.' : '') +
@@ -80,9 +83,9 @@ function requestText(r) {
     (a?.type === 'milestone' ? `\n대상: 마일스톤 ${a.n} 착수 — 통과하면 서버가 로드맵의 now 를 옮긴다` : '') +
     (a?.type === 'request' ? `\n대상: ${a.to.team}/${a.to.actor} 에게 요청 블록${a.mode === 'milestone' ? ` (마일스톤 ${a.until?.milestone ?? '?'} 끝까지 — 공동 프로젝트)` : ''}${a.why ? ` · 왜: ${a.why}` : ''}${a.due ? ` · 기한: ${a.due}` : ''} — 통과하면 서버가 블록을 열고 너는 감시자로 들어간다(결정 51: 목표 한 줄 node bus/request.mjs --goal <id> "…")` : '') +
     (a?.type === 'proxy' ? `\n대리 결정 (결정 85 — 대표가 10분 넘게 답이 없다): ${a.kind === 'approval' ? `C 승인 ${a.ref} 를 대표 대신 통과시킬까` : a.kind === 'unblock' ? `${a.team} 방의 FAIL 을 대표 대신 풀까` : `${a.team} 방의 물음에 대표 대신 답할까 — 답은 너의 PASS 이유에 적어라, 그 글이 그 방에 '대리 결정' 으로 남는다`}. 둘 다 PASS 여야 실행되고 하나라도 REVISE 면 대표를 기다린다. 돈·바깥으로 나가는 건 여기 안 온다.` : '') +
-    `\n\n판정하세요. 마일스톤 조건을 채웠는지, 컷리스트를 안 넘었는지 보고 결정하${r.small ? '세요.' : '고, 제리에게 원문 대조를 시키세요.'}` +
+    `\n\n판정하세요. 마일스톤 조건을 채웠는지, 컷리스트를 안 넘었는지 보고 결정하${needsOutside ? '고, 제리에게 원문 대조를 시키세요.' : '세요.'}` +
     `\n  node bus/approve.mjs --decide ${r.id} --as ${decider} PASS|REVISE "이유"` +
-    (r.small ? '' : `\n  node bus/outside.mjs --team hq --ask "승인 요청 ${r.id} 대조: ${r.what}"`);
+    (needsOutside ? `\n  node bus/outside.mjs --team hq --ask "승인 요청 ${r.id} 대조: ${r.what}"` : '');
 }
 
 function decidedText(r) {

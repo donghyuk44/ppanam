@@ -65,7 +65,12 @@ export function nightlyOf({ team, name = team, day, log = [], rounds = [], appro
   for (const r of approvals) if (r.status === 'pending' && r.grade === 'C') add(`승인 [C] ${r.id} ${oneLine(r.what, 60)} — 대표 차례`, 'approval', r.id);
   const call = bossCallOf(log, cast, { progress });   // 상황판 boss 칸이 비면 없음(나리 결정 ③) — teamSummary 와 같은 셈
   if (call && ms(call.ts) < u) { const e = log.find((x) => x.id === call.id); add(`${nameOf(call.by)}이 ${whenSeoul(call.ts, day)} 에 대표를 불렀는데 답이 없음 — "${oneLine(bossParagraph(e?.text, cast), 80)}"`, 'bossCall', call.id); }
-  for (const r of approvals) if (r.status === 'pending' && r.grade === 'B') add(`승인 [B] ${r.id} ${oneLine(r.what, 60)} — 톰·제리 차례`);
+  // 팀 카드는 결정 자리 하나(제리는 총괄실 카드만, 대표 09-16 16:4x·결정 183·185) — "톰·제리 차례" 로 못 박지
+  // 않고 누가 남았는지(leftOf, 없으면 needsOf 전체)를 그대로 쓴다. 실제 as 절과 같은 식(위 56행).
+  for (const r of approvals) if (r.status === 'pending' && r.grade === 'B') {
+    const who = (leftOf(r, delegation).length ? leftOf(r, delegation) : needsOf(r, delegation)).map((w) => JUDGE_NAME[w] ?? w).join('·');
+    add(`승인 [B] ${r.id} ${oneLine(r.what, 60)} — ${who} 차례`);
+  }
   for (const l of progress?.blocked ?? []) add(`상황판 — ${oneLine(l, 120)}`);
 
   const next = (progress?.next ?? []).map((l) => `- ${oneLine(l, 160)}`);
