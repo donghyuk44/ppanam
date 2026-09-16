@@ -37,7 +37,6 @@ let delegation = null;        // 위임(state/delegation.json, boot.delegation, 
 let done = { since: null, items: [], fetchedAt: 0, more: false };   // 누가 뭘 했나(/api/done) — 관제탑 ②. more = "더 보기" 펼침(오늘 안에서만 — 어제는 보고서)
 let work = { data: null, fetchedAt: 0 };   // 작업 보드(/api/work = bus.timelineOf, state/work.json) — 대시보드 맨 위 보드 블록(카드-체계 1-1) · 타임라인 탭. 404 면 블록이 안 뜬다
 const cards = { byTeam: {}, fetchedAt: {}, inflight: {}, waiting: {} };   // 팀 상황 카드 재료(/api/card/<팀>, 솔라 C5 — card.js 머리 JSDoc 모양). 30초 캐시, waiting = fetch 끝나면 부를 화면들(솔라 감사 ②). 채팅 맨 위·대시보드·비서실이 같은 재료
-let openTeamRows = new Set();  // 관제탑 ④ 팀 줄 — 펼쳐 둔 팀(상황판 네 칸)
 let requestsAll = [];         // 요청 블록 접은 목록 (6-1절) — 관제탑 요청 탭·전체 탭 타일
 let requestsLoaded = false;
 let requestsFetchedAt = 0;
@@ -1971,56 +1970,16 @@ function renderTowerAll(grid) {
     grid.appendChild(sec3);
   }
 
-  // ④ 팀 — 단계 N/M · 회차 · 알약. 누르면 그 자리에서 상황판 네 칸(하는 것·막힌 것·대표 차례·다음) 글자 그대로, 한 번 더 = 카드(팀 탭). 비서실은 줄이 없다.
+  // ④ 팀 — 팀 상황 카드 다섯이 세로로(카드-체계 1절 "② 첫 화면 탭", C7). 부품은 card.js teamCard 하나 — 채팅 맨 위·비서실과 같은 것. 옛 줄(진행 막대·시간 띠·펼침)은 뺐다 —
+  //   재료(/api/card)가 아직이면 팀 이름 한 줄만("불러오는 중"). 카드 사이 간격·폭은 클레멘타인 토큰(card.css) 몫 — 여기 껍데기는 [data-cards] 하나.
   const tl = el('section', 'dash__card'); tl.dataset.block = 'teams';
-  tl.appendChild(el('div', 'dash__k', '팀'));   // '대표 차례' 는 순서 말 — 하영 5판 3-5-3 ①(req_123f2ebe), 422·1827 과 같은 글자
+  tl.appendChild(el('div', 'dash__k', '팀'));
+  const cardsBox = el('div', 'cards'); cardsBox.dataset.cards = 'team';
   for (const t of teams.filter((x) => x.id !== 'sera')) {
-    // 팀 상황 카드(C7 — 카드-체계 1절 "② 첫 화면 탭 — 같은 카드 다섯이 세로로"). 재료(/api/card)가 오면 카드, 아직이면(서버 옛 판·404) 아래 옛 줄 그대로.
     const cardNode = teamCardNode(t.id, () => { if (view === 'tower' && towerTab === 'all') renderTower(); });
-    if (cardNode) { tl.appendChild(cardNode); continue; }
-    const s = summaries[t.id] ?? {};
-    const office = t.kind === 'office';
-    const running = office || s.phase === 'running' || s.phase === 'blocked';
-    const row = el('button', 'dash__row'); row.type = 'button'; row.dataset.open = openTeamRows.has(t.id) ? '1' : '0';
-    const head = el('span', 'dash__head');
-    const tdot = el('span', 'dot'); tdot.style.background = teamColor(t.id); head.appendChild(tdot);
-    head.appendChild(el('b', null, t.name));
-    if (!office) {   // 진행 막대(numbers.md 1절) — 채움 = 끝난 단계, 옆에 N/M 하나. 회차는 글자.
-      const total = s.milestonesTotal ?? 0;
-      head.appendChild(progressBar(s.milestonesDone ?? 0, total, teamColor(t.id)));
-      head.appendChild(el('span', 'dash__stage', s.milestone ? `${s.milestonesDone ?? 0}/${total}${s.round ? ` · ${s.round}회차` : ''}` : '마일스톤 없음'));
-    }
-    head.appendChild(pill(
-      s.needsBoss ? '답변 필요' : s.bossCall ? '답변 필요' : office ? '대표님과 톰' : s.phase === 'blocked' ? '차단됨' : running ? '진행 중' : '대기',
-      s.needsBoss || s.bossCall ? 'boss' : s.phase === 'blocked' ? 'bad' : running ? 'live' : 'idle'));
-    row.appendChild(head);
-    if (!office && s.milestoneTitle) row.appendChild(el('span', 'dash__sub', `${s.milestone}단계 ${s.milestoneTitle}`));
-    // 팀 시간 띠 한 줄(numbers.md "다섯 팀을 나란히") — 오늘 한 것 = 사람 색 점, 대표에게 물어봄 = 빨간 점, 멈춘 구간(FAIL) = 빨간 띠
-    const marks = today.filter((it) => it.team === t.id).map((it) => ({ at: new Date(it.ts).getTime(), color: it.by ? seatColor(t.id, it.by) : teamColor(t.id), title: `${it.name ?? t.name} · ${it.text} · ${hhmm(it.ts)}` }));
-    if (s.bossCall?.ts) marks.push({ at: new Date(s.bossCall.ts).getTime(), kind: 'bad', title: `대표님께 물어봄 · ${hhmm(s.bossCall.ts)}` });
-    const spans = s.phase === 'blocked' ? [{ from: Math.max(day0, new Date(s.lastAt ?? now).getTime()), to: now }] : [];
-    row.appendChild(timeBand(day0, now, marks, spans));
-    row.addEventListener('click', () => { if (openTeamRows.has(t.id)) openTeamRows.delete(t.id); else openTeamRows.add(t.id); renderTower(); });
-    tl.appendChild(row);
-    if (openTeamRows.has(t.id)) {   // 펼친 줄 — 상황판 네 칸 글자 그대로(progress.json). 없으면 그렇다고.
-      const p = s.progress;
-      const box = el('div', 'dash__open');
-      if (!p) box.appendChild(el('div', 'dash__empty', office ? '총괄실 — 상황판 없음(승인·요청·리포트)' : '상황판 없음'));
-      else for (const [k, label] of [['doing', '지금'], ['blocked', '이슈'], ['boss', '대표님이 보실 것'], ['next', '다음']]) {
-        const lines = p[k] ?? [];
-        const kv = el('div', 'dash__kv');
-        kv.appendChild(el('b', null, label));
-        kv.appendChild(bossLines(lines, '없음'));
-        box.appendChild(kv);
-      }
-      if (p?.at) box.appendChild(el('div', 'dash__empty', `갱신 ${agoShort(p.at)}${p.by ? ' · ' + (s.cast?.[p.by]?.name ?? p.by) : ''}${p.fresh === false ? ' · 낡음' : ''}`));
-      const doors = el('div', 'dash__doors');
-      const card = el('button', 'dash__door', '카드'); card.type = 'button'; card.addEventListener('click', () => setTowerTab('teams'));
-      const room = el('button', 'dash__door', '채팅 열기'); room.type = 'button'; room.addEventListener('click', goRoom(t));
-      doors.append(card, room); box.appendChild(doors);
-      tl.appendChild(box);
-    }
+    cardsBox.appendChild(cardNode ?? el('div', 'dash__empty', `${t.name} — 불러오는 중`));
   }
+  tl.appendChild(cardsBox);
   grid.appendChild(tl);
 }
 
