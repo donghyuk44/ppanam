@@ -3,7 +3,7 @@
        카드 하나 = 사람 하나, 열일곱(대표 포함 — 얼굴 파일 열일곱 장과 같은 수, 09-16 낮 클레멘타인 고침: 1판은 "열여덟"이라 댄을 두 번 셌다). 칸 여덟: 얼굴(out/faces) · 이름 · 직책(결정 136) · 팀(테두리 색) · 한 줄 인격(40-persona 열 줄 2, 바깥눈 넷은 3) · 인격 파일 → · 모델 · 권한 셋(파일 쓰기 · 명령 실행 · 판정, 권한-현황-0916.md 1절 이름 그대로 — 09-16 낮 나리 확정).
        순서: 대표 → 총괄실(톰·제리·세라·나리) → 마케팅 → 개발 → 디자인 → 경영. 왼쪽 폰 412(세로 한 줄, 카드 96) · 오른쪽 PC 1200(레일 224 + 세 단 316). 지어 넣은 값 0 — 값 출처는 아래 메모. 색 hex 임시 — 토큰은 클레멘타인.
        09-16 낮 클레멘타인 — 권한 칩 폭 44→60(헨리 실측: "파일 쓰기" 넉 자, mono 9.5 기준). 세 칩 순서 그대로, 첫째·둘째 칩만 60, 셋째(판정)는 두 자라 그대로 44/42/40 — x 는 칩1 자리 그대로 두고 칩2=+64·칩3=+128 로 다시 잼(17 자리 폰·PC 34곳).
-       09-16 낮 클레멘타인 — 얼굴을 out/faces(도트 인형)에서 out/portraits/chip(파이어 엠블렘풍 실사 초상, 394×394 정사각, chip-crop.md 값, 대표 09:17~09:21 확정)로 갈아 끼움. 열여섯(대표 제외)만 — 대표 초상은 아직 안 골라 boss.png 는 옛 얼굴 그대로(나리 확정되면 같은 자리에 덮어씀).
+       09-16 낮 클레멘타인 — 얼굴을 out/faces(도트 인형)에서 out/portraits/chip(394×394 정사각, chip-crop.md 값)으로 갈아 끼움. 대표는 그림이 아니라 페이스북 프로필 실사 사진(대표 결정, portraits/boss-512.png)이라 열여섯과 화풍은 다르지만 자리·크기는 같다 — 열일곱 다 찼다.
        헨리 고침(09-16) — 처음엔 card/(512×430, 정수리~쇄골, profile.svg 위 띠 자리) 를 꽂았는데, 40·48 원 칩엔 폭이 넓어 slice 로 넣으면 정수리가 잘리고 코가 가운데로 밀린다 — chip/(머리 가운데 394 정사각) 로 바꿨다. 정사각이라 preserveAspectRatio 도 필요 없어 뗐다. -->
 
   <defs>
@@ -48,7 +48,7 @@
     <!-- 1 대표 -->
     <g transform="translate(12 134)">
       <rect x="0" y="0" width="388" height="96" rx="10" class="card"/>
-      <g transform="translate(12 12)"><circle cx="20" cy="20" r="21" fill="none" stroke="#8a7320" stroke-width="2"/><g clip-path="url(#f40)"><rect width="40" height="40" fill="#efe6cf"/><image href="../../faces/boss.png" width="40" height="40"/></g></g>
+      <g transform="translate(12 12)"><circle cx="20" cy="20" r="21" fill="none" stroke="#8a7320" stroke-width="2"/><g clip-path="url(#f40)"><rect width="40" height="40" fill="#efe6cf"/><image href="../../portraits/chip/boss.png" width="40" height="40"/></g></g>
       <text x="64" y="26"><tspan class="h2">함동혁(댄)</tspan><tspan class="s" dx="8">대표 · 사람</tspan></text>
       <text x="64" y="46" class="t2">열일곱이 이 사람을 돕고 서포트하려고 있다(세라 열 줄 2).</text>
       <text x="64" y="63" class="t2">인격 파일 없음 — 사람이라(결정 37)</text>
@@ -323,7 +323,7 @@
       <!-- 줄 1 -->
       <g transform="translate(0 74)">
         <rect x="0" y="0" width="316" height="130" rx="10" class="card"/>
-        <g transform="translate(12 12)"><circle cx="24" cy="24" r="25" fill="none" stroke="#8a7320" stroke-width="2"/><g clip-path="url(#f48)"><rect width="48" height="48" fill="#efe6cf"/><image href="../../faces/boss.png" width="48" height="48"/></g></g>
+        <g transform="translate(12 12)"><circle cx="24" cy="24" r="25" fill="none" stroke="#8a7320" stroke-width="2"/><g clip-path="url(#f48)"><rect width="48" height="48" fill="#efe6cf"/><image href="../../portraits/chip/boss.png" width="48" height="48"/></g></g>
         <text x="72" y="26" class="h2">함동혁(댄)</text><text x="72" y="42" class="s">대표 · 사람</text>
         <text x="12" y="80" class="t2">열일곱이 이 사람을 돕고 서포트하려고 있다.</text>
         <text x="12" y="97" class="t2">인격 파일 없음 — 사람이라(결정 37)</text>
@@ -467,5 +467,5 @@
   </g>
 
   <text x="24" y="1980" class="memo">시안 메모(화면 글자 아님) — 값 출처: 이름·직책·모델 = teams/*/cast.json(직책은 결정 136, llm sonnet 넷 = 안젤·노라·솔라·클레멘타인, gemini 다섯 = 3.6-flash, 나리는 model null 이라 "가정") · 한 줄 = 40-persona 열 줄 2(바깥눈 다섯은 2가 자리 설명이라 3) · 인격 파일 → = teams/&lt;팀&gt;/&lt;자리&gt;.md(세라 teams/sera/secretary.md · 나리 40-persona/hq.system.md 초안 · 대표 없음, 결정 37) · 권한 셋 = 권한-현황-0916.md 1절 이름 그대로: 파일 쓰기(cast disallow 남은 금지 0, 바깥눈은 파일을 안 쓴다) · 명령 실행(settings allow / agy deny 풀림 06:2x) · 판정(감사 자리 + 나리 대리 + 대표 C — 톰은 위임 중 운영·기록이라 —). 이름 09-16 낮 나리 확정(클레멘타인 이어받으며). 색 hex 임시.</text>
-  <text x="24" y="1997" class="memo">세계관 서브탭 시안 1판 · 2026-09-16 아침 헨리, 낮 클레멘타인이 이어받아 열일곱 수 고침 · U1(대표 08:3x) · 폰 카드 96 열일곱 세로(한 화면 아홉) · PC 세 단 여섯 줄 자리에 열일곱(빈 칸 하나) · 얼굴 out/faces 열일곱(댄 포함) · 글자 하영 card-words.md 2판</text>
+  <text x="24" y="1997" class="memo">세계관 서브탭 시안 1판-c · 2026-09-16 아침 헨리, 낮 클레멘타인이 이어받아 열일곱 수 고침·얼굴을 out/portraits/chip 초상으로 · U1(대표 08:3x) · 폰 카드 96 열일곱 세로(한 화면 아홉) · PC 세 단 여섯 줄 자리에 열일곱(빈 칸 하나) · 얼굴 out/portraits/chip 열일곱(대표는 프로필 사진, 나머지는 파이어 엠블렘풍) · 글자 하영 card-words.md 2판</text>
 </svg>
