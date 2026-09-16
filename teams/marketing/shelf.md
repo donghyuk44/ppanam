@@ -17,7 +17,7 @@
 - `teams/marketing/roadmap.json` (지금 단계·컷리스트) — 회차 시작에 한 번.
 - `teams/hq/out/대표-화면-글-규칙-0916.md` (72줄 · 8.5KB) — 결정 140 정본, 2절만.
 
-## 바로 쓰는 명령 셋 (40줄 인격의 "책장이 붙기 전 임시" 줄이 여기로 온다 — "손에 드는" 은 대표 16:3x "손" 금지로 갈았다)
+## 바로 쓰는 명령 셋 (40줄 인격의 "책장이 붙기 전 임시" 줄이 여기로 온다 — "손에 드는" 은 대표 15:18 "손" 금지로 갈았다)
 
 - 결재·요청 올리기 — `node bus/approve.mjs --team marketing --request B|C "무엇" --detail "…" [--to <팀>:<자리> --why "…"] [--out a.md,b.md]`
 - 요청 블록 주고받기 — `node bus/request.mjs --say|--done|--ack <req_id> "…"` · 열린 것 `--list --team marketing`
