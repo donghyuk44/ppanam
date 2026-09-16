@@ -1405,10 +1405,13 @@ async function loadSettings() {
   // ③-1 모델 — 자리마다 엔진·모델·추론 강도(결정 69, castRow). 사람 카드에서 여기로(나리 R32 ②). 세션이 있는 자리만(system·대표는 없다).
   body.appendChild(el('div', 'set__k', '모델 — 자리마다 엔진 · 모델 · 추론 강도 (다음 턴 적용)'));
   const ml = el('ul', 'set__list');
-  for (const t of teams) {
+  const seen = new Set();   // 사람마다 한 줄(대표 08:5x "중복 배치") — 톰·제리·세라·나리는 방마다 cast 에 서지만 사람은 하나, 총괄실을 먼저 돌아 거기 줄만
+  for (const t of [...teams].sort((a, b) => (a.id === 'hq' ? -1 : b.id === 'hq' ? 1 : 0))) {
     for (const [seat, a] of Object.entries(summaries[t.id]?.cast ?? {})) {
-      if (seat === 'boss' || seat === 'system' || !a.model) continue;
-      const li = el('li'); li.append(`${t.name} · ${a.name ?? seat} `);
+      if (seat === 'boss' || !a.model) continue;   // 나리(system)도 선다 — 세션 있는 방(총괄실)만(model 있음). N2: 나리 자리만 클로드 fable·코덱스 astra 까지(castOptions.bySeat.system, 서버 6f0fb5f)
+      const name = a.name ?? seat;
+      if (seen.has(name)) continue; seen.add(name);
+      const li = el('li'); li.append(`${t.id === 'hq' || HQ_SEATS.has(seat) ? '전체' : t.name} · ${name} `);
       li.appendChild(castRow(t, seat, a));
       ml.appendChild(li);
     }
@@ -2166,7 +2169,9 @@ function castRow(t, id, a) {
     engines.appendChild(b);
   }
   row.appendChild(engines);
-  const models = engine === 'codex' ? (opts.codex ?? []) : engine === 'gemini' ? (opts.gemini ?? []) : (opts.claude ?? []);
+  // 목록은 자리별 예외(castOptions.bySeat — N2: 나리 자리만 클로드 fable·코덱스 astra, 대표 09-16 '서버 안에 있는 나리는 … fable 까지 … astra 까지 특별 카드')가 있으면 그것, 없으면 기본. 다른 자리는 그대로(fable 금지)
+  const seatOpts = opts.bySeat?.[id] ?? {};
+  const models = engine === 'codex' ? (seatOpts.codex ?? opts.codex ?? []) : engine === 'gemini' ? (seatOpts.gemini ?? opts.gemini ?? []) : (seatOpts.claude ?? opts.claude ?? []);
   const field = engine === 'codex' ? 'codexModel' : engine === 'gemini' ? 'geminiModel' : 'llm';
   const current = a[field] ?? (engine === 'claude' ? (teams.find((x) => x.id === t.id)?.model ?? models[0]) : models[0]);
   const modelSel = select(models, current, null);   // 값이 없으면 방 기본(state/teams.json)이 골라져 보인다 — 실제로 도는 모델
