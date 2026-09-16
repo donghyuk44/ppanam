@@ -25,7 +25,7 @@ import * as session from './session.mjs';
 import { runExecutor } from './executor.mjs';
 import { runNotifier, notified } from './notifier.mjs';
 import { runNightly, yesterdayKey, runMorning } from './nightly.mjs';
-import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues, expireFlows, autoVerdicts, checkStalls } from './conductor.mjs';
+import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues, expireFlows, autoVerdicts, checkStalls, ROAM_HOME } from './conductor.mjs';
 import * as world from './world.mjs';
 import { startInfra } from './infra.mjs';
 import * as gemini from './gemini.mjs';
@@ -541,6 +541,13 @@ const server = http.createServer((req, res) => {
         // 대표가 외부감사(codex)를 불렀다. codex 는 세션이 없어 넣을 곳이 없다 — 서버가 대표 말풍선을 직접 남기고
         // 사회자가 그를 깨운다. 주인은 다음 차례에 듣는다 (레오 감사, 2026-09-12: 다니엘은 대표가 불러도 안 깼다).
         if (to && bus.isForeign(cast[to]?.model)) {
+          const rec = emit(t, { actor: 'boss', type: 'message', text: say });
+          return json(res, 200, { ok: true, to, queued: 0, event: rec.id });
+        }
+        // 대표가 로밍 자리(나리·세라)를 이 방에서 불렀다 — 이 방엔 그 자리 세션이 없다(N1, 집은 hq·sera 뿐).
+        // 말풍선만 남기면 사회자(noticeEvents 의 called 루프)가 callHomeElsewhere 로 집 세션을 깨운다.
+        // 여기서 session.send(actor=undefined) 로 떨어지면 방 주인에게 조용히 잘못 배달된다 (점검-코드리뷰-0916 #1).
+        if (to && ROAM_HOME[to] && ROAM_HOME[to] !== t) {
           const rec = emit(t, { actor: 'boss', type: 'message', text: say });
           return json(res, 200, { ok: true, to, queued: 0, event: rec.id });
         }

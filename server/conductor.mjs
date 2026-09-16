@@ -866,10 +866,12 @@ export function noticeEvents(team, events) {
     // model 이 거기서만 claude) — 그래도 이름을 부르면 불려야 하니 따로 끼운다(N1 재정의).
     const called = addressees(e.text, cast).filter((to) => to !== e.actor && (ROAM_HOME[to] || participants(team).includes(to)));
     for (const [k, to] of called.entries()) {
-      // 대표가 부른 사람이 claude 자리면 /api/say 가 이미 그에게 넣었다(첫 사람) — 다시 주지 않는다.
-      // codex 자리면 넣을 세션이 없어 서버가 말풍선만 남겼다 — 여기서 깨운다 (레오 감사, 2026-09-12).
-      if (e.actor === 'boss' && k === 0 && !isOutside(team, to)) continue;
-      if (ROAM_HOME[to] && team !== ROAM_HOME[to]) { callHomeElsewhere(to, team, 'called'); continue; }
+      // 대표가 부른 사람이 이 방의 claude 자리면 /api/say 가 이미 그에게 넣었다(첫 사람) — 다시 주지 않는다.
+      // codex 자리나 로밍 자리(나리·세라, 집이 아닌 방)는 /api/say 가 세션에 못 넣고 말풍선만 남겼다 —
+      // 여기서 깨운다 (레오 감사, 2026-09-12 · 점검-코드리뷰-0916 #1 — 총괄실 밖에서 "나리, …" 가 안 가던 것).
+      const isRoamElsewhere = ROAM_HOME[to] && team !== ROAM_HOME[to];
+      if (e.actor === 'boss' && k === 0 && !isOutside(team, to) && !isRoamElsewhere) continue;
+      if (isRoamElsewhere) { callHomeElsewhere(to, team, 'called'); continue; }
       enqueue(team, to, 'called');
     }
     // 말로 외부감사를 판정으로 불렀다("레오, … 판정 …") — 흐름(startVerdict) 없이 called 차례만 가면 "재보겠습니다" 로 끝나고 카드가 안 온다
