@@ -377,7 +377,8 @@ body {
 .app[data-drop="1"] .composer { outline: 2px dashed var(--me-line); outline-offset: -6px; }
 .composer__pv { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-3); }
 .composer__pv img { height: 44px; max-width: 120px; border-radius: 6px; border: 1px solid var(--line); object-fit: cover; }
-.mpop--slash { min-width: 240px; }
+.mpop--slash { min-width: 260px; }
+.mpop__k { font-size: 10.5px; color: var(--ink-4); padding: 4px 8px 2px; }
 /* @ 멘션 목록(C13) — 입력창 위에 뜨는 작은 목록. 위아래·Enter·클릭 */
 .mpop { position: absolute; left: 16px; bottom: calc(100% - 4px); z-index: 7; min-width: 180px; max-width: 320px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,.12); padding: 4px; }
 .mpop__row { display: flex; align-items: center; gap: 7px; width: 100%; text-align: left; font: inherit; font-size: 13px; color: var(--ink); background: none; border: 0; border-radius: 7px; padding: 6px 8px; cursor: pointer; }

@@ -773,12 +773,13 @@ function markMentions() {
     const who = chip.dataset.mention;
     const myRow = chip.closest('.row');
     const answered = rows.some((r) => r.dataset.actor === who && r !== myRow && (myRow.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_FOLLOWING));
-    const st = answered ? '답함' : (stateOf(who) === 'busy' ? '읽음, 답변 중' : '대기');
-    chip.dataset.got = answered ? 'ok' : stateOf(who) === 'busy' ? 'busy' : 'wait';
-    chip.title = `${cast.agents?.[who]?.name ?? who} · ${st}`;
+    // 글자는 사전 3-2-1 "받았어요" 하나(대표 C13 글자 그대로) — 뒤에 답이 있거나 일하는 중이면 받은 것, 아니면 글자 없음(지어내지 않는다)
+    const got = answered || stateOf(who) === 'busy';
+    chip.dataset.got = answered ? 'ok' : got ? 'busy' : 'wait';
+    chip.title = `${cast.agents?.[who]?.name ?? who}${got ? ' · 받았어요' : ''}`;
     let s = chip.querySelector('.mention__got');
     if (!s) { s = el('span', 'mention__got'); chip.appendChild(s); }
-    s.textContent = st;
+    s.textContent = got ? '받았어요' : '';
   }
 }
 
@@ -1134,13 +1135,15 @@ input.addEventListener('paste', (e) => {
 
 /* ── / 명령 (C13 — 대표 09-16 그림: 입력창 "/ 입력 시 명령어" 자리, 오르카 모양·구조 참고만). "/" 를 치면 명령 목록이 뜨고 고르면 그대로 실행.
  * 이름은 하영 사전 3-2-1(6a7a239, 나리 R32): /시작 /마무리 /검토 /스크린샷 /검색 다섯 + @ 는 '멘션'. 아직 길이 없는 것(스크린샷·검색)은 목록에 두되 '준비 중'. ── */
+// 메뉴에 뜨는 한 줄도 사전 3-2-1 표 글자 그대로(하영 64f4f33) — 검토 줄의 이름만 이 방 외부 감사 이름으로.
+const outsideName = () => Object.entries(cast.agents ?? {}).find(([id]) => id === 'outside')?.[1]?.name ?? '외부 감사';
 const SLASH_COMMANDS = [
-  { id: 'start', name: '시작', hint: '이 방에 새 회차를 연다', run: () => { input.value = ''; fitInput(); showOpen(true, {}); } },
-  { id: 'end', name: '마무리', hint: '이번 회차를 닫는다 — 검토·일지', run: () => { input.value = ''; fitInput(); $('roundBtn').click(); } },
-  { id: 'review', name: '검토', hint: '외부 감사에게 이번 산출물 검토를 청한다', run: () => { const o = Object.entries(cast.agents ?? {}).find(([id]) => id === 'outside')?.[1]; input.value = `${o?.name ?? '레오'}, 검토 부탁해요 — `; fitInput(); input.focus(); input.selectionStart = input.selectionEnd = input.value.length; } },
-  { id: 'mention', name: '멘션', hint: '이 방 사람을 @ 로 부른다', run: () => { input.value = '@'; fitInput(); input.focus(); input.selectionStart = input.selectionEnd = 1; renderMentionPop(); } },
-  { id: 'screenshot', name: '스크린샷', hint: '준비 중 — 화면 사진은 아직 나리 손', disabled: true },
-  { id: 'search', name: '검색', hint: '준비 중 — 대화 검색은 아직 없다', disabled: true },
+  { id: 'start', name: '시작', hint: '회차 시작 — 첫 줄이 주제가 돼요', run: () => { input.value = ''; fitInput(); showOpen(true, {}); } },
+  { id: 'end', name: '마무리', hint: '회차 마무리 — 검토 결과가 있어야 닫혀요', run: () => { input.value = ''; fitInput(); $('roundBtn').click(); } },
+  { id: 'review', name: '검토', hint: () => `검토 요청 — ${outsideName()}를 불러요`, run: () => { input.value = `${outsideName()}, 검토 부탁해요 — `; fitInput(); input.focus(); input.selectionStart = input.selectionEnd = input.value.length; } },
+  { id: 'screenshot', name: '스크린샷', hint: '지금 화면 스크린샷 — 준비 중', disabled: true },
+  { id: 'search', name: '검색', hint: '대화·파일 검색 — 준비 중', disabled: true },
+  { id: 'mention', name: '멘션', hint: '@ 를 치면 이름 목록, 고르면 칩으로 들어가요', run: () => { input.value = '@'; fitInput(); input.focus(); input.selectionStart = input.selectionEnd = 1; renderMentionPop(); } },
 ];
 const slashPop = el('div', 'mpop mpop--slash'); slashPop.hidden = true; slashPop.setAttribute('role', 'listbox');
 $('composer').appendChild(slashPop);
@@ -1154,15 +1157,16 @@ function renderSlashPop() {
   if (!list.length) { slashPop.hidden = true; return; }
   slashSel = Math.min(slashSel, list.length - 1);
   slashPop.replaceChildren();
+  slashPop.appendChild(el('div', 'mpop__k', '명령어'));   // 메뉴 머리 — 대표 그림 글자 그대로(사전 3-2-1)
   list.forEach((c, i) => {
     const b = el('button', 'mpop__row'); b.type = 'button'; b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(i === slashSel)); b.disabled = !!c.disabled;
-    b.appendChild(el('b', null, `/${c.name}`)); b.appendChild(el('span', 'mpop__t', c.hint));
+    b.appendChild(el('b', null, `/${c.name}`)); b.appendChild(el('span', 'mpop__t', typeof c.hint === 'function' ? c.hint() : c.hint));
     b.addEventListener('mousedown', (e) => { e.preventDefault(); runSlash(c); });
     slashPop.appendChild(b);
   });
   slashPop.hidden = false;
 }
-function runSlash(c) { slashPop.hidden = true; slashSel = 0; if (c.disabled) return say(c.hint); c.run(); }
+function runSlash(c) { slashPop.hidden = true; slashSel = 0; if (c.disabled) return say(typeof c.hint === 'function' ? c.hint() : c.hint); c.run(); }
 input.addEventListener('input', renderSlashPop);
 input.addEventListener('blur', () => { setTimeout(() => { slashPop.hidden = true; }, 120); });
 input.addEventListener('keydown', (e) => {
