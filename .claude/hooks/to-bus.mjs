@@ -177,13 +177,14 @@ switch (ev) {
     if (!actor) bail('캐스트가 아닌 서브에이전트 — 기록 안 함');
 
     // 이번 턴이 무엇이었나. 판정 요청이었으면 첫 줄이 판정이다 — 모든 엔진이 같은 규약. 일지였으면 대화록에 안 남는다.
+    let turn = null;
     if (ev === 'Stop') {
-      const turn = bus.takeTurn(team, actor, hook.session_id);
+      turn = bus.takeTurn(team, actor, hook.session_id);
       if (turn?.kind === 'journal') bail('일지 — 서버가 받는다');
       if (turn?.kind === 'verdict') {
         const v = bus.splitVerdictLine(text);
         if (v) {
-          try { bus.recordVerdict(team, { actor, verdict: v.verdict, text: trim(v.body), target: 'guide' }); }
+          try { bus.recordVerdict(team, { actor, verdict: v.verdict, text: trim(v.body), target: bus.verdictTargetActor(team, turn.extra) }); }
           catch (e) { bus.emit(team, { actor, type: 'message', text: `[${v.verdict} — 판정으로 세지 않음: ${e.message}] ${trim(v.body)}` }); }
           process.exit(0);
         }
@@ -201,7 +202,13 @@ switch (ev) {
         bail('방에 이미 말함 — 최종 보고는 기록하지 않음');
       }
     }
-    out = { actor, type: 'message', text: trim(text), meta: actor === 'system' ? { hand: 'server' } : undefined };
+    // 로밍 자리(나리·세라)가 다른 방에서 불려 집 세션이 답한 것 — turn.extra 에 부른 방이 실려 있다
+    // (server/conductor.mjs callHomeElsewhere). 집 대화록의 이 원본 줄에 어느 방 답인지 찍어 둔다.
+    out = { actor, type: 'message', text: trim(text), meta: {
+      ...(actor === 'system' ? { hand: 'server' } : {}),
+      ...(turn?.kind === 'called' && turn.extra ? { roam: turn.extra } : {}),
+    } };
+    if (!Object.keys(out.meta).length) out.meta = undefined;
     break;
   }
 
