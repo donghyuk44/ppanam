@@ -824,6 +824,43 @@ switch (cmd) {
           ? '✓ 옛 스냅샷으로 쓰면 거부(false)·남의 변경 안 덮음 · advanceWorkOnPass 는 정상 진행 · 없는 항목은 null'
           : '✗ ' + JSON.stringify({ cas1, survivedRace, p1, p2, after })]);
       }
+      // 타임라인 주 묶기·팀 나무(weeksOf·timelineTeamOf, 타임라인 계획-0916 3절, 솔라) — 순수, 고정 now 로 이번 주/지난 주를 가른다.
+      {
+        const { weekKeyOf, weeksOf, timelineTeamOf } = await import('./bus.mjs');
+        const now = Date.parse('2026-09-16T10:00:00.000Z');   // 서울 09-16 19:00 수 — 이번 주 월요일은 09-14
+        const wk1 = weekKeyOf('2026-09-07T01:00:00.000Z');   // 서울 09-07 10:00 월 → 그 주 자신
+        const wk2 = weekKeyOf('2026-09-13T20:00:00.000Z');   // 서울 09-14 05:00 월 → 09-14 주
+        const wk3 = weekKeyOf('2026-09-15T10:00:00.000Z');   // 서울 09-15 19:00 화 → 09-14 주(같은 주)
+        const rounds = [
+          { round: 1, milestone: 1, verdict: 'PASS', startedAt: '2026-09-07T01:00:00.000Z', endedAt: '2026-09-07T05:00:00.000Z' },
+          { round: 2, milestone: 1, verdict: null, startedAt: '2026-09-13T20:00:00.000Z', endedAt: '2026-09-13T23:00:00.000Z' },
+          { round: 3, milestone: 2, verdict: 'PASS', startedAt: '2026-09-15T10:00:00.000Z', endedAt: '2026-09-15T12:00:00.000Z' },
+          { round: 4, milestone: 1, verdict: null, startedAt: '2026-09-15T00:00:00.000Z', endedAt: null },   // 안 닫힘 — 빠져야
+        ];
+        const weeks = weeksOf(rounds, { now });
+        const weeksWant = wk1 === '2026-09-07' && wk2 === '2026-09-14' && wk3 === '2026-09-14'
+          && weeks.length === 2 && weeks[0].key === '2026-09-07' && weeks[0].label === '2026-09-07' && weeks[0].rounds.length === 1
+          && weeks[1].key === '2026-09-14' && weeks[1].label === '이번 주' && weeks[1].rounds.length === 2;
+
+        const T3 = '_check_timeline';
+        const roadmap = { milestones: [{ n: 1, title: '첫 단계', status: 'pass' }, { n: 2, title: '둘째 단계', status: 'now' }] };
+        const items = [
+          { id: 'a1', team: T3, seat: 'guide', status: '통과', milestone: { team: T3, n: 1 }, doneAt: '2026-09-15T10:00:00.000Z' },
+          { id: 'a2', team: T3, seat: 'ops', status: '진행', milestone: { team: T3, n: 2 } },
+          { id: 'a3', team: T3, seat: '', status: '대기', milestone: null, after: [] },
+          { id: 'b1', team: '다른팀', seat: 'guide', status: '진행', milestone: { team: '다른팀', n: 1 } },
+        ];
+        const tl = timelineTeamOf(T3, { roadmap, items, rounds, now });
+        const p1 = tl.projects.find((p) => p.n === 1), p2 = tl.projects.find((p) => p.n === 2), p0 = tl.projects.find((p) => p.n === null);
+        const tlWant = tl.projects.length === 3
+          && p1?.tasks.length === 1 && p1.tasks[0].id === 'a1' && p1.weeks['2026-09-07']?.rounds === 1 && p1.weeks['2026-09-14']?.rounds === 1 && p1.weeks['2026-09-14']?.pass === false
+          && p2?.tasks.length === 1 && p2.tasks[0].id === 'a2' && p2.weeks['2026-09-14']?.pass === true
+          && p0?.title === '단계 없음' && p0.tasks.length === 1 && p0.tasks[0].id === 'a3' && p0.tasks[0].ready === true
+          && tl.signals.done === 1 && tl.signals.blocked === 0 && tl.signals.unassigned === 1;
+        out.push(['타임라인 주 묶기·팀 나무(weeksOf·timelineTeamOf)', weeksWant && tlWant
+          ? '✓ 서울 월요일 시작 주 · 안 닫힌 회차 제외 · 마일스톤별 프로젝트 · milestone 없는 작업은 단계 없음 · 담당 없음·이번 주 끝난 수'
+          : '✗ ' + JSON.stringify({ weeksWant, tlWant, weeks, projects: tl.projects, signals: tl.signals })]);
+      }
       // 라운드 한 줄(roundLineOf, 2판 #11) — briefOf(세션이 뜰 때)와 giveTurn(턴마다)이 같은 함수를 쓴다,
       // T2 뒤로 세션이 한 단계 안 여러 회차를 사는 동안 옛 번호를 붙들지 않게.
       {

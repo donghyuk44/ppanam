@@ -2601,6 +2601,70 @@ export function swapSection(md, heading, body) {
 export const SEOUL_OFFSET_MS = 9 * 3600_000;
 export const dayStartSeoul = (now = Date.now()) => Math.floor((now + SEOUL_OFFSET_MS) / 86_400_000) * 86_400_000 - SEOUL_OFFSET_MS;
 
+/** 우리 시각 월요일 시작 주의 0시(UTC ms) — 타임라인 계획-0916 2·3절, 결정 187·188(날짜는 지난 것에만). dayStartSeoul 로 그날 0시를 잡고 그 요일만큼 물러난다. */
+export const weekStartSeoul = (now = Date.now()) => {
+  const day0 = dayStartSeoul(now);
+  const dow = new Date(day0 + SEOUL_OFFSET_MS).getUTCDay();   // 0=일 … 6=토(서울 요일값 — day0 은 서울 자정의 UTC ms 라 +오프셋 해서 읽으면 서울 달력 필드가 나온다)
+  return day0 - ((dow + 6) % 7) * 86_400_000;   // 월=0 이 되도록 당김
+};
+/** 그 주 월요일 날짜(YYYY-MM-DD, 서울) — 타임라인 열 키. weekStartSeoul 은 UTC 순간이라 그대로 자르면 결정 101 오류(하루 전으로 보임)가 나 다시 +오프셋 해서 읽는다. */
+export const weekKeyOf = (ts) => new Date(weekStartSeoul(Date.parse(ts)) + SEOUL_OFFSET_MS).toISOString().slice(0, 10);
+
+/**
+ * 회차 기록을 월요일 시작 주(서울)로 묶는다(타임라인 계획-0916 3절 "단계가 돈 주"). 순수 — rounds.jsonl 실측(startedAt·endedAt·milestone·verdict)만,
+ * 안 닫힌 회차는 뺀다. 이번 주는 label '이번 주', 그 밖은 키(날짜) 그대로 — 결정 187·188 이라 앞일엔 날짜를 안 붙인다(이 함수는 지난 것만 다룬다).
+ * @returns [{ key, label, rounds: [{round, milestone, verdict, startedAt, endedAt}] }] 키 오름차순
+ */
+export function weeksOf(rounds, { now = Date.now() } = {}) {
+  const closed = (rounds ?? []).filter((r) => r.startedAt && r.endedAt);
+  const byWeek = new Map();
+  for (const r of closed) {
+    const key = weekKeyOf(r.startedAt);
+    if (!byWeek.has(key)) byWeek.set(key, { key, rounds: [] });
+    byWeek.get(key).rounds.push({ round: r.round, milestone: r.milestone ?? null, verdict: r.verdict ?? null, startedAt: r.startedAt, endedAt: r.endedAt });
+  }
+  const thisKey = weekKeyOf(new Date(now).toISOString());
+  return [...byWeek.values()].sort((a, b) => a.key.localeCompare(b.key)).map((w) => ({ ...w, label: w.key === thisKey ? '이번 주' : w.key }));
+}
+
+/**
+ * 타임라인 탭 팀 하나(타임라인 계획-0916 2·3절) — 로드맵 단계를 프로젝트로, work.json 항목을 그 milestone 칸으로 걸러 작업으로,
+ * weeksOf 를 주 칸으로 묶는다. 순수 — roadmap·items(전체, 여기서 team 으로 거른다)·rounds 를 그대로 받는다.
+ * milestone 칸이 아직 없는 작업(톰이 안 붙인 것)은 n:null "단계 없음" 묶음. 담당 없음(seat 빈칸)·막힘·이번 주 끝난 수는 signals 로.
+ * @returns { weeks:[{key,label}], projects:[{n,title,status,weeks:{key:{rounds,pass}},tasks:[{id,what,seat,status,bottleneck,doneAt,ready}]}], signals:{done,blocked,unassigned} }
+ */
+export function timelineTeamOf(team, { roadmap, items, rounds, now = Date.now() } = {}) {
+  const weeks = weeksOf(rounds, { now });
+  const mine = (items ?? []).filter((it) => it.team === team);
+  const passedIds = new Set(mine.filter((it) => it.status === '통과').map((it) => it.id));
+  const isReady = (it) => it.status === '대기' && (!it.after?.length || it.after.every((a) => passedIds.has(a)));
+  const taskOf = (it) => ({ id: it.id, what: it.what, seat: it.seat, status: it.status, bottleneck: it.bottleneck ?? null, doneAt: it.doneAt ?? null, ready: isReady(it) });
+
+  const byMilestone = new Map();
+  for (const it of mine) {
+    const n = it.milestone?.n ?? null;
+    if (!byMilestone.has(n)) byMilestone.set(n, []);
+    byMilestone.get(n).push(it);
+  }
+  const ms = (roadmap?.milestones ?? []).slice().sort((a, b) => (a.n ?? 0) - (b.n ?? 0));
+  const projects = ms.map((m) => {
+    const weeksOut = {};
+    for (const w of weeks) {
+      const rs = w.rounds.filter((r) => r.milestone === m.n);
+      if (rs.length) weeksOut[w.key] = { rounds: rs.length, pass: rs.some((r) => r.verdict === 'PASS') };
+    }
+    return { n: m.n, title: m.title, status: m.status ?? null, weeks: weeksOut, tasks: (byMilestone.get(m.n) ?? []).map(taskOf) };
+  });
+  const orphans = byMilestone.get(null) ?? [];
+  if (orphans.length) projects.push({ n: null, title: '단계 없음', status: null, weeks: {}, tasks: orphans.map(taskOf) });
+
+  const thisKey = weekKeyOf(new Date(now).toISOString());
+  const done = mine.filter((it) => it.doneAt && weekKeyOf(it.doneAt) === thisKey).length;
+  const blocked = mine.filter((it) => it.status === '막힘').length;
+  const unassigned = mine.filter((it) => !it.seat).length;
+  return { weeks: weeks.map((w) => ({ key: w.key, label: w.label })), projects, signals: { done, blocked, unassigned } };
+}
+
 /** 판정·결재 낱말 — 하영 card-words.md 2판 머리(대표 09-16 07:4x 표준어): PASS 승인 · REVISE 반려 · FAIL 보류. 화면의 판정 카드(G3)와 같은 글자. */
 export const VERDICT_WORD = { PASS: '승인', REVISE: '반려', FAIL: '보류' };
 

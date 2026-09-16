@@ -475,6 +475,28 @@ const server = http.createServer((req, res) => {
     return json(res, 200, { streams: cleanStreams, topBlockers: cleanBlockers });
   }
 
+  // 타임라인 탭(타임라인 계획-0916 3절, 솔라) — 다섯 팀(비서실 뺌)을 프로젝트(마일스톤) 나무 + 주 칸으로.
+  // 순수 함수는 bus.weeksOf·timelineTeamOf — 여긴 roadmap·work.json·rounds.jsonl 을 모아 건네고 결정 140 사람 말 검사만 입힌다.
+  if (url.pathname === '/api/timeline') {
+    const line = (s) => { const v = String(s ?? '').trim(); return v ? (bossOk(v) ? v : NOT_YET) : null; };
+    const now = Date.now();
+    const items = bus.readWork().items ?? [];
+    const teamsOut = listTeams().filter((t) => t.id !== 'sera').map((t) => {
+      const tl = bus.timelineTeamOf(t.id, { roadmap: readRoadmap(t.id), items, rounds: listRounds(t.id), now });
+      return {
+        id: t.id, name: t.name,
+        weeks: tl.weeks,
+        projects: tl.projects.map((p) => ({ ...p, tasks: p.tasks.map((task) => ({ ...task, what: line(task.what), bottleneck: task.bottleneck ? line(task.bottleneck) : null })) })),
+        signals: tl.signals,
+      };
+    });
+    // 주 목록 — 팀마다 열리는 회차 수가 달라 각자 weeks 를 낸다. 화면이 한 열로 맞추도록 다섯 팀 키를 합집합해 오름차순으로도 준다.
+    const weekMap = new Map();
+    for (const t of teamsOut) for (const w of t.weeks) if (!weekMap.has(w.key)) weekMap.set(w.key, w.label);
+    const weeks = [...weekMap.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([key, label]) => ({ key, label }));
+    return json(res, 200, { now: new Date(now).toISOString(), weeks, teams: teamsOut });
+  }
+
   // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.
   // 분석 = "왜 자꾸 이렇게 되나"(헨리 분석 1판 analysis.svg · 하영 화면 글 틀 3절, 9단계 ③) — 다섯 팀을 같은 자로. 값은 approvals·rounds·pauses 에서만(bus.stuckOf·slowedOf·repeatsOf 순수).
   if (url.pathname === '/api/analysis' && url.searchParams.get('all') === '1') {
