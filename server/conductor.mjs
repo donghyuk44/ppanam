@@ -629,17 +629,24 @@ export function checkStalls(now = Date.now()) {
     const s = stallState(team);
     const owner = session.ownerOf(team);
 
-    // ㉡ — 로드맵이 전부 pass 인 건 보통 라운드가 닫힌(idle) 뒤다. running 중이면(다음 마일스톤이 이미 now) 걸 게 없다.
+    // ㉡ — 계획표가 막혔다: 전부 pass(다음 계획표 필요) 이거나, 할 일은 남았는데 지금 단계(now)가 없다(다음 착수
+    // 필요 — 대표 09-16 19:0x "그 병이 안생기게 해야겠지": 새 단계는 이제 승인되면 서버가 바로 여니, 이 걸음은
+    // 그 흐름을 벗어난 경우의 안전망이다). 둘 다 idle 일 때만 — running 중이면(다음 마일스톤이 이미 now) 걸 게 없다.
     let roadmap; try { roadmap = readRoadmap(team); } catch { roadmap = null; }
-    if (state.phase === 'idle' && roadmapAllPass(roadmap)) {
-      if (!s.roadmap) {
-        s.roadmap = { askedAt: now, notified: false };
-        note(team, `${nameOf(team, owner)}, 로드맵 마일스톤이 모두 pass 입니다 — 다음 단계 제안 카드(--roadmap)를 올려 주세요.`);
+    const msList = roadmap?.milestones ?? [];
+    const allPass = roadmapAllPass(roadmap);
+    const hasNow = msList.some((m) => m.status === 'now');
+    if (state.phase === 'idle' && (allPass || (!hasNow && msList.length))) {
+      const why = allPass ? '로드맵 마일스톤이 모두 pass' : '로드맵에 남은 단계가 있는데 지금 단계(now)가 없음';
+      const ask = allPass ? '다음 단계 제안 카드(--roadmap)' : '다음 단계 착수 요청(--next)';
+      if (!s.roadmap || s.roadmap.why !== why) {
+        s.roadmap = { askedAt: now, notified: false, why, ask };
+        note(team, `${nameOf(team, owner)}, ${why}입니다 — ${ask}를 올려 주세요.`);
         enqueue(team, owner, 'roadmap');
       } else if (!s.roadmap.notified && now - s.roadmap.askedAt >= ROADMAP_PROPOSAL_MS) {
-        s.roadmap.notified = true;   // 카드가 왔든 안 왔든 이 청함은 여기서 끝 — 다시 걸리려면 로드맵이 바뀌어야
-        const proposed = listApprovals({ team }).some((a) => a.action?.type === 'roadmap' && new Date(a.ts).getTime() >= s.roadmap.askedAt);
-        if (!proposed) rows.push([team, state.round, minAgo(now, s.roadmap.askedAt), `계획표 전부 pass — ${nameOf(team, owner)}에게 제안 카드를 청했는데 아직 없음`]);
+        s.roadmap.notified = true;   // 카드가 왔든 안 왔든 이 청함은 여기서 끝 — 다시 걸리려면 상태가 바뀌어야
+        const proposed = listApprovals({ team }).some((a) => new Date(a.ts).getTime() >= s.roadmap.askedAt && (allPass ? a.action?.type === 'roadmap' : a.action?.type === 'milestone'));
+        if (!proposed) rows.push([team, state.round, minAgo(now, s.roadmap.askedAt), `${why} — ${nameOf(team, owner)}에게 ${ask}를 청했는데 아직 없음`]);
       }
     } else {
       s.roadmap = null;

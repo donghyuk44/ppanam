@@ -118,16 +118,18 @@ export function applyAction(r, store) {
     const ok = setMilestoneStatus(r.team, a.n, 'now');
     let text = ok ? `마일스톤 ${a.n} 착수 — 로드맵의 now 를 옮겼습니다.` : `마일스톤 ${a.n} 을 로드맵에서 찾지 못했습니다.`;
     emit(r.team, { actor: 'system', type: 'milestone', text, meta: { index: a.n, approval: r.id } });
-    // 라운드를 닫으며 서버가 올린 요청(endRound, autoOpen)이면 라운드까지 연다 — 닫힌 방엔 차례가 안 와서 아무도 못 연다(대표 실측 09-14, 마케팅 여섯 시간).
-    // 누가 먼저 열어 뒀으면(대표 화면) startRound 가 던진다 — 그건 실패가 아니다.
-    if (ok && a.autoOpen) {
-      try { const st = startRound(r.team, { topic: a.title ?? null }); text += ` 라운드 ${st.round} 을 열었습니다.`; }
-      catch (e) { text += ` 라운드는 안 열었습니다 — ${String(e.message).slice(0, 80)}`; }
-    } else if (ok) {
-      // 로드맵 교체가 열린 라운드 중에 들어가면(R29) round.json 의 milestone 이 옛 단계에 그대로 남는다 — 안 맞추면
-      // 이 라운드가 닫힐 때 옛 마일스톤을 또 pass 로 찍고 다음 단계를 잘못 센다(나리 실측, apr_115838b4).
+    // 새 단계가 실리면 서버가 그 자리에서 회차까지 연다 — 사람이 열 때까지 안 기다린다(대표 원문 09-16 19:0x
+    // "그 병이 안생기게 해야겠지" — 마케팅 7단계가 실리고도 사람이 열 때까지 여섯 시간·다시 몇 시간 멈춰 있었다).
+    // 전엔 서버가 스스로 올린 요청(autoOpen)일 때만 열었는데, 손으로 올린 요청도 통과하면 똑같이 열어야 맞다 —
+    // 그 요청이 왜 왔는지가 아니라 지금 이 방이 열려 있나만 본다.
+    if (ok) {
       const st = readState(r.team);
-      if (st.phase !== 'idle' && st.milestone !== a.n) {
+      if (st.phase === 'idle') {
+        try { const st2 = startRound(r.team, { topic: a.title ?? null }); text += ` 라운드 ${st2.round} 을 열었습니다.`; }
+        catch (e) { text += ` 라운드는 안 열었습니다 — ${String(e.message).slice(0, 80)}`; }
+      } else if (st.milestone !== a.n) {
+        // 로드맵 교체가 열린 라운드 중에 들어가면(R29) round.json 의 milestone 이 옛 단계에 그대로 남는다 — 안 맞추면
+        // 이 라운드가 닫힐 때 옛 마일스톤을 또 pass 로 찍고 다음 단계를 잘못 센다(나리 실측, apr_115838b4).
         writeState(r.team, { milestone: a.n, attempt: st.attempts?.[a.n] ?? 0 });
         emit(r.team, { actor: 'system', type: 'note', text: `열린 라운드 ${st.round} 의 마일스톤을 ${st.milestone} → ${a.n} 로 맞췄습니다.` });
         text += ` 열린 라운드 ${st.round} 도 맞췄습니다.`;

@@ -1709,6 +1709,28 @@ switch (cmd) {
           ? '✓ pass 인 마일스톤은 now 로 안 돌아감 · 지금 도는 단계(now) 도 안 밀림 · note 로 왜인지 남김'
           : '✗ ' + JSON.stringify({ staleText, afterStale })]);
       }
+      // 새 단계가 실리면 사람이 열 때까지 안 기다린다(대표 09-16 19:0x "그 병이 안생기게 해야겠지") — 서버가
+      // 스스로 올린 요청(autoOpen)이 아니라 손으로 올린 요청이어도 통과하면 똑같이 회차를 연다.
+      {
+        const { applyAction: applyOpen } = await import('../server/notifier.mjs');
+        const { writeState: writeState2 } = await import('./bus.mjs');
+        if (readState(T).phase !== 'idle') endRound(T, { summary: '단계 자동 착수 시험 전 정리' });
+        const rmBefore2 = fs.readFileSync(paths(T).roadmap, 'utf8');
+        fs.writeFileSync(paths(T).roadmap, JSON.stringify({ milestones: [{ n: 5, title: '자동 착수', status: 'wait' }] }));
+        // autoOpen 없이(손으로 올린 요청 흉내) — 그래도 idle 이면 열어야 한다.
+        const openText = applyOpen({ id: 'apr_auto1', team: T, grade: 'B', action: { type: 'milestone', n: 5, title: '자동 착수' } }, {});
+        const afterOpen = readState(T);
+        const openWant = /라운드 \d+ 을 열었습니다/.test(openText ?? '') && afterOpen.phase === 'running' && afterOpen.milestone === 5;
+        // 이미 다른 마일스톤으로 열려 있으면 새로 안 열고 번호만 맞춘다.
+        writeState2(T, { milestone: 9 });
+        const alignText = applyOpen({ id: 'apr_auto2', team: T, grade: 'B', action: { type: 'milestone', n: 5, title: '자동 착수' } }, {});
+        const alignWant = /맞췄습니다/.test(alignText ?? '') && readState(T).milestone === 5 && readState(T).phase === 'running';
+        endRound(T, { summary: '단계 자동 착수 시험 정리' });
+        fs.writeFileSync(paths(T).roadmap, rmBefore2);
+        out.push(['새 단계 승인 → 사람 없이 회차 열림', openWant && alignWant
+          ? '✓ autoOpen 없어도 idle 이면 열음 · 이미 다른 단계로 열려 있으면 번호만 맞춤'
+          : '✗ ' + JSON.stringify({ openText, afterOpen: { phase: afterOpen.phase, milestone: afterOpen.milestone }, alignText })]);
+      }
       // 요청 블록 두 번 열기 방지(톰 지적 09-16 18:4x) — notifier.json 의 t.applied 추적이 재시작으로
       // 날아가면 applyAction 이 또 불리는데, openRequest 는 제 몫(파일 중복 안 만듦)을 지켜도 이 손의
       // 글자가 무조건 "열렸습니다" 라 옛 통과 카드가 방금 실행된 것처럼 보였다(하영 09-13 카드).
