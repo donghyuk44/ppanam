@@ -1,0 +1,140 @@
+{
+ "path": "teams/design/out/gpt/requests/dolls-lineup-2.json",
+ "size": 3989,
+ "mtime": "1789345148361049680",
+ "ctime": "1789345148361275965",
+ "team": "디자인",
+ "title": "dolls-lineup-2",
+ "lines": 16,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"dolls-lineup-2\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 16,
+   "words": [
+    "name",
+    "dolls-lineup-2"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "out (\"out/screens/dolls-lineup\")",
+   "from": 3,
+   "to": 3,
+   "bytes": 30,
+   "words": [
+    "out",
+    "out/screens/dolls-lineup.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "keepPrevious (\"out/screens/dolls-lineup\")",
+   "from": 4,
+   "to": 4,
+   "bytes": 32,
+   "words": [
+    "keepprevious",
+    "out/screens/dolls-lineup-1.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "purpose (\"M2 시안 2차 — 1차(dolls-line\")",
+   "from": 5,
+   "to": 5,
+   "bytes": 408,
+   "words": [
+    "purpose",
+    "시안",
+    "1차",
+    "m2",
+    "할머니",
+    "2차",
+    "characters.json",
+    "dolls-lineup.json"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"STYLE: the first attache\")",
+   "from": 6,
+   "to": 6,
+   "bytes": 2568,
+   "words": [
+    "top",
+    "skin",
+    "hair",
+    "no",
+    "black",
+    "medium",
+    "same",
+    "light"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 4)",
+   "from": 7,
+   "to": 12,
+   "bytes": 183,
+   "words": [
+    "refs",
+    "out/screens/dolls-lineup.png",
+    "out/screens/seoul-toy-concept.png",
+    "ref/kenney/mini-characters/previews/aid-glasses.png",
+    "ref/kenney/mini-characters/previews/character-female-c.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "after (\"1차를 out/screens/dolls-li\")",
+   "from": 13,
+   "to": 13,
+   "bytes": 400,
+   "words": [
+    "1차",
+    "after",
+    "2차",
+    "되면",
+    "dollslineup",
+    "earlier",
+    "manifest",
+    "out/screens/dolls-lineup-1.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "status (\"접음 (09-14 아침, 대표 지적). 줄서\")",
+   "from": 14,
+   "to": 16,
+   "bytes": 215,
+   "words": [
+    "status",
+    "09-14",
+    "kenney",
+    "m5",
+    "three.js",
+    "개발",
+    "그림",
+    "대표"
+   ]
+  }
+ ],
+ "words": [
+  "top",
+  "skin",
+  "hair",
+  "no",
+  "black",
+  "medium",
+  "same",
+  "light",
+  "1차",
+  "as",
+  "blond",
+  "figure"
+ ]
+}

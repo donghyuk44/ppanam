@@ -1,0 +1,8 @@
+{
+  "name": "portrait-dev-outside",
+  "who_is": "레오 · 외부 감사 · 다른 회사 · 개발 방 (36세 · 이탈리아 · 남, 개발 방에서 제일 나이 많음 — dev.outside.md 열 줄 1 · 인형 dev-outside: 검은 머리(관자놀이 흰머리는 색표 한 띠라 못 넣었다 — 초상엔 넣는다), 살 #d9a878, 팀 색 #9c3b2f)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "An Italian man in his mid-thirties, olive skin. Broad face with a strong jaw, heavy-lidded dark eyes, thick dark eyebrows, black hair swept back with a touch of grey at the temples, short dark stubble, no glasses. Wearing a brick-red (#9c3b2f) modern durumagi-style jacket over a white shirt. Unhurried, stubborn expression — a slight tilt of the head, the look of someone who will not believe it until he has run it himself.",
+  "out": "teams/design/out/gpt/portrait-dev-outside-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

@@ -1,0 +1,138 @@
+{
+ "path": "teams/design/out/gpt/requests/concept-2.json",
+ "size": 4571,
+ "mtime": "1789289133860384924",
+ "ctime": "1789289133860553679",
+ "team": "디자인",
+ "title": "concept-2",
+ "lines": 14,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"concept-2\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 11,
+   "words": [
+    "name",
+    "concept-2"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "out (\"out/kit/concept.png\")",
+   "from": 3,
+   "to": 3,
+   "bytes": 21,
+   "words": [
+    "out",
+    "out/kit/concept.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "keepPrevious (\"out/kit/concept-1.png\")",
+   "from": 4,
+   "to": 4,
+   "bytes": 23,
+   "words": [
+    "keepprevious",
+    "out/kit/concept-1.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "purpose (\"M1 한 컷 2차. 1차(concept.js\")",
+   "from": 5,
+   "to": 5,
+   "bytes": 282,
+   "words": [
+    "purpose",
+    "목표",
+    "1차",
+    "2.5",
+    "2배",
+    "2차",
+    "3.6배",
+    "4.5"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 6,
+   "to": 6,
+   "bytes": 3541,
+   "words": [
+    "units",
+    "tall",
+    "to",
+    "wall",
+    "in",
+    "no",
+    "front",
+    "is"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 2)",
+   "from": 7,
+   "to": 10,
+   "bytes": 62,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "after (\"1차를 out/kit/concept-1.pn\")",
+   "from": 11,
+   "to": 11,
+   "bytes": 368,
+   "words": [
+    "after",
+    "2.3",
+    "성벽",
+    "1.8",
+    "1차",
+    "2.7",
+    "2차",
+    "3차"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "status (\"취소 (2026-09-13 저녁) — 대표 \")",
+   "from": 12,
+   "to": 14,
+   "bytes": 136,
+   "words": [
+    "status",
+    "2026-09-13",
+    "out/direction-1-pixel.md",
+    "결정",
+    "기록",
+    "대표",
+    "도트",
+    "방향"
+   ]
+  }
+ ],
+ "words": [
+  "units",
+  "tall",
+  "to",
+  "wall",
+  "in",
+  "no",
+  "front",
+  "is",
+  "people",
+  "roof",
+  "two",
+  "2.5"
+ ]
+}

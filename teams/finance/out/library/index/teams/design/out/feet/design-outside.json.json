@@ -1,0 +1,73 @@
+{
+ "path": "teams/design/out/feet/design-outside.json",
+ "size": 5456,
+ "mtime": "1789201116271022183",
+ "ctime": "1789201116271022183",
+ "team": "디자인",
+ "title": "객체 4키: file·cell·footline·frames",
+ "lines": 507,
+ "sections": [
+  {
+   "level": 1,
+   "title": "file (\"teams/design/out/sprites\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 45,
+   "words": [
+    "file",
+    "teams/design/out/sprites/design-outside.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "cell (배열 2)",
+   "from": 3,
+   "to": 6,
+   "bytes": 7,
+   "words": [
+    "cell"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "footline (46)",
+   "from": 7,
+   "to": 7,
+   "bytes": 2,
+   "words": [
+    "footline"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "frames (배열 16)",
+   "from": 8,
+   "to": 507,
+   "bytes": 2699,
+   "words": [
+    "left",
+    "right",
+    "bottom",
+    "dir",
+    "feet",
+    "figure",
+    "planted",
+    "pose"
+   ]
+  }
+ ],
+ "words": [
+  "left",
+  "right",
+  "bottom",
+  "dir",
+  "feet",
+  "figure",
+  "planted",
+  "pose",
+  "top",
+  "both",
+  "stand",
+  "east"
+ ]
+}

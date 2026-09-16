@@ -1,0 +1,8 @@
+{
+  "name": "portrait-finance-outside",
+  "who_is": "빅터 · 외부 감사 · 다른 회사 · 경영 방 (41세 · 독일 · 남, 열일곱 중 제일 나이 많음 — finance.outside.md 열 줄 1·3 · 인형 finance-outside: 밤색 머리 #8b5a2b + 선글라스, 팀 색 #5b3a63 — 초상은 눈이 보여야 하니 선글라스는 이마에 올린다)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "A German man in his early forties, the oldest of the seventeen. Heavy squarish face with deep lines beside the mouth, small sharp grey eyes, thick brows, mouth set in a flat line. Short chestnut-brown hair going grey at the sides, trimmed beard, dark sunglasses pushed up onto his forehead. Wearing a dark plum (#5b3a63) modern durumagi-style jacket over a white shirt. Blunt, unsmiling expression — the look of someone whose only two answers are 'correct' and 'wrong from here'.",
+  "out": "teams/design/out/gpt/portrait-finance-outside-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

@@ -1,0 +1,246 @@
+{
+ "path": "teams/design/out/screens/diff-0916.md",
+ "size": 19974,
+ "mtime": "1789511031352685717",
+ "ctime": "1789511031352930841",
+ "team": "디자인",
+ "title": "시안 대 실물 — 다른 점 목록 (2026-09-16 아침, 헨리)",
+ "lines": 134,
+ "sections": [
+  {
+   "level": 1,
+   "title": "시안 대 실물 — 다른 점 목록 (2026-09-16 아침, 헨리)",
+   "from": 1,
+   "to": 16,
+   "bytes": 2623,
+   "words": [
+    "시안",
+    "다르다",
+    "실물",
+    "카드",
+    "다른",
+    "목록",
+    "2026-09-16",
+    "아침"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "1. 현황 (`ui/tower.svg` 3판-c ↔ b0635-open-412 · 1280, b0628-tower-1280)",
+   "from": 17,
+   "to": 33,
+   "bytes": 4437,
+   "words": [
+    "개발",
+    "없음",
+    "1280",
+    "막대",
+    "결정",
+    "마케팅",
+    "버튼",
+    "시안대"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "2. 팀 카드 (`ui/team.svg` 2판-c ↔ r29-tower-teams-412)",
+   "from": 34,
+   "to": 42,
+   "bytes": 939,
+   "words": [
+    "카드",
+    "2판-c",
+    "r29-tower-teams-412",
+    "ui/team.svg",
+    "굵은",
+    "글이",
+    "네모",
+    "다음"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "3. 사람 카드 (`ui/person.svg` 2판-b ↔ r29-tower-people-412)",
+   "from": 43,
+   "to": 52,
+   "bytes": 1523,
+   "words": [
+    "카드",
+    "2판-b",
+    "r29-tower-people-412",
+    "ui/person.svg",
+    "결정",
+    "대표",
+    "대표님이",
+    "부르셨어요"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "4. 프로필 카드 (`ui/profile.svg` 1판-b ↔ r29-person-pop-412)",
+   "from": 53,
+   "to": 58,
+   "bytes": 742,
+   "words": [
+    "카드",
+    "1판-b",
+    "r29-person-pop-412",
+    "ui/profile.svg",
+    "프로필",
+    "얼굴",
+    "개발",
+    "버튼"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "5. 결재 카드 (`ui/approval.svg` 1판-c ↔ r30-approval-pop-412)",
+   "from": 59,
+   "to": 68,
+   "bytes": 1116,
+   "words": [
+    "카드",
+    "1판-c",
+    "r30-approval-pop-412",
+    "ui/approval.svg",
+    "결재",
+    "사진",
+    "계획표",
+    "원문"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "6. 앞으로 (`ui/dashboard.svg` 3판 ↔ b0640-dashboard-412)",
+   "from": 69,
+   "to": 80,
+   "bytes": 1610,
+   "words": [
+    "3판",
+    "b0640-dashboard-412",
+    "ui/dashboard.svg",
+    "개발",
+    "늦음",
+    "시안대",
+    "앞으",
+    "계획표"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "7. 보고서 (`ui/report.svg` 1판-b ↔ b0635-report-1280 · r29-report-412)",
+   "from": 81,
+   "to": 91,
+   "bytes": 1752,
+   "words": [
+    "보고서",
+    "1판-b",
+    "b0635-report-1280",
+    "r29-report-412",
+    "ui/report.svg",
+    "사진",
+    "상황판",
+    "app.js"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "8. 분석 (`ui/analysis.svg` 1판 ↔ r29-analysis-412)",
+   "from": 92,
+   "to": 99,
+   "bytes": 575,
+   "words": [
+    "빨강",
+    "1판",
+    "r29-analysis-412",
+    "ui/analysis.svg",
+    "분석",
+    "문장",
+    "15건",
+    "8-1"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "9. 팀 방 — 시안 없음",
+   "from": 100,
+   "to": 105,
+   "bytes": 422,
+   "words": [
+    "시안",
+    "없음",
+    "대표가",
+    "방은",
+    "회차",
+    "r29-person-pop-412",
+    "결정",
+    "그리기"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "정리 — 문제 · 원인 · 해결",
+   "from": 106,
+   "to": 118,
+   "bytes": 1774,
+   "words": [
+    "카드",
+    "개발",
+    "문제",
+    "원인",
+    "해결",
+    "정리",
+    "결재",
+    "원문"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "클레멘타인 style.css e093161 — 헨리가 본 것 (18회차 상호 감사, 나리 배분)",
+   "from": 119,
+   "to": 128,
+   "bytes": 2040,
+   "words": [
+    "dash__sub",
+    "ink-4",
+    "나리",
+    "카드",
+    "18회차",
+    "e093161",
+    "style.css",
+    "감사"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "내 몫 셋",
+   "from": 129,
+   "to": 134,
+   "bytes": 409,
+   "words": [
+    "상황판",
+    "2판",
+    "4절",
+    "7-2",
+    "7줄",
+    "b0635-open-412",
+    "boss",
+    "gitignore"
+   ]
+  }
+ ],
+ "words": [
+  "카드",
+  "시안",
+  "개발",
+  "결정",
+  "원문",
+  "없음",
+  "화면",
+  "사진",
+  "실물",
+  "대표",
+  "상황판",
+  "나리"
+ ]
+}

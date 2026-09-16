@@ -1,0 +1,229 @@
+{
+ "path": "teams/marketing/out/world-bible/40-persona/hq.outside.md",
+ "size": 11736,
+ "mtime": "1789508696650842685",
+ "ctime": "1789508696651103479",
+ "team": "마케팅",
+ "title": "제리 — 총괄실 대조역",
+ "lines": 95,
+ "sections": [
+  {
+   "level": 1,
+   "title": "제리 — 총괄실 대조역",
+   "from": 1,
+   "to": 5,
+   "bytes": 423,
+   "words": [
+    "제리",
+    "총괄실",
+    "대조역",
+    "바이블",
+    "세션",
+    "인격",
+    "bus/outside.mjs",
+    "codex"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "열 줄",
+   "from": 6,
+   "to": 28,
+   "bytes": 2930,
+   "words": [
+    "당신",
+    "회사",
+    "본다",
+    "원문",
+    "총괄실",
+    "같은지",
+    "그가",
+    "당신이"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "당신이라는 사람",
+   "from": 29,
+   "to": 36,
+   "bytes": 825,
+   "words": [
+    "당신이라",
+    "당신",
+    "말합니다",
+    "번호",
+    "원문",
+    "건조합니다",
+    "것도",
+    "그게"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "말투 (제리가 총괄실에서 말한 것을 톰이 글자 그대로 옮김 — 결정 46 ②, `teams/hq/log.jsonl` evt_15826beb33, 2026-09-13 12:36Z)",
+   "from": 37,
+   "to": 50,
+   "bytes": 1536,
+   "words": [
+    "evt_15826beb33",
+    "teams/hq/log.jsonl",
+    "말한",
+    "제리가",
+    "총괄실",
+    "2026-09-13",
+    "36z",
+    "검사"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "내력 (`20-people/hq.outside.md` 8a~8c 요약)",
+   "from": 51,
+   "to": 56,
+   "bytes": 1094,
+   "words": [
+    "8c",
+    "8a",
+    "요약",
+    "20-people/hq.outside.md",
+    "내력",
+    "초안",
+    "톰의",
+    "회사"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "관계 (`30-relations.md` 선 번호)",
+   "from": 57,
+   "to": 63,
+   "bytes": 966,
+   "words": [
+    "30-relations.md",
+    "관계",
+    "번호",
+    "당신",
+    "파일",
+    "대표",
+    "모른다",
+    "선이"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "세계 안의 자리 (인형 서울 — `10-world.md` 2절)",
+   "from": 64,
+   "to": 69,
+   "bytes": 848,
+   "words": [
+    "자리",
+    "10-world.md",
+    "2절",
+    "서울",
+    "세계",
+    "안의",
+    "인형",
+    "초안"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "볼 것 — 네 가지뿐이다",
+   "from": 70,
+   "to": 75,
+   "bytes": 1235,
+   "words": [
+    "가지뿐이다",
+    "대표가",
+    "원문",
+    "revise",
+    "대조",
+    "id",
+    "pass",
+    "같은지"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "지킬 것",
+   "from": 76,
+   "to": 79,
+   "bytes": 241,
+   "words": [
+    "지킬",
+    "않는다",
+    "건인지",
+    "고치지",
+    "다음",
+    "대조",
+    "만들러",
+    "만들면"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "말하는 법",
+   "from": 80,
+   "to": 85,
+   "bytes": 959,
+   "words": [
+    "말하",
+    "대표",
+    "원문",
+    "배분",
+    "않는다",
+    "없습니다",
+    "없으면",
+    "존댓말"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "판정을 낼 때",
+   "from": 86,
+   "to": 89,
+   "bytes": 312,
+   "words": [
+    "판정",
+    "pass",
+    "revise",
+    "줄에",
+    "apr",
+    "그때",
+    "그래야",
+    "다음"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "바이블",
+   "from": 90,
+   "to": 95,
+   "bytes": 356,
+   "words": [
+    "바이블",
+    "2절",
+    "3절",
+    "4절",
+    "teams/marketing/out/world-bible/10-world.md",
+    "teams/marketing/out/world-bible/20-people/hq.outside.md",
+    "teams/marketing/out/world-bible/30-relations.md",
+    "게시판"
+   ]
+  }
+ ],
+ "words": [
+  "원문",
+  "총괄실",
+  "당신",
+  "제리",
+  "톰이",
+  "회사",
+  "배분",
+  "대표",
+  "대표가",
+  "초안",
+  "톰의",
+  "않는다"
+ ]
+}

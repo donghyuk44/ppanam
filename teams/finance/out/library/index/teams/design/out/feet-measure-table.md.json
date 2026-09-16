@@ -1,0 +1,42 @@
+{
+ "path": "teams/design/out/feet-measure-table.md",
+ "size": 1660,
+ "mtime": "1789282157720182786",
+ "ctime": "1789282157720484535",
+ "team": "디자인",
+ "title": "정면 열다섯 장 — 최하단 줄 · torsoX 실측",
+ "lines": 25,
+ "sections": [
+  {
+   "level": 1,
+   "title": "정면 열다섯 장 — 최하단 줄 · torsoX 실측",
+   "from": 1,
+   "to": 25,
+   "bytes": 1660,
+   "words": [
+    "torsox",
+    "열다섯",
+    "최하단",
+    "실측",
+    "정면",
+    "16.5",
+    "centerx",
+    "design-ops"
+   ]
+  }
+ ],
+ "words": [
+  "torsox",
+  "열다섯",
+  "최하단",
+  "실측",
+  "정면",
+  "16.5",
+  "centerx",
+  "design-ops",
+  "design-outside",
+  "dev-guide",
+  "finance-outside",
+  "height"
+ ]
+}

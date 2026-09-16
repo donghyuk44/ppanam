@@ -1,0 +1,8 @@
+{
+  "name": "portrait-marketing-guide",
+  "who_is": "하영 · 마케팅팀장 · 마케팅 방 (28세 · 여 — marketing.guide.md 열 줄 1 · 인형 marketing-guide: 검은 머리, 팀 색 #2f4f7a)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "A Korean woman in her late twenties. Lively oval face, bright dark eyes, slightly raised eyebrows, quick open smile showing a hint of teeth. Black hair in a low ponytail with a few loose strands at the temples, no glasses. Wearing a navy (#2f4f7a) modern jeogori-style jacket over a white top. Fast, candid expression — the look of someone who just said 'my mistake' and is already fixing it.",
+  "out": "teams/design/out/gpt/portrait-marketing-guide-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

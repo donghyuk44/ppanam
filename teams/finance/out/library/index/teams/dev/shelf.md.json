@@ -1,0 +1,93 @@
+{
+ "path": "teams/dev/shelf.md",
+ "size": 2158,
+ "mtime": "1789513243360128653",
+ "ctime": "1789513243360337442",
+ "team": "개발",
+ "title": "책장 — 개발",
+ "lines": 31,
+ "sections": [
+  {
+   "level": 1,
+   "title": "책장 — 개발",
+   "from": 1,
+   "to": 7,
+   "bytes": 364,
+   "words": [
+    "개발",
+    "책장",
+    "find",
+    "grep",
+    "node",
+    "p2",
+    "settings.json",
+    "teams/dev/out/p2-tools-permission.md"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "읽을 것 (경로만 먼저 보고, 필요한 절만)",
+   "from": 8,
+   "to": 19,
+   "bytes": 1002,
+   "words": [
+    "경로",
+    "보고",
+    "읽을",
+    "절만",
+    "필요한",
+    "시험",
+    "이름",
+    "grep"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "전문 Read 금지",
+   "from": 20,
+   "to": 26,
+   "bytes": 471,
+   "words": [
+    "read",
+    "전문",
+    "금지",
+    "tools/library.mjs",
+    "8번째",
+    "app.js",
+    "bus.mjs",
+    "event-schema.md"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "안 읽어도 되는 것 (책장 밖)",
+   "from": 27,
+   "to": 31,
+   "bytes": 318,
+   "words": [
+    "읽어",
+    "책장",
+    "out",
+    "teams/marketing/out/world-bible",
+    "개발",
+    "고치",
+    "넘긴",
+    "다듬어"
+   ]
+  }
+ ],
+ "words": [
+  "개발",
+  "책장",
+  "grep",
+  "tools/library.mjs",
+  "으로",
+  "이름",
+  "find",
+  "시험",
+  "화면",
+  "node",
+  "read",
+  "경로"
+ ]
+}

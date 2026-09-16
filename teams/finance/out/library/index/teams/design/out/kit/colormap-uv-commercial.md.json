@@ -1,0 +1,350 @@
+{
+ "path": "teams/design/out/kit/colormap-uv-commercial.md",
+ "size": 27855,
+ "mtime": "1789354537561139729",
+ "ctime": "1789354537561139729",
+ "team": "디자인",
+ "title": "colormap UV 실측",
+ "lines": 532,
+ "sections": [
+  {
+   "level": 1,
+   "title": "colormap UV 실측",
+   "from": 1,
+   "to": 4,
+   "bytes": 153,
+   "words": [
+    "colormap",
+    "uv",
+    "실측",
+    "colormap.png",
+    "obj",
+    "px",
+    "py",
+    "단위"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "building-l.obj",
+   "from": 5,
+   "to": 6,
+   "bytes": 18,
+   "words": [
+    "building-l.obj"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "building-l",
+   "from": 7,
+   "to": 70,
+   "bytes": 3565,
+   "words": [
+    "0.0938",
+    "2.000",
+    "0.2188",
+    "0.400",
+    "0.4688",
+    "0.000",
+    "1.870",
+    "0.020"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "building-l",
+   "from": 71,
+   "to": 134,
+   "bytes": 3565,
+   "words": [
+    "0.0938",
+    "2.000",
+    "0.2188",
+    "0.400",
+    "0.4688",
+    "0.000",
+    "1.870",
+    "0.020"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "building-m.obj",
+   "from": 135,
+   "to": 136,
+   "bytes": 18,
+   "words": [
+    "building-m.obj"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "building-m",
+   "from": 137,
+   "to": 178,
+   "bytes": 2283,
+   "words": [
+    "0.0938",
+    "0.2188",
+    "0.000",
+    "0.020",
+    "0.4688",
+    "2.400",
+    "0.400",
+    "0.7188"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "building-m",
+   "from": 179,
+   "to": 220,
+   "bytes": 2283,
+   "words": [
+    "0.0938",
+    "0.2188",
+    "0.000",
+    "0.020",
+    "0.4688",
+    "2.400",
+    "0.400",
+    "0.7188"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "building-n.obj",
+   "from": 221,
+   "to": 222,
+   "bytes": 18,
+   "words": [
+    "building-n.obj"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "building-n",
+   "from": 223,
+   "to": 278,
+   "bytes": 3102,
+   "words": [
+    "0.0938",
+    "0.4688",
+    "0.000",
+    "0.2188",
+    "0.050",
+    "1.600",
+    "1.768",
+    "2.400"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "building-n",
+   "from": 279,
+   "to": 334,
+   "bytes": 3102,
+   "words": [
+    "0.0938",
+    "0.4688",
+    "0.000",
+    "0.2188",
+    "0.050",
+    "1.600",
+    "1.768",
+    "2.400"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "building-skyscraper-a.obj",
+   "from": 335,
+   "to": 336,
+   "bytes": 29,
+   "words": [
+    "building-skyscraper-a.obj"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "building-skyscraper-a",
+   "from": 337,
+   "to": 390,
+   "bytes": 2980,
+   "words": [
+    "0.0938",
+    "0.2188",
+    "0.4688",
+    "0.400",
+    "0.030",
+    "0.270",
+    "0.000",
+    "0.7188"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "building-skyscraper-a",
+   "from": 391,
+   "to": 444,
+   "bytes": 2980,
+   "words": [
+    "0.0938",
+    "0.2188",
+    "0.4688",
+    "0.400",
+    "0.030",
+    "0.270",
+    "0.000",
+    "0.7188"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "detail-awning-wide.obj",
+   "from": 445,
+   "to": 446,
+   "bytes": 26,
+   "words": [
+    "detail-awning-wide.obj"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "detail-awning-wide",
+   "from": 447,
+   "to": 460,
+   "bytes": 630,
+   "words": [
+    "0.0938",
+    "0.400",
+    "0.326",
+    "detail-awning-wide",
+    "0.000",
+    "0.349",
+    "0.332",
+    "0.2750"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "detail-awning-wide",
+   "from": 461,
+   "to": 474,
+   "bytes": 630,
+   "words": [
+    "0.0938",
+    "0.400",
+    "0.326",
+    "detail-awning-wide",
+    "0.000",
+    "0.349",
+    "0.332",
+    "0.2750"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "detail-parasol-a.obj",
+   "from": 475,
+   "to": 476,
+   "bytes": 24,
+   "words": [
+    "detail-parasol-a.obj"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "detail-parasol-a",
+   "from": 477,
+   "to": 489,
+   "bytes": 572,
+   "words": [
+    "0.0938",
+    "0.120",
+    "0.300",
+    "detail-parasol-a",
+    "0.000",
+    "0.020",
+    "0.2188",
+    "0.350"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "detail-parasol-a",
+   "from": 490,
+   "to": 502,
+   "bytes": 572,
+   "words": [
+    "0.0938",
+    "0.120",
+    "0.300",
+    "detail-parasol-a",
+    "0.000",
+    "0.020",
+    "0.2188",
+    "0.350"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "detail-parasol-b.obj",
+   "from": 503,
+   "to": 504,
+   "bytes": 24,
+   "words": [
+    "detail-parasol-b.obj"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "detail-parasol-b",
+   "from": 505,
+   "to": 518,
+   "bytes": 630,
+   "words": [
+    "0.0938",
+    "0.350",
+    "0.120",
+    "detail-parasol-b",
+    "0.300",
+    "0.000",
+    "0.020",
+    "0.2188"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "detail-parasol-b",
+   "from": 519,
+   "to": 532,
+   "bytes": 630,
+   "words": [
+    "0.0938",
+    "0.350",
+    "0.120",
+    "detail-parasol-b",
+    "0.300",
+    "0.000",
+    "0.020",
+    "0.2188"
+   ]
+  }
+ ],
+ "words": [
+  "0.0938",
+  "0.2188",
+  "0.4688",
+  "0.000",
+  "0.400",
+  "0.7188",
+  "0.050",
+  "2.000",
+  "0.020",
+  "0.270",
+  "0.4250",
+  "0.2750"
+ ]
+}

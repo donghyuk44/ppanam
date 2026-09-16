@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="848" height="600" viewBox="0 0 848 600" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 대시보드 › 요청 탭 고침 — 헨리 09-16 (M7, 대표 긴급명령 10:2x). 왼쪽 = 대표가 본 것, 오른쪽 = 고친 것. 폰 412(칸 폭 388).
+       지금은 요청 32 건이 한 줄로 죽 선다(열린 2 · 닫힌 30, state/requests 09-16 낮) — 열린 둘이 닫힌 서른 위에 겨우 서고, 글은 "디자인 → 개발 · …" 머리를 두 번 쓴다.
+       고침: 열린 것만 카드로(누가 → 누구 · 며칠째 · 상태 / 한 줄 / 마지막 말), 닫힌 것은 접어 둔 한 줄("완료 30")로. 대표가 보는 건 열린 것뿐이다. -->
+  <defs><style>
+    .k{font-size:10px;letter-spacing:.12em;fill:#8a8794;font-family:'IBM Plex Mono',monospace}
+    .t{font-size:12.5px;fill:#1b1a1f}.s{font-size:11px;fill:#6f6d78}.m{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#8a8794}
+    .b{font-size:12.5px;fill:#1b1a1f;font-weight:500}
+    .pill{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em}
+    .card{fill:#ffffff;stroke:#e3ddd0}
+    .row{fill:#fbf9f4;stroke:#e3ddd0}
+    .line{stroke:#e3ddd0}
+    .bad{fill:none;stroke:#c94a3a;stroke-dasharray:4 3}
+  </style></defs>
+  <rect width="848" height="600" fill="#f6f2ea"/>
+
+  <!-- ── 왼쪽: 대표가 본 것 ── -->
+  <g transform="translate(24 24)">
+    <text x="0" y="-6" class="k">지금 — 대표가 본 요청 탭 (10:2x)</text>
+    <rect x="0" y="4" width="388" height="452" rx="12" class="card"/>
+    <text x="14" y="26" class="k">요청 — 진행 2 · 완료 30</text>
+
+    <g transform="translate(14 36)">
+      <text x="0" y="14" class="b">디자인팀 → 개발팀</text><text x="150" y="14" class="m">3시간 전</text>
+      <rect x="298" y="0" width="62" height="20" rx="4" fill="none" stroke="#3a8f5c"/><text x="329" y="14" text-anchor="middle" class="pill" fill="#3a8f5c">진행 중</text>
+      <text x="0" y="32" class="s">디자인 → 개발 · 얼굴 열일곱 장을 방 이름표와</text>
+      <text x="0" y="46" class="s">프로필 카드에 꽂아 주세요</text>
+      <line x1="0" y1="56" x2="360" y2="56" class="line"/>
+    </g>
+    <g transform="translate(14 98)">
+      <text x="0" y="14" class="b">경영팀 → 개발팀</text><text x="150" y="14" class="m">3시간 전</text>
+      <rect x="298" y="0" width="62" height="20" rx="4" fill="none" stroke="#3a8f5c"/><text x="329" y="14" text-anchor="middle" class="pill" fill="#3a8f5c">진행 중</text>
+      <text x="0" y="32" class="s">경영 · 아침 한 장을 매일 여섯 시 반에 서버가</text>
+      <text x="0" y="46" class="s">만들게 개발에 부탁</text>
+      <line x1="0" y1="56" x2="360" y2="56" class="line"/>
+    </g>
+    <!-- 닫힌 서른이 같은 줄로 이어진다 -->
+    <g transform="translate(14 160)">
+      <text x="0" y="14" class="b" fill="#a9a6b0">마케팅팀 → 총괄실</text><text x="150" y="14" class="m">2일 전</text>
+      <rect x="318" y="0" width="42" height="20" rx="4" fill="none" stroke="#c94a3a"/><text x="339" y="14" text-anchor="middle" class="pill" fill="#c94a3a">중단</text>
+      <text x="0" y="32" class="s" fill="#a9a6b0">대표 판정 기준 셋을 결정 번호로 — 바이블·인격</text>
+      <text x="0" y="46" class="s" fill="#a9a6b0">파일은 (1) 드라마·영화·소설·만화 인물 같은가 …</text>
+      <line x1="0" y1="56" x2="360" y2="56" class="line"/>
+    </g>
+    <g transform="translate(14 222)">
+      <text x="0" y="14" class="b" fill="#a9a6b0">개발팀 → 디자인팀</text><text x="150" y="14" class="m">2일 전</text>
+      <rect x="326" y="0" width="34" height="20" rx="4" fill="none" stroke="#a9a6b0"/><text x="343" y="14" text-anchor="middle" class="pill" fill="#a9a6b0">끝</text>
+      <text x="0" y="32" class="s" fill="#a9a6b0">…</text>
+      <line x1="0" y1="56" x2="360" y2="56" class="line"/>
+    </g>
+    <g transform="translate(14 284)">
+      <text x="0" y="14" class="b" fill="#a9a6b0">총괄실 → 개발팀</text><text x="150" y="14" class="m">2일 전</text>
+      <rect x="326" y="0" width="34" height="20" rx="4" fill="none" stroke="#a9a6b0"/><text x="343" y="14" text-anchor="middle" class="pill" fill="#a9a6b0">끝</text>
+      <text x="0" y="32" class="s" fill="#a9a6b0">…</text>
+      <line x1="0" y1="56" x2="360" y2="56" class="line"/>
+    </g>
+    <text x="194" y="372" text-anchor="middle" class="m">⋮  같은 줄이 스물일곱 더  ⋮</text>
+    <rect x="8" y="156" width="372" height="236" rx="10" class="bad"/>
+
+    <text x="0" y="482" class="s">빨간 점선 — 닫힌 서른이 열린 둘과 같은 줄로 선다.</text>
+    <text x="0" y="498" class="s">대표는 서른을 지나쳐야 한다. 열린 둘의 글도</text>
+    <text x="0" y="514" class="s">"디자인 → 개발 ·" 머리를 두 번 쓴다(굵은 줄에 이미 있다).</text>
+  </g>
+
+  <!-- ── 오른쪽: 고친 것 ── -->
+  <g transform="translate(436 24)">
+    <text x="0" y="-6" class="k">고침 — 열린 것만 카드, 닫힌 것은 접은 한 줄</text>
+    <rect x="0" y="4" width="388" height="452" rx="12" class="card"/>
+    <text x="14" y="26" class="k">요청 · 열린 것 2</text>
+
+    <!-- 열린 요청 1 -->
+    <rect x="14" y="36" width="360" height="104" rx="10" class="row"/>
+    <text x="26" y="56" class="b">디자인팀 → 개발팀</text>
+    <rect x="300" y="42" width="62" height="20" rx="4" fill="none" stroke="#3a8f5c"/><text x="331" y="56" text-anchor="middle" class="pill" fill="#3a8f5c">진행 중</text>
+    <text x="26" y="78" class="t">얼굴 열일곱 장을 이름표와 프로필 카드에</text>
+    <text x="26" y="98" class="s">헨리 → 솔라 · 오늘 07:43 · 3시간째</text>
+    <circle cx="32" cy="120" r="3.5" fill="#2f4f7a"/>
+    <text x="42" y="124" class="s">솔라 <tspan fill="#1b1a1f">/out/design/faces/ 로 바로 읽어요</tspan> · 2시간 전</text>
+
+    <!-- 열린 요청 2 -->
+    <rect x="14" y="152" width="360" height="104" rx="10" class="row"/>
+    <text x="26" y="172" class="b">경영팀 → 개발팀</text>
+    <rect x="300" y="158" width="62" height="20" rx="4" fill="none" stroke="#3a8f5c"/><text x="331" y="172" text-anchor="middle" class="pill" fill="#3a8f5c">진행 중</text>
+    <text x="26" y="194" class="t">아침 한 장을 매일 여섯 시 반에 서버가 만들게</text>
+    <text x="26" y="214" class="s">유진 → 솔라 · 오늘 07:43 · 3시간째</text>
+    <circle cx="32" cy="236" r="3.5" fill="#8a6a2f"/>
+    <text x="42" y="240" class="s">유진 <tspan fill="#1b1a1f">bosswords.js 자 줄 고쳐 적었어요</tspan> · 3시간 전</text>
+
+    <!-- 닫힌 것 — 접은 한 줄 -->
+    <rect x="14" y="270" width="360" height="34" rx="8" fill="none" stroke="#e3ddd0"/>
+    <text x="26" y="292" class="t">▸ 완료 30 <tspan class="s">· 끝 27 · 중단 3 · 마지막 2일 전</tspan></text>
+
+    <!-- 펼쳤을 때 -->
+    <text x="14" y="332" class="k">▾ 펼치면 — 한 줄씩, 글은 첫 문장만</text>
+    <g transform="translate(14 342)">
+      <text x="0" y="14" class="s"><tspan fill="#1b1a1f">마케팅팀 → 총괄실</tspan> · 판정 기준 셋을 결정 번호로</text><text x="360" y="14" text-anchor="end" class="pill" fill="#c94a3a">중단</text>
+      <text x="0" y="34" class="s"><tspan fill="#1b1a1f">개발팀 → 디자인팀</tspan> · …</text><text x="360" y="34" text-anchor="end" class="pill" fill="#a9a6b0">끝</text>
+      <text x="0" y="54" class="s"><tspan fill="#1b1a1f">총괄실 → 개발팀</tspan> · …</text><text x="360" y="54" text-anchor="end" class="pill" fill="#a9a6b0">끝</text>
+      <text x="180" y="76" text-anchor="middle" class="m">⋮</text>
+    </g>
+
+    <text x="0" y="482" class="s">열린 카드 줄 셋 — 누가 → 누구 · 알약 / 무엇(머리 뗀 한 줄) /</text>
+    <text x="0" y="498" class="s">사람 이름 · 연 시각 · 며칠째 — 밑에 마지막 말 한 줄(점 = 말한 사람 색).</text>
+    <text x="0" y="514" class="s">누르면 그 요청의 대화 전부. 열린 것 0 이면 "열린 요청 없음" 한 줄.</text>
+    <text x="0" y="530" class="s">1280 에서는 열린 카드가 두 열, 접은 줄은 한 열 폭 그대로.</text>
+  </g>
+
+  <text x="24" y="588" class="m">요청 탭 고침 1판 · 2026-09-16 · 헨리 · 건수·글은 state/requests 09-16 낮 값(열린 2 · 끝 27 · 중단 3) · 시각 KST 어림 · 폰 412</text>
+</svg>

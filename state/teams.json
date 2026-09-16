@@ -6,7 +6,7 @@
     { "id": "dev",       "name": "개발",   "room": "개발 방",   "model": "opus" },
     { "id": "design",    "name": "디자인", "room": "디자인 방", "model": "opus" },
     { "id": "finance",   "name": "경영", "room": "경영 방", "model": "opus" },
-    { "id": "sera",      "name": "세라",   "room": "비서실",       "kind": "office", "model": "opus",
+    { "id": "sera",      "name": "비서실",   "room": "비서실",       "kind": "office", "model": "opus",
       "owner": "secretary", "speakers": ["boss", "secretary", "system"], "only": ["message"] }
   ]
 }

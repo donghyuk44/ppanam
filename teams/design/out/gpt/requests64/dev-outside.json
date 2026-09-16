@@ -1,0 +1,11 @@
+{
+ "name": "dev-outside-64",
+ "prompt": "The attached images are STYLE references only (classic Korean MMORPG pixel art). For more of that style, browse these two games and study their character sprites: 바람의나라: 연 https://baramy.nexon.com/ and 도깨비의세계 https://dokkaebi.kakaogames.com/preregister/ . Learn from them: thick 1px dark outlines, dithered shading, saturated but limited palette, about 3 to 3.5 heads tall with a large head and voluminous hair, slight 3/4 top-down view, light coming from the upper left. Then draw a NEW original character (not a copy of any reference): a 36-year-old Italian man, the oldest person in the company, the dev team's external auditor who actually runs the code instead of trusting it, in Joseon-fantasy attire - black hair going grey (#a8a6ae) at the temples under a black yugeon scholar's cap (유건, a soft folded cloth cap, no brim), olive skin, a short beard, two clearly visible dark eyes, a weary but sharp expression. Clothing: a deep red dopo robe (#9c3b2f) over white hanbok, white pants, black shoes. Holds a rolled bamboo-slip book (죽간, a bundle of thin bamboo strips tied with cord) in his right hand. Requirements: one character, full body, idle standing pose, facing the viewer (south), centered on a flat solid magenta background (#FF00FF), no drop shadow, no text, no border, no scenery. Render as crisp pixel art about 64 pixels tall (head to feet), then upscale exactly 8x with nearest-neighbor so every logical pixel is a sharp 8x8 block on a 512x512 canvas, and give me that PNG to download.",
+ "refs": [
+  "ref/baram/char_magician.png",
+  "ref/baram/char_thief.png",
+  "ref/dokkaebi/i1540213767.jpg"
+ ],
+ "from": "dev-outside.json",
+ "note": "하네스가 시트 절을 64px 정지 그림 절로 바꿈 (대표 결정 2026-09-12)"
+}

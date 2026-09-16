@@ -1,0 +1,229 @@
+{
+ "path": "teams/marketing/out/world-bible/40-persona/marketing.review.md",
+ "size": 10605,
+ "mtime": "1789317405948517390",
+ "ctime": "1789317405948808681",
+ "team": "마케팅",
+ "title": "안젤 — 마케팅팀 내부감사",
+ "lines": 101,
+ "sections": [
+  {
+   "level": 1,
+   "title": "안젤 — 마케팅팀 내부감사",
+   "from": 1,
+   "to": 5,
+   "bytes": 335,
+   "words": [
+    "안젤",
+    "내부감사",
+    "마케팅팀",
+    "바이블",
+    "세션",
+    "인격",
+    "teams/marketing/out/world-bible",
+    "고치려면"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "열 줄",
+   "from": 6,
+   "to": 23,
+   "bytes": 1984,
+   "words": [
+    "다니엘",
+    "본다",
+    "않는다",
+    "하영",
+    "32세",
+    "3초",
+    "것만",
+    "결론"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "너라는 사람",
+   "from": 24,
+   "to": 31,
+   "bytes": 700,
+   "words": [
+    "너라",
+    "근거",
+    "하영",
+    "3초",
+    "갈라",
+    "거리",
+    "결론",
+    "결론이"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "말투 (안젤이 방에서 말한 것을 하영이 글자 그대로 옮김 — 결정 46 ②, `teams/marketing/log.jsonl` evt_1d6caf7c70, 2026-09-13 12:42Z. 안젤 세션은 파일 쓰기가 막혀 있다)",
+   "from": 32,
+   "to": 47,
+   "bytes": 1665,
+   "words": [
+    "안젤이",
+    "말한",
+    "방에서",
+    "2026-09-13",
+    "42z",
+    "evt_1d6caf7c70",
+    "teams/marketing/log.jsonl",
+    "결정"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "내력 (`20-people/marketing.review.md` 8a~8c 요약)",
+   "from": 48,
+   "to": 53,
+   "bytes": 963,
+   "words": [
+    "8a",
+    "8c",
+    "20-people/marketing.review.md",
+    "내력",
+    "요약",
+    "브랜드",
+    "사람이",
+    "회사"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "관계 (`30-relations.md` 선 번호)",
+   "from": 54,
+   "to": 61,
+   "bytes": 811,
+   "words": [
+    "30-relations.md",
+    "관계",
+    "번호",
+    "다니엘",
+    "빨리",
+    "자리",
+    "하영",
+    "r17"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "세계 안의 자리 (인형 서울 — `10-world.md` 2절)",
+   "from": 62,
+   "to": 68,
+   "bytes": 898,
+   "words": [
+    "자리",
+    "초안",
+    "하영",
+    "10-world.md",
+    "2절",
+    "서울",
+    "세계",
+    "안의"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "네가 일하는 방식",
+   "from": 69,
+   "to": 74,
+   "bytes": 711,
+   "words": [
+    "네가",
+    "방식",
+    "일하",
+    "근거가",
+    "문장",
+    "본다",
+    "숫자",
+    "않는다"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "볼 것",
+   "from": 75,
+   "to": 80,
+   "bytes": 613,
+   "words": [
+    "것인가",
+    "논리",
+    "본다",
+    "teams/marketing/roadmap.json",
+    "가장",
+    "개선했다",
+    "결론이",
+    "고리"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "방에서 말하는 법",
+   "from": 81,
+   "to": 88,
+   "bytes": 940,
+   "words": [
+    "방에서",
+    "말하",
+    "번에",
+    "상대",
+    "이름",
+    "질문",
+    "파일",
+    "12쪽"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "판정",
+   "from": 89,
+   "to": 95,
+   "bytes": 681,
+   "words": [
+    "판정",
+    "revise",
+    "대표",
+    "마일스톤",
+    "통과",
+    "3회면",
+    "as",
+    "bus/say.mjs"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "바이블",
+   "from": 96,
+   "to": 101,
+   "bytes": 293,
+   "words": [
+    "바이블",
+    "2절",
+    "3절",
+    "4절",
+    "teams/marketing/out/world-bible/10-world.md",
+    "teams/marketing/out/world-bible/20-people/marketing.review.md",
+    "teams/marketing/out/world-bible/30-relations.md",
+    "관계"
+   ]
+  }
+ ],
+ "words": [
+  "하영",
+  "다니엘",
+  "안젤",
+  "않는다",
+  "근거",
+  "문장",
+  "본다",
+  "내부감사",
+  "마케팅팀",
+  "초안",
+  "방에서",
+  "자리"
+ ]
+}

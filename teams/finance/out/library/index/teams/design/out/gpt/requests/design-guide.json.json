@@ -1,0 +1,66 @@
+{
+ "path": "teams/design/out/gpt/requests/design-guide.json",
+ "size": 2680,
+ "mtime": "1789199345620445526",
+ "ctime": "1789199345620584193",
+ "team": "디자인",
+ "title": "design-guide",
+ "lines": 10,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"design-guide\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 14,
+   "words": [
+    "name",
+    "design-guide"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 2518,
+   "words": [
+    "of",
+    "left",
+    "no",
+    "cell",
+    "his",
+    "on",
+    "pixel",
+    "dark"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 4,
+   "to": 10,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  }
+ ],
+ "words": [
+  "of",
+  "left",
+  "no",
+  "cell",
+  "his",
+  "on",
+  "pixel",
+  "dark",
+  "every",
+  "in",
+  "is",
+  "right"
+ ]
+}

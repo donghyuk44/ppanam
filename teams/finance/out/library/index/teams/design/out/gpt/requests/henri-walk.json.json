@@ -1,0 +1,63 @@
+{
+ "path": "teams/design/out/gpt/requests/henri-walk.json",
+ "size": 306,
+ "mtime": "1789199363396496290",
+ "ctime": "1789199363396765166",
+ "team": "디자인",
+ "title": "henri-walk",
+ "lines": 6,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"henri-walk\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 12,
+   "words": [
+    "name",
+    "henri-walk"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "obsolete (true)",
+   "from": 3,
+   "to": 3,
+   "bytes": 4,
+   "words": [
+    "obsolete"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "note (\"보내지 마라. 64px 칸으로 쓴 요청인데 \")",
+   "from": 4,
+   "to": 6,
+   "bytes": 247,
+   "words": [
+    "note",
+    "1024",
+    "1536",
+    "64px",
+    "requests/design-guide.json",
+    "결정",
+    "권한",
+    "내용"
+   ]
+  }
+ ],
+ "words": [
+  "1024",
+  "1536",
+  "64px",
+  "henri-walk",
+  "name",
+  "note",
+  "obsolete",
+  "requests/design-guide.json",
+  "결정",
+  "권한",
+  "내용",
+  "대표"
+ ]
+}

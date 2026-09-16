@@ -1,0 +1,93 @@
+{
+ "path": "teams/dev/out/w1-wake-hook.md",
+ "size": 4008,
+ "mtime": "1789512842791351068",
+ "ctime": "1789512842791572690",
+ "team": "개발",
+ "title": "W1 — \"뒤에\" 주인을 실제로 깨우는 훅 자리 (server/conductor.mjs 몫)",
+ "lines": 64,
+ "sections": [
+  {
+   "level": 1,
+   "title": "W1 — \"뒤에\" 주인을 실제로 깨우는 훅 자리 (server/conductor.mjs 몫)",
+   "from": 1,
+   "to": 18,
+   "bytes": 890,
+   "words": [
+    "server/conductor.mjs",
+    "깨우",
+    "실제",
+    "자리",
+    "w1",
+    "뒤에",
+    "주인",
+    "note"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "지금 자동으로 안 깨는 이유",
+   "from": 19,
+   "to": 37,
+   "bytes": 944,
+   "words": [
+    "to",
+    "깨는",
+    "이유",
+    "자동",
+    "team",
+    "문장",
+    "이름",
+    "addressees"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "걸 자리 (제안)",
+   "from": 38,
+   "to": 57,
+   "bytes": 1728,
+   "words": [
+    "note",
+    "자리",
+    "wake",
+    "team",
+    "제안",
+    "actor",
+    "if",
+    "다른"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "왜 여기서(W1)는 안 걸었나",
+   "from": 58,
+   "to": 64,
+   "bytes": 443,
+   "words": [
+    "w1",
+    "걸었나",
+    "여기서",
+    "지시",
+    "4절",
+    "announceunblocked",
+    "bus.mjs",
+    "conductor.mjs"
+   ]
+  }
+ ],
+ "words": [
+  "note",
+  "자리",
+  "team",
+  "w1",
+  "wake",
+  "server/conductor.mjs",
+  "이미",
+  "actor",
+  "if",
+  "to",
+  "깨우",
+  "뒤에"
+ ]
+}

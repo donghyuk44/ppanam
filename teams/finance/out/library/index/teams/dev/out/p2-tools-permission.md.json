@@ -1,0 +1,93 @@
+{
+ "path": "teams/dev/out/p2-tools-permission.md",
+ "size": 1965,
+ "mtime": "1789512544669319315",
+ "ctime": "1789512544669488521",
+ "team": "개발",
+ "title": "P2 — `node tools/…` 맨 명령이 막히는 원인 (32회차, 솔라)",
+ "lines": 43,
+ "sections": [
+  {
+   "level": 1,
+   "title": "P2 — `node tools/…` 맨 명령이 막히는 원인 (32회차, 솔라)",
+   "from": 1,
+   "to": 4,
+   "bytes": 235,
+   "words": [
+    "node",
+    "tools",
+    "원인",
+    "32회차",
+    "p2",
+    "막히",
+    "명령이",
+    "솔라"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "실측",
+   "from": 5,
+   "to": 17,
+   "bytes": 571,
+   "words": [
+    "실측",
+    "node",
+    "cd",
+    "경로",
+    "대조",
+    "막힘",
+    "명령",
+    "없이"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "원인",
+   "from": 18,
+   "to": 27,
+   "bytes": 755,
+   "words": [
+    "tools",
+    "node",
+    "원인",
+    "bash",
+    "뒤에",
+    "접두어",
+    "디렉터리",
+    "맞는다"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "고칠 것 (대표 손 — settings.json 은 분류기가 나리를 막는다)",
+   "from": 28,
+   "to": 43,
+   "bytes": 401,
+   "words": [
+    "settings.json",
+    "고칠",
+    "나리",
+    "대표",
+    "막는다",
+    "분류기가",
+    "tools",
+    "bash"
+   ]
+  }
+ ],
+ "words": [
+  "node",
+  "tools",
+  "원인",
+  "bash",
+  "명령",
+  "없이",
+  "32회차",
+  "p2",
+  "뒤에",
+  "막히",
+  "명령이",
+  "솔라"
+ ]
+}

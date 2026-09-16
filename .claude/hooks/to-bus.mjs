@@ -171,6 +171,8 @@ switch (ev) {
     // 문서가 transcript 파싱 대신 이 필드를 쓰라고 명시한다.
     const text = hook.last_assistant_message;
     if (!text) break;
+    if (/^\s*<analysis\b/i.test(text)) bail('압축 속말 — 기록 안 함');
+    if (!/[가-힣]/.test(text) && (text.match(/[A-Za-z]{3,}/g) || []).length >= 8) bail('영어 속말 — 기록 안 함');
     const actor = ev === 'Stop' ? ME : actorOf(hook.agent_type);
     if (!actor) bail('캐스트가 아닌 서브에이전트 — 기록 안 함');
 
@@ -186,7 +188,7 @@ switch (ev) {
           process.exit(0);
         }
         // 판정을 요청받고도 첫 줄에 안 썼다. 말로 남기되 표시해 둔다 — 사회자가 한 번 더 묻는다.
-        out = { actor, type: 'message', text: trim(text), meta: { noVerdict: true } };
+        out = { actor, type: 'message', text: trim(text), meta: { noVerdict: true, ...(actor === 'system' ? { hand: 'server' } : {}) } };
         break;
       }
     }
@@ -199,7 +201,7 @@ switch (ev) {
         bail('방에 이미 말함 — 최종 보고는 기록하지 않음');
       }
     }
-    out = { actor, type: 'message', text: trim(text) };
+    out = { actor, type: 'message', text: trim(text), meta: actor === 'system' ? { hand: 'server' } : undefined };
     break;
   }
 

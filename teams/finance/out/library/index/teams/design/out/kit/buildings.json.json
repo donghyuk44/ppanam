@@ -1,0 +1,193 @@
+{
+ "path": "teams/design/out/kit/buildings.json",
+ "size": 40506,
+ "mtime": "1789357336083487535",
+ "ctime": "1789357336083718870",
+ "team": "디자인",
+ "title": "객체 10키: _note·unit·scale·modelDir·colormaps",
+ "lines": 350,
+ "sections": [
+  {
+   "level": 1,
+   "title": "_note (\"미니어처 서울 첫 화면의 건물·바닥·소품 —\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 1185,
+   "words": [
+    "note",
+    "2판",
+    "map.json",
+    "zone",
+    "가운데",
+    "간판",
+    "0.5",
+    "1.0"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "unit (\"map tile (1 = 지도 한 칸, x \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 104,
+   "words": [
+    "unit",
+    "0.5",
+    "map",
+    "tile",
+    "가운데",
+    "지도"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "scale (객체 3키)",
+   "from": 4,
+   "to": 11,
+   "bytes": 561,
+   "words": [
+    "scale",
+    "0.8",
+    "1.0",
+    "file",
+    "why",
+    "로는",
+    "원본",
+    "장이"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "modelDir (객체 3키)",
+   "from": 12,
+   "to": 16,
+   "bytes": 313,
+   "words": [
+    "modeldir",
+    "format",
+    "colormap",
+    "commercial",
+    "glb",
+    "note",
+    "server/public/world/assets/kenney/city-kit-commercial/models/glb",
+    "server/public/world/assets/kenney/city-kit-suburban/models/glb"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "colormaps (객체 4키)",
+   "from": 17,
+   "to": 22,
+   "bytes": 485,
+   "words": [
+    "colormaps",
+    "commercial-cafe",
+    "commercial",
+    "kenney",
+    "kit/colormaps/commercial-cafe.png",
+    "kit/colormaps/commercial.png",
+    "kit/colormaps/suburban.png",
+    "note"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "colors (객체 25키)",
+   "from": 23,
+   "to": 49,
+   "bytes": 712,
+   "words": [
+    "2f4f7a",
+    "colors",
+    "5절",
+    "7a8797",
+    "8b5a2b",
+    "brass",
+    "d9d1bf",
+    "e9dccb"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "textures (객체 9키)",
+   "from": 50,
+   "to": 60,
+   "bytes": 712,
+   "words": [
+    "textures",
+    "0.4",
+    "1.2",
+    "1b1a1f",
+    "1절",
+    "2절",
+    "4a2c1a",
+    "kit/signs/boss.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "shapes (객체 8키)",
+   "from": 61,
+   "to": 70,
+   "bytes": 700,
+   "words": [
+    "color",
+    "at",
+    "max",
+    "min",
+    "2판",
+    "shapes",
+    "바닥",
+    "추가"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "seoul (객체 5키)",
+   "from": 71,
+   "to": 77,
+   "bytes": 800,
+   "words": [
+    "seoul",
+    "지붕",
+    "0.5",
+    "note",
+    "골목",
+    "기와",
+    "다리",
+    "댄의"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "buildings (배열 16)",
+   "from": 78,
+   "to": 350,
+   "bytes": 28581,
+   "words": [
+    "shape",
+    "color",
+    "note",
+    "radius",
+    "rounded",
+    "at",
+    "0.15",
+    "19.5"
+   ]
+  }
+ ],
+ "words": [
+  "shape",
+  "color",
+  "rounded",
+  "radius",
+  "note",
+  "at",
+  "0.15",
+  "scale",
+  "file",
+  "model",
+  "colormap",
+  "1.39"
+ ]
+}

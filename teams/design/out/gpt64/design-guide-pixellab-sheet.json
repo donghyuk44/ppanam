@@ -1,0 +1,77 @@
+{
+  "character": {
+    "id": "d8f39871-f17f-47ba-b9b1-1955fc297da8",
+    "name": "Idle",
+    "prompt": "A young court painter of a Joseon-fantasy world, the company's head designer, 29 years old: light chestnut-brown wavy hair tied up in a small topknot with a black horsehair headband, no hat, no glasses, fair skin, two clearly visible dark eyes, a relaxed faint smile, a thin ink brush tucked behind his right ear. Clothing: a periwinkle-blue dopo robe with a plum-purple belt cord tied at the waist over a white hanbok, white pants, black flat shoes. In his left hand he holds a small rectangular cream sketchbook flat against his chest; his right hand hangs loosely. Classic Korean MMORPG pixel art style, thick dark outlines, about 3.5 heads tall.",
+    "size": {
+      "width": 40,
+      "height": 64
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "A_young_court_painter_of-Idle.png",
+    "cell_size": {
+      "width": 92,
+      "height": 92
+    },
+    "sheet_size": {
+      "width": 736,
+      "height": 460
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "walking",
+        "animation_group_id": "81d9915b-17a7-41ef-9dc6-dc2cf15494f3",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "walking",
+        "animation_group_id": "81d9915b-17a7-41ef-9dc6-dc2cf15494f3",
+        "direction": "east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "walking",
+        "animation_group_id": "81d9915b-17a7-41ef-9dc6-dc2cf15494f3",
+        "direction": "north"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "walking",
+        "animation_group_id": "81d9915b-17a7-41ef-9dc6-dc2cf15494f3",
+        "direction": "west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-09-12T20:15:04.091079+00:00"
+}

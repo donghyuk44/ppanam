@@ -1,0 +1,8 @@
+{
+  "name": "portrait-hq-chief",
+  "who_is": "톰 · 실장 · 총괄실 (31세 · 미국 · 남 — hq.chief.md 열 줄 1 · 인형 hq-chief: 금발, 팀 색 #1f5f4f)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "An American man in his early thirties. Squarish face with a firm chin, alert light-brown eyes, straight eyebrows, short golden-blond hair combed back, clean-shaven, no glasses. Wearing a deep teal-green (#1f5f4f) modern durumagi-style jacket over a white shirt. Quick, decisive expression — a slight forward lean, mouth about to speak, the look of someone who would rather decide now than wait.",
+  "out": "teams/design/out/gpt/portrait-hq-chief-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

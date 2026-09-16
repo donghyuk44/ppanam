@@ -1,0 +1,66 @@
+{
+ "path": "teams/design/out/gpt/requests/hq-outside.json",
+ "size": 2656,
+ "mtime": "1789199632715762408",
+ "ctime": "1789199632716043408",
+ "team": "디자인",
+ "title": "hq-outside",
+ "lines": 10,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"hq-outside\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 12,
+   "words": [
+    "name",
+    "hq-outside"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 2496,
+   "words": [
+    "of",
+    "cell",
+    "in",
+    "pixel",
+    "character",
+    "every",
+    "facing",
+    "is"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 4,
+   "to": 10,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  }
+ ],
+ "words": [
+  "of",
+  "cell",
+  "in",
+  "pixel",
+  "character",
+  "every",
+  "facing",
+  "is",
+  "no",
+  "on",
+  "same",
+  "to"
+ ]
+}

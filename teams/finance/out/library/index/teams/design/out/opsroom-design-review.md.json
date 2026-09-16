@@ -1,0 +1,144 @@
+{
+ "path": "teams/design/out/opsroom-design-review.md",
+ "size": 5500,
+ "mtime": "1789280999365840448",
+ "ctime": "1789280999366140185",
+ "team": "디자인",
+ "title": "작전실 화면 검수 — 클레멘타인",
+ "lines": 52,
+ "sections": [
+  {
+   "level": 1,
+   "title": "작전실 화면 검수 — 클레멘타인",
+   "from": 1,
+   "to": 5,
+   "bytes": 368,
+   "words": [
+    "검수",
+    "작전실",
+    "클레멘타인",
+    "화면",
+    "cast.json",
+    "curl",
+    "design/main.dc.html",
+    "node"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "1. 실무 이름이 화면에서 사라진다 — `server/public/app.js:208, 221`",
+   "from": 6,
+   "to": 17,
+   "bytes": 1058,
+   "words": [
+    "실무",
+    "office",
+    "server/public/app.js",
+    "사라진다",
+    "이름이",
+    "화면",
+    "일하",
+    "지시하기"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "2. 경영재무팀만 이름이 없다 — `teams/finance/cast.json`",
+   "from": 18,
+   "to": 22,
+   "bytes": 605,
+   "words": [
+    "경영재무팀",
+    "이름이",
+    "teams/finance/cast.json",
+    "경영재무",
+    "1번",
+    "guide/review/outside",
+    "initial",
+    "name"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "3. 토큰은 시안과 그대로 맞다 (확인, 문제 아님)",
+   "from": 23,
+   "to": 26,
+   "bytes": 341,
+   "words": [
+    "맞다",
+    "시안",
+    "문제",
+    "아님",
+    "토큰",
+    "확인",
+    "0f5b52",
+    "1-2행"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "4. 마을 탭 전환은 정상 (확인, 문제 아님)",
+   "from": 27,
+   "to": 30,
+   "bytes": 326,
+   "words": [
+    "전환",
+    "마을",
+    "문제",
+    "아님",
+    "정상",
+    "확인",
+    "world",
+    "world.css"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "5. QA 눈금 5개로 채점 (teams/design/out/reference-samples.md 6절)",
+   "from": 31,
+   "to": 44,
+   "bytes": 2252,
+   "words": [
+    "눈금",
+    "카드",
+    "화면",
+    "5개",
+    "6절",
+    "qa",
+    "teams/design/out/reference-samples.md",
+    "네이버"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "남은 일",
+   "from": 45,
+   "to": 52,
+   "bytes": 544,
+   "words": [
+    "남은",
+    "node",
+    "png",
+    "tools/pixel/portrait-measure.mjs",
+    "boss",
+    "design-guide",
+    "design-ops",
+    "design-outside"
+   ]
+  }
+ ],
+ "words": [
+  "화면",
+  "실무",
+  "카드",
+  "자리",
+  "작전실",
+  "클레멘타인",
+  "office",
+  "style.css",
+  "검수",
+  "네이버",
+  "눈금",
+  "대표"
+ ]
+}

@@ -1,0 +1,87 @@
+{
+ "path": "teams/design/out/palette.json",
+ "size": 2449,
+ "mtime": "1789199243356253868",
+ "ctime": "1789199243356427369",
+ "team": "디자인",
+ "title": "ppanam-32",
+ "lines": 52,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"ppanam-32\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 11,
+   "words": [
+    "name",
+    "ppanam-32"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "note (\"32색. check.mjs --palette\")",
+   "from": 3,
+   "to": 3,
+   "bytes": 317,
+   "words": [
+    "note",
+    "12개",
+    "32색",
+    "cast.json",
+    "check.mjs",
+    "colors",
+    "ff00ff",
+    "names"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "colors (배열 32)",
+   "from": 4,
+   "to": 16,
+   "bytes": 321,
+   "words": [
+    "colors",
+    "1b1a1f",
+    "1f5f4f",
+    "2e4a2a",
+    "2f4f7a",
+    "2f6b7a",
+    "3d3a44",
+    "4a2c1a"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "names (객체 32키)",
+   "from": 17,
+   "to": 52,
+   "bytes": 1472,
+   "words": [
+    "재무",
+    "그늘",
+    "outside",
+    "밝은",
+    "짙은",
+    "guide",
+    "names",
+    "개발"
+   ]
+  }
+ ],
+ "words": [
+  "재무",
+  "그늘",
+  "짙은",
+  "outside",
+  "밝은",
+  "회색",
+  "guide",
+  "개발",
+  "디자인",
+  "마케팅",
+  "머리",
+  "1b1a1f"
+ ]
+}

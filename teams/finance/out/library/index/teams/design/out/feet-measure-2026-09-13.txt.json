@@ -1,0 +1,42 @@
+{
+ "path": "teams/design/out/feet-measure-2026-09-13.txt",
+ "size": 4120,
+ "mtime": "1789282125634180427",
+ "ctime": "1789282125634180427",
+ "team": "디자인",
+ "title": "배열 15: (배열",
+ "lines": 198,
+ "sections": [
+  {
+   "level": 0,
+   "title": "(배열 15)",
+   "from": 1,
+   "to": 198,
+   "bytes": 4120,
+   "words": [
+    "file",
+    "width",
+    "bottom",
+    "centerx",
+    "height",
+    "shift",
+    "torsoband",
+    "torsox"
+   ]
+  }
+ ],
+ "words": [
+  "bottom",
+  "centerx",
+  "file",
+  "height",
+  "shift",
+  "torsoband",
+  "torsox",
+  "width",
+  "16.5",
+  "11.5",
+  "14.5",
+  "users/donghyukham/documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/boss.png"
+ ]
+}

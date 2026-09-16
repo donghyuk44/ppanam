@@ -1,0 +1,126 @@
+{
+ "path": "teams/design/out/kit/signs.json",
+ "size": 3021,
+ "mtime": "1789356621255630605",
+ "ctime": "1789356621255782523",
+ "team": "디자인",
+ "title": "객체 7키: _note·size·font·weight·fit",
+ "lines": 22,
+ "sections": [
+  {
+   "level": 1,
+   "title": "_note (\"한글 간판 여덟 — tools/kit/sig\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 922,
+   "words": [
+    "note",
+    "이름",
+    "파일",
+    "2-1",
+    "png",
+    "간판",
+    "글꼴",
+    "마케팅"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "size (배열 2)",
+   "from": 3,
+   "to": 3,
+   "bytes": 9,
+   "words": [
+    "size"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "font (\"\\\"Apple SD Gothic Neo\\\", \\\"\")",
+   "from": 4,
+   "to": 4,
+   "bytes": 82,
+   "words": [
+    "font",
+    "apple",
+    "applesdgothicneo-bold",
+    "gothic",
+    "kr",
+    "neo",
+    "noto",
+    "sans"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "weight (800)",
+   "from": 5,
+   "to": 5,
+   "bytes": 3,
+   "words": [
+    "weight"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "fit (객체 2키)",
+   "from": 6,
+   "to": 6,
+   "bytes": 37,
+   "words": [
+    "fit",
+    "0.86",
+    "maxfontpx",
+    "maxwidthratio"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "kinds (객체 2키)",
+   "from": 7,
+   "to": 10,
+   "bytes": 320,
+   "words": [
+    "kinds",
+    "board",
+    "frame",
+    "ink",
+    "note",
+    "크림",
+    "판에",
+    "1b1a1f"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "signs (배열 8)",
+   "from": 11,
+   "to": 22,
+   "bytes": 1387,
+   "words": [
+    "1절",
+    "id",
+    "kind",
+    "source",
+    "text",
+    "village-branding",
+    "where",
+    "wood"
+   ]
+  }
+ ],
+ "words": [
+  "1절",
+  "id",
+  "kind",
+  "source",
+  "text",
+  "village-branding",
+  "where",
+  "wood",
+  "이름",
+  "가운데",
+  "간판",
+  "댄의"
+ ]
+}

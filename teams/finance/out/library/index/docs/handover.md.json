@@ -1,0 +1,212 @@
+{
+ "path": "docs/handover.md",
+ "size": 13163,
+ "mtime": "1789262869104197725",
+ "ctime": "1789262869104342017",
+ "team": "공용",
+ "title": "ppanam 인수인계 — 2026-09-13 06:00 KST",
+ "lines": 132,
+ "sections": [
+  {
+   "level": 1,
+   "title": "ppanam 인수인계 — 2026-09-13 06:00 KST",
+   "from": 1,
+   "to": 8,
+   "bytes": 629,
+   "words": [
+    "ppanam",
+    "2026-09-13",
+    "kst",
+    "인수인계",
+    "마을",
+    "묻지",
+    "살아",
+    "작전실"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "1. 최우선 순서 — 바꾸지 않는다",
+   "from": 9,
+   "to": 18,
+   "bytes": 1104,
+   "words": [
+    "최우선",
+    "순서",
+    "바꾸지",
+    "않는다",
+    "인격",
+    "계획표",
+    "압축돼",
+    "잡고"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "2. 지킬 것",
+   "from": 19,
+   "to": 31,
+   "bytes": 1785,
+   "words": [
+    "않는다",
+    "대표",
+    "지킬",
+    "git",
+    "계정",
+    "파일",
+    "하지",
+    "preview_start"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "3. 지금 상태",
+   "from": 32,
+   "to": 57,
+   "bytes": 3793,
+   "words": [
+    "인격",
+    "대표",
+    "카드",
+    "걷기",
+    "말투",
+    "자리",
+    "캐릭터",
+    "상태"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "4. 대표 결정 대기 (물어볼 것, 결정 전엔 가정하고 다른 일을 한다)",
+   "from": 58,
+   "to": 65,
+   "bytes": 628,
+   "words": [
+    "결정",
+    "가정하고",
+    "다른",
+    "대기",
+    "대표",
+    "물어볼",
+    "일을",
+    "전엔"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "5. 남은 일 (순서대로)",
+   "from": 66,
+   "to": 72,
+   "bytes": 870,
+   "words": [
+    "남은",
+    "순서대",
+    "라운드",
+    "인격",
+    "대표",
+    "자리",
+    "파일",
+    "30분"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "6. 시작 절차",
+   "from": 73,
+   "to": 80,
+   "bytes": 519,
+   "words": [
+    "시작",
+    "절차",
+    "4321",
+    "5절",
+    "bash",
+    "cat",
+    "claude/projects/-users-donghyukham-documents-ppanam/memory/memory.md",
+    "design/world"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "7. 확인 명령",
+   "from": 81,
+   "to": 91,
+   "bytes": 894,
+   "words": [
+    "design",
+    "명령",
+    "확인",
+    "curl",
+    "localhost",
+    "application/json",
+    "bus/cast.mjs",
+    "content-type"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "8. 그림 파이프라인 (요령은 메모리 `gpt-sprite-pipeline.md`)",
+   "from": 92,
+   "to": 103,
+   "bytes": 1393,
+   "words": [
+    "그림",
+    "메모리",
+    "이름",
+    "gpt-sprite-pipeline.md",
+    "node",
+    "out/sprites64",
+    "png",
+    "요령"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "9. 함정",
+   "from": 104,
+   "to": 112,
+   "bytes": 648,
+   "words": [
+    "함정",
+    "않는다",
+    "20분",
+    "4d5b3c3",
+    "actor",
+    "bus/cast.mjs",
+    "busy",
+    "check"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "10. 사람들",
+   "from": 113,
+   "to": 132,
+   "bytes": 890,
+   "words": [
+    "정지",
+    "claude",
+    "codex",
+    "outside",
+    "사람들",
+    "guide",
+    "대표",
+    "ops"
+   ]
+  }
+ ],
+ "words": [
+  "대표",
+  "인격",
+  "않는다",
+  "자리",
+  "이름",
+  "정지",
+  "카드",
+  "codex",
+  "node",
+  "claude",
+  "ppanam",
+  "걷기"
+ ]
+}

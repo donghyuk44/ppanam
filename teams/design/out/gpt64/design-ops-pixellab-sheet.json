@@ -1,0 +1,77 @@
+{
+  "character": {
+    "id": "3a4bf806-a8ef-4bf7-9465-cdb4cee55a29",
+    "name": "Idle",
+    "prompt": "A 28-year-old Australian woman, the design studio's assistant designer and keeper of the sprite warehouse, in Joseon-fantasy attire: sun-bleached blonde hair in one long braid down her back tied with a red ribbon, fair skin, two clearly visible dark eyes, a practical no-nonsense expression. Clothing: a short white jeogori jacket over a long full skirt in burnt orange, white shoes. A small ring of brass keys hangs at her waist on her right hip, and she holds a wooden measuring ruler upright in her right hand. Classic Korean MMORPG pixel art style, thick dark outlines, about 3.5 heads tall.",
+    "size": {
+      "width": 40,
+      "height": 64
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "A_28-year-old_Australian-Idle.png",
+    "cell_size": {
+      "width": 92,
+      "height": 92
+    },
+    "sheet_size": {
+      "width": 736,
+      "height": 460
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "a5d10eae-574b-411d-b817-aed4fd963c3c",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "a5d10eae-574b-411d-b817-aed4fd963c3c",
+        "direction": "east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "a5d10eae-574b-411d-b817-aed4fd963c3c",
+        "direction": "north"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "a5d10eae-574b-411d-b817-aed4fd963c3c",
+        "direction": "west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-09-12T20:19:12.073883+00:00"
+}

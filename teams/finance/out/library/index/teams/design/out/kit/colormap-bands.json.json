@@ -1,0 +1,229 @@
+{
+ "path": "teams/design/out/kit/colormap-bands.json",
+ "size": 14045,
+ "mtime": "1789321744717317924",
+ "ctime": "1789321744717317924",
+ "team": "디자인",
+ "title": "객체 12키: female-a·female-b·female-c·female-d·female-e",
+ "lines": 1154,
+ "sections": [
+  {
+   "level": 1,
+   "title": "female-a (객체 2키)",
+   "from": 2,
+   "to": 97,
+   "bytes": 644,
+   "words": [
+    "faces",
+    "hex",
+    "row",
+    "tile",
+    "low",
+    "female-a",
+    "0.029",
+    "0.176"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "female-b (객체 2키)",
+   "from": 98,
+   "to": 193,
+   "bytes": 646,
+   "words": [
+    "faces",
+    "hex",
+    "row",
+    "tile",
+    "low",
+    "female-b",
+    "high",
+    "0.029"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "female-c (객체 2키)",
+   "from": 194,
+   "to": 299,
+   "bytes": 715,
+   "words": [
+    "faces",
+    "hex",
+    "row",
+    "tile",
+    "low",
+    "0.343",
+    "female-c",
+    "high"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "female-d (객체 2키)",
+   "from": 300,
+   "to": 385,
+   "bytes": 573,
+   "words": [
+    "faces",
+    "hex",
+    "low",
+    "row",
+    "tile",
+    "female-d",
+    "0.343",
+    "0.393"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "female-e (객체 2키)",
+   "from": 386,
+   "to": 461,
+   "bytes": 508,
+   "words": [
+    "faces",
+    "hex",
+    "row",
+    "tile",
+    "low",
+    "0.343",
+    "female-e",
+    "0.176"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "female-f (객체 2키)",
+   "from": 462,
+   "to": 597,
+   "bytes": 920,
+   "words": [
+    "faces",
+    "hex",
+    "row",
+    "tile",
+    "low",
+    "high",
+    "0.176",
+    "female-f"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "male-a (객체 2키)",
+   "from": 598,
+   "to": 703,
+   "bytes": 715,
+   "words": [
+    "faces",
+    "hex",
+    "row",
+    "tile",
+    "low",
+    "0.176",
+    "high",
+    "male-a"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "male-b (객체 2키)",
+   "from": 704,
+   "to": 799,
+   "bytes": 645,
+   "words": [
+    "faces",
+    "hex",
+    "row",
+    "tile",
+    "low",
+    "male-b",
+    "0.176",
+    "0.263"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "male-c (객체 2키)",
+   "from": 800,
+   "to": 905,
+   "bytes": 716,
+   "words": [
+    "faces",
+    "hex",
+    "row",
+    "tile",
+    "low",
+    "high",
+    "male-c",
+    "0.029"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "male-d (객체 2키)",
+   "from": 906,
+   "to": 981,
+   "bytes": 508,
+   "words": [
+    "faces",
+    "hex",
+    "row",
+    "tile",
+    "low",
+    "0.343",
+    "male-d",
+    "3f3f46"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "male-e (객체 2키)",
+   "from": 982,
+   "to": 1077,
+   "bytes": 645,
+   "words": [
+    "faces",
+    "hex",
+    "row",
+    "tile",
+    "low",
+    "male-e",
+    "0.029",
+    "0.343"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "male-f (객체 2키)",
+   "from": 1078,
+   "to": 1154,
+   "bytes": 508,
+   "words": [
+    "faces",
+    "hex",
+    "row",
+    "tile",
+    "low",
+    "male-f",
+    "3f3f46",
+    "cf7a55"
+   ]
+  }
+ ],
+ "words": [
+  "faces",
+  "hex",
+  "row",
+  "tile",
+  "low",
+  "0.343",
+  "high",
+  "3f3f46",
+  "0.176",
+  "dd9f78",
+  "cf7a55",
+  "0.029"
+ ]
+}

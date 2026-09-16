@@ -1,0 +1,66 @@
+{
+ "path": "teams/design/out/gpt/requests/henri.json",
+ "size": 1648,
+ "mtime": "1789196185670182723",
+ "ctime": "1789196185670830018",
+ "team": "디자인",
+ "title": "henri",
+ "lines": 10,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"henri\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 7,
+   "words": [
+    "name",
+    "henri"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 1493,
+   "words": [
+    "no",
+    "his",
+    "character",
+    "of",
+    "pixel",
+    "prompt",
+    "about",
+    "art"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 4,
+   "to": 10,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  }
+ ],
+ "words": [
+  "no",
+  "his",
+  "character",
+  "of",
+  "pixel",
+  "about",
+  "art",
+  "black",
+  "flat",
+  "hair",
+  "hand",
+  "head"
+ ]
+}

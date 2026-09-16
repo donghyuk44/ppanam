@@ -1,0 +1,8 @@
+{
+  "name": "portrait-finance-review",
+  "who_is": "노라 · 감사 · 경영 방 (31세 · 노르웨이 · 여 — finance.review.md 열 줄 1 · 인형 finance-review: 금발 + 안경, 살 #d9a878, 팀 색 #a8541f — R14 대표 지적으로 흰머리·지팡이는 뺐다)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "A Norwegian woman in her early thirties. Long calm face, pale grey-blue eyes behind thin rectangular glasses, light eyebrows, small closed mouth. Ash-blond hair in a straight shoulder-length cut with a side part, no accessories. Wearing a burnt-orange (#a8541f) modern jeogori-style jacket over a white top. Quiet, persistent expression — eyes fixed just below the viewer as if on a number, the look of someone who will not move on until she finds the source.",
+  "out": "teams/design/out/gpt/portrait-finance-review-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

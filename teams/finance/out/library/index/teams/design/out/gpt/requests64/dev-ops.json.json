@@ -1,0 +1,93 @@
+{
+ "path": "teams/design/out/gpt/requests64/dev-ops.json",
+ "size": 1739,
+ "mtime": "1789207386681871875",
+ "ctime": "1789207386681871875",
+ "team": "디자인",
+ "title": "dev-ops-64",
+ "lines": 11,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"dev-ops-64\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 12,
+   "words": [
+    "name",
+    "dev-ops-64"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 1466,
+   "words": [
+    "no",
+    "character",
+    "pixel",
+    "prompt",
+    "to",
+    "about",
+    "art",
+    "dark"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 4,
+   "to": 8,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "from (\"dev-ops.json\")",
+   "from": 9,
+   "to": 9,
+   "bytes": 14,
+   "words": [
+    "dev-ops.json"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "note (\"하네스가 시트 절을 64px 정지 그림 절로\")",
+   "from": 10,
+   "to": 11,
+   "bytes": 88,
+   "words": [
+    "note",
+    "2026-09-12",
+    "64px",
+    "결정",
+    "그림",
+    "대표",
+    "바꿈",
+    "시트"
+   ]
+  }
+ ],
+ "words": [
+  "no",
+  "character",
+  "pixel",
+  "to",
+  "about",
+  "art",
+  "dark",
+  "hair",
+  "head",
+  "in",
+  "light",
+  "of"
+ ]
+}

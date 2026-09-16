@@ -1,0 +1,127 @@
+{
+ "path": "teams/design/out/gpt/requests/concept.json",
+ "size": 3795,
+ "mtime": "1789281772378010960",
+ "ctime": "1789281772378274585",
+ "team": "디자인",
+ "title": "concept",
+ "lines": 13,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"concept\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 9,
+   "words": [
+    "name",
+    "concept"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "out (\"out/kit/concept.png\")",
+   "from": 3,
+   "to": 3,
+   "bytes": 21,
+   "words": [
+    "out",
+    "out/kit/concept.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "purpose (\"M1 한 컷 — 비율과 구도를 보는 그림. \")",
+   "from": 4,
+   "to": 4,
+   "bytes": 139,
+   "words": [
+    "purpose",
+    "m1",
+    "구도",
+    "그림",
+    "다섯",
+    "도형",
+    "버린다",
+    "보는"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 5,
+   "to": 5,
+   "bytes": 3053,
+   "words": [
+    "units",
+    "in",
+    "tall",
+    "to",
+    "no",
+    "front",
+    "of",
+    "2.5"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 2)",
+   "from": 6,
+   "to": 9,
+   "bytes": 62,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "after (\"그대로 out/kit/concept.png \")",
+   "from": 10,
+   "to": 10,
+   "bytes": 316,
+   "words": [
+    "after",
+    "2.5",
+    "out/kit/concept.png",
+    "고치",
+    "구도",
+    "그림",
+    "눈으",
+    "대신"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "status (\"요청 파일만 있음 — 대표 손으로 ChatG\")",
+   "from": 11,
+   "to": 13,
+   "bytes": 88,
+   "words": [
+    "status",
+    "2026-09-13",
+    "chatgpt",
+    "넣어",
+    "대표",
+    "뽑는다",
+    "손으",
+    "요청"
+   ]
+  }
+ ],
+ "words": [
+  "units",
+  "in",
+  "tall",
+  "to",
+  "no",
+  "2.5",
+  "front",
+  "of",
+  "by",
+  "wide",
+  "at",
+  "deep"
+ ]
+}

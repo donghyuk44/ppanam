@@ -1,0 +1,142 @@
+{
+ "path": "teams/design/out/gpt/requests/tower-tabs.json",
+ "size": 4612,
+ "mtime": "1789285083543221900",
+ "ctime": "1789285083543750992",
+ "team": "디자인",
+ "title": "tower-tabs",
+ "lines": 11,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"tower-tabs\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 12,
+   "words": [
+    "name",
+    "tower-tabs"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "out (\"out/screens/tower-tabs.p\")",
+   "from": 3,
+   "to": 3,
+   "bytes": 28,
+   "words": [
+    "out",
+    "out/screens/tower-tabs.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "purpose (\"결정 40 — 관제탑 서브 탭 둘(팀·개인)\")",
+   "from": 4,
+   "to": 4,
+   "bytes": 192,
+   "words": [
+    "purpose",
+    "out/opsroom-tower-tabs.md",
+    "개인",
+    "결정",
+    "관제탑",
+    "나란히",
+    "데스크톱",
+    "목업"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"Create a clean, flat UI \")",
+   "from": 5,
+   "to": 5,
+   "bytes": 3657,
+   "words": [
+    "row",
+    "grey",
+    "red",
+    "in",
+    "card",
+    "no",
+    "right",
+    "text"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 0)",
+   "from": 6,
+   "to": 6,
+   "bytes": 2,
+   "words": [
+    "refs"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refsNote (\"타사 화면(네이버·레딧·ZEP 캡처)은 첨부\")",
+   "from": 7,
+   "to": 7,
+   "bytes": 178,
+   "words": [
+    "refsnote",
+    "0절",
+    "ui",
+    "zep",
+    "그들",
+    "그림이",
+    "글로",
+    "네이버"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "after (\"그대로 out/screens/tower-ta\")",
+   "from": 8,
+   "to": 8,
+   "bytes": 351,
+   "words": [
+    "after",
+    "대표",
+    "카드가",
+    "out/screens/tower-tabs.png",
+    "개인",
+    "고정인가",
+    "글자가",
+    "깨졌으면"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "status (\"요청 파일만 있음 — 하네스가 대표 통로로 \")",
+   "from": 9,
+   "to": 11,
+   "bytes": 82,
+   "words": [
+    "status",
+    "2026-09-13",
+    "대표",
+    "뽑는다",
+    "요청",
+    "있음",
+    "통로",
+    "파일"
+   ]
+  }
+ ],
+ "words": [
+  "row",
+  "grey",
+  "red",
+  "대표",
+  "in",
+  "card",
+  "no",
+  "right",
+  "text",
+  "at",
+  "mono",
+  "small"
+ ]
+}

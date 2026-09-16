@@ -1,0 +1,66 @@
+{
+ "path": "teams/design/out/gpt/requests/design-ops.json",
+ "size": 2417,
+ "mtime": "1789199581149072606",
+ "ctime": "1789199581149623523",
+ "team": "디자인",
+ "title": "design-ops",
+ "lines": 10,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"design-ops\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 12,
+   "words": [
+    "name",
+    "design-ops"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 2257,
+   "words": [
+    "of",
+    "her",
+    "in",
+    "on",
+    "right",
+    "cell",
+    "pixel",
+    "every"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 4,
+   "to": 10,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  }
+ ],
+ "words": [
+  "of",
+  "her",
+  "in",
+  "on",
+  "right",
+  "cell",
+  "pixel",
+  "every",
+  "is",
+  "no",
+  "to",
+  "character"
+ ]
+}

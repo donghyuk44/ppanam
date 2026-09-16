@@ -1,0 +1,93 @@
+{
+ "path": "teams/design/out/gpt/requests64/marketing-outside.json",
+ "size": 1803,
+ "mtime": "1789207386684203504",
+ "ctime": "1789207386684203504",
+ "team": "디자인",
+ "title": "marketing-outside-64",
+ "lines": 11,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"marketing-outside-64\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 22,
+   "words": [
+    "name",
+    "marketing-outside-64"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 1510,
+   "words": [
+    "no",
+    "character",
+    "dark",
+    "in",
+    "on",
+    "pixel",
+    "prompt",
+    "to"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 4,
+   "to": 8,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "from (\"marketing-outside.json\")",
+   "from": 9,
+   "to": 9,
+   "bytes": 24,
+   "words": [
+    "marketing-outside.json"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "note (\"하네스가 시트 절을 64px 정지 그림 절로\")",
+   "from": 10,
+   "to": 11,
+   "bytes": 88,
+   "words": [
+    "note",
+    "2026-09-12",
+    "64px",
+    "결정",
+    "그림",
+    "대표",
+    "바꿈",
+    "시트"
+   ]
+  }
+ ],
+ "words": [
+  "no",
+  "character",
+  "dark",
+  "in",
+  "on",
+  "pixel",
+  "to",
+  "about",
+  "art",
+  "black",
+  "hair",
+  "head"
+ ]
+}

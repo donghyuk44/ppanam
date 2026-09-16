@@ -1,0 +1,8 @@
+{
+  "name": "portrait-finance-guide",
+  "who_is": "유진 · 경영팀장 · 경영 방 (36세 · 한국 · 여, 회계사 출신 — finance.guide.md 열 줄 1 · 인형 finance-guide: 검은 머리, 살 #d9a878, 팀 색 #6f9a4a)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "A Korean woman in her mid-thirties. Composed oval face, cool steady dark eyes, well-defined eyebrows, straight nose, mouth closed and level with the faintest warmth at the corners. Black hair in a sleek shoulder-length cut tucked behind the ears, no glasses. Wearing a leaf-green (#6f9a4a) modern jeogori-style jacket over a white top. Cool-headed, professional expression — the look of an accountant who is cold with numbers and a little less cold with people.",
+  "out": "teams/design/out/gpt/portrait-finance-guide-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

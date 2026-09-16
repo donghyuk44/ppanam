@@ -1,0 +1,212 @@
+{
+ "path": "teams/marketing/out/world-bible/40-persona/design.outside.md",
+ "size": 10305,
+ "mtime": "1789477947946224309",
+ "ctime": "1789477947946468598",
+ "team": "마케팅",
+ "title": "마크 — 디자인팀 외부감사",
+ "lines": 93,
+ "sections": [
+  {
+   "level": 1,
+   "title": "마크 — 디자인팀 외부감사",
+   "from": 1,
+   "to": 5,
+   "bytes": 445,
+   "words": [
+    "마크",
+    "디자인팀",
+    "외부감사",
+    "바이블",
+    "세션",
+    "인격",
+    "bus/outside.mjs",
+    "codex"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "열 줄",
+   "from": 6,
+   "to": 27,
+   "bytes": 2297,
+   "words": [
+    "같이",
+    "그림",
+    "다른",
+    "둘이",
+    "회사",
+    "격자",
+    "당신",
+    "말은"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "당신이라는 사람",
+   "from": 28,
+   "to": 35,
+   "bytes": 749,
+   "words": [
+    "당신이라",
+    "그림",
+    "농담",
+    "판정",
+    "헨리",
+    "47번째",
+    "가끔",
+    "감정이"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "말투 (마크가 방에서 말한 것 — 결정 46 ②. 헨리가 글자 그대로 옮김, 대화록 `teams/design/log.jsonl` evt_9b7840e2ff, R16 2026-09-15 13:12Z — README 열두 줄로 실제로 돌린 결과와 고친 표본(req_3e958982). 그 전 판은 evt_4534d4c916(req_9e53923f), 참고 인물은 그대로(R14 evt_864737f3bf))",
+   "from": 36,
+   "to": 49,
+   "bytes": 1247,
+   "words": [
+    "인물",
+    "표본",
+    "참고",
+    "12z",
+    "2026-09-15",
+    "evt_4534d4c916",
+    "evt_864737f3bf",
+    "evt_9b7840e2ff"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "내력 (`20-people/design.outside.md` 8a~8c 요약)",
+   "from": 50,
+   "to": 55,
+   "bytes": 1096,
+   "words": [
+    "8a",
+    "8c",
+    "20-people/design.outside.md",
+    "내력",
+    "요약",
+    "초안",
+    "1mm",
+    "그림"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "관계 (`30-relations.md` 선 번호)",
+   "from": 56,
+   "to": 63,
+   "bytes": 900,
+   "words": [
+    "30-relations.md",
+    "관계",
+    "번호",
+    "헨리",
+    "때가",
+    "맞을",
+    "스크립트가",
+    "자기"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "세계 안의 자리 (인형 서울 — `10-world.md` 2절)",
+   "from": 64,
+   "to": 70,
+   "bytes": 960,
+   "words": [
+    "자리",
+    "10-world.md",
+    "2절",
+    "서울",
+    "세계",
+    "안의",
+    "인형",
+    "초안"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "당신이 하는 일 — 열어서 재고 셉니다",
+   "from": 71,
+   "to": 75,
+   "bytes": 898,
+   "words": [
+    "당신이",
+    "셉니다",
+    "열어서",
+    "재고",
+    "그림",
+    "당신",
+    "파일",
+    "팔레트"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "방에서 말하는 법",
+   "from": 76,
+   "to": 81,
+   "bytes": 529,
+   "words": [
+    "말하",
+    "방에서",
+    "파일",
+    "방의",
+    "않습니다",
+    "이름",
+    "검사",
+    "고치지"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "판정",
+   "from": 82,
+   "to": 87,
+   "bytes": 835,
+   "words": [
+    "판정",
+    "fail",
+    "revise",
+    "pass",
+    "대표가",
+    "않습니다",
+    "이름",
+    "줄에"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "바이블",
+   "from": 88,
+   "to": 93,
+   "bytes": 339,
+   "words": [
+    "바이블",
+    "2절",
+    "3절",
+    "4절",
+    "teams/marketing/out/world-bible/10-world.md",
+    "teams/marketing/out/world-bible/20-people/design.outside.md",
+    "teams/marketing/out/world-bible/30-relations.md",
+    "관계"
+   ]
+  }
+ ],
+ "words": [
+  "헨리",
+  "클레멘타인",
+  "같이",
+  "그림",
+  "파일",
+  "당신",
+  "마크",
+  "판정",
+  "둘이",
+  "사람이",
+  "초안",
+  "검사"
+ ]
+}

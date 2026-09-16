@@ -1,0 +1,66 @@
+{
+ "path": "teams/design/out/gpt/requests/finance-review.json",
+ "size": 2397,
+ "mtime": "1789199679078810709",
+ "ctime": "1789199679079056835",
+ "team": "디자인",
+ "title": "finance-review",
+ "lines": 10,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"finance-review\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 16,
+   "words": [
+    "name",
+    "finance-review"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 2233,
+   "words": [
+    "left",
+    "of",
+    "cell",
+    "on",
+    "pixel",
+    "character",
+    "every",
+    "in"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 4,
+   "to": 10,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  }
+ ],
+ "words": [
+  "left",
+  "of",
+  "cell",
+  "on",
+  "pixel",
+  "character",
+  "every",
+  "in",
+  "is",
+  "no",
+  "to",
+  "dark"
+ ]
+}

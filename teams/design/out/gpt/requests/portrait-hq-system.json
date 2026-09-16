@@ -1,0 +1,8 @@
+{
+  "name": "portrait-hq-system",
+  "who_is": "나리 · 검수 · 비서실 (33세 · 한국 · 여 — hq.system.md 열 줄 1 · 나리 한 줄(R17): 머리 짙은 갈색 · 붙일 것 없음 — 인형엔 실루엣 규칙으로 안경을 얹었지만 초상은 본인 말대로 안경 없음 · 팀 색 #6f6d78)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "A Korean woman in her early thirties. Oval face with clear features, dark brown eyes that look slightly narrowed as if counting something again, even eyebrows, closed mouth with the corners barely up. Dark brown hair, shoulder length, tucked behind one ear, no glasses, no accessories. Wearing a warm grey (#6f6d78) modern jeogori-style jacket over a white top. Calm, exact expression — the look of someone who heard 'it's fine' and is checking once more.",
+  "out": "teams/design/out/gpt/portrait-hq-system-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

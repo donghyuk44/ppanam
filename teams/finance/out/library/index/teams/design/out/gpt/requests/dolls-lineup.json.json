@@ -1,0 +1,130 @@
+{
+ "path": "teams/design/out/gpt/requests/dolls-lineup.json",
+ "size": 4099,
+ "mtime": "1789302974338964560",
+ "ctime": "1789302974338964560",
+ "team": "디자인",
+ "title": "dolls-lineup",
+ "lines": 16,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"dolls-lineup\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 14,
+   "words": [
+    "name",
+    "dolls-lineup"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "out (\"out/screens/dolls-lineup\")",
+   "from": 3,
+   "to": 3,
+   "bytes": 30,
+   "words": [
+    "out",
+    "out/screens/dolls-lineup.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "purpose (\"M2 시안 한 장(결정 60 — 라운드마다 \")",
+   "from": 4,
+   "to": 4,
+   "bytes": 459,
+   "words": [
+    "purpose",
+    "그림",
+    "colormap",
+    "design",
+    "glb",
+    "kenney",
+    "m2",
+    "out/kit/characters.json"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"STYLE: the first attache\")",
+   "from": 5,
+   "to": 5,
+   "bytes": 2462,
+   "words": [
+    "hair",
+    "skin",
+    "top",
+    "black",
+    "no",
+    "light",
+    "medium",
+    "body"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 5)",
+   "from": 6,
+   "to": 12,
+   "bytes": 262,
+   "words": [
+    "refs",
+    "out/screens/seoul-toy-concept.png",
+    "ref/kenney/mini-characters/previews/aid-cane.png",
+    "ref/kenney/mini-characters/previews/aid-glasses.png",
+    "ref/kenney/mini-characters/previews/character-female-a.png",
+    "ref/kenney/mini-characters/previews/character-male-c.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "after (\"out/screens/dolls-lineup\")",
+   "from": 13,
+   "to": 13,
+   "bytes": 557,
+   "words": [
+    "after",
+    "시안",
+    "characters.json",
+    "colormap",
+    "m2",
+    "manifest",
+    "out/screens/dolls-lineup.png",
+    "seoul-toy-concept"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "status (\"완료 — 하네스가 2026-09-13 21:\")",
+   "from": 14,
+   "to": 16,
+   "bytes": 193,
+   "words": [
+    "status",
+    "1915x821",
+    "2026-09-13",
+    "2520x1080",
+    "out/screens/dolls-lineup.png",
+    "내려받기가",
+    "대체",
+    "막혀"
+   ]
+  }
+ ],
+ "words": [
+  "hair",
+  "skin",
+  "top",
+  "black",
+  "no",
+  "light",
+  "medium",
+  "body",
+  "to",
+  "figure",
+  "one",
+  "그림"
+ ]
+}

@@ -1,0 +1,77 @@
+{
+  "character": {
+    "id": "3b001d93-91f6-4d97-9c6a-02fbb2cb5537",
+    "name": "Idle",
+    "prompt": "A 33-year-old Italian man, the design studio's external auditor who opens files and measures them, in Joseon-fantasy attire: short black hair under a black horsehair tanggeon cap (small, close-fitting, no brim), olive-tan skin, a short dark beard along the jaw, two clearly visible dark eyes, a skeptical straight mouth. Clothing: a dark brown dopo robe over white hanbok, white pants, black shoes. He holds a carpenter's L-square (a wooden right-angle ruler) in his right hand. Classic Korean MMORPG pixel art style, thick dark outlines, about 3.5 heads tall.",
+    "size": {
+      "width": 40,
+      "height": 64
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "A_33-year-old_Italian_ma-Idle.png",
+    "cell_size": {
+      "width": 92,
+      "height": 92
+    },
+    "sheet_size": {
+      "width": 736,
+      "height": 460
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "walking",
+        "animation_group_id": "e90a5487-144c-4c22-89a3-51e7b2ef50e1",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "walking",
+        "animation_group_id": "e90a5487-144c-4c22-89a3-51e7b2ef50e1",
+        "direction": "east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "walking",
+        "animation_group_id": "e90a5487-144c-4c22-89a3-51e7b2ef50e1",
+        "direction": "north"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "walking",
+        "animation_group_id": "e90a5487-144c-4c22-89a3-51e7b2ef50e1",
+        "direction": "west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-09-12T20:33:20.865428+00:00"
+}

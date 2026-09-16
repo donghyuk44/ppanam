@@ -1,0 +1,178 @@
+{
+ "path": "teams/dev/out/free-search-no-card.md",
+ "size": 9203,
+ "mtime": "1789301331601524145",
+ "ctime": "1789301331601524145",
+ "team": "개발",
+ "title": "카드 없이 쓰는 무료 웹검색 — 후보 정리",
+ "lines": 129,
+ "sections": [
+  {
+   "level": 1,
+   "title": "카드 없이 쓰는 무료 웹검색 — 후보 정리",
+   "from": 1,
+   "to": 5,
+   "bytes": 265,
+   "words": [
+    "카드",
+    "후보",
+    "없이",
+    "무료",
+    "쓰는",
+    "웹검색",
+    "정리",
+    "조사"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "결론 세 줄",
+   "from": 6,
+   "to": 13,
+   "bytes": 356,
+   "words": [
+    "결론",
+    "없습니다",
+    "ddgs",
+    "searxng",
+    "가입",
+    "검색",
+    "결과",
+    "권합니다"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "권고 1순위",
+   "from": 14,
+   "to": 38,
+   "bytes": 1906,
+   "words": [
+    "네이버",
+    "1순위",
+    "권고",
+    "searxng",
+    "됩니다",
+    "서버",
+    "없습니다",
+    "있습니다"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "권고 2순위",
+   "from": 39,
+   "to": 54,
+   "bytes": 924,
+   "words": [
+    "2순위",
+    "ddgs",
+    "권고",
+    "mcp",
+    "없습니다",
+    "ip",
+    "명령",
+    "엔진이"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "전체 비교표",
+   "from": 55,
+   "to": 72,
+   "bytes": 1678,
+   "words": [
+    "없음",
+    "필요없음",
+    "한도",
+    "명령",
+    "서버",
+    "붙일",
+    "비교표",
+    "실측"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "걸러낸 것",
+   "from": 73,
+   "to": 84,
+   "bytes": 1383,
+   "words": [
+    "걸러낸",
+    "검색",
+    "한국어",
+    "0건입니다",
+    "결과가",
+    "곳이",
+    "도는",
+    "만든"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "이미 우리가 가진 것",
+   "from": 85,
+   "to": 97,
+   "bytes": 1054,
+   "words": [
+    "우리가",
+    "이미",
+    "가진",
+    "검색",
+    "네이버",
+    "결과",
+    "다른",
+    "하루"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "부록 — 1순위를 도커 없이 띄우는 명령",
+   "from": 98,
+   "to": 116,
+   "bytes": 686,
+   "words": [
+    "1순위",
+    "도커",
+    "띄우",
+    "명령",
+    "부록",
+    "없이",
+    "venv",
+    "disabled"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "근거",
+   "from": 117,
+   "to": 129,
+   "bytes": 943,
+   "words": [
+    "근거",
+    "about.marginalia-search.com/article/api",
+    "developers.naver.com/notice/article/32530",
+    "developers.naver.com/products/terms",
+    "docs.searxng.org/dev/search_api.html",
+    "git.lolcat.ca/lolcat/4get/raw/branch/master/api.txt",
+    "github.com/aas-ee/open-websearch",
+    "github.com/ahwxorg/librey/issues/214"
+   ]
+  }
+ ],
+ "words": [
+  "없음",
+  "검색",
+  "네이버",
+  "명령",
+  "없습니다",
+  "서버",
+  "카드",
+  "필요없음",
+  "한국어",
+  "실측",
+  "한도",
+  "없이"
+ ]
+}

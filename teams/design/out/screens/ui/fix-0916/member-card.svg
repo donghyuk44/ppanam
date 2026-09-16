@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="848" height="520" viewBox="0 0 848 520" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 대시보드 › 멤버 카드 고침 — 헨리 09-16 (M7, 대표 긴급명령 10:2x). 왼쪽 = 대표가 본 것, 오른쪽 = 고친 것. 폰 412(카드 폭 388).
+       새는 것 둘: ① 엔진 알약(claude·codex·gemini)·모델 고르기·추론 강도 <select> 가 카드 맨 밑에 섰다 — 대표 손잡이지 사람 카드 줄이 아니다 → 설정 탭 '모델' 절로.
+       ② "지금 하는 일" 자리에 Bash 명령 글자(node bus/say.mjs … | tail)가 그대로 섰다 → 파일 도구면 "app.js 고치는 중", 아니면 마지막 말 첫 문장. 명령 글자는 카드에 절대 안 선다.
+       고친 카드는 person.svg 2판 그대로(줄 셋 + 있을 때만 둘). 새 줄 없음. -->
+  <defs><style>
+    .k{font-size:10px;letter-spacing:.12em;fill:#8a8794;font-family:'IBM Plex Mono',monospace}
+    .t{font-size:12.5px;fill:#1b1a1f}.s{font-size:11px;fill:#6f6d78}.m{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#8a8794}
+    .code{font-family:'IBM Plex Mono',monospace;font-size:11px;fill:#1b1a1f}
+    .pill{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em}
+    .card{fill:#ffffff;stroke:#e3ddd0}
+    .row{fill:#fbf9f4;stroke:#e3ddd0}
+    .sel{fill:#ffffff;stroke:#c9c3b6}
+    .bad{fill:none;stroke:#c94a3a;stroke-dasharray:4 3}
+  </style></defs>
+  <rect width="848" height="520" fill="#f6f2ea"/>
+
+  <!-- ── 왼쪽: 대표가 본 것 ── -->
+  <g transform="translate(24 24)">
+    <text x="0" y="-6" class="k">지금 — 대표가 본 멤버 카드 (10:2x)</text>
+
+    <!-- 솔라: 명령 글자가 '지금 하는 일' 에 -->
+    <rect x="0" y="4" width="388" height="150" rx="12" class="card"/>
+    <circle cx="30" cy="36" r="18" fill="#2f4f7a"/><text x="30" y="41" text-anchor="middle" font-size="12" fill="#f4efe4">솔</text>
+    <text x="58" y="32" class="t" font-size="13.5" font-weight="600">솔라 <tspan class="s" font-weight="400">개발팀장</tspan></text>
+    <rect x="292" y="20" width="82" height="22" rx="4" fill="none" stroke="#3a8f5c"/><text x="333" y="35" text-anchor="middle" class="pill" fill="#3a8f5c">일하는 중</text>
+    <text x="58" y="56" class="code">node bus/say.mjs --team dev … | tail -3</text>
+    <rect x="54" y="44" width="322" height="18" rx="4" class="bad"/>
+    <text x="58" y="78" class="m">1분 전에 움직임</text>
+    <!-- 엔진·모델·강도 줄 -->
+    <rect x="14" y="94" width="360" height="46" rx="8" class="row"/>
+    <rect x="24" y="104" width="46" height="20" rx="10" fill="#1b1a1f"/><text x="47" y="118" text-anchor="middle" class="pill" fill="#f4efe4">claude</text>
+    <rect x="74" y="104" width="46" height="20" rx="10" fill="none" stroke="#c9c3b6"/><text x="97" y="118" text-anchor="middle" class="pill" fill="#6f6d78">codex</text>
+    <rect x="124" y="104" width="50" height="20" rx="10" fill="none" stroke="#c9c3b6"/><text x="149" y="118" text-anchor="middle" class="pill" fill="#6f6d78">gemini</text>
+    <rect x="184" y="102" width="92" height="24" rx="5" class="sel"/><text x="192" y="118" class="s">opus ▾</text>
+    <rect x="284" y="102" width="80" height="24" rx="5" class="sel"/><text x="292" y="118" class="s">기본 ▾</text>
+    <rect x="10" y="90" width="368" height="54" rx="10" class="bad"/>
+
+    <!-- 테라: 같은 줄 -->
+    <rect x="0" y="168" width="388" height="150" rx="12" class="card"/>
+    <circle cx="30" cy="200" r="18" fill="#3a6b5a"/><text x="30" y="205" text-anchor="middle" font-size="12" fill="#f4efe4">테</text>
+    <text x="58" y="196" class="t" font-size="13.5" font-weight="600">테라 <tspan class="s" font-weight="400">개발 운영</tspan></text>
+    <rect x="292" y="184" width="82" height="22" rx="4" fill="none" stroke="#3a8f5c"/><text x="333" y="199" text-anchor="middle" class="pill" fill="#3a8f5c">일하는 중</text>
+    <text x="58" y="220" class="code">ls state/requests | wc -l; grep -c '' log.jsonl</text>
+    <rect x="54" y="208" width="322" height="18" rx="4" class="bad"/>
+    <text x="58" y="242" class="m">4분 전에 움직임</text>
+    <rect x="14" y="258" width="360" height="46" rx="8" class="row"/>
+    <rect x="24" y="268" width="46" height="20" rx="10" fill="#1b1a1f"/><text x="47" y="282" text-anchor="middle" class="pill" fill="#f4efe4">claude</text>
+    <rect x="74" y="268" width="46" height="20" rx="10" fill="none" stroke="#c9c3b6"/><text x="97" y="282" text-anchor="middle" class="pill" fill="#6f6d78">codex</text>
+    <rect x="124" y="268" width="50" height="20" rx="10" fill="none" stroke="#c9c3b6"/><text x="149" y="282" text-anchor="middle" class="pill" fill="#6f6d78">gemini</text>
+    <rect x="184" y="266" width="92" height="24" rx="5" class="sel"/><text x="192" y="282" class="s">sonnet ▾</text>
+    <rect x="284" y="266" width="80" height="24" rx="5" class="sel"/><text x="292" y="282" class="s">high ▾</text>
+    <rect x="10" y="254" width="368" height="54" rx="10" class="bad"/>
+
+    <text x="0" y="350" class="s">빨간 점선 둘 — 위: 명령 글자가 '지금 하는 일' 로 섰다.</text>
+    <text x="0" y="366" class="s">아래: 엔진·모델·강도 손잡이가 사람 카드 안에 섰다.</text>
+    <text x="0" y="382" class="s">대표가 읽는 카드에 고르기가 있을 이유가 없다.</text>
+  </g>
+
+  <!-- ── 오른쪽: 고친 것 ── -->
+  <g transform="translate(436 24)">
+    <text x="0" y="-6" class="k">고침 — 줄 셋뿐. 손잡이는 설정 › 모델로</text>
+
+    <rect x="0" y="4" width="388" height="92" rx="12" class="card"/>
+    <circle cx="30" cy="36" r="18" fill="#2f4f7a"/><text x="30" y="41" text-anchor="middle" font-size="12" fill="#f4efe4">솔</text>
+    <text x="58" y="32" class="t" font-size="13.5" font-weight="600">솔라 <tspan class="s" font-weight="400">개발팀장</tspan></text>
+    <rect x="292" y="20" width="82" height="22" rx="4" fill="none" stroke="#3a8f5c"/><text x="333" y="35" text-anchor="middle" class="pill" fill="#3a8f5c">일하는 중</text>
+    <text x="58" y="56" class="t">카드 부품 — 채팅 맨 위 빈 카드 고치는 중</text>
+    <text x="58" y="78" class="m">1분 전에 움직임</text>
+
+    <rect x="0" y="110" width="388" height="92" rx="12" class="card"/>
+    <circle cx="30" cy="142" r="18" fill="#3a6b5a"/><text x="30" y="147" text-anchor="middle" font-size="12" fill="#f4efe4">테</text>
+    <text x="58" y="138" class="t" font-size="13.5" font-weight="600">테라 <tspan class="s" font-weight="400">개발 운영</tspan></text>
+    <rect x="292" y="126" width="82" height="22" rx="4" fill="none" stroke="#3a8f5c"/><text x="333" y="141" text-anchor="middle" class="pill" fill="#3a8f5c">일하는 중</text>
+    <text x="58" y="162" class="t">app.js 고치는 중</text>
+    <text x="58" y="184" class="m">4분 전에 움직임</text>
+
+    <!-- 도구 줄일 때 낱말 셋 -->
+    <rect x="0" y="216" width="388" height="86" rx="10" class="row"/>
+    <text x="14" y="236" class="k">'지금 하는 일' 줄 — 셋 중 하나만</text>
+    <text x="14" y="256" class="t">① 마지막 말이 사람 말이면 → 그 첫 문장</text>
+    <text x="14" y="274" class="t">② 파일 도구면 → "<tspan class="m" fill="#1b1a1f">app.js</tspan> 고치는 중"</text>
+    <text x="14" y="292" class="t">③ 그 밖의 도구면 → "작업 중"  <tspan class="s">명령 글자는 안 선다</tspan></text>
+
+    <!-- 설정 탭으로 간 손잡이 -->
+    <rect x="0" y="316" width="388" height="70" rx="10" class="card"/>
+    <text x="14" y="336" class="k">설정 › 모델 (손잡이는 여기)</text>
+    <text x="14" y="356" class="t">솔라 <tspan class="s">개발팀장</tspan></text>
+    <rect x="184" y="342" width="46" height="20" rx="10" fill="#1b1a1f"/><text x="207" y="356" text-anchor="middle" class="pill" fill="#f4efe4">claude</text>
+    <rect x="236" y="340" width="72" height="24" rx="5" class="sel"/><text x="244" y="356" class="s">opus ▾</text>
+    <rect x="314" y="340" width="60" height="24" rx="5" class="sel"/><text x="322" y="356" class="s">기본 ▾</text>
+    <text x="14" y="376" class="s">자리마다 한 줄 · 다음 턴 적용 · 대표만 만진다</text>
+
+    <text x="0" y="416" class="s">카드 높이 150 → 92. 줄은 person.svg 2판 그대로</text>
+    <text x="0" y="432" class="s">(이름·직책·알약 / 지금 하는 일 / N분 전에 움직임).</text>
+    <text x="0" y="448" class="s">▸ 대표님께 물어봄 · ◂ 대표님이 부르셨어요 줄은 있을 때만 — 안 바뀐다.</text>
+  </g>
+
+  <text x="24" y="508" class="m">멤버 카드 고침 1판 · 2026-09-16 · 헨리 · person.svg 2판 + 나리 R32 ①② · 폰 412 / 1280 은 카드 폭 그대로 세 줄 격자</text>
+</svg>

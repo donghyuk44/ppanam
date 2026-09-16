@@ -1,0 +1,8 @@
+{
+  "name": "portrait-marketing-outside",
+  "who_is": "다니엘 · 외부 감사 · 다른 회사 · 마케팅 방 (35세 · 런던 · 남 — marketing.outside.md 열 줄 1 · 인형 marketing-outside: 검은 머리, 살 #6e4630(짙은 갈색 피부), 팀 색 #5b3a63)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "A Black British man in his mid-thirties from London, deep brown skin. Long calm face, thoughtful dark eyes, even eyebrows, closely cropped black hair, short neat beard along the jaw, no glasses. Wearing a dark plum (#5b3a63) modern durumagi-style jacket over a white shirt. Quiet, unhurried expression — the look of someone about to ask the same question a second time, softly.",
+  "out": "teams/design/out/gpt/portrait-marketing-outside-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

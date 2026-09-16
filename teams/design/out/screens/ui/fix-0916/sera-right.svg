@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="848" height="600" viewBox="0 0 848 600" font-family="'IBM Plex Sans KR','IBM Plex Sans','Apple SD Gothic Neo',sans-serif">
+  <!-- 비서실 오른쪽(상황판 서랍) 고침 — 헨리 09-16 (M7, 대표 긴급명령 10:2x). 왼쪽 = 대표가 본 것, 오른쪽 = 고친 것. 폰 412 기준(서랍 폭 388).
+       비서실은 회차·로드맵·일지가 없는 방이라 "없음" 블록이 넷 섰다(상황판·회차·로드맵·일지). 없는 것을 없다고 쓰는 칸은 뺀다.
+       대신 비서의 일 하나 — 다섯 팀 상황판의 '대표님이 보실 것'을 한 장으로 모은다(재료: /api/card/<팀> 의 boss 줄, 세라 보고 때와 같은 것). 글자는 progress.json 값 그대로(09-16 낮). -->
+  <defs><style>
+    .k{font-size:10px;letter-spacing:.12em;fill:#8a8794;font-family:'IBM Plex Mono',monospace}
+    .t{font-size:12.5px;fill:#1b1a1f}.s{font-size:11px;fill:#6f6d78}.m{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:#8a8794}
+    .h{font-size:13px;fill:#1b1a1f;font-weight:600}
+    .none{font-size:12px;fill:#a9a6b0}
+    .card{fill:#ffffff;stroke:#e3ddd0}
+    .row{fill:#fbf9f4;stroke:#e3ddd0}
+    .drawer{fill:#f6f2ea;stroke:#e3ddd0}
+    .bad{fill:none;stroke:#c94a3a;stroke-dasharray:4 3}
+  </style></defs>
+  <rect width="848" height="600" fill="#f6f2ea"/>
+
+  <!-- ── 왼쪽: 대표가 본 것 ── -->
+  <g transform="translate(24 24)">
+    <text x="0" y="-6" class="k">지금 — 대표가 본 비서실 오른쪽 (10:2x)</text>
+    <rect x="0" y="4" width="388" height="452" rx="12" class="drawer"/>
+    <text x="16" y="30" class="h">상황판</text><text x="366" y="30" text-anchor="middle" class="s">✕</text>
+
+    <rect x="12" y="44" width="364" height="52" rx="10" class="card"/>
+    <text x="26" y="62" class="k">진행 상황</text>
+    <text x="26" y="82" class="none">상황판 없음</text>
+    <rect x="8" y="40" width="372" height="60" rx="12" class="bad"/>
+
+    <rect x="12" y="108" width="364" height="52" rx="10" class="card"/>
+    <text x="26" y="126" class="k">이번 회차</text>
+    <text x="26" y="146" class="none">진행 중인 회차 없음</text>
+    <rect x="8" y="104" width="372" height="60" rx="12" class="bad"/>
+
+    <rect x="12" y="172" width="364" height="52" rx="10" class="card"/>
+    <text x="26" y="190" class="k">로드맵</text>
+    <text x="26" y="210" class="none">로드맵 없음</text>
+    <rect x="8" y="168" width="372" height="60" rx="12" class="bad"/>
+
+    <rect x="12" y="236" width="364" height="130" rx="10" class="card"/>
+    <text x="26" y="254" class="k">참여</text>
+    <circle cx="40" cy="280" r="13" fill="#2f6f8f"/><text x="40" y="284" text-anchor="middle" font-size="10" fill="#f4efe4">세</text>
+    <text x="60" y="277" class="t">세라</text><text x="60" y="291" class="s">비서 · 일하는 중</text><text x="362" y="284" text-anchor="end" class="m">CLAUDE</text>
+    <circle cx="40" cy="314" r="13" fill="#8a7320"/><text x="40" y="318" text-anchor="middle" font-size="10" fill="#f4efe4">댄</text>
+    <text x="60" y="311" class="t">함동혁(댄)</text><text x="60" y="325" class="s">대표</text>
+    <circle cx="40" cy="348" r="13" fill="#8a8175"/><text x="40" y="352" text-anchor="middle" font-size="10" fill="#f4efe4">나</text>
+    <text x="60" y="345" class="t">나리</text><text x="60" y="359" class="s">사장</text>
+
+    <rect x="12" y="378" width="364" height="52" rx="10" class="card"/>
+    <text x="26" y="396" class="k">일지</text>
+    <text x="26" y="416" class="none">일지 없음 — 회차 종료 시 생성</text>
+    <rect x="8" y="374" width="372" height="60" rx="12" class="bad"/>
+
+    <text x="0" y="482" class="s">빨간 점선 = "없음" 이라고만 쓰인 칸 넷.</text>
+    <text x="0" y="498" class="s">비서실은 회차를 돌지 않는 방이라 이 넷은 영영 안 찬다.</text>
+  </g>
+
+  <!-- ── 오른쪽: 고친 것 ── -->
+  <g transform="translate(436 24)">
+    <text x="0" y="-6" class="k">고침 — 없는 칸은 빼고, 비서의 일 하나를 넣는다</text>
+    <rect x="0" y="4" width="388" height="452" rx="12" class="drawer"/>
+    <text x="16" y="30" class="h">상황판</text><text x="366" y="30" text-anchor="middle" class="s">✕</text>
+
+    <!-- ① 대표님이 보실 것 — 다섯 팀 합침 -->
+    <rect x="12" y="44" width="364" height="196" rx="10" class="card"/>
+    <text x="26" y="62" class="k">대표님이 보실 것 · 3</text>
+    <text x="362" y="62" text-anchor="end" class="m">다섯 팀 합침</text>
+
+    <rect x="26" y="72" width="336" height="44" rx="6" class="row"/>
+    <rect x="26" y="72" width="3" height="44" fill="#8a7320"/>
+    <text x="38" y="88" class="t"><tspan class="s">총괄 ·</tspan> 대표님 화면에 새는 영어 속말 막는 한 줄</text>
+    <text x="38" y="106" class="s">나리가 드린 명령 한 번 돌려 주세요</text>
+
+    <rect x="26" y="122" width="336" height="44" rx="6" class="row"/>
+    <rect x="26" y="122" width="3" height="44" fill="#8a7320"/>
+    <text x="38" y="138" class="t"><tspan class="s">총괄 ·</tspan> 감사 무게를 나눌지 한마디</text>
+    <text x="38" y="156" class="s">재시작·문구는 톰 혼자, 단계 닫힘은 셋이 같이</text>
+
+    <rect x="26" y="172" width="336" height="44" rx="6" class="row"/>
+    <rect x="26" y="172" width="3" height="44" fill="#8a7320"/>
+    <text x="38" y="188" class="t"><tspan class="s">경영 ·</tspan> 아침 한 장 읽고 읽히는지 한마디</text>
+    <text x="38" y="206" class="s">09-17 06:30 첫 실물</text>
+
+    <text x="26" y="230" class="m">누르면 그 팀 방의 그 줄로</text>
+
+    <!-- ② 보고 때 -->
+    <rect x="12" y="252" width="364" height="50" rx="10" class="card"/>
+    <text x="26" y="270" class="k">보고</text>
+    <text x="26" y="290" class="t">다음 18:30 <tspan class="s">· 지난 06:30 · 사이엔 대표님 손 생길 때만</tspan></text>
+
+    <!-- ③ 참여 — 그대로 -->
+    <rect x="12" y="314" width="364" height="130" rx="10" class="card"/>
+    <text x="26" y="332" class="k">참여</text>
+    <circle cx="40" cy="358" r="13" fill="#2f6f8f"/><text x="40" y="362" text-anchor="middle" font-size="10" fill="#f4efe4">세</text>
+    <text x="60" y="355" class="t">세라</text><text x="60" y="369" class="s">비서 · 일하는 중</text><text x="362" y="362" text-anchor="end" class="m">CLAUDE</text>
+    <circle cx="40" cy="392" r="13" fill="#8a7320"/><text x="40" y="396" text-anchor="middle" font-size="10" fill="#f4efe4">댄</text>
+    <text x="60" y="389" class="t">함동혁(댄)</text><text x="60" y="403" class="s">대표</text>
+    <circle cx="40" cy="426" r="13" fill="#8a8175"/><text x="40" y="430" text-anchor="middle" font-size="10" fill="#f4efe4">나</text>
+    <text x="60" y="423" class="t">나리</text><text x="60" y="437" class="s">사장</text>
+
+    <text x="0" y="482" class="s">진행 상황·이번 회차·로드맵·일지 넷은 비서실에서 칸 자체를 안 그린다.</text>
+    <text x="0" y="498" class="s">① 재료는 /api/card/&lt;팀&gt; 의 대표 줄 — 세라 보고와 같은 것.</text>
+    <text x="0" y="514" class="s">대표님 손이 0 이면 ① 은 "지금 대표님 손 없음" 한 줄 — 칸은 남는다.</text>
+  </g>
+
+  <text x="24" y="588" class="m">비서실 오른쪽 고침 1판 · 2026-09-16 · 헨리 · 글자는 teams/*/progress.json 09-16 낮 값 · 폰 412 / 1280 은 서랍 폭 그대로</text>
+</svg>

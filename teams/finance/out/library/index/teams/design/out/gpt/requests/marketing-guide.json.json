@@ -1,0 +1,66 @@
+{
+ "path": "teams/design/out/gpt/requests/marketing-guide.json",
+ "size": 2356,
+ "mtime": "1789199644493192883",
+ "ctime": "1789199644493352966",
+ "team": "디자인",
+ "title": "marketing-guide",
+ "lines": 10,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"marketing-guide\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 17,
+   "words": [
+    "name",
+    "marketing-guide"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 2191,
+   "words": [
+    "of",
+    "cell",
+    "left",
+    "on",
+    "pixel",
+    "to",
+    "character",
+    "every"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 4,
+   "to": 10,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  }
+ ],
+ "words": [
+  "of",
+  "cell",
+  "left",
+  "on",
+  "pixel",
+  "to",
+  "character",
+  "every",
+  "in",
+  "is",
+  "no",
+  "right"
+ ]
+}

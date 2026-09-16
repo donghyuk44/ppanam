@@ -1,0 +1,8 @@
+{
+  "name": "portrait-hq-outside",
+  "who_is": "제리 · 감사 · 다른 회사 · 총괄실 (31세 · 미국 · 남 · 톰과 이란성 쌍둥이 — hq.outside.md 열 줄 1 · 인형 hq-outside: 금발 + 안경, 팀 색 #7a3b52)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "An American man in his early thirties, fraternal twin of the teal-jacket man — same golden-blond hair and light-brown eyes, but a longer, calmer face and thin round wire-rimmed glasses. Hair slightly longer and parted, clean-shaven. Wearing a deep plum (#7a3b52) modern durumagi-style jacket over a white shirt. Slow, careful expression — eyes steady, mouth closed, the look of someone reading a sentence for the second time.",
+  "out": "teams/design/out/gpt/portrait-hq-outside-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

@@ -1,0 +1,246 @@
+{
+ "path": "teams/marketing/out/world-bible/40-persona/dev.guide.md",
+ "size": 12319,
+ "mtime": "1789302715158957065",
+ "ctime": "1789302715159150153",
+ "team": "마케팅",
+ "title": "테라 — 개발팀 실무",
+ "lines": 105,
+ "sections": [
+  {
+   "level": 1,
+   "title": "테라 — 개발팀 실무",
+   "from": 1,
+   "to": 5,
+   "bytes": 323,
+   "words": [
+    "테라",
+    "개발팀",
+    "실무",
+    "바이블",
+    "세션",
+    "인격",
+    "teams/marketing/out/world-bible",
+    "고치려면"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "열 줄",
+   "from": 6,
+   "to": 22,
+   "bytes": 1862,
+   "words": [
+    "독일",
+    "솔라",
+    "제일",
+    "25세",
+    "개발팀",
+    "겁니다",
+    "나중",
+    "너는"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "너라는 사람",
+   "from": 23,
+   "to": 30,
+   "bytes": 896,
+   "words": [
+    "너라",
+    "나중",
+    "레오",
+    "롤백",
+    "솔라",
+    "5초",
+    "경로",
+    "고치려"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "말투",
+   "from": 31,
+   "to": 44,
+   "bytes": 2124,
+   "words": [
+    "말투",
+    "근거",
+    "다섯",
+    "레오",
+    "솔라",
+    "아니",
+    "47이에요",
+    "가져오"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "내력 (`20-people/dev.guide.md` 8a~8c 요약)",
+   "from": 45,
+   "to": 50,
+   "bytes": 1109,
+   "words": [
+    "8a",
+    "8c",
+    "20-people/dev.guide.md",
+    "내력",
+    "요약",
+    "겁니다",
+    "제일",
+    "규칙"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "관계 (`30-relations.md` 선 번호)",
+   "from": 51,
+   "to": 59,
+   "bytes": 1177,
+   "words": [
+    "30-relations.md",
+    "관계",
+    "번호",
+    "대표",
+    "레오",
+    "부른",
+    "솔라",
+    "옆에"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "세계 안의 자리 (인형 서울 — `10-world.md` 2절)",
+   "from": 60,
+   "to": 66,
+   "bytes": 980,
+   "words": [
+    "자리",
+    "10-world.md",
+    "2절",
+    "서울",
+    "세계",
+    "안의",
+    "인형",
+    "초안"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "네가 하는 일",
+   "from": 67,
+   "to": 71,
+   "bytes": 443,
+   "words": [
+    "네가",
+    "ppanam",
+    "감사",
+    "건드리면",
+    "계획",
+    "고치",
+    "고친다",
+    "그러니"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "일하는 방식",
+   "from": 72,
+   "to": 77,
+   "bytes": 908,
+   "words": [
+    "방식",
+    "일하",
+    "쓰는",
+    "않는다",
+    "60줄",
+    "claude.md",
+    "docs/event-schema.md",
+    "같이"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "승인 (결정 46)",
+   "from": 78,
+   "to": 87,
+   "bytes": 794,
+   "words": [
+    "결정",
+    "승인",
+    "request",
+    "다음",
+    "대표",
+    "마일스톤",
+    "무엇",
+    "않는다"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "부르는 법",
+   "from": 88,
+   "to": 94,
+   "bytes": 970,
+   "words": [
+    "않는다",
+    "레오",
+    "부르",
+    "그가",
+    "솔라",
+    "agent",
+    "각자",
+    "건으"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "방에서 말하는 법",
+   "from": 95,
+   "to": 99,
+   "bytes": 419,
+   "words": [
+    "방에서",
+    "말하",
+    "25살이",
+    "matcher",
+    "것만",
+    "고쳤습니다",
+    "굵은",
+    "글씨"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "바이블",
+   "from": 100,
+   "to": 105,
+   "bytes": 302,
+   "words": [
+    "바이블",
+    "2절",
+    "3절",
+    "4절",
+    "teams/marketing/out/world-bible/10-world.md",
+    "teams/marketing/out/world-bible/20-people/dev.guide.md",
+    "teams/marketing/out/world-bible/30-relations.md",
+    "관계"
+   ]
+  }
+ ],
+ "words": [
+  "레오",
+  "솔라",
+  "대표",
+  "제일",
+  "네가",
+  "않는다",
+  "테라",
+  "개발팀",
+  "실무",
+  "초안",
+  "겁니다",
+  "롤백"
+ ]
+}

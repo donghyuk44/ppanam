@@ -1,0 +1,82 @@
+{
+ "path": "teams/design/out/gpt64/design-guide-pixellab-sheet.json",
+ "size": 2392,
+ "mtime": "1789244420264757173",
+ "ctime": "1789244420264757173",
+ "team": "디자인",
+ "title": "객체 4키: character·spritesheet·export_version·export_date",
+ "lines": 77,
+ "sections": [
+  {
+   "level": 1,
+   "title": "character (객체 6키)",
+   "from": 2,
+   "to": 12,
+   "bytes": 789,
+   "words": [
+    "his",
+    "character",
+    "black",
+    "dark",
+    "flat",
+    "hand",
+    "in",
+    "no"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "spritesheet (객체 6키)",
+   "from": 13,
+   "to": 74,
+   "bytes": 892,
+   "words": [
+    "animation",
+    "frame_count",
+    "row",
+    "type",
+    "81d9915b-17a7-41ef-9dc6-dc2cf15494f3",
+    "animation_group_id",
+    "direction",
+    "walking"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "export_version (\"1.0\")",
+   "from": 75,
+   "to": 75,
+   "bytes": 5,
+   "words": [
+    "export_version",
+    "1.0"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "export_date (\"2026-09-12T20:15:04.0910\")",
+   "from": 76,
+   "to": 77,
+   "bytes": 34,
+   "words": [
+    "export_date",
+    "04.091079",
+    "2026-09-12t20"
+   ]
+  }
+ ],
+ "words": [
+  "animation",
+  "frame_count",
+  "row",
+  "type",
+  "81d9915b-17a7-41ef-9dc6-dc2cf15494f3",
+  "animation_group_id",
+  "direction",
+  "his",
+  "walking",
+  "height",
+  "width",
+  "black"
+ ]
+}

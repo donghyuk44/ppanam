@@ -9,6 +9,7 @@
       "Bash(node bus/dispatch.mjs:*)",
       "Bash(node --check:*)",
       "Bash(git add:*)",
+      "Bash(git push:*)",
       "Bash(git commit:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
@@ -17,7 +18,19 @@
       "Edit",
       "WebSearch",
       "WebFetch",
-      "Bash(node bus/request.mjs:*)"
+      "Bash(node bus/request.mjs:*)",
+      "mcp__searxng",
+      "mcp__brave-search",
+      "mcp__threenative",
+      "Bash(node bus/progress.mjs:*)",
+      "Bash(node tools/*)",
+      "Bash(cd:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(curl http://localhost:*)",
+      "Bash(curl -s http://localhost:*)",
+      "Bash(node --test:*)",
+      "mcp__claude_ai_Figma"
     ]
   },
   "hooks": {
@@ -81,7 +94,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Write|Edit|NotebookEdit|WebFetch|Read",
+        "matcher": "Write|Edit|NotebookEdit|WebFetch|Read|Bash|Grep|Glob|Agent",
         "hooks": [
           {
             "type": "command",

@@ -1,0 +1,8 @@
+{
+  "name": "portrait-dev-guide",
+  "who_is": "테라 · 개발팀장 · 개발 방 (25세 · 독일 · 여, 이 방에서 제일 어리다 — dev.guide.md 열 줄 1 · 인형 dev-guide: 짙은 밤색 머리, 팀 색 #4a5d3a)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "A German woman in her mid-twenties, the youngest in the room. Youthful round face with a pointed chin, wide bright hazel eyes, light freckles across the nose, eyebrows slightly lifted. Dark brown hair in a short messy bob, no glasses. Wearing a moss-green (#4a5d3a) modern jeogori-style jacket over a white top. Eager, hands-first expression — half a grin, the look of someone who already ran it before finishing the sentence.",
+  "out": "teams/design/out/gpt/portrait-dev-guide-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

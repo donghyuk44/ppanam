@@ -1,0 +1,229 @@
+{
+ "path": "teams/marketing/out/world-bible/40-persona/dev.outside.md",
+ "size": 12444,
+ "mtime": "1789478440487225811",
+ "ctime": "1789478440487495476",
+ "team": "마케팅",
+ "title": "레오 — 개발팀 외부감사",
+ "lines": 100,
+ "sections": [
+  {
+   "level": 1,
+   "title": "레오 — 개발팀 외부감사",
+   "from": 1,
+   "to": 5,
+   "bytes": 433,
+   "words": [
+    "레오",
+    "개발팀",
+    "외부감사",
+    "바이블",
+    "세션",
+    "인격",
+    "bus/outside.mjs",
+    "codex"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "열 줄",
+   "from": 6,
+   "to": 27,
+   "bytes": 2872,
+   "words": [
+    "회사",
+    "다른",
+    "당신",
+    "같이",
+    "레오",
+    "모델",
+    "방에서",
+    "이탈리아"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "당신이라는 사람",
+   "from": 28,
+   "to": 35,
+   "bytes": 803,
+   "words": [
+    "당신이라",
+    "테라",
+    "로그",
+    "판정이",
+    "pass",
+    "가끔",
+    "것으",
+    "길게"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "말투 (레오가 채웠다 — 결정 46 ②. 레오가 방에서 말한 것을 테라가 글자 그대로 옮김, 대화록 R24 `evt_ef0bd1df69`, 2026-09-13 15:53 UTC)",
+   "from": 36,
+   "to": 49,
+   "bytes": 2248,
+   "words": [
+    "레오가",
+    "결정",
+    "evt_ef0bd1df69",
+    "r24",
+    "utc",
+    "대화록",
+    "방에서",
+    "2026-09-13"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "내력 (`20-people/dev.outside.md` 8a~8c 요약)",
+   "from": 50,
+   "to": 55,
+   "bytes": 1013,
+   "words": [
+    "8a",
+    "8c",
+    "20-people/dev.outside.md",
+    "내력",
+    "요약",
+    "검사하",
+    "검수",
+    "고객"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "관계 (`30-relations.md` 선 번호)",
+   "from": 56,
+   "to": 64,
+   "bytes": 1034,
+   "words": [
+    "30-relations.md",
+    "관계",
+    "번호",
+    "기록",
+    "파일",
+    "당신",
+    "모른다",
+    "없음"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "세계 안의 자리 (인형 서울 — `10-world.md` 2절)",
+   "from": 65,
+   "to": 71,
+   "bytes": 799,
+   "words": [
+    "자리",
+    "10-world.md",
+    "2절",
+    "서울",
+    "세계",
+    "안의",
+    "인형",
+    "초안"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "당신이 하는 일 — 돌려봅니다",
+   "from": 72,
+   "to": 76,
+   "bytes": 733,
+   "words": [
+    "당신이",
+    "돌려봅니다",
+    "봅니다",
+    "실제",
+    "docs/event-schema.md",
+    "가정",
+    "같이",
+    "겁니다"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "지킬 것",
+   "from": 77,
+   "to": 81,
+   "bytes": 517,
+   "words": [
+    "않습니다",
+    "지킬",
+    "경로",
+    "고치지",
+    "근거",
+    "남습니다",
+    "넘기지",
+    "다섯"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "방에서 말하는 법",
+   "from": 82,
+   "to": 88,
+   "bytes": 953,
+   "words": [
+    "말하",
+    "방에서",
+    "않습니다",
+    "당신",
+    "문장",
+    "방의",
+    "이름",
+    "to-bus.mjs"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "판정을 낼 때",
+   "from": 89,
+   "to": 94,
+   "bytes": 689,
+   "words": [
+    "판정",
+    "revise",
+    "pass",
+    "결정",
+    "대표",
+    "않습니다",
+    "줄에",
+    "3회면"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "바이블",
+   "from": 95,
+   "to": 100,
+   "bytes": 339,
+   "words": [
+    "바이블",
+    "2절",
+    "3절",
+    "4절",
+    "teams/marketing/out/world-bible/10-world.md",
+    "teams/marketing/out/world-bible/20-people/dev.outside.md",
+    "teams/marketing/out/world-bible/30-relations.md",
+    "관계"
+   ]
+  }
+ ],
+ "words": [
+  "당신",
+  "테라",
+  "레오",
+  "다른",
+  "회사",
+  "않습니다",
+  "파일",
+  "방에서",
+  "솔라",
+  "다섯",
+  "초안",
+  "같이"
+ ]
+}

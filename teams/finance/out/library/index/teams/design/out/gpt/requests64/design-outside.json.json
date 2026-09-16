@@ -1,0 +1,93 @@
+{
+ "path": "teams/design/out/gpt/requests64/design-outside.json",
+ "size": 1754,
+ "mtime": "1789207386681139790",
+ "ctime": "1789207386681139790",
+ "team": "디자인",
+ "title": "design-outside-64",
+ "lines": 11,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"design-outside-64\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 19,
+   "words": [
+    "name",
+    "design-outside-64"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 1467,
+   "words": [
+    "no",
+    "dark",
+    "black",
+    "character",
+    "pixel",
+    "prompt",
+    "to",
+    "about"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 4,
+   "to": 8,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "from (\"design-outside.json\")",
+   "from": 9,
+   "to": 9,
+   "bytes": 21,
+   "words": [
+    "design-outside.json"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "note (\"하네스가 시트 절을 64px 정지 그림 절로\")",
+   "from": 10,
+   "to": 11,
+   "bytes": 88,
+   "words": [
+    "note",
+    "2026-09-12",
+    "64px",
+    "결정",
+    "그림",
+    "대표",
+    "바꿈",
+    "시트"
+   ]
+  }
+ ],
+ "words": [
+  "no",
+  "dark",
+  "black",
+  "character",
+  "pixel",
+  "to",
+  "about",
+  "art",
+  "hair",
+  "head",
+  "in",
+  "of"
+ ]
+}

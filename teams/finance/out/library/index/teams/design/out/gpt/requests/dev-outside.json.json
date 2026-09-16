@@ -1,0 +1,66 @@
+{
+ "path": "teams/design/out/gpt/requests/dev-outside.json",
+ "size": 2413,
+ "mtime": "1789199615063540044",
+ "ctime": "1789199615063864253",
+ "team": "디자인",
+ "title": "dev-outside",
+ "lines": 10,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"dev-outside\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 13,
+   "words": [
+    "name",
+    "dev-outside"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 2252,
+   "words": [
+    "of",
+    "cell",
+    "in",
+    "no",
+    "pixel",
+    "every",
+    "is",
+    "on"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 4,
+   "to": 10,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  }
+ ],
+ "words": [
+  "of",
+  "cell",
+  "in",
+  "no",
+  "pixel",
+  "every",
+  "is",
+  "on",
+  "right",
+  "to",
+  "black",
+  "character"
+ ]
+}

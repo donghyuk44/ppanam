@@ -1,0 +1,8 @@
+{
+  "name": "portrait-marketing-review",
+  "who_is": "안젤 · 감사 · 마케팅 방 (32세 · 여 — marketing.review.md 열 줄 1 · 인형 marketing-review: 짙은 밤색 올림머리, 부착물 없음, 팀 색 #a8541f)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "A woman in her early thirties. Composed heart-shaped face, steady dark-brown eyes, fine arched eyebrows, straight nose, mouth held level with no smile. Dark chestnut hair in a neat low updo, no loose strands, no glasses. Wearing a burnt-orange (#a8541f) modern jeogori-style jacket over a white top. Precise, restrained expression — the look of someone who rarely praises, so that when she does it counts.",
+  "out": "teams/design/out/gpt/portrait-marketing-review-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

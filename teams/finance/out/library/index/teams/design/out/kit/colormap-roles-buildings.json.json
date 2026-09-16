@@ -1,0 +1,122 @@
+{
+ "path": "teams/design/out/kit/colormap-roles-buildings.json",
+ "size": 5825,
+ "mtime": "1789356559754337312",
+ "ctime": "1789356559754684962",
+ "team": "디자인",
+ "title": "객체 6키: _note·tileGrid·source·colors·maps",
+ "lines": 75,
+ "sections": [
+  {
+   "level": 1,
+   "title": "_note (\"건물·소품 색표 칸 이름 — 헨리가 out/\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 761,
+   "words": [
+    "note",
+    "128px",
+    "건물",
+    "색표",
+    "어느",
+    "2026-09-14",
+    "64px",
+    "colormap-roles.json"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "tileGrid (객체 4키)",
+   "from": 3,
+   "to": 3,
+   "bytes": 94,
+   "words": [
+    "tilegrid",
+    "blank",
+    "rows",
+    "size",
+    "tilewidth"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "source (객체 2키)",
+   "from": 4,
+   "to": 7,
+   "bytes": 215,
+   "words": [
+    "source",
+    "format/textures/colormap.png",
+    "commercial",
+    "server/public/world/assets/kenney/city-kit-commercial/models/glb",
+    "server/public/world/assets/kenney/city-kit-suburban/models/glb",
+    "suburban"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "colors (객체 9키)",
+   "from": 8,
+   "to": 18,
+   "bytes": 277,
+   "words": [
+    "colors",
+    "7a8797",
+    "ffd27a",
+    "32색",
+    "5절",
+    "6f6d78",
+    "6f9a4a",
+    "8b5a2b"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "maps (객체 3키)",
+   "from": 19,
+   "to": 72,
+   "bytes": 3554,
+   "words": [
+    "row",
+    "tile",
+    "px",
+    "py",
+    "0.40",
+    "화분",
+    "0.02",
+    "leaf"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "check (\"마크가 세는 것: 세 png 가 512×51\")",
+   "from": 73,
+   "to": 75,
+   "bytes": 225,
+   "words": [
+    "check",
+    "colors",
+    "hex",
+    "전부",
+    "칠한",
+    "buildings.json",
+    "kenney",
+    "png"
+   ]
+  }
+ ],
+ "words": [
+  "row",
+  "tile",
+  "px",
+  "py",
+  "0.40",
+  "화분",
+  "0.02",
+  "colors",
+  "leaf",
+  "roof",
+  "source",
+  "stone"
+ ]
+}

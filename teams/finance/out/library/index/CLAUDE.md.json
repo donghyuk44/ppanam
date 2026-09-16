@@ -1,0 +1,127 @@
+{
+ "path": "CLAUDE.md",
+ "size": 2893,
+ "mtime": "1789513525521081370",
+ "ctime": "1789513525521294369",
+ "team": "공용",
+ "title": "ppanam",
+ "lines": 60,
+ "sections": [
+  {
+   "level": 1,
+   "title": "ppanam",
+   "from": 1,
+   "to": 11,
+   "bytes": 476,
+   "words": [
+    "ppanam",
+    "teams",
+    "ai",
+    "chief",
+    "docs/event-schema.md",
+    "docs/plan.md",
+    "guide",
+    "ops"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "캐스트",
+   "from": 12,
+   "to": 20,
+   "bytes": 548,
+   "words": [
+    "캐스트",
+    "다른",
+    "codex",
+    "outside",
+    "각자",
+    "같이",
+    "거는",
+    "그건"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "명령",
+   "from": 21,
+   "to": 26,
+   "bytes": 227,
+   "words": [
+    "명령",
+    "5단계",
+    "kickoff",
+    "round",
+    "verdict",
+    "감사한다",
+    "결정",
+    "내부감사"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "지킬 것",
+   "from": 27,
+   "to": 41,
+   "bytes": 778,
+   "words": [
+    "않는다",
+    "지킬",
+    "fail",
+    "대표",
+    "쓴다",
+    "이다",
+    "파일",
+    "3회"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "대화록에 대해",
+   "from": 42,
+   "to": 55,
+   "bytes": 644,
+   "words": [
+    "대화록",
+    "teams",
+    "비운다",
+    "회차",
+    "09-16",
+    "ai",
+    "bus/say.mjs",
+    "log.jsonl"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "하네스는 얇게",
+   "from": 56,
+   "to": 60,
+   "bytes": 215,
+   "words": [
+    "얇게",
+    "하네스",
+    "60줄",
+    "claude.md",
+    "기억하지",
+    "넘기지",
+    "되게",
+    "뒤에"
+   ]
+  }
+ ],
+ "words": [
+  "않는다",
+  "teams",
+  "ppanam",
+  "마일스톤",
+  "쓴다",
+  "파일",
+  "ai",
+  "fail",
+  "out",
+  "outside",
+  "감사한다",
+  "남긴다"
+ ]
+}

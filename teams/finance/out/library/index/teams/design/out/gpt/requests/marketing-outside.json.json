@@ -1,0 +1,66 @@
+{
+ "path": "teams/design/out/gpt/requests/marketing-outside.json",
+ "size": 2441,
+ "mtime": "1789199662284449821",
+ "ctime": "1789199662284633446",
+ "team": "디자인",
+ "title": "marketing-outside",
+ "lines": 10,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"marketing-outside\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 19,
+   "words": [
+    "name",
+    "marketing-outside"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 2274,
+   "words": [
+    "in",
+    "of",
+    "cell",
+    "on",
+    "pixel",
+    "every",
+    "is",
+    "no"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 4,
+   "to": 10,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  }
+ ],
+ "words": [
+  "in",
+  "of",
+  "cell",
+  "on",
+  "pixel",
+  "every",
+  "is",
+  "no",
+  "right",
+  "to",
+  "character",
+  "dark"
+ ]
+}

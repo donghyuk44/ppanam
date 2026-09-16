@@ -1,0 +1,212 @@
+{
+ "path": "teams/design/out/faces/manifest.json",
+ "size": 4020,
+ "mtime": "1789500074293678172",
+ "ctime": "1789500074293845923",
+ "team": "디자인",
+ "title": "객체 13키: _note·size·transparent·front·head",
+ "lines": 34,
+ "sections": [
+  {
+   "level": 1,
+   "title": "_note (\"얼굴 썸네일 열일곱 — 6단계(대표 결정 1\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 495,
+   "words": [
+    "note",
+    "찍은",
+    "테라",
+    "헨리",
+    "09-16",
+    "1판",
+    "200px",
+    "2판"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "size (배열 2)",
+   "from": 3,
+   "to": 3,
+   "bytes": 9,
+   "words": [
+    "size"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "transparent (true)",
+   "from": 4,
+   "to": 4,
+   "bytes": 4,
+   "words": [
+    "transparent"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "front (true)",
+   "from": 5,
+   "to": 5,
+   "bytes": 4,
+   "words": [
+    "front"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "head (true)",
+   "from": 6,
+   "to": 6,
+   "bytes": 4,
+   "words": [
+    "head"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "command (\"node tools/lineup-shot.m\")",
+   "from": 7,
+   "to": 7,
+   "bytes": 128,
+   "words": [
+    "command",
+    "자리",
+    "front",
+    "head",
+    "node",
+    "only",
+    "png",
+    "size"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "tool (\"tools/lineup-shot.mjs → \")",
+   "from": 8,
+   "to": 8,
+   "bytes": 114,
+   "words": [
+    "tool",
+    "cc0",
+    "kenney",
+    "mini-characters",
+    "server/public/world/lineup.html",
+    "three.js",
+    "tools/lineup-shot.mjs",
+    "색표"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "shotBy (\"나리\")",
+   "from": 9,
+   "to": 9,
+   "bytes": 8,
+   "words": [
+    "shotby",
+    "나리"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "shotAt (\"2026-09-16 02:56~02:57 (\")",
+   "from": 10,
+   "to": 10,
+   "bytes": 93,
+   "words": [
+    "shotat",
+    "2026-09-16",
+    "2x",
+    "9623",
+    "9624",
+    "boss",
+    "hq-system",
+    "시각"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "faceRule (\"facePx(어깨선~꼭대기) 120/200 \")",
+   "from": 11,
+   "to": 11,
+   "bytes": 61,
+   "words": [
+    "facerule",
+    "120/200",
+    "1절",
+    "facepx",
+    "spec.md",
+    "꼭대기",
+    "어깨선",
+    "이상"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "faces (객체 17키)",
+   "from": 12,
+   "to": 30,
+   "bytes": 2053,
+   "words": [
+    "facepx",
+    "file",
+    "line",
+    "name",
+    "faces",
+    "note",
+    "나리",
+    "characters.json"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "lines (\"각자 원하는 얼굴 한 줄(spec.md 3절\")",
+   "from": 31,
+   "to": 31,
+   "bytes": 188,
+   "words": [
+    "lines",
+    "말이",
+    "3절",
+    "characters.json",
+    "line",
+    "spec.md",
+    "각자",
+    "고쳐"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "risk (\"얼굴은 지금 인형(characters.jso\")",
+   "from": 32,
+   "to": 34,
+   "bytes": 162,
+   "words": [
+    "risk",
+    "characters.json",
+    "기준",
+    "대표님이",
+    "되돌리시면",
+    "마을",
+    "명령",
+    "방향"
+   ]
+  }
+ ],
+ "words": [
+  "facepx",
+  "line",
+  "file",
+  "name",
+  "나리",
+  "characters.json",
+  "note",
+  "색표",
+  "테라",
+  "head",
+  "얼굴",
+  "인형"
+ ]
+}

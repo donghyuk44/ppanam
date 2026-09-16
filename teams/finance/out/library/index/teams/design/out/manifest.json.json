@@ -1,0 +1,246 @@
+{
+ "path": "teams/design/out/manifest.json",
+ "size": 20225,
+ "mtime": "1789498758054573432",
+ "ctime": "1789498758054819475",
+ "team": "디자인",
+ "title": "객체 15키: note·palette·style·height·idle",
+ "lines": 90,
+ "sections": [
+  {
+   "level": 1,
+   "title": "note (\"그림 사전. 출처 없는 그림은 화면에 못 올\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 405,
+   "words": [
+    "note",
+    "화면",
+    "그림",
+    "기준",
+    "올라간다",
+    "0부터",
+    "2026-09-12",
+    "64px"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "palette (\"out/palette.json\")",
+   "from": 3,
+   "to": 3,
+   "bytes": 18,
+   "words": [
+    "palette",
+    "out/palette.json"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "style (\"out/style.md\")",
+   "from": 4,
+   "to": 4,
+   "bytes": 14,
+   "words": [
+    "style",
+    "out/style.md"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "height (64)",
+   "from": 5,
+   "to": 5,
+   "bytes": 2,
+   "words": [
+    "height"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "idle (객체 5키)",
+   "from": 6,
+   "to": 6,
+   "bytes": 226,
+   "words": [
+    "idle",
+    "이름",
+    "chatgpt",
+    "1254px",
+    "512.png",
+    "anchor",
+    "cell",
+    "dir"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "walk (객체 9키)",
+   "from": 7,
+   "to": 7,
+   "bytes": 482,
+   "words": [
+    "walk",
+    "걷기",
+    "이름",
+    "정지",
+    "0줄",
+    "1줄",
+    "2줄",
+    "3줄"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "torsoBand (\"footline−18 .. footline−\")",
+   "from": 8,
+   "to": 8,
+   "bytes": 43,
+   "words": [
+    "torsoband",
+    "footline",
+    "임시값"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "pipeline (객체 2키)",
+   "from": 9,
+   "to": 12,
+   "bytes": 495,
+   "words": [
+    "palette",
+    "out/palette.json",
+    "pipeline",
+    "1회",
+    "88x88",
+    "cell",
+    "check.mjs",
+    "fix.mjs"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 13,
+   "to": 13,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refsNote (\"남의 게임 그림은 화풍 참고 입력으로만 썼다\")",
+   "from": 14,
+   "to": 14,
+   "bytes": 143,
+   "words": [
+    "refsnote",
+    "teams/design/ref",
+    "게임",
+    "결과물",
+    "그림",
+    "남의",
+    "들어가지",
+    "썼다"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "board (\"out/screens/cast64-board\")",
+   "from": 15,
+   "to": 15,
+   "bytes": 30,
+   "words": [
+    "board",
+    "out/screens/cast64-board.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "opsroom (객체 2키)",
+   "from": 16,
+   "to": 36,
+   "bytes": 2631,
+   "words": [
+    "file",
+    "헨리",
+    "size",
+    "version",
+    "who",
+    "1판",
+    "1000",
+    "하영"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "kenney (객체 2키)",
+   "from": 37,
+   "to": 44,
+   "bytes": 1710,
+   "words": [
+    "1.0",
+    "cc0",
+    "kenney",
+    "license",
+    "colormap",
+    "files",
+    "format/textures/colormap.png",
+    "id"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "kit (객체 13키)",
+   "from": 45,
+   "to": 59,
+   "bytes": 6011,
+   "words": [
+    "헨리",
+    "size",
+    "status",
+    "09-14",
+    "대표",
+    "file",
+    "시안",
+    "실물"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "sprites (객체 15키)",
+   "from": 60,
+   "to": 90,
+   "bytes": 6527,
+   "words": [
+    "note",
+    "source",
+    "file",
+    "request",
+    "feet",
+    "pixellab",
+    "who",
+    "시험본"
+   ]
+  }
+ ],
+ "words": [
+  "file",
+  "who",
+  "source",
+  "헨리",
+  "request",
+  "pixellab",
+  "size",
+  "idle",
+  "note",
+  "walk",
+  "idlesource",
+  "walkstatus"
+ ]
+}

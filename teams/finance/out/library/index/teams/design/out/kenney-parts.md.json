@@ -1,0 +1,189 @@
+{
+ "path": "teams/design/out/kenney-parts.md",
+ "size": 7854,
+ "mtime": "1789292236223544856",
+ "ctime": "1789292236223763688",
+ "team": "디자인",
+ "title": "Kenney 세 세트 — 부품 목록 · 실측 · 색 띠",
+ "lines": 100,
+ "sections": [
+  {
+   "level": 1,
+   "title": "Kenney 세 세트 — 부품 목록 · 실측 · 색 띠",
+   "from": 1,
+   "to": 6,
+   "bytes": 507,
+   "words": [
+    "목록",
+    "부품",
+    "세트",
+    "실측",
+    "kenney",
+    "대표",
+    "바운딩",
+    "박스"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "1. 세 세트 요약",
+   "from": 7,
+   "to": 16,
+   "bytes": 752,
+   "words": [
+    "세트",
+    "요약",
+    "1.0",
+    "cc0",
+    "mtl",
+    "같음",
+    "모델",
+    "위와"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "2. 부품 목록",
+   "from": 17,
+   "to": 18,
+   "bytes": 20,
+   "words": [
+    "목록",
+    "부품"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "city-kit-suburban (40)",
+   "from": 19,
+   "to": 22,
+   "bytes": 407,
+   "words": [
+    "city-kit-suburban",
+    "building-type-a",
+    "driveway-long/short",
+    "fence",
+    "fence-1x2/1x3/1x4",
+    "fence-2x2/2x3",
+    "fence-3x2/3x3",
+    "fence-low"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "city-kit-commercial (41)",
+   "from": 23,
+   "to": 26,
+   "bytes": 371,
+   "words": [
+    "city-kit-commercial",
+    "건물",
+    "building-a",
+    "building-skyscraper-a",
+    "detail-awning",
+    "detail-awning-wide",
+    "detail-overhang",
+    "detail-overhang-wide"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "mini-characters (26)",
+   "from": 27,
+   "to": 30,
+   "bytes": 472,
+   "words": [
+    "mini-characters",
+    "소품",
+    "aid_hearing",
+    "aid-cane",
+    "aid-cane-blind",
+    "aid-cane-low-vision",
+    "aid-crutch",
+    "aid-defibrillator-green/red"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "3. 바운딩 박스 — 전체 107개 (`tools/pixel/obj-bbox.mjs`, 대표가 돌림, `out/kenney-bbox.json`)",
+   "from": 31,
+   "to": 83,
+   "bytes": 2863,
+   "words": [
+    "0.767",
+    "out/kenney-bbox.json",
+    "전체",
+    "0.6713",
+    "1.293",
+    "1.8",
+    "107개",
+    "tools/pixel/obj-bbox.mjs"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "4. 색 띠 — `colormap.png` (세 세트 다 같은 배치로 보임)",
+   "from": 84,
+   "to": 92,
+   "bytes": 1597,
+   "words": [
+    "colormap.png",
+    "렌더",
+    "배치",
+    "보임",
+    "세트",
+    "갈색",
+    "보라",
+    "살구색"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "5. 모양 — 각지다 vs 둥글다",
+   "from": 93,
+   "to": 96,
+   "bytes": 536,
+   "words": [
+    "vs",
+    "각지다",
+    "둥글다",
+    "모양",
+    "건물",
+    "인형",
+    "airbnb",
+    "city-kit-suburban/preview.png"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "남은 것",
+   "from": 97,
+   "to": 100,
+   "bytes": 320,
+   "words": [
+    "남은",
+    "107개",
+    "3절",
+    "colormap.png",
+    "obj",
+    "obj-bbox.mjs",
+    "uv",
+    "vt"
+   ]
+  }
+ ],
+ "words": [
+  "0.767",
+  "세트",
+  "건물",
+  "목록",
+  "1.0",
+  "부품",
+  "렌더",
+  "모델",
+  "스크립트",
+  "실측",
+  "0.6713",
+  "1.293"
+ ]
+}

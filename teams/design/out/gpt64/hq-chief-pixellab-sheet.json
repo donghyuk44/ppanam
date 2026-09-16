@@ -1,0 +1,77 @@
+{
+  "character": {
+    "id": "81aefa4c-16db-4244-8eaa-4e9497ee2200",
+    "name": "Idle",
+    "prompt": "A 31-year-old American man, the company's chief of staff, in Joseon-fantasy attire: short blond hair under a black samo official's hat (a rounded black cap with two small stiff wings sticking out sideways at the back), fair skin, two clearly visible dark eyes, a bright confident smile. Clothing: a deep green official's robe with a dark belt over white hanbok, white pants, black boots. Holds a rolled paper dispatch scroll in his right hand. Classic Korean MMORPG pixel art style, thick dark outlines, about 3.5 heads tall.",
+    "size": {
+      "width": 40,
+      "height": 64
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "A_31-year-old_American_m-Idle.png",
+    "cell_size": {
+      "width": 92,
+      "height": 92
+    },
+    "sheet_size": {
+      "width": 736,
+      "height": 460
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "89eafe3d-9fe6-43ce-9df1-5229e4d1d401",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "89eafe3d-9fe6-43ce-9df1-5229e4d1d401",
+        "direction": "east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "89eafe3d-9fe6-43ce-9df1-5229e4d1d401",
+        "direction": "north"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "89eafe3d-9fe6-43ce-9df1-5229e4d1d401",
+        "direction": "west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-09-12T20:34:28.583801+00:00"
+}

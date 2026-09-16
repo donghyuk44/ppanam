@@ -1,0 +1,8 @@
+{
+  "name": "portrait-design-guide",
+  "who_is": "헨리 · 디자인팀장 · 디자인 방 (29세 · 프랑스 · 남 — design.guide.md 열 줄 1 · 인형 design-guide: 갈색 머리 #8b5a2b, 팀 색 #4b5f9e)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "A French man in his late twenties. Narrow face with a soft chin, quiet grey-blue eyes that look slightly to the side, fine eyebrows, thin mouth with a shy half-smile. Chestnut-brown hair, a little long and loosely pushed back, clean-shaven, no glasses. Wearing a slate-blue (#4b5f9e) modern durumagi-style jacket over a white shirt. Soft, reserved expression — the look of someone who would rather answer with a drawing than a sentence.",
+  "out": "teams/design/out/gpt/portrait-design-guide-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

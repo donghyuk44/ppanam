@@ -1,0 +1,8 @@
+{
+  "name": "portrait-dev-ops",
+  "who_is": "솔라 · 운영 담당 · 개발 방 (29세 · 캐나다 · 여 — dev.ops.md 열 줄 1 · 인형 dev-ops: 짙은 밤색 머리, 살 #d9a878, 팀 색 #2f6b7a)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "A Canadian woman in her late twenties, light tan skin. Calm oval face, level dark-brown eyes, straight eyebrows, relaxed closed mouth. Dark brown hair pulled back in a simple low bun, no glasses. Wearing a deep teal-blue (#2f6b7a) modern jeogori-style jacket over a white top. Steady, watchful expression — the look of someone who sees the whole system and the 3 a.m. alarm before anyone says 'deploy'.",
+  "out": "teams/design/out/gpt/portrait-dev-ops-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

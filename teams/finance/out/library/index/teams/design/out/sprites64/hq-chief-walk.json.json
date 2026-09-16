@@ -1,0 +1,65 @@
+{
+ "path": "teams/design/out/sprites64/hq-chief-walk.json",
+ "size": 89,
+ "mtime": "1789262780864400646",
+ "ctime": "1789262780864400646",
+ "team": "디자인",
+ "title": "객체 4키: walk·frames·cell·anchor",
+ "lines": 2,
+ "sections": [
+  {
+   "level": 1,
+   "title": "walk (객체 4키)",
+   "from": 1,
+   "to": 2,
+   "bytes": 36,
+   "words": [
+    "walk",
+    "down",
+    "left",
+    "right",
+    "up"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "frames (8)",
+   "from": 1,
+   "to": 2,
+   "bytes": 1,
+   "words": [
+    "frames"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "cell (배열 2)",
+   "from": 1,
+   "to": 2,
+   "bytes": 7,
+   "words": [
+    "cell"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "anchor (배열 2)",
+   "from": 1,
+   "to": 2,
+   "bytes": 7,
+   "words": [
+    "anchor"
+   ]
+  }
+ ],
+ "words": [
+  "anchor",
+  "cell",
+  "down",
+  "frames",
+  "left",
+  "right",
+  "up",
+  "walk"
+ ]
+}

@@ -1,0 +1,82 @@
+{
+ "path": "teams/design/out/gpt64/boss-pixellab-sheet.json",
+ "size": 2073,
+ "mtime": "1789244420166349749",
+ "ctime": "1789244420166349749",
+ "team": "디자인",
+ "title": "객체 4키: character·spritesheet·export_version·export_date",
+ "lines": 77,
+ "sections": [
+  {
+   "level": 1,
+   "title": "character (객체 6키)",
+   "from": 2,
+   "to": 12,
+   "bytes": 470,
+   "words": [
+    "black",
+    "character",
+    "dark",
+    "in",
+    "white",
+    "3.5",
+    "96dd5fc4-796f-4eec-87ba-a105d8138af0",
+    "about"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "spritesheet (객체 6키)",
+   "from": 13,
+   "to": 74,
+   "bytes": 892,
+   "words": [
+    "animation",
+    "frame_count",
+    "row",
+    "type",
+    "animation_group_id",
+    "direction",
+    "eb93c2e9-981e-4a71-9c65-b66508a9c1f6",
+    "walking"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "export_version (\"1.0\")",
+   "from": 75,
+   "to": 75,
+   "bytes": 5,
+   "words": [
+    "export_version",
+    "1.0"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "export_date (\"2026-09-12T10:48:01.3534\")",
+   "from": 76,
+   "to": 77,
+   "bytes": 34,
+   "words": [
+    "export_date",
+    "01.353460",
+    "2026-09-12t10"
+   ]
+  }
+ ],
+ "words": [
+  "animation",
+  "frame_count",
+  "row",
+  "type",
+  "animation_group_id",
+  "direction",
+  "eb93c2e9-981e-4a71-9c65-b66508a9c1f6",
+  "walking",
+  "black",
+  "height",
+  "width",
+  "dark"
+ ]
+}

@@ -1,0 +1,127 @@
+{
+ "path": "teams/design/out/gpt/requests/sera-float.json",
+ "size": 3546,
+ "mtime": "1789345143492432251",
+ "ctime": "1789345143492624454",
+ "team": "디자인",
+ "title": "sera-float",
+ "lines": 13,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"sera-float\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 12,
+   "words": [
+    "name",
+    "sera-float"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "out (\"out/screens/sera-float.p\")",
+   "from": 3,
+   "to": 3,
+   "bytes": 28,
+   "words": [
+    "out",
+    "out/screens/sera-float.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "purpose (\"결정 87 — 맥 화면 위에 늘 떠 있는 비\")",
+   "from": 4,
+   "to": 4,
+   "bytes": 644,
+   "words": [
+    "purpose",
+    "세라",
+    "캐릭터",
+    "200px",
+    "2d",
+    "5f8fbf",
+    "c94a3a",
+    "female-b"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"STYLE: the first attache\")",
+   "from": 5,
+   "to": 5,
+   "bytes": 1867,
+   "words": [
+    "no",
+    "character",
+    "bar",
+    "in",
+    "on",
+    "sera",
+    "small",
+    "soft"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 2)",
+   "from": 6,
+   "to": 9,
+   "bytes": 98,
+   "words": [
+    "refs",
+    "out/screens/seoul-toy-concept.png",
+    "ref/kenney/mini-characters/previews/character-female-b.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "after (\"out/screens/sera-float.p\")",
+   "from": 10,
+   "to": 10,
+   "bytes": 567,
+   "words": [
+    "after",
+    "자홍",
+    "200px",
+    "node",
+    "out/screens/sera-float-alpha.png",
+    "out/screens/sera-float.png",
+    "tools/pixel/fix.mjs",
+    "고쳐"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "status (\"접음 (09-14 아침, 대표 지적 — Ke\")",
+   "from": 11,
+   "to": 13,
+   "bytes": 223,
+   "words": [
+    "status",
+    "kenney",
+    "09-14",
+    "colormaps/people/hq-secretary.png",
+    "female-b",
+    "three.js",
+    "가기",
+    "것과"
+   ]
+  }
+ ],
+ "words": [
+  "no",
+  "character",
+  "bar",
+  "in",
+  "kenney",
+  "on",
+  "sera",
+  "small",
+  "soft",
+  "200px",
+  "braid",
+  "c94a3a"
+ ]
+}

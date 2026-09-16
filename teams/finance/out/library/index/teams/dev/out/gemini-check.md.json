@@ -1,0 +1,127 @@
+{
+ "path": "teams/dev/out/gemini-check.md",
+ "size": 3252,
+ "mtime": "1789348068086682964",
+ "ctime": "1789348068086856008",
+ "team": "개발",
+ "title": "Gemini(agy) 외부감사 다섯 자리 — 실전 확인",
+ "lines": 39,
+ "sections": [
+  {
+   "level": 1,
+   "title": "Gemini(agy) 외부감사 다섯 자리 — 실전 확인",
+   "from": 1,
+   "to": 4,
+   "bytes": 175,
+   "words": [
+    "확인",
+    "agy",
+    "gemini",
+    "다섯",
+    "실전",
+    "외부감사",
+    "자리",
+    "2026-09-14"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "다섯 자리 표",
+   "from": 5,
+   "to": 14,
+   "bytes": 775,
+   "words": [
+    "gemini",
+    "자리",
+    "다섯",
+    "engine",
+    "gemini-3.6-flash",
+    "pass",
+    "없음",
+    "판정"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "`state/outside-sessions.json` — 지금 잡힌 세션",
+   "from": 15,
+   "to": 26,
+   "bytes": 972,
+   "words": [
+    "id",
+    "세션",
+    "state/outside-sessions.json",
+    "잡힌",
+    "engine",
+    "gemini",
+    "conversation",
+    "dev"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "엔진 표기 차이",
+   "from": 27,
+   "to": 30,
+   "bytes": 440,
+   "words": [
+    "엔진",
+    "차이",
+    "표기",
+    "cast.json",
+    "gemini",
+    "geminimodel",
+    "다음",
+    "gemini-3.6-flash"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "안 불린 자리",
+   "from": 31,
+   "to": 35,
+   "bytes": 503,
+   "words": [
+    "불린",
+    "자리",
+    "design",
+    "gemini",
+    "그때",
+    "도는",
+    "처음",
+    "cast"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "결론",
+   "from": 36,
+   "to": 39,
+   "bytes": 382,
+   "words": [
+    "결론",
+    "gemini",
+    "marketing",
+    "session",
+    "store",
+    "같이",
+    "고칠",
+    "구멍이라"
+   ]
+  }
+ ],
+ "words": [
+  "gemini",
+  "자리",
+  "id",
+  "다섯",
+  "engine",
+  "실전",
+  "확인",
+  "agy",
+  "marketing",
+  "다음",
+  "외부감사",
+  "호출"
+ ]
+}

@@ -1,0 +1,66 @@
+{
+ "path": "teams/design/out/gpt/requests/boss.json",
+ "size": 2155,
+ "mtime": "1789199335271414838",
+ "ctime": "1789199335271597214",
+ "team": "디자인",
+ "title": "boss",
+ "lines": 10,
+ "sections": [
+  {
+   "level": 1,
+   "title": "name (\"boss\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 6,
+   "words": [
+    "name",
+    "boss"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "prompt (\"The attached images are \")",
+   "from": 3,
+   "to": 3,
+   "bytes": 2001,
+   "words": [
+    "of",
+    "cell",
+    "no",
+    "pixel",
+    "every",
+    "in",
+    "is",
+    "on"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "refs (배열 3)",
+   "from": 4,
+   "to": 10,
+   "bytes": 89,
+   "words": [
+    "refs",
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+   ]
+  }
+ ],
+ "words": [
+  "of",
+  "cell",
+  "no",
+  "pixel",
+  "every",
+  "in",
+  "is",
+  "on",
+  "right",
+  "to",
+  "black",
+  "character"
+ ]
+}

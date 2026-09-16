@@ -1,0 +1,144 @@
+{
+ "path": "teams/dev/out/tower-people.md",
+ "size": 9828,
+ "mtime": "1789292005541171506",
+ "ctime": "1789292005541416795",
+ "team": "개발",
+ "title": "M2 관제탑 탭 — 사람별 집계 `people` + 전체/팀/개인/요청 뼈대",
+ "lines": 65,
+ "sections": [
+  {
+   "level": 1,
+   "title": "M2 관제탑 탭 — 사람별 집계 `people` + 전체/팀/개인/요청 뼈대",
+   "from": 1,
+   "to": 5,
+   "bytes": 299,
+   "words": [
+    "m2",
+    "people",
+    "관제탑",
+    "뼈대",
+    "사람별",
+    "전체/팀/개인/요청",
+    "집계",
+    "0647470"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "무엇을 돌려봤고 무엇을 못 봤나 — 먼저",
+   "from": 6,
+   "to": 18,
+   "bytes": 2646,
+   "words": [
+    "무엇",
+    "대표",
+    "시스템",
+    "node",
+    "개인",
+    "돌려봤고",
+    "봤나",
+    "스크린샷"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "스크린샷에서 본 것 (내 눈, 18:3x)",
+   "from": 19,
+   "to": 26,
+   "bytes": 1699,
+   "words": [
+    "대표",
+    "3x",
+    "부름",
+    "스크린샷",
+    "개인",
+    "마지막",
+    "빨간",
+    "없음"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "① 데이터 — `summaries[팀].people` (계약: `docs/event-schema.md` 3절 \"사람별 집계\")",
+   "from": 27,
+   "to": 39,
+   "bytes": 1668,
+   "words": [
+    "summaries",
+    "3절",
+    "docs/event-schema.md",
+    "people",
+    "계약",
+    "데이터",
+    "사람별",
+    "오늘"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "②③ 화면 — `server/public/index.html · app.js · style.css`",
+   "from": 40,
+   "to": 52,
+   "bytes": 2113,
+   "words": [
+    "대표",
+    "카드",
+    "②③",
+    "app.js",
+    "server/public/index.html",
+    "style.css",
+    "개인",
+    "누르면"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "안 한 것 · 알고 남긴 것",
+   "from": 53,
+   "to": 59,
+   "bytes": 697,
+   "words": [
+    "남긴",
+    "알고",
+    "카드",
+    "text-overflow",
+    "개인",
+    "자리",
+    "10분으로",
+    "1줄"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "레오에게 — 재시작 뒤 볼 것",
+   "from": 60,
+   "to": 65,
+   "bytes": 700,
+   "words": [
+    "레오",
+    "재시작",
+    "busy",
+    "const",
+    "x.people",
+    "대표",
+    "없음",
+    "카드"
+   ]
+  }
+ ],
+ "words": [
+  "대표",
+  "카드",
+  "개인",
+  "오늘",
+  "전체",
+  "자리",
+  "people",
+  "마지막",
+  "없음",
+  "다섯",
+  "발언",
+  "요청"
+ ]
+}

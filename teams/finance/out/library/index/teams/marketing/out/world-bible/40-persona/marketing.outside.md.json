@@ -1,0 +1,246 @@
+{
+ "path": "teams/marketing/out/world-bible/40-persona/marketing.outside.md",
+ "size": 11483,
+ "mtime": "1789306182356803870",
+ "ctime": "1789306182357052289",
+ "team": "마케팅",
+ "title": "다니엘 — 마케팅팀 외부감사",
+ "lines": 103,
+ "sections": [
+  {
+   "level": 1,
+   "title": "다니엘 — 마케팅팀 외부감사",
+   "from": 1,
+   "to": 5,
+   "bytes": 442,
+   "words": [
+    "다니엘",
+    "마케팅팀",
+    "외부감사",
+    "바이블",
+    "세션",
+    "인격",
+    "bus/outside.mjs",
+    "codex"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "열 줄",
+   "from": 6,
+   "to": 25,
+   "bytes": 2371,
+   "words": [
+    "다른",
+    "자리가",
+    "회사",
+    "다니엘",
+    "당신",
+    "런던",
+    "마케팅",
+    "유일하게"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "당신이라는 사람",
+   "from": 26,
+   "to": 33,
+   "bytes": 800,
+   "words": [
+    "당신이라",
+    "목소리",
+    "문장",
+    "번째",
+    "않습니다",
+    "읽습니까",
+    "질문",
+    "가끔"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "말투 (다니엘이 방에서 말한 것을 하영이 글자 그대로 옮김 — 결정 46 ②, `teams/marketing/log.jsonl` evt_d54b4c9d1a, 2026-09-13 13:29Z)",
+   "from": 34,
+   "to": 47,
+   "bytes": 1235,
+   "words": [
+    "2026-09-13",
+    "29z",
+    "evt_d54b4c9d1a",
+    "teams/marketing/log.jsonl",
+    "결정",
+    "글자",
+    "다니엘이",
+    "말투"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "내력 (`20-people/marketing.outside.md` 8a~8c 요약)",
+   "from": 48,
+   "to": 53,
+   "bytes": 1019,
+   "words": [
+    "8a",
+    "8c",
+    "20-people/marketing.outside.md",
+    "내력",
+    "요약",
+    "기사가",
+    "나가기",
+    "다들"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "관계 (`30-relations.md` 선 번호)",
+   "from": 54,
+   "to": 62,
+   "bytes": 959,
+   "words": [
+    "30-relations.md",
+    "관계",
+    "번호",
+    "기록",
+    "당신",
+    "레오",
+    "사이",
+    "섞은"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "세계 안의 자리 (인형 서울 — `10-world.md` 2절)",
+   "from": 63,
+   "to": 69,
+   "bytes": 1004,
+   "words": [
+    "자리",
+    "초안",
+    "10-world.md",
+    "2절",
+    "서울",
+    "세계",
+    "안의",
+    "인형"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "일하는 방식",
+   "from": 70,
+   "to": 74,
+   "bytes": 409,
+   "words": [
+    "방식",
+    "일하",
+    "않고",
+    "감정",
+    "겁니까",
+    "고개",
+    "공유하지",
+    "그게"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "볼 것",
+   "from": 75,
+   "to": 79,
+   "bytes": 598,
+   "words": [
+    "가정",
+    "안젤",
+    "언제",
+    "감사",
+    "것만",
+    "겹치지",
+    "경계",
+    "경쟁사"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "지킬 것",
+   "from": 80,
+   "to": 83,
+   "bytes": 233,
+   "words": [
+    "지킬",
+    "않는다",
+    "하지",
+    "감사가",
+    "감사역이",
+    "경로",
+    "고치면",
+    "고치지"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "방에서 말하는 법",
+   "from": 84,
+   "to": 91,
+   "bytes": 1361,
+   "words": [
+    "말하",
+    "문장",
+    "방에서",
+    "당신",
+    "않는다",
+    "2행",
+    "방의",
+    "없으면"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "판정을 낼 때",
+   "from": 92,
+   "to": 97,
+   "bytes": 703,
+   "words": [
+    "판정",
+    "revise",
+    "pass",
+    "대표",
+    "마일스톤",
+    "않는다",
+    "줄에",
+    "카드가"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "바이블",
+   "from": 98,
+   "to": 103,
+   "bytes": 337,
+   "words": [
+    "바이블",
+    "2절",
+    "3절",
+    "4절",
+    "teams/marketing/out/world-bible/10-world.md",
+    "teams/marketing/out/world-bible/20-people/marketing.outside.md",
+    "teams/marketing/out/world-bible/30-relations.md",
+    "관계"
+   ]
+  }
+ ],
+ "words": [
+  "않는다",
+  "다른",
+  "당신",
+  "다니엘",
+  "안젤",
+  "마케팅",
+  "하영",
+  "문장",
+  "파일",
+  "초안",
+  "마케팅팀",
+  "외부감사"
+ ]
+}

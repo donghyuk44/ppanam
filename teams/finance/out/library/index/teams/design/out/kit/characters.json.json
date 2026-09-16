@@ -1,0 +1,110 @@
+{
+ "path": "teams/design/out/kit/characters.json",
+ "size": 11377,
+ "mtime": "1789498743159550241",
+ "ctime": "1789498743159767617",
+ "team": "디자인",
+ "title": "객체 6키: _note·scale·modelDir·colormapDir·characters",
+ "lines": 186,
+ "sections": [
+  {
+   "level": 1,
+   "title": "_note (\"인형 열일곱 — Kenney mini-cha\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 871,
+   "words": [
+    "note",
+    "kenney",
+    "r14",
+    "규칙",
+    "머리",
+    "실측",
+    "열다섯",
+    "전부"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "scale (1.39)",
+   "from": 3,
+   "to": 3,
+   "bytes": 4,
+   "words": [
+    "scale",
+    "1.39"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "modelDir (\"ref/kenney/mini-characte\")",
+   "from": 4,
+   "to": 4,
+   "bytes": 47,
+   "words": [
+    "modeldir",
+    "format",
+    "ref/kenney/mini-characters/models/glb"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "colormapDir (\"out/kit/colormaps/people\")",
+   "from": 5,
+   "to": 5,
+   "bytes": 27,
+   "words": [
+    "colormapdir",
+    "out/kit/colormaps/people"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "characters (객체 17키)",
+   "from": 6,
+   "to": 177,
+   "bytes": 8276,
+   "words": [
+    "colormap",
+    "bottom",
+    "colors",
+    "hair",
+    "model",
+    "name",
+    "prop",
+    "silhouette"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "pairs (객체 5키)",
+   "from": 178,
+   "to": 186,
+   "bytes": 543,
+   "words": [
+    "pairs",
+    "부착물",
+    "character-female-b.glb",
+    "character-female-c.glb",
+    "character-male-a.glb",
+    "character-male-f.glb",
+    "design-ops",
+    "female-b"
+   ]
+  }
+ ],
+ "words": [
+  "colormap",
+  "bottom",
+  "colors",
+  "hair",
+  "model",
+  "name",
+  "prop",
+  "silhouette",
+  "skin",
+  "sourceheight",
+  "top",
+  "worldheight"
+ ]
+}

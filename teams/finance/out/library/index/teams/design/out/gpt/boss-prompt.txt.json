@@ -1,0 +1,42 @@
+{
+ "path": "teams/design/out/gpt/boss-prompt.txt",
+ "size": 1777,
+ "mtime": "1789196112638062321",
+ "ctime": "1789196112638062321",
+ "team": "디자인",
+ "title": "[ChatGPT, 2026-09-12, 참고 첨부: ref/baram/char_magician.png, ref/baram/char_thief.p",
+ "lines": 6,
+ "sections": [
+  {
+   "level": 0,
+   "title": "(전체)",
+   "from": 1,
+   "to": 6,
+   "bytes": 1777,
+   "words": [
+    "no",
+    "character",
+    "to",
+    "exactly",
+    "in",
+    "of",
+    "on",
+    "pixel"
+   ]
+  }
+ ],
+ "words": [
+  "no",
+  "character",
+  "to",
+  "exactly",
+  "in",
+  "of",
+  "on",
+  "pixel",
+  "pixels",
+  "same",
+  "then",
+  "8x"
+ ]
+}

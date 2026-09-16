@@ -19,7 +19,7 @@
       .bub{fill:#f1ece2}
       .memo{font-size:11px;fill:#6f6d78}
     </style>
-    <clipPath id="c32"><rect x="0" y="0" width="32" height="32" rx="9"/></clipPath>
+    <clipPath id="c32"><circle cx="16" cy="16" r="16"/></clipPath><!-- 1판-c: 둥근 사각 r9 → 원(나리 09-16 '칩은 32px 원형', 클레멘타인 .chip 50% 2b21a9c) -->
   </defs>
   <rect width="1700" height="1020" fill="#f6f2ea"/>
 
@@ -64,11 +64,11 @@
       <text x="374" y="108" text-anchor="end" class="m" fill="#8a3b2b">펼치기 ▾ 된 것 2 · 막힌 것 1</text>
     </g>
 
-    <!-- 대화 — 이름표 32 r9 에 얼굴(out/faces/<자리>.png). 글자 머리글자는 얼굴이 없을 때만 -->
+    <!-- 대화 — 이름표 32 원 에 얼굴(out/portraits/chip/<자리>.png — 초상 열일곱, 09-16 09:3x. 전엔 out/faces 인형 얼굴). 글자 머리글자는 얼굴이 없을 때만 -->
     <g transform="translate(12 240)">
       <!-- 나리 (총괄실 사람 — hq-system) -->
       <g transform="translate(0 0)">
-        <g clip-path="url(#c32)"><rect width="32" height="32" fill="#8a8175"/><image href="../../faces/hq-system.png" x="0" y="0" width="32" height="32"/></g>
+        <g clip-path="url(#c32)"><rect width="32" height="32" fill="#8a8175"/><image href="../../portraits/chip/hq-system.png" x="0" y="0" width="32" height="32"/></g>
         <text x="42" y="12" class="s">나리 <tspan class="m">7:31</tspan></text>
         <rect x="42" y="18" width="330" height="52" rx="12" class="bub"/>
         <text x="54" y="38" class="t2">헨리, 18회차 열었어요 — 5단계를 '시안 대 실물'로</text>
@@ -76,7 +76,7 @@
       </g>
       <!-- 헨리 (나) -->
       <g transform="translate(0 82)">
-        <g transform="translate(356 0)" clip-path="url(#c32)"><rect width="32" height="32" fill="#4b5f9e"/><image href="../../faces/design-guide.png" x="0" y="0" width="32" height="32"/></g>
+        <g transform="translate(356 0)" clip-path="url(#c32)"><rect width="32" height="32" fill="#4b5f9e"/><image href="../../portraits/chip/design-guide.png" x="0" y="0" width="32" height="32"/></g>
         <text x="346" y="12" text-anchor="end" class="s">헨리 <tspan class="m">7:32</tspan></text>
         <rect x="46" y="18" width="300" height="52" rx="12" fill="#e4ecf7"/>
         <text x="58" y="38" class="t2">목록은 벌써 diff-0916.md 에 1판으로 있어요 — 화면</text>
@@ -96,7 +96,7 @@
       </g>
       <!-- 클레멘타인 -->
       <g transform="translate(0 272)">
-        <g clip-path="url(#c32)"><rect width="32" height="32" fill="#c96f3b"/><image href="../../faces/design-ops.png" x="0" y="0" width="32" height="32"/></g>
+        <g clip-path="url(#c32)"><rect width="32" height="32" fill="#c96f3b"/><image href="../../portraits/chip/design-ops.png" x="0" y="0" width="32" height="32"/></g>
         <text x="42" y="12" class="s">클레멘타인 <tspan class="m">7:35</tspan></text>
         <rect x="42" y="18" width="330" height="52" rx="12" class="bub"/>
         <text x="54" y="38" class="t2">헨리, 다 셌어 — 다르다 일곱, 같다 셋. 카드 사이가</text>
@@ -104,7 +104,7 @@
       </g>
       <!-- 마크 (다른 회사) -->
       <g transform="translate(0 354)">
-        <g clip-path="url(#c32)"><rect width="32" height="32" fill="#6b4a2f"/><image href="../../faces/design-outside.png" x="0" y="0" width="32" height="32"/></g>
+        <g clip-path="url(#c32)"><rect width="32" height="32" fill="#6b4a2f"/><image href="../../portraits/chip/design-outside.png" x="0" y="0" width="32" height="32"/></g>
         <text x="42" y="12" class="s">마크 · 다른 회사 <tspan class="m">7:36</tspan></text>
         <rect x="42" y="18" width="330" height="35" rx="12" class="bub"/>
         <text x="54" y="40" class="t2">헨리, diff-0916.md 파일 열어서 확인했습니다.</text>
@@ -169,13 +169,13 @@
         <text x="566" y="91" text-anchor="end" class="m" fill="#8a3b2b">펼치기 ▾ 된 것 2 · 막힌 것 1</text>
       </g>
       <g transform="translate(0 188)">
-        <g clip-path="url(#c32)"><rect width="32" height="32" fill="#8a8175"/><image href="../../faces/hq-system.png" x="0" y="0" width="32" height="32"/></g>
+        <g clip-path="url(#c32)"><rect width="32" height="32" fill="#8a8175"/><image href="../../portraits/chip/hq-system.png" x="0" y="0" width="32" height="32"/></g>
         <text x="42" y="12" class="s">나리 <tspan class="m">7:31</tspan></text>
         <rect x="42" y="18" width="538" height="35" rx="12" class="bub"/>
         <text x="54" y="40" class="t2">헨리, 18회차 열었어요 — 5단계를 '시안 대 실물'로 바꿨어요. 마을 첫 화면은 그 다음 회차예요.</text>
       </g>
       <g transform="translate(0 252)">
-        <g transform="translate(548 0)" clip-path="url(#c32)"><rect width="32" height="32" fill="#4b5f9e"/><image href="../../faces/design-guide.png" x="0" y="0" width="32" height="32"/></g>
+        <g transform="translate(548 0)" clip-path="url(#c32)"><rect width="32" height="32" fill="#4b5f9e"/><image href="../../portraits/chip/design-guide.png" x="0" y="0" width="32" height="32"/></g>
         <text x="538" y="12" text-anchor="end" class="s">헨리 <tspan class="m">7:32</tspan></text>
         <rect x="0" y="18" width="538" height="35" rx="12" fill="#e4ecf7"/>
         <text x="12" y="40" class="t2">목록은 벌써 diff-0916.md 에 1판으로 있어요 — 화면마다 '같다/다르다' 한 줄만 머리에 보태 놨습니다.</text>
@@ -191,13 +191,13 @@
         <text x="14" y="68" class="m">자세히 ▸</text>
       </g>
       <g transform="translate(0 404)">
-        <g clip-path="url(#c32)"><rect width="32" height="32" fill="#c96f3b"/><image href="../../faces/design-ops.png" x="0" y="0" width="32" height="32"/></g>
+        <g clip-path="url(#c32)"><rect width="32" height="32" fill="#c96f3b"/><image href="../../portraits/chip/design-ops.png" x="0" y="0" width="32" height="32"/></g>
         <text x="42" y="12" class="s">클레멘타인 <tspan class="m">7:35</tspan></text>
         <rect x="42" y="18" width="538" height="35" rx="12" class="bub"/>
         <text x="54" y="40" class="t2">헨리, 다 셌어 — 다르다 일곱, 같다 셋. 카드 사이가 시안 6~8인데 실물은 10이야.</text>
       </g>
       <g transform="translate(0 468)">
-        <g clip-path="url(#c32)"><rect width="32" height="32" fill="#6b4a2f"/><image href="../../faces/design-outside.png" x="0" y="0" width="32" height="32"/></g>
+        <g clip-path="url(#c32)"><rect width="32" height="32" fill="#6b4a2f"/><image href="../../portraits/chip/design-outside.png" x="0" y="0" width="32" height="32"/></g>
         <text x="42" y="12" class="s">마크 · 다른 회사 <tspan class="m">7:36</tspan></text>
         <rect x="42" y="18" width="538" height="35" rx="12" class="bub"/>
         <text x="54" y="40" class="t2">헨리, diff-0916.md 파일 열어서 확인했습니다.</text>
@@ -218,7 +218,7 @@
     </g>
   </g>
 
-  <text x="24" y="960" class="memo">시안 메모(화면 글자 아님) — 방 머리의 회차 줄·'회차 마무리' 단추는 고정 카드 꼬리(N단계 끝/전체 · 회차)로 들어간다. 판정 카드는 도장(PASS·REVISE)을 대신하고 말풍선과 같은 폭. 이름표 32 r9 에 out/faces 얼굴(clip) — 얼굴 없으면 머리글자.</text>
+  <text x="24" y="960" class="memo">시안 메모(화면 글자 아님) — 방 머리의 회차 줄·'회차 마무리' 단추는 고정 카드 꼬리(N단계 끝/전체 · 회차)로 들어간다. 판정 카드는 도장(PASS·REVISE)을 대신하고 말풍선과 같은 폭. 이름표 32 원(1판-c, 전엔 r9) 에 out/faces 얼굴(clip) — 얼굴 없으면 머리글자.</text>
   <text x="24" y="977" class="memo">탭 다섯은 하영 card-words.md 2판 확정(채팅·대시보드·타임라인·리포트·설정). 알약·판정·B 줄 글자도 2판(진행 중 · 승인 · 나리·제리 검토 중). 결재 띠는 C 가 있을 때만 위에 선다(여기 0). PC 오른쪽 여백은 비워 둔다. 말은 09-16 07:3x 디자인 방 기록을 줄인 것, 시각은 우리 시각.</text>
   <text x="24" y="994" class="memo">팀 방 시안 1판-b(하영 2판 글자) · 2026-09-16 아침 · 헨리 · cards.svg 세 자리 중 ③(팀 방 맨 위) + 말풍선 사이 판정 카드 · C7(테라) 그림 자료 · 얼굴 파일 req_99dbd1fe</text>
 </svg>

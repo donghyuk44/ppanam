@@ -1,0 +1,8 @@
+{
+  "name": "portrait-design-outside",
+  "who_is": "마크 · 외부 감사 · 다른 회사 · 디자인 방 (33세 · 이탈리아 · 남 — design.outside.md 열 줄 1·3 · 인형 design-outside: 검은 머리, 살 #d9a878, 위아래 다 팀 색 #6b4a2f)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "An Italian man in his early thirties, olive skin. Lean angular face, sharp dark eyes that seem to measure the viewer, straight dark eyebrows, mouth perfectly level. Black hair cut very short, clean-shaven, no glasses. Wearing a dark walnut-brown (#6b4a2f) modern durumagi-style jacket over a brown shirt of the same tone. Expressionless, pixel-exact look — no smile, no frown, the face of someone who rejects a pretty picture for one wrong pixel on line 47.",
+  "out": "teams/design/out/gpt/portrait-design-outside-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

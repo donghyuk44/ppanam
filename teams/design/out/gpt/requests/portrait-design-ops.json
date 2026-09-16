@@ -1,0 +1,8 @@
+{
+  "name": "portrait-design-ops",
+  "who_is": "클레멘타인 · 디자이너 · 디자인 방 (28세 · 호주 · 여 — design.ops.md 열 줄 1 · 인형 design-ops: 금발 땋은 머리, 흰 저고리 + 치마 팀 색 #c96f3b)",
+  "style_prefix": "(portrait-boss.json 의 style_prefix 그대로)",
+  "prompt": "An Australian woman in her late twenties, sun-touched skin. Open friendly face with a squarish jaw, clear blue eyes, light eyebrows, wide easy grin. Golden-blond hair in a thick side braid, a few sun-bleached strands loose, no glasses. Wearing a white modern jeogori-style jacket with a terracotta-orange (#c96f3b) collar band — the only one of the seventeen with a white top. Practical, cheerful expression — the look of someone who counts the gear before going out to sea.",
+  "out": "teams/design/out/gpt/portrait-design-ops-512.png",
+  "series": "portrait-0916 — 대표 샘플 통과 뒤"
+}

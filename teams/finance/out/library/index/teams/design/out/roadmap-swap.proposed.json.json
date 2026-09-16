@@ -1,0 +1,110 @@
+{
+ "path": "teams/design/out/roadmap-swap.proposed.json",
+ "size": 10471,
+ "mtime": "1789357986609019585",
+ "ctime": "1789357986609193628",
+ "team": "디자인",
+ "title": "Three.js 인형 서울의 첫 화면 하나가 선다. 열다섯이 Kenney 인형 몸에 팀 색 옷·다른 머리·다른 실루엣으로 map.json 자리에 서 있고, 팀 집 다섯(골목 빌라)·댄의 집(한옥)·찻집·광장·회사(근정전)·남산타워·한강 다리가 Kenney 부품과 RoundedBox 로 서 있으며, 렌더 한 장이 8줄 채점 6개 이상 + 서울다움 넷(기와 지붕색·한글 간판·좁은 골목·남산타워와 한강 다리)으로 읽힌다. 개발팀이 teams/design/out/kit/ 의 파일을 그대로 꽂아 쓴다. 다른 도시에도 쓰는 방식(부품·규칙 파일)과 서울 한 장, 둘 다 있어야 끝이다(direction 8절). 키트화 규격·스크립트는 첫 화면 뒤 필요해지면 따로 연다.",
+ "lines": 67,
+ "sections": [
+  {
+   "level": 1,
+   "title": "destination (\"Three.js 인형 서울의 첫 화면 하나가\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 768,
+   "words": [
+    "destination",
+    "다른",
+    "kenney",
+    "골목",
+    "남산타워",
+    "부품",
+    "서울",
+    "인형"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "baseline (\"있는 것 — 아트 디렉션 2판 out/dir\")",
+   "from": 3,
+   "to": 3,
+   "bytes": 1291,
+   "words": [
+    "없음",
+    "baseline",
+    "결정",
+    "1판",
+    "2판",
+    "8줄",
+    "colormap",
+    "계약"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "milestones (배열 6)",
+   "from": 4,
+   "to": 47,
+   "bytes": 5652,
+   "words": [
+    "결정",
+    "대표",
+    "pass",
+    "자리",
+    "파일",
+    "deliverable",
+    "status",
+    "timebox"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "cutList (배열 15)",
+   "from": 48,
+   "to": 64,
+   "bytes": 1653,
+   "words": [
+    "화면",
+    "cutlist",
+    "걷기",
+    "결정",
+    "3d",
+    "같음",
+    "그림",
+    "모델"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "note (\"2026-09-13 R14 헨리 제안(B a\")",
+   "from": 65,
+   "to": 67,
+   "bytes": 643,
+   "words": [
+    "note",
+    "대표",
+    "r14",
+    "결정",
+    "목록",
+    "으로",
+    "제리",
+    "09-13"
+   ]
+  }
+ ],
+ "words": [
+  "결정",
+  "대표",
+  "화면",
+  "인형",
+  "pass",
+  "파일",
+  "자리",
+  "kenney",
+  "얼굴",
+  "열다섯",
+  "소품",
+  "스크립트"
+ ]
+}

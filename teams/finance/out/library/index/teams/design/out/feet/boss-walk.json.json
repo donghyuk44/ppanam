@@ -1,0 +1,73 @@
+{
+ "path": "teams/design/out/feet/boss-walk.json",
+ "size": 13450,
+ "mtime": "1789210197394624044",
+ "ctime": "1789210197394624044",
+ "team": "디자인",
+ "title": "객체 4키: file·cell·footline·frames",
+ "lines": 1251,
+ "sections": [
+  {
+   "level": 1,
+   "title": "file (\"teams/design/out/sprites\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 42,
+   "words": [
+    "file",
+    "teams/design/out/sprites64/boss-walk.png"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "cell (배열 2)",
+   "from": 3,
+   "to": 6,
+   "bytes": 7,
+   "words": [
+    "cell"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "footline (75)",
+   "from": 7,
+   "to": 7,
+   "bytes": 2,
+   "words": [
+    "footline"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "frames (배열 40)",
+   "from": 8,
+   "to": 1251,
+   "bytes": 6736,
+   "words": [
+    "left",
+    "right",
+    "bottom",
+    "dir",
+    "feet",
+    "none",
+    "planted",
+    "pose"
+   ]
+  }
+ ],
+ "words": [
+  "bottom",
+  "left",
+  "right",
+  "dir",
+  "feet",
+  "figure",
+  "none",
+  "planted",
+  "pose",
+  "top",
+  "east",
+  "north"
+ ]
+}

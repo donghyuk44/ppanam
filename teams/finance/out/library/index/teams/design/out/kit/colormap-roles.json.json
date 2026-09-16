@@ -1,0 +1,91 @@
+{
+ "path": "teams/design/out/kit/colormap-roles.json",
+ "size": 11548,
+ "mtime": "1789342352279589754",
+ "ctime": "1789342352279785789",
+ "team": "디자인",
+ "title": "객체 4키: _note·tileGrid·bodies·characterFixes",
+ "lines": 179,
+ "sections": [
+  {
+   "level": 1,
+   "title": "_note (\"칸 이름 — 헨리가 out/kit/color\")",
+   "from": 2,
+   "to": 2,
+   "bytes": 878,
+   "words": [
+    "note",
+    "accent",
+    "bottom",
+    "colors.top",
+    "hair",
+    "keep",
+    "shoes",
+    "skin"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "tileGrid (객체 3키)",
+   "from": 3,
+   "to": 3,
+   "bytes": 69,
+   "words": [
+    "tilegrid",
+    "high",
+    "low",
+    "rows",
+    "size",
+    "tilewidth"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "bodies (객체 12키)",
+   "from": 4,
+   "to": 170,
+   "bytes": 7979,
+   "words": [
+    "low",
+    "row",
+    "tile",
+    "high",
+    "shoes",
+    "hair",
+    "top",
+    "roles"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "characterFixes (객체 5키)",
+   "from": 171,
+   "to": 179,
+   "bytes": 507,
+   "words": [
+    "low",
+    "why",
+    "bottom",
+    "characterfixes",
+    "바지",
+    "밝은",
+    "09-14",
+    "1b1a1f"
+   ]
+  }
+ ],
+ "words": [
+  "low",
+  "row",
+  "tile",
+  "high",
+  "hair",
+  "bottom",
+  "top",
+  "shoes",
+  "accent",
+  "keep",
+  "roles",
+  "skin"
+ ]
+}

@@ -1,0 +1,229 @@
+{
+ "path": "teams/marketing/out/world-bible/40-persona/design.guide.md",
+ "size": 11275,
+ "mtime": "1789302817185556703",
+ "ctime": "1789302817185821276",
+ "team": "마케팅",
+ "title": "헨리 — 디자인팀 메인 디자인",
+ "lines": 98,
+ "sections": [
+  {
+   "level": 1,
+   "title": "헨리 — 디자인팀 메인 디자인",
+   "from": 1,
+   "to": 5,
+   "bytes": 345,
+   "words": [
+    "헨리",
+    "디자인",
+    "디자인팀",
+    "메인",
+    "바이블",
+    "세션",
+    "인격",
+    "teams/marketing/out/world-bible"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "열 줄",
+   "from": 6,
+   "to": 22,
+   "bytes": 1814,
+   "words": [
+    "그림",
+    "예쁜",
+    "디자인",
+    "프랑스",
+    "29세",
+    "구도가",
+    "남자",
+    "너는"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "너라는 사람",
+   "from": 23,
+   "to": 30,
+   "bytes": 809,
+   "words": [
+    "그림",
+    "너라",
+    "구도가",
+    "마크",
+    "예쁜",
+    "존댓말",
+    "것이다",
+    "격자"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "말투 (헨리가 채웠다 — 결정 46 ②, R14)",
+   "from": 31,
+   "to": 44,
+   "bytes": 1403,
+   "words": [
+    "r14",
+    "결정",
+    "말투",
+    "채웠다",
+    "헨리가",
+    "잠깐만요",
+    "가져오",
+    "나의"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "내력 (`20-people/design.guide.md` 8a~8c 요약)",
+   "from": 45,
+   "to": 50,
+   "bytes": 1180,
+   "words": [
+    "8a",
+    "8c",
+    "20-people/design.guide.md",
+    "내력",
+    "요약",
+    "구도가",
+    "그림",
+    "구도"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "관계 (`30-relations.md` 선 번호)",
+   "from": 51,
+   "to": 58,
+   "bytes": 1041,
+   "words": [
+    "30-relations.md",
+    "관계",
+    "번호",
+    "r11",
+    "네가",
+    "마크",
+    "반말",
+    "알고"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "세계 안의 자리 (인형 서울 — `10-world.md` 2절)",
+   "from": 59,
+   "to": 65,
+   "bytes": 973,
+   "words": [
+    "10-world.md",
+    "2절",
+    "서울",
+    "세계",
+    "안의",
+    "인형",
+    "자리",
+    "초안"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "네가 하는 일",
+   "from": 66,
+   "to": 70,
+   "bytes": 630,
+   "words": [
+    "네가",
+    "서울",
+    "그림",
+    "대표",
+    "양식서",
+    "인형",
+    "teams/design/decisions.md",
+    "teams/design/roadmap.json"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "일하는 방식",
+   "from": 71,
+   "to": 76,
+   "bytes": 978,
+   "words": [
+    "그림",
+    "방식",
+    "일하",
+    "참고",
+    "대표",
+    "대표가",
+    "도구",
+    "색은"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "승인 (결정 46)",
+   "from": 77,
+   "to": 86,
+   "bytes": 801,
+   "words": [
+    "결정",
+    "승인",
+    "request",
+    "다음",
+    "대표",
+    "도구",
+    "마일스톤",
+    "무엇"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "두 사람과 말하는 법",
+   "from": 87,
+   "to": 92,
+   "bytes": 985,
+   "words": [
+    "말하",
+    "마크",
+    "않는다",
+    "out/sprites/boss.png",
+    "기준",
+    "나온",
+    "대표",
+    "클레멘타인"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "바이블",
+   "from": 93,
+   "to": 98,
+   "bytes": 305,
+   "words": [
+    "바이블",
+    "1절",
+    "2절",
+    "3절",
+    "teams/marketing/out/world-bible/10-world.md",
+    "teams/marketing/out/world-bible/20-people/design.guide.md",
+    "teams/marketing/out/world-bible/30-relations.md",
+    "관계"
+   ]
+  }
+ ],
+ "words": [
+  "그림",
+  "마크",
+  "대표",
+  "클레멘타인",
+  "디자인",
+  "예쁜",
+  "헨리",
+  "구도가",
+  "존댓말",
+  "않는다",
+  "자가",
+  "구도"
+ ]
+}

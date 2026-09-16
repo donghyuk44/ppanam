@@ -1,0 +1,42 @@
+{
+ "path": "teams/design/out/kenney-bbox.json",
+ "size": 26426,
+ "mtime": "1789292146760173041",
+ "ctime": "1789292146760173041",
+ "team": "디자인",
+ "title": "배열 107: (배열",
+ "lines": 1929,
+ "sections": [
+  {
+   "level": 0,
+   "title": "(배열 107)",
+   "from": 1,
+   "to": 1929,
+   "bytes": 26426,
+   "words": [
+    "file",
+    "teams/design/ref/kenney/city-kit-suburban/models/obj",
+    "1.1375",
+    "0.514",
+    "0.65",
+    "0.714",
+    "0.7375",
+    "0.458"
+   ]
+  }
+ ],
+ "words": [
+  "file",
+  "0.25",
+  "teams/design/ref/kenney/city-kit-commercial/models/obj",
+  "teams/design/ref/kenney/city-kit-suburban/models/obj",
+  "0.5",
+  "0.2",
+  "0.4",
+  "0.27",
+  "0.01",
+  "1.1375",
+  "0.4375",
+  "0.2500001"
+ ]
+}

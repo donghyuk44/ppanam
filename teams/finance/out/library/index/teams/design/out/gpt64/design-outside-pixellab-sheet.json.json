@@ -1,0 +1,82 @@
+{
+ "path": "teams/design/out/gpt64/design-outside-pixellab-sheet.json",
+ "size": 2303,
+ "mtime": "1789245237637744434",
+ "ctime": "1789245237637744434",
+ "team": "디자인",
+ "title": "객체 4키: character·spritesheet·export_version·export_date",
+ "lines": 77,
+ "sections": [
+  {
+   "level": 1,
+   "title": "character (객체 6키)",
+   "from": 2,
+   "to": 12,
+   "bytes": 700,
+   "words": [
+    "dark",
+    "black",
+    "character",
+    "in",
+    "short",
+    "white",
+    "3.5",
+    "33-year-old"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "spritesheet (객체 6키)",
+   "from": 13,
+   "to": 74,
+   "bytes": 892,
+   "words": [
+    "animation",
+    "frame_count",
+    "row",
+    "type",
+    "animation_group_id",
+    "direction",
+    "e90a5487-144c-4c22-89a3-51e7b2ef50e1",
+    "walking"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "export_version (\"1.0\")",
+   "from": 75,
+   "to": 75,
+   "bytes": 5,
+   "words": [
+    "export_version",
+    "1.0"
+   ]
+  },
+  {
+   "level": 1,
+   "title": "export_date (\"2026-09-12T20:33:20.8654\")",
+   "from": 76,
+   "to": 77,
+   "bytes": 34,
+   "words": [
+    "export_date",
+    "20.865428",
+    "2026-09-12t20"
+   ]
+  }
+ ],
+ "words": [
+  "animation",
+  "frame_count",
+  "row",
+  "type",
+  "animation_group_id",
+  "dark",
+  "direction",
+  "e90a5487-144c-4c22-89a3-51e7b2ef50e1",
+  "walking",
+  "black",
+  "height",
+  "width"
+ ]
+}

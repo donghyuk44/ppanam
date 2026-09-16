@@ -1,0 +1,77 @@
+{
+  "character": {
+    "id": "96dd5fc4-796f-4eec-87ba-a105d8138af0",
+    "name": "Idle",
+    "prompt": "A company CEO in Joseon-fantasy attire: black gat hat with a wide brim, navy dopo robe with small gold pattern accents over white hanbok, white pants, black shoes, holding a folding fan in his right hand, calm stern face, black hair, two dark eyes. Classic Korean MMORPG pixel art style, thick dark outlines, about 3.5 heads tall.",
+    "size": {
+      "width": 40,
+      "height": 64
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "A_company_CEO_in_Joseon--Idle.png",
+    "cell_size": {
+      "width": 88,
+      "height": 88
+    },
+    "sheet_size": {
+      "width": 704,
+      "height": 440
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "eb93c2e9-981e-4a71-9c65-b66508a9c1f6",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "eb93c2e9-981e-4a71-9c65-b66508a9c1f6",
+        "direction": "east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "eb93c2e9-981e-4a71-9c65-b66508a9c1f6",
+        "direction": "north"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "eb93c2e9-981e-4a71-9c65-b66508a9c1f6",
+        "direction": "west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-09-12T10:48:01.353460+00:00"
+}

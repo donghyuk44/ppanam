@@ -1,0 +1,7618 @@
+{
+ "version": 3,
+ "builtAt": "2026-09-15T23:05:57.742Z",
+ "tocLimit": 10000,
+ "files": {
+  "AGENTS.md": {
+   "size": 2802,
+   "mtime": "1789306533468221417",
+   "ctime": "1789306533468221417",
+   "lines": 60,
+   "title": "ppanam",
+   "sections": 6,
+   "words": [
+    "않는다",
+    "teams",
+    "ppanam",
+    "라운드",
+    "마일스톤",
+    "쓴다",
+    "파일",
+    "ai",
+    "fail",
+    "out",
+    "outside",
+    "감사한다"
+   ]
+  },
+  "CLAUDE.md": {
+   "size": 2893,
+   "mtime": "1789513525521081370",
+   "ctime": "1789513525521294369",
+   "lines": 60,
+   "title": "ppanam",
+   "sections": 6,
+   "words": [
+    "않는다",
+    "teams",
+    "ppanam",
+    "마일스톤",
+    "쓴다",
+    "파일",
+    "ai",
+    "fail",
+    "out",
+    "outside",
+    "감사한다",
+    "남긴다"
+   ]
+  },
+  "docs/cases.md": {
+   "size": 10869,
+   "mtime": "1789191575528918178",
+   "ctime": "1789191575528918178",
+   "lines": 65,
+   "title": "실패 사례 카탈로그 — 남들이 깨진 곳, 우리가 깨진 곳",
+   "sections": 4,
+   "words": [
+    "순순빌리지",
+    "arxiv",
+    "깨진",
+    "server/conductor.mjs",
+    "모델",
+    "llm",
+    "대화록",
+    "파일",
+    "ai",
+    "근거",
+    "대화",
+    "마을"
+   ]
+  },
+  "docs/event-schema.md": {
+   "size": 131753,
+   "mtime": "1789512480520851175",
+   "ctime": "1789512480521121672",
+   "lines": 996,
+   "title": "이벤트 스키마 — 작전실 채팅방에 나타날 수 있는 것의 전부",
+   "sections": 34,
+   "words": [
+    "대표",
+    "자리",
+    "결정",
+    "카드",
+    "라운드",
+    "않는다",
+    "note",
+    "판정",
+    "화면",
+    "id",
+    "요청",
+    "차례"
+   ]
+  },
+  "docs/handover.md": {
+   "size": 13163,
+   "mtime": "1789262869104197725",
+   "ctime": "1789262869104342017",
+   "lines": 132,
+   "title": "ppanam 인수인계 — 2026-09-13 06:00 KST",
+   "sections": 11,
+   "words": [
+    "대표",
+    "인격",
+    "않는다",
+    "자리",
+    "이름",
+    "정지",
+    "카드",
+    "codex",
+    "node",
+    "claude",
+    "ppanam",
+    "걷기"
+   ]
+  },
+  "docs/plan.md": {
+   "size": 27268,
+   "mtime": "1789182441445869827",
+   "ctime": "1789182441445869827",
+   "lines": 437,
+   "title": "ppanam — 마케팅팀 AI 오케스트레이션 + 실시간 단톡방",
+   "sections": 32,
+   "words": [
+    "영상",
+    "라운드",
+    "phase",
+    "claude",
+    "실제",
+    "않는다",
+    "서브에이전트",
+    "파일",
+    "마일스톤",
+    "클로드",
+    "gpt",
+    "감사"
+   ]
+  },
+  "teams/design/decisions.md": {
+   "size": 2978,
+   "mtime": "1789190845778364789",
+   "ctime": "1789190845778364789",
+   "lines": 60,
+   "title": "디자인팀 — 확정 조항",
+   "sections": 4,
+   "words": [
+    "디자인팀",
+    "마을",
+    "대표",
+    "원문",
+    "디자인",
+    "조항",
+    "템플릿",
+    "해석",
+    "확정",
+    "1번",
+    "2026-09-12",
+    "도트"
+   ]
+  },
+  "teams/design/guide.md": {
+   "size": 6597,
+   "mtime": "1789239682493096464",
+   "ctime": "1789239682493096464",
+   "lines": 88,
+   "title": "헨리 — 디자인팀 메인 디자인",
+   "sections": 8,
+   "words": [
+    "그림",
+    "대표",
+    "팔레트",
+    "도구",
+    "디자인",
+    "마크",
+    "헨리",
+    "마라",
+    "메인",
+    "캐릭터",
+    "클레멘타인",
+    "디자인팀"
+   ]
+  },
+  "teams/design/journal/guide.md": {
+   "size": 8860,
+   "mtime": "1789500183045370243",
+   "ctime": "1789500183045370243",
+   "lines": 29,
+   "title": "2026-09-15 · 라운드 17 · 헨리",
+   "sections": 7,
+   "words": [
+    "라운드",
+    "그림",
+    "헨리",
+    "구도",
+    "나는",
+    "내가",
+    "대표",
+    "보는",
+    "사람인데",
+    "마크",
+    "배웠다",
+    "예쁜"
+   ]
+  },
+  "teams/design/journal/ops.md": {
+   "size": 8277,
+   "mtime": "1789500176691375051",
+   "ctime": "1789500176691375051",
+   "lines": 29,
+   "title": "2026-09-15 · 라운드 17 · 클레멘타인",
+   "sections": 7,
+   "words": [
+    "클레멘타인",
+    "오늘",
+    "라운드",
+    "손이",
+    "세는",
+    "팔레트",
+    "나는",
+    "사람이다",
+    "스크립트",
+    "node",
+    "창고",
+    "헨리가"
+   ]
+  },
+  "teams/design/journal/outside.md": {
+   "size": 4593,
+   "mtime": "1789500191988973260",
+   "ctime": "1789500191988973260",
+   "lines": 43,
+   "title": "2026-09-15 · 라운드 17 · 마크",
+   "sections": 7,
+   "words": [
+    "마크",
+    "라운드",
+    "수치",
+    "2026-09-15",
+    "기준",
+    "나는",
+    "외부감사입니다",
+    "대신",
+    "바뀌어",
+    "사람이",
+    "수치가",
+    "예쁘다"
+   ]
+  },
+  "teams/design/ops.md": {
+   "size": 5186,
+   "mtime": "1789239682493337343",
+   "ctime": "1789239682493337343",
+   "lines": 86,
+   "title": "클레멘타인 — 디자인팀 보조 디자인",
+   "sections": 9,
+   "words": [
+    "헨리",
+    "팔레트",
+    "디자인",
+    "클레멘타인",
+    "파일",
+    "마크",
+    "보조",
+    "프레임",
+    "검사",
+    "그림",
+    "네가",
+    "디자인팀"
+   ]
+  },
+  "teams/design/out/blueprint-1.md": {
+   "size": 10781,
+   "mtime": "1789342920601534930",
+   "ctime": "1789342920601813006",
+   "lines": 82,
+   "title": "우리 구조 도면 1판 — 모양 (헨리) · 낱말은 하영",
+   "sections": 11,
+   "words": [
+    "목표",
+    "도면",
+    "기둥",
+    "낱말",
+    "이름",
+    "결정",
+    "대표",
+    "모양",
+    "원문",
+    "자리",
+    "다섯",
+    "사이"
+   ]
+  },
+  "teams/design/out/colormap-uv.md": {
+   "size": 0,
+   "mtime": "1789319730908701813",
+   "ctime": "1789319730908701813",
+   "lines": 1,
+   "title": "",
+   "sections": 1,
+   "words": []
+  },
+  "teams/design/out/direction-1-pixel.md": {
+   "size": 4012,
+   "mtime": "1789288923625829483",
+   "ctime": "1789288923626060531",
+   "lines": 31,
+   "title": "[접음 · 기록] 첫 화면 아트 디렉션 1판 — 도트 · 직교 40° · 빌보드",
+   "sections": 4,
+   "words": [
+    "화면",
+    "도트",
+    "기록",
+    "단위",
+    "빌보드",
+    "1판",
+    "광장",
+    "디렉션",
+    "아트",
+    "접음",
+    "직교",
+    "2.5"
+   ]
+  },
+  "teams/design/out/direction.md": {
+   "size": 22148,
+   "mtime": "1789295397759688687",
+   "ctime": "1789295397759949724",
+   "lines": 135,
+   "title": "아트 디렉션 2판 — 인형 마을로 본 서울",
+   "sections": 15,
+   "words": [
+    "결정",
+    "8줄",
+    "부품",
+    "kenney",
+    "마을",
+    "인형",
+    "건물",
+    "1판",
+    "골목",
+    "렌더",
+    "서울",
+    "소품"
+   ]
+  },
+  "teams/design/out/faces/boss.png": {
+   "kind": "image",
+   "size": 9789,
+   "mtime": "1789495078921381475",
+   "ctime": "1789495078921381475"
+  },
+  "teams/design/out/faces/design-guide.png": {
+   "kind": "image",
+   "size": 13832,
+   "mtime": "1789495028588087032",
+   "ctime": "1789495028588087032"
+  },
+  "teams/design/out/faces/design-ops.png": {
+   "kind": "image",
+   "size": 16026,
+   "mtime": "1789495031862071020",
+   "ctime": "1789495031862071020"
+  },
+  "teams/design/out/faces/design-outside.png": {
+   "kind": "image",
+   "size": 10497,
+   "mtime": "1789495035230037627",
+   "ctime": "1789495035230037627"
+  },
+  "teams/design/out/faces/dev-guide.png": {
+   "kind": "image",
+   "size": 12585,
+   "mtime": "1789495018594827697",
+   "ctime": "1789495018594827697"
+  },
+  "teams/design/out/faces/dev-ops.png": {
+   "kind": "image",
+   "size": 15336,
+   "mtime": "1789495021847056808",
+   "ctime": "1789495021847056808"
+  },
+  "teams/design/out/faces/dev-outside.png": {
+   "kind": "image",
+   "size": 14778,
+   "mtime": "1789495025233808212",
+   "ctime": "1789495025233808212"
+  },
+  "teams/design/out/faces/finance-guide.png": {
+   "kind": "image",
+   "size": 10625,
+   "mtime": "1789495048623162468",
+   "ctime": "1789495048623162468"
+  },
+  "teams/design/out/faces/finance-outside.png": {
+   "kind": "image",
+   "size": 12379,
+   "mtime": "1789495055270343829",
+   "ctime": "1789495055270343829"
+  },
+  "teams/design/out/faces/finance-review.png": {
+   "kind": "image",
+   "size": 16361,
+   "mtime": "1789495051874230631",
+   "ctime": "1789495051874230631"
+  },
+  "teams/design/out/faces/hq-chief.png": {
+   "kind": "image",
+   "size": 14775,
+   "mtime": "1789495008604678197",
+   "ctime": "1789495008604678197"
+  },
+  "teams/design/out/faces/hq-outside.png": {
+   "kind": "image",
+   "size": 15497,
+   "mtime": "1789495011987316782",
+   "ctime": "1789495011987316782"
+  },
+  "teams/design/out/faces/hq-secretary.png": {
+   "kind": "image",
+   "size": 13906,
+   "mtime": "1789495015270468059",
+   "ctime": "1789495015270468059"
+  },
+  "teams/design/out/faces/hq-system.png": {
+   "kind": "image",
+   "size": 15505,
+   "mtime": "1789500038069340592",
+   "ctime": "1789500038069340592"
+  },
+  "teams/design/out/faces/manifest.json": {
+   "size": 4020,
+   "mtime": "1789500074293678172",
+   "ctime": "1789500074293845923",
+   "lines": 34,
+   "title": "객체 13키: _note·size·transparent·front·head",
+   "sections": 13,
+   "words": [
+    "facepx",
+    "line",
+    "file",
+    "name",
+    "나리",
+    "characters.json",
+    "note",
+    "색표",
+    "테라",
+    "head",
+    "얼굴",
+    "인형"
+   ]
+  },
+  "teams/design/out/faces/marketing-guide.png": {
+   "kind": "image",
+   "size": 11387,
+   "mtime": "1789495038625760355",
+   "ctime": "1789495038625760355"
+  },
+  "teams/design/out/faces/marketing-outside.png": {
+   "kind": "image",
+   "size": 9283,
+   "mtime": "1789495045235955927",
+   "ctime": "1789495045235955927"
+  },
+  "teams/design/out/faces/marketing-review.png": {
+   "kind": "image",
+   "size": 13890,
+   "mtime": "1789495041872254811",
+   "ctime": "1789495041872254811"
+  },
+  "teams/design/out/faces/spec.md": {
+   "size": 4284,
+   "mtime": "1789492953789946098",
+   "ctime": "1789492953790125718",
+   "lines": 55,
+   "title": "얼굴 썸네일 열일곱 — 규격 1판",
+   "sections": 5,
+   "words": [
+    "얼굴",
+    "헨리",
+    "클레멘타인",
+    "자리",
+    "머리",
+    "1판",
+    "열일곱",
+    "나리",
+    "인형",
+    "characters.json",
+    "썸네일",
+    "찍는다"
+   ]
+  },
+  "teams/design/out/feet-measure-2026-09-13.txt": {
+   "size": 4120,
+   "mtime": "1789282125634180427",
+   "ctime": "1789282125634180427",
+   "lines": 198,
+   "title": "배열 15: (배열",
+   "sections": 1,
+   "words": [
+    "bottom",
+    "centerx",
+    "file",
+    "height",
+    "shift",
+    "torsoband",
+    "torsox",
+    "width",
+    "16.5",
+    "11.5",
+    "14.5",
+    "users/donghyukham/documents/ppanam/.claude/worktrees/ppanam-review-issues-4058bc/teams/design/out/sprites64/boss.png"
+   ]
+  },
+  "teams/design/out/feet-measure-table.md": {
+   "size": 1660,
+   "mtime": "1789282157720182786",
+   "ctime": "1789282157720484535",
+   "lines": 25,
+   "title": "정면 열다섯 장 — 최하단 줄 · torsoX 실측",
+   "sections": 1,
+   "words": [
+    "torsox",
+    "열다섯",
+    "최하단",
+    "실측",
+    "정면",
+    "16.5",
+    "centerx",
+    "design-ops",
+    "design-outside",
+    "dev-guide",
+    "finance-outside",
+    "height"
+   ]
+  },
+  "teams/design/out/feet/boss-walk.json": {
+   "size": 13450,
+   "mtime": "1789210197394624044",
+   "ctime": "1789210197394624044",
+   "lines": 1251,
+   "title": "객체 4키: file·cell·footline·frames",
+   "sections": 4,
+   "words": [
+    "bottom",
+    "left",
+    "right",
+    "dir",
+    "feet",
+    "figure",
+    "none",
+    "planted",
+    "pose",
+    "top",
+    "east",
+    "north"
+   ]
+  },
+  "teams/design/out/feet/boss.json": {
+   "size": 5453,
+   "mtime": "1789201116097409909",
+   "ctime": "1789201116097409909",
+   "lines": 507,
+   "title": "객체 4키: file·cell·footline·frames",
+   "sections": 4,
+   "words": [
+    "left",
+    "right",
+    "bottom",
+    "dir",
+    "feet",
+    "figure",
+    "planted",
+    "pose",
+    "top",
+    "both",
+    "stand",
+    "east"
+   ]
+  },
+  "teams/design/out/feet/design-guide.json": {
+   "size": 5466,
+   "mtime": "1789201116155189072",
+   "ctime": "1789201116155189072",
+   "lines": 507,
+   "title": "객체 4키: file·cell·footline·frames",
+   "sections": 4,
+   "words": [
+    "left",
+    "right",
+    "bottom",
+    "dir",
+    "feet",
+    "figure",
+    "planted",
+    "pose",
+    "top",
+    "both",
+    "stand",
+    "east"
+   ]
+  },
+  "teams/design/out/feet/design-ops.json": {
+   "size": 5460,
+   "mtime": "1789201116214007800",
+   "ctime": "1789201116214007800",
+   "lines": 507,
+   "title": "객체 4키: file·cell·footline·frames",
+   "sections": 4,
+   "words": [
+    "left",
+    "right",
+    "bottom",
+    "dir",
+    "feet",
+    "figure",
+    "planted",
+    "pose",
+    "top",
+    "stand",
+    "both",
+    "east"
+   ]
+  },
+  "teams/design/out/feet/design-outside.json": {
+   "size": 5456,
+   "mtime": "1789201116271022183",
+   "ctime": "1789201116271022183",
+   "lines": 507,
+   "title": "객체 4키: file·cell·footline·frames",
+   "sections": 4,
+   "words": [
+    "left",
+    "right",
+    "bottom",
+    "dir",
+    "feet",
+    "figure",
+    "planted",
+    "pose",
+    "top",
+    "both",
+    "stand",
+    "east"
+   ]
+  },
+  "teams/design/out/feet/dev-guide.json": {
+   "size": 5449,
+   "mtime": "1789201116325703689",
+   "ctime": "1789201116325703689",
+   "lines": 507,
+   "title": "객체 4키: file·cell·footline·frames",
+   "sections": 4,
+   "words": [
+    "left",
+    "right",
+    "bottom",
+    "dir",
+    "feet",
+    "figure",
+    "planted",
+    "pose",
+    "top",
+    "both",
+    "stand",
+    "east"
+   ]
+  },
+  "teams/design/out/feet/dev-ops.json": {
+   "size": 5465,
+   "mtime": "1789201116381390928",
+   "ctime": "1789201116381390928",
+   "lines": 507,
+   "title": "객체 4키: file·cell·footline·frames",
+   "sections": 4,
+   "words": [
+    "right",
+    "left",
+    "bottom",
+    "dir",
+    "feet",
+    "figure",
+    "planted",
+    "pose",
+    "top",
+    "stand",
+    "both",
+    "east"
+   ]
+  },
+  "teams/design/out/feet/dev-outside.json": {
+   "size": 5450,
+   "mtime": "1789206386286092997",
+   "ctime": "1789206386286092997",
+   "lines": 507,
+   "title": "객체 4키: file·cell·footline·frames",
+   "sections": 4,
+   "words": [
+    "left",
+    "right",
+    "bottom",
+    "dir",
+    "feet",
+    "figure",
+    "planted",
+    "pose",
+    "top",
+    "both",
+    "stand",
+    "east"
+   ]
+  },
+  "teams/design/out/feet/finance-guide.json": {
+   "size": 5465,
+   "mtime": "1789206386313517505",
+   "ctime": "1789206386313517505",
+   "lines": 507,
+   "title": "객체 4키: file·cell·footline·frames",
+   "sections": 4,
+   "words": [
+    "left",
+    "right",
+    "bottom",
+    "dir",
+    "feet",
+    "figure",
+    "planted",
+    "pose",
+    "top",
+    "stand",
+    "both",
+    "east"
+   ]
+  },
+  "teams/design/out/feet/finance-review.json": {
+   "size": 5459,
+   "mtime": "1789206505712241616",
+   "ctime": "1789206505712241616",
+   "lines": 507,
+   "title": "객체 4키: file·cell·footline·frames",
+   "sections": 4,
+   "words": [
+    "left",
+    "right",
+    "bottom",
+    "dir",
+    "feet",
+    "figure",
+    "planted",
+    "pose",
+    "top",
+    "both",
+    "stand",
+    "east"
+   ]
+  },
+  "teams/design/out/feet/hq-chief.json": {
+   "size": 5457,
+   "mtime": "1789206386257055818",
+   "ctime": "1789206386257055818",
+   "lines": 507,
+   "title": "객체 4키: file·cell·footline·frames",
+   "sections": 4,
+   "words": [
+    "left",
+    "right",
+    "bottom",
+    "dir",
+    "feet",
+    "figure",
+    "planted",
+    "pose",
+    "top",
+    "both",
+    "stand",
+    "east"
+   ]
+  },
+  "teams/design/out/gpt/boss-1024.png": {
+   "kind": "image",
+   "size": 70645,
+   "mtime": "1789200591940611838",
+   "ctime": "1789200591940795168"
+  },
+  "teams/design/out/gpt/boss-gpt-v1-512.png": {
+   "kind": "image",
+   "size": 8676,
+   "mtime": "1789195580400589135",
+   "ctime": "1789195580400819303"
+  },
+  "teams/design/out/gpt/boss-gpt-v1.png": {
+   "kind": "image",
+   "size": 1718,
+   "mtime": "1789195580466406440",
+   "ctime": "1789195580466406440"
+  },
+  "teams/design/out/gpt/boss-gpt-walk-2048.png": {
+   "kind": "image",
+   "size": 123306,
+   "mtime": "1789196112474563875",
+   "ctime": "1789196112474751584"
+  },
+  "teams/design/out/gpt/boss-gpt-walk.png": {
+   "kind": "image",
+   "size": 23229,
+   "mtime": "1789196112591972661",
+   "ctime": "1789196112591972661"
+  },
+  "teams/design/out/gpt/boss-prompt.txt": {
+   "size": 1777,
+   "mtime": "1789196112638062321",
+   "ctime": "1789196112638062321",
+   "lines": 6,
+   "title": "[ChatGPT, 2026-09-12, 참고 첨부: ref/baram/char_magician.png, ref/baram/char_thief.p",
+   "sections": 1,
+   "words": [
+    "no",
+    "character",
+    "to",
+    "exactly",
+    "in",
+    "of",
+    "on",
+    "pixel",
+    "pixels",
+    "same",
+    "then",
+    "8x"
+   ]
+  },
+  "teams/design/out/gpt/design-guide-1024.png": {
+   "kind": "image",
+   "size": 52344,
+   "mtime": "1789200715033395251",
+   "ctime": "1789200715033580207"
+  },
+  "teams/design/out/gpt/design-ops-1024.png": {
+   "kind": "image",
+   "size": 68382,
+   "mtime": "1789200591772970964",
+   "ctime": "1789200591773189586"
+  },
+  "teams/design/out/gpt/design-outside-1024.png": {
+   "kind": "image",
+   "size": 23274,
+   "mtime": "1789201073818653911",
+   "ctime": "1789201073818797283"
+  },
+  "teams/design/out/gpt/dev-guide-1024.png": {
+   "kind": "image",
+   "size": 1698069,
+   "mtime": "1789200591575416339",
+   "ctime": "1789200591575710167"
+  },
+  "teams/design/out/gpt/dev-ops-1024.png": {
+   "kind": "image",
+   "size": 56494,
+   "mtime": "1789200887710930271",
+   "ctime": "1789200887711122934"
+  },
+  "teams/design/out/gpt/dev-outside-1024.png": {
+   "kind": "image",
+   "size": 1719321,
+   "mtime": "1789206385646117028",
+   "ctime": "1789206385646293608"
+  },
+  "teams/design/out/gpt/finance-guide-1024.png": {
+   "kind": "image",
+   "size": 65648,
+   "mtime": "1789206386070680096",
+   "ctime": "1789206386070818468"
+  },
+  "teams/design/out/gpt/finance-review-1024.png": {
+   "kind": "image",
+   "size": 1727285,
+   "mtime": "1789206505496367142",
+   "ctime": "1789206505496524846"
+  },
+  "teams/design/out/gpt/henri-2-512.png": {
+   "kind": "image",
+   "size": 7370,
+   "mtime": "1789198203914088244",
+   "ctime": "1789198203914272287"
+  },
+  "teams/design/out/gpt/henri-512.png": {
+   "kind": "image",
+   "size": 7447,
+   "mtime": "1789196494089836320",
+   "ctime": "1789196494090000863"
+  },
+  "teams/design/out/gpt/hq-chief-1024.png": {
+   "kind": "image",
+   "size": 1687711,
+   "mtime": "1789206385898082440",
+   "ctime": "1789206385898218395"
+  },
+  "teams/design/out/gpt/marketing-review-1024.png": {
+   "kind": "image",
+   "size": 1705048,
+   "mtime": "1789206796852945947",
+   "ctime": "1789206796853117405"
+  },
+  "teams/design/out/gpt/requests/boss.json": {
+   "size": 2155,
+   "mtime": "1789199335271414838",
+   "ctime": "1789199335271597214",
+   "lines": 10,
+   "title": "boss",
+   "sections": 3,
+   "words": [
+    "of",
+    "cell",
+    "no",
+    "pixel",
+    "every",
+    "in",
+    "is",
+    "on",
+    "right",
+    "to",
+    "black",
+    "character"
+   ]
+  },
+  "teams/design/out/gpt/requests/concept-2.json": {
+   "size": 4571,
+   "mtime": "1789289133860384924",
+   "ctime": "1789289133860553679",
+   "lines": 14,
+   "title": "concept-2",
+   "sections": 8,
+   "words": [
+    "units",
+    "tall",
+    "to",
+    "wall",
+    "in",
+    "no",
+    "front",
+    "is",
+    "people",
+    "roof",
+    "two",
+    "2.5"
+   ]
+  },
+  "teams/design/out/gpt/requests/concept.json": {
+   "size": 3795,
+   "mtime": "1789281772378010960",
+   "ctime": "1789281772378274585",
+   "lines": 13,
+   "title": "concept",
+   "sections": 7,
+   "words": [
+    "units",
+    "in",
+    "tall",
+    "to",
+    "no",
+    "2.5",
+    "front",
+    "of",
+    "by",
+    "wide",
+    "at",
+    "deep"
+   ]
+  },
+  "teams/design/out/gpt/requests/design-guide-2.json": {
+   "size": 3196,
+   "mtime": "1789206587068154035",
+   "ctime": "1789206587068352072",
+   "lines": 11,
+   "title": "design-guide-2",
+   "sections": 4,
+   "words": [
+    "of",
+    "in",
+    "on",
+    "cell",
+    "every",
+    "is",
+    "left",
+    "no",
+    "row",
+    "his",
+    "pixel",
+    "to"
+   ]
+  },
+  "teams/design/out/gpt/requests/design-guide.json": {
+   "size": 2680,
+   "mtime": "1789199345620445526",
+   "ctime": "1789199345620584193",
+   "lines": 10,
+   "title": "design-guide",
+   "sections": 3,
+   "words": [
+    "of",
+    "left",
+    "no",
+    "cell",
+    "his",
+    "on",
+    "pixel",
+    "dark",
+    "every",
+    "in",
+    "is",
+    "right"
+   ]
+  },
+  "teams/design/out/gpt/requests/design-ops.json": {
+   "size": 2417,
+   "mtime": "1789199581149072606",
+   "ctime": "1789199581149623523",
+   "lines": 10,
+   "title": "design-ops",
+   "sections": 3,
+   "words": [
+    "of",
+    "her",
+    "in",
+    "on",
+    "right",
+    "cell",
+    "pixel",
+    "every",
+    "is",
+    "no",
+    "to",
+    "character"
+   ]
+  },
+  "teams/design/out/gpt/requests/design-outside.json": {
+   "size": 2341,
+   "mtime": "1789199589360946777",
+   "ctime": "1789199589361193985",
+   "lines": 10,
+   "title": "design-outside",
+   "sections": 3,
+   "words": [
+    "of",
+    "cell",
+    "no",
+    "pixel",
+    "dark",
+    "every",
+    "in",
+    "is",
+    "on",
+    "right",
+    "to",
+    "black"
+   ]
+  },
+  "teams/design/out/gpt/requests/dev-guide.json": {
+   "size": 2384,
+   "mtime": "1789199597917680465",
+   "ctime": "1789199597917841215",
+   "lines": 10,
+   "title": "dev-guide",
+   "sections": 3,
+   "words": [
+    "of",
+    "cell",
+    "in",
+    "is",
+    "pixel",
+    "to",
+    "character",
+    "every",
+    "no",
+    "on",
+    "right",
+    "dark"
+   ]
+  },
+  "teams/design/out/gpt/requests/dev-ops.json": {
+   "size": 2342,
+   "mtime": "1789199606460791470",
+   "ctime": "1789199606461155721",
+   "lines": 10,
+   "title": "dev-ops",
+   "sections": 3,
+   "words": [
+    "of",
+    "cell",
+    "pixel",
+    "character",
+    "every",
+    "in",
+    "is",
+    "no",
+    "on",
+    "right",
+    "to",
+    "left"
+   ]
+  },
+  "teams/design/out/gpt/requests/dev-outside.json": {
+   "size": 2413,
+   "mtime": "1789199615063540044",
+   "ctime": "1789199615063864253",
+   "lines": 10,
+   "title": "dev-outside",
+   "sections": 3,
+   "words": [
+    "of",
+    "cell",
+    "in",
+    "no",
+    "pixel",
+    "every",
+    "is",
+    "on",
+    "right",
+    "to",
+    "black",
+    "character"
+   ]
+  },
+  "teams/design/out/gpt/requests/dolls-lineup-2.json": {
+   "size": 3989,
+   "mtime": "1789345148361049680",
+   "ctime": "1789345148361275965",
+   "lines": 16,
+   "title": "dolls-lineup-2",
+   "sections": 8,
+   "words": [
+    "top",
+    "skin",
+    "hair",
+    "no",
+    "black",
+    "medium",
+    "same",
+    "light",
+    "1차",
+    "as",
+    "blond",
+    "figure"
+   ]
+  },
+  "teams/design/out/gpt/requests/dolls-lineup.json": {
+   "size": 4099,
+   "mtime": "1789302974338964560",
+   "ctime": "1789302974338964560",
+   "lines": 16,
+   "title": "dolls-lineup",
+   "sections": 7,
+   "words": [
+    "hair",
+    "skin",
+    "top",
+    "black",
+    "no",
+    "light",
+    "medium",
+    "body",
+    "to",
+    "figure",
+    "one",
+    "그림"
+   ]
+  },
+  "teams/design/out/gpt/requests/finance-guide.json": {
+   "size": 2263,
+   "mtime": "1789199670817234524",
+   "ctime": "1789199670817369357",
+   "lines": 10,
+   "title": "finance-guide",
+   "sections": 3,
+   "words": [
+    "of",
+    "cell",
+    "on",
+    "pixel",
+    "character",
+    "every",
+    "in",
+    "is",
+    "no",
+    "right",
+    "to",
+    "dark"
+   ]
+  },
+  "teams/design/out/gpt/requests/finance-outside.json": {
+   "size": 2304,
+   "mtime": "1789199687155336185",
+   "ctime": "1789199687155595310",
+   "lines": 10,
+   "title": "finance-outside",
+   "sections": 3,
+   "words": [
+    "of",
+    "cell",
+    "pixel",
+    "to",
+    "character",
+    "every",
+    "in",
+    "is",
+    "no",
+    "on",
+    "right",
+    "dark"
+   ]
+  },
+  "teams/design/out/gpt/requests/finance-review.json": {
+   "size": 2397,
+   "mtime": "1789199679078810709",
+   "ctime": "1789199679079056835",
+   "lines": 10,
+   "title": "finance-review",
+   "sections": 3,
+   "words": [
+    "left",
+    "of",
+    "cell",
+    "on",
+    "pixel",
+    "character",
+    "every",
+    "in",
+    "is",
+    "no",
+    "to",
+    "dark"
+   ]
+  },
+  "teams/design/out/gpt/requests/henri-2.json": {
+   "size": 2269,
+   "mtime": "1789198058729555791",
+   "ctime": "1789198058730007626",
+   "lines": 10,
+   "title": "henri-2",
+   "sections": 3,
+   "words": [
+    "no",
+    "change",
+    "character",
+    "his",
+    "as",
+    "dark",
+    "hair",
+    "in",
+    "flat",
+    "on",
+    "pixel",
+    "two"
+   ]
+  },
+  "teams/design/out/gpt/requests/henri-walk.json": {
+   "size": 306,
+   "mtime": "1789199363396496290",
+   "ctime": "1789199363396765166",
+   "lines": 6,
+   "title": "henri-walk",
+   "sections": 3,
+   "words": [
+    "1024",
+    "1536",
+    "64px",
+    "henri-walk",
+    "name",
+    "note",
+    "obsolete",
+    "requests/design-guide.json",
+    "결정",
+    "권한",
+    "내용",
+    "대표"
+   ]
+  },
+  "teams/design/out/gpt/requests/henri.json": {
+   "size": 1648,
+   "mtime": "1789196185670182723",
+   "ctime": "1789196185670830018",
+   "lines": 10,
+   "title": "henri",
+   "sections": 3,
+   "words": [
+    "no",
+    "his",
+    "character",
+    "of",
+    "pixel",
+    "about",
+    "art",
+    "black",
+    "flat",
+    "hair",
+    "hand",
+    "head"
+   ]
+  },
+  "teams/design/out/gpt/requests/hq-chief.json": {
+   "size": 2411,
+   "mtime": "1789199623449325038",
+   "ctime": "1789199623449625205",
+   "lines": 10,
+   "title": "hq-chief",
+   "sections": 3,
+   "words": [
+    "of",
+    "cell",
+    "pixel",
+    "every",
+    "in",
+    "is",
+    "no",
+    "on",
+    "right",
+    "to",
+    "black",
+    "character"
+   ]
+  },
+  "teams/design/out/gpt/requests/hq-outside.json": {
+   "size": 2656,
+   "mtime": "1789199632715762408",
+   "ctime": "1789199632716043408",
+   "lines": 10,
+   "title": "hq-outside",
+   "sections": 3,
+   "words": [
+    "of",
+    "cell",
+    "in",
+    "pixel",
+    "character",
+    "every",
+    "facing",
+    "is",
+    "no",
+    "on",
+    "same",
+    "to"
+   ]
+  },
+  "teams/design/out/gpt/requests/marketing-guide.json": {
+   "size": 2356,
+   "mtime": "1789199644493192883",
+   "ctime": "1789199644493352966",
+   "lines": 10,
+   "title": "marketing-guide",
+   "sections": 3,
+   "words": [
+    "of",
+    "cell",
+    "left",
+    "on",
+    "pixel",
+    "to",
+    "character",
+    "every",
+    "in",
+    "is",
+    "no",
+    "right"
+   ]
+  },
+  "teams/design/out/gpt/requests/marketing-outside.json": {
+   "size": 2441,
+   "mtime": "1789199662284449821",
+   "ctime": "1789199662284633446",
+   "lines": 10,
+   "title": "marketing-outside",
+   "sections": 3,
+   "words": [
+    "in",
+    "of",
+    "cell",
+    "on",
+    "pixel",
+    "every",
+    "is",
+    "no",
+    "right",
+    "to",
+    "character",
+    "dark"
+   ]
+  },
+  "teams/design/out/gpt/requests/marketing-review.json": {
+   "size": 2435,
+   "mtime": "1789199653229040441",
+   "ctime": "1789199653229301233",
+   "lines": 10,
+   "title": "marketing-review",
+   "sections": 3,
+   "words": [
+    "of",
+    "in",
+    "cell",
+    "left",
+    "on",
+    "pixel",
+    "character",
+    "every",
+    "hand",
+    "is",
+    "no",
+    "right"
+   ]
+  },
+  "teams/design/out/gpt/requests/sera-float.json": {
+   "size": 3546,
+   "mtime": "1789345143492432251",
+   "ctime": "1789345143492624454",
+   "lines": 13,
+   "title": "sera-float",
+   "sections": 7,
+   "words": [
+    "no",
+    "character",
+    "bar",
+    "in",
+    "kenney",
+    "on",
+    "sera",
+    "small",
+    "soft",
+    "200px",
+    "braid",
+    "c94a3a"
+   ]
+  },
+  "teams/design/out/gpt/requests/tower-tabs.json": {
+   "size": 4612,
+   "mtime": "1789285083543221900",
+   "ctime": "1789285083543750992",
+   "lines": 11,
+   "title": "tower-tabs",
+   "sections": 8,
+   "words": [
+    "row",
+    "grey",
+    "red",
+    "대표",
+    "in",
+    "card",
+    "no",
+    "right",
+    "text",
+    "at",
+    "mono",
+    "small"
+   ]
+  },
+  "teams/design/out/gpt/requests64/boss.json": {
+   "size": 1563,
+   "mtime": "1789207386678080909",
+   "ctime": "1789207386678080909",
+   "lines": 11,
+   "title": "boss-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "black",
+    "character",
+    "pixel",
+    "to",
+    "about",
+    "art",
+    "brim",
+    "dark",
+    "hair",
+    "head",
+    "his"
+   ]
+  },
+  "teams/design/out/gpt/requests64/design-guide.json": {
+   "size": 1996,
+   "mtime": "1789207386679963288",
+   "ctime": "1789207386679963288",
+   "lines": 11,
+   "title": "design-guide-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "dark",
+    "his",
+    "character",
+    "flat",
+    "hair",
+    "head",
+    "of",
+    "pixel",
+    "to",
+    "two",
+    "white"
+   ]
+  },
+  "teams/design/out/gpt/requests64/design-ops.json": {
+   "size": 1800,
+   "mtime": "1789207386680544414",
+   "ctime": "1789207386680544414",
+   "lines": 11,
+   "title": "design-ops-64",
+   "sections": 5,
+   "words": [
+    "her",
+    "in",
+    "no",
+    "of",
+    "character",
+    "on",
+    "pixel",
+    "to",
+    "about",
+    "art",
+    "dark",
+    "full"
+   ]
+  },
+  "teams/design/out/gpt/requests64/design-outside.json": {
+   "size": 1754,
+   "mtime": "1789207386681139790",
+   "ctime": "1789207386681139790",
+   "lines": 11,
+   "title": "design-outside-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "dark",
+    "black",
+    "character",
+    "pixel",
+    "to",
+    "about",
+    "art",
+    "hair",
+    "head",
+    "in",
+    "of"
+   ]
+  },
+  "teams/design/out/gpt/requests64/dev-guide.json": {
+   "size": 1784,
+   "mtime": "1789207386681478249",
+   "ctime": "1789207386681478249",
+   "lines": 11,
+   "title": "dev-guide-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "to",
+    "character",
+    "dark",
+    "in",
+    "pixel",
+    "about",
+    "art",
+    "hair",
+    "head",
+    "is",
+    "of"
+   ]
+  },
+  "teams/design/out/gpt/requests64/dev-ops.json": {
+   "size": 1739,
+   "mtime": "1789207386681871875",
+   "ctime": "1789207386681871875",
+   "lines": 11,
+   "title": "dev-ops-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "character",
+    "pixel",
+    "to",
+    "about",
+    "art",
+    "dark",
+    "hair",
+    "head",
+    "in",
+    "light",
+    "of"
+   ]
+  },
+  "teams/design/out/gpt/requests64/dev-outside.json": {
+   "size": 1820,
+   "mtime": "1789207386682300876",
+   "ctime": "1789207386682300876",
+   "lines": 11,
+   "title": "dev-outside-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "of",
+    "black",
+    "character",
+    "in",
+    "pixel",
+    "to",
+    "about",
+    "art",
+    "cap",
+    "dark",
+    "hair"
+   ]
+  },
+  "teams/design/out/gpt/requests64/finance-guide.json": {
+   "size": 1662,
+   "mtime": "1789207386684417713",
+   "ctime": "1789207386684417713",
+   "lines": 11,
+   "title": "finance-guide-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "character",
+    "dark",
+    "of",
+    "on",
+    "pixel",
+    "to",
+    "about",
+    "art",
+    "black",
+    "coins",
+    "hair"
+   ]
+  },
+  "teams/design/out/gpt/requests64/finance-outside.json": {
+   "size": 1711,
+   "mtime": "1789207386684919756",
+   "ctime": "1789207386684919756",
+   "lines": 11,
+   "title": "finance-outside-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "to",
+    "character",
+    "dark",
+    "pixel",
+    "two",
+    "about",
+    "art",
+    "hair",
+    "hand",
+    "head",
+    "in"
+   ]
+  },
+  "teams/design/out/gpt/requests64/finance-review.json": {
+   "size": 1717,
+   "mtime": "1789207386684726547",
+   "ctime": "1789207386684726547",
+   "lines": 11,
+   "title": "finance-review-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "character",
+    "dark",
+    "in",
+    "pixel",
+    "to",
+    "about",
+    "art",
+    "black",
+    "hair",
+    "head",
+    "left"
+   ]
+  },
+  "teams/design/out/gpt/requests64/hq-chief.json": {
+   "size": 1784,
+   "mtime": "1789207386682577376",
+   "ctime": "1789207386682577376",
+   "lines": 11,
+   "title": "hq-chief-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "black",
+    "character",
+    "dark",
+    "of",
+    "pixel",
+    "to",
+    "two",
+    "about",
+    "art",
+    "hair",
+    "head"
+   ]
+  },
+  "teams/design/out/gpt/requests64/hq-outside.json": {
+   "size": 1907,
+   "mtime": "1789207386683012002",
+   "ctime": "1789207386683012002",
+   "lines": 11,
+   "title": "hq-outside-64",
+   "sections": 5,
+   "words": [
+    "of",
+    "in",
+    "no",
+    "black",
+    "character",
+    "dark",
+    "pixel",
+    "to",
+    "two",
+    "about",
+    "art",
+    "every"
+   ]
+  },
+  "teams/design/out/gpt/requests64/marketing-guide.json": {
+   "size": 1722,
+   "mtime": "1789207386683509211",
+   "ctime": "1789207386683509211",
+   "lines": 11,
+   "title": "marketing-guide-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "to",
+    "character",
+    "of",
+    "on",
+    "pixel",
+    "about",
+    "art",
+    "black",
+    "dark",
+    "hair",
+    "head"
+   ]
+  },
+  "teams/design/out/gpt/requests64/marketing-outside.json": {
+   "size": 1803,
+   "mtime": "1789207386684203504",
+   "ctime": "1789207386684203504",
+   "lines": 11,
+   "title": "marketing-outside-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "character",
+    "dark",
+    "in",
+    "on",
+    "pixel",
+    "to",
+    "about",
+    "art",
+    "black",
+    "hair",
+    "head"
+   ]
+  },
+  "teams/design/out/gpt/requests64/marketing-review.json": {
+   "size": 1807,
+   "mtime": "1789207386683919087",
+   "ctime": "1789207386683919087",
+   "lines": 11,
+   "title": "marketing-review-64",
+   "sections": 5,
+   "words": [
+    "no",
+    "character",
+    "dark",
+    "in",
+    "of",
+    "on",
+    "pixel",
+    "to",
+    "about",
+    "art",
+    "hair",
+    "hand"
+   ]
+  },
+  "teams/design/out/gpt64/boss-pixellab-sheet.json": {
+   "size": 2073,
+   "mtime": "1789244420166349749",
+   "ctime": "1789244420166349749",
+   "lines": 77,
+   "title": "객체 4키: character·spritesheet·export_version·export_date",
+   "sections": 4,
+   "words": [
+    "animation",
+    "frame_count",
+    "row",
+    "type",
+    "animation_group_id",
+    "direction",
+    "eb93c2e9-981e-4a71-9c65-b66508a9c1f6",
+    "walking",
+    "black",
+    "height",
+    "width",
+    "dark"
+   ]
+  },
+  "teams/design/out/gpt64/boss-pixellab-sheet.png": {
+   "kind": "image",
+   "size": 78122,
+   "mtime": "1789244420166210501",
+   "ctime": "1789244420166210501"
+  },
+  "teams/design/out/gpt64/boss-src.png": {
+   "kind": "image",
+   "size": 8676,
+   "mtime": "1789208987045569847",
+   "ctime": "1789208987045744390"
+  },
+  "teams/design/out/gpt64/design-guide-pixellab-sheet.json": {
+   "size": 2392,
+   "mtime": "1789244420264757173",
+   "ctime": "1789244420264757173",
+   "lines": 77,
+   "title": "객체 4키: character·spritesheet·export_version·export_date",
+   "sections": 4,
+   "words": [
+    "animation",
+    "frame_count",
+    "row",
+    "type",
+    "81d9915b-17a7-41ef-9dc6-dc2cf15494f3",
+    "animation_group_id",
+    "direction",
+    "his",
+    "walking",
+    "height",
+    "width",
+    "black"
+   ]
+  },
+  "teams/design/out/gpt64/design-guide-pixellab-sheet.png": {
+   "kind": "image",
+   "size": 79870,
+   "mtime": "1789244420264626716",
+   "ctime": "1789244420264626716"
+  },
+  "teams/design/out/gpt64/design-guide-pl-ref.png": {
+   "kind": "image",
+   "size": 1173,
+   "mtime": "1789242678982642213",
+   "ctime": "1789242678982642213"
+  },
+  "teams/design/out/gpt64/design-guide-src.png": {
+   "kind": "image",
+   "size": 7370,
+   "mtime": "1789208987188303579",
+   "ctime": "1789208987188482955"
+  },
+  "teams/design/out/gpt64/design-ops-512.png": {
+   "kind": "image",
+   "size": 7992,
+   "mtime": "1789207817269727780",
+   "ctime": "1789207817269880071"
+  },
+  "teams/design/out/gpt64/design-ops-pixellab-sheet.json": {
+   "size": 2338,
+   "mtime": "1789244420371076865",
+   "ctime": "1789244420371076865",
+   "lines": 77,
+   "title": "객체 4키: character·spritesheet·export_version·export_date",
+   "sections": 4,
+   "words": [
+    "animation",
+    "frame_count",
+    "row",
+    "type",
+    "a5d10eae-574b-411d-b817-aed4fd963c3c",
+    "animation_group_id",
+    "direction",
+    "her",
+    "in",
+    "walking",
+    "height",
+    "width"
+   ]
+  },
+  "teams/design/out/gpt64/design-ops-pixellab-sheet.png": {
+   "kind": "image",
+   "size": 69326,
+   "mtime": "1789244420370937492",
+   "ctime": "1789244420370937492"
+  },
+  "teams/design/out/gpt64/design-ops-pl-ref.png": {
+   "kind": "image",
+   "size": 1216,
+   "mtime": "1789242678984663389",
+   "ctime": "1789242678984663389"
+  },
+  "teams/design/out/gpt64/design-outside-512.png": {
+   "kind": "image",
+   "size": 1091664,
+   "mtime": "1789208032213015588",
+   "ctime": "1789208032213186630"
+  },
+  "teams/design/out/gpt64/design-outside-pixellab-sheet.json": {
+   "size": 2303,
+   "mtime": "1789245237637744434",
+   "ctime": "1789245237637744434",
+   "lines": 77,
+   "title": "객체 4키: character·spritesheet·export_version·export_date",
+   "sections": 4,
+   "words": [
+    "animation",
+    "frame_count",
+    "row",
+    "type",
+    "animation_group_id",
+    "dark",
+    "direction",
+    "e90a5487-144c-4c22-89a3-51e7b2ef50e1",
+    "walking",
+    "black",
+    "height",
+    "width"
+   ]
+  },
+  "teams/design/out/gpt64/design-outside-pixellab-sheet.png": {
+   "kind": "image",
+   "size": 51604,
+   "mtime": "1789245237637615352",
+   "ctime": "1789245237637615352"
+  },
+  "teams/design/out/gpt64/design-outside-pl-ref.png": {
+   "kind": "image",
+   "size": 1724,
+   "mtime": "1789242678985929895",
+   "ctime": "1789242678985929895"
+  },
+  "teams/design/out/gpt64/design-outside-src.png": {
+   "kind": "image",
+   "size": 1091664,
+   "mtime": "1789208628183758226",
+   "ctime": "1789208628184063476"
+  },
+  "teams/design/out/gpt64/dev-guide-512.png": {
+   "kind": "image",
+   "size": 1139890,
+   "mtime": "1789208031979392402",
+   "ctime": "1789208031979544319"
+  },
+  "teams/design/out/gpt64/dev-guide-pl-ref.png": {
+   "kind": "image",
+   "size": 2092,
+   "mtime": "1789242678989990998",
+   "ctime": "1789242678989990998"
+  },
+  "teams/design/out/gpt64/dev-guide-src.png": {
+   "kind": "image",
+   "size": 1139890,
+   "mtime": "1789208627961846646",
+   "ctime": "1789208627962101855"
+  },
+  "teams/design/out/gpt64/dev-ops-src.png": {
+   "kind": "image",
+   "size": 1117723,
+   "mtime": "1789209016751821129",
+   "ctime": "1789209016752163340"
+  },
+  "teams/design/out/gpt64/dev-outside-512.png": {
+   "kind": "image",
+   "size": 7583,
+   "mtime": "1789208343676007708",
+   "ctime": "1789208343676152833"
+  },
+  "teams/design/out/gpt64/finance-guide-src.png": {
+   "kind": "image",
+   "size": 6991,
+   "mtime": "1789209932914519418",
+   "ctime": "1789209932914705336"
+  },
+  "teams/design/out/gpt64/finance-outside-src.png": {
+   "kind": "image",
+   "size": 1116577,
+   "mtime": "1789209933054312425",
+   "ctime": "1789209933054456509"
+  },
+  "teams/design/out/gpt64/finance-review-src.png": {
+   "kind": "image",
+   "size": 7077,
+   "mtime": "1789209867222255547",
+   "ctime": "1789209867222449465"
+  },
+  "teams/design/out/gpt64/hq-chief-pixellab-sheet.json": {
+   "size": 2268,
+   "mtime": "1789262780797481700",
+   "ctime": "1789262780797481700",
+   "lines": 77,
+   "title": "객체 4키: character·spritesheet·export_version·export_date",
+   "sections": 4,
+   "words": [
+    "animation",
+    "frame_count",
+    "row",
+    "type",
+    "89eafe3d-9fe6-43ce-9df1-5229e4d1d401",
+    "animation_group_id",
+    "direction",
+    "walking",
+    "black",
+    "dark",
+    "height",
+    "width"
+   ]
+  },
+  "teams/design/out/gpt64/hq-chief-pixellab-sheet.png": {
+   "kind": "image",
+   "size": 55161,
+   "mtime": "1789262780797177406",
+   "ctime": "1789262780797177406"
+  },
+  "teams/design/out/gpt64/hq-chief-pl-ref.png": {
+   "kind": "image",
+   "size": 1931,
+   "mtime": "1789242678987257443",
+   "ctime": "1789242678987257443"
+  },
+  "teams/design/out/gpt64/hq-chief-src.png": {
+   "kind": "image",
+   "size": 1102921,
+   "mtime": "1789208775553922379",
+   "ctime": "1789208775554166135"
+  },
+  "teams/design/out/gpt64/hq-outside-pl-ref.png": {
+   "kind": "image",
+   "size": 1934,
+   "mtime": "1789242678989032243",
+   "ctime": "1789242678989032243"
+  },
+  "teams/design/out/gpt64/hq-outside-src.png": {
+   "kind": "image",
+   "size": 1099846,
+   "mtime": "1789208814799912021",
+   "ctime": "1789208814800075647"
+  },
+  "teams/design/out/gpt64/marketing-guide-pl-ref.png": {
+   "kind": "image",
+   "size": 1958,
+   "mtime": "1789242678990829418",
+   "ctime": "1789242678990829418"
+  },
+  "teams/design/out/gpt64/marketing-guide-src.png": {
+   "kind": "image",
+   "size": 1112355,
+   "mtime": "1789208815084523842",
+   "ctime": "1789208815084666510"
+  },
+  "teams/design/out/gpt64/marketing-outside-src.png": {
+   "kind": "image",
+   "size": 7587,
+   "mtime": "1789209579269116095",
+   "ctime": "1789209579269290847"
+  },
+  "teams/design/out/gpt64/marketing-review-pl-ref.png": {
+   "kind": "image",
+   "size": 1872,
+   "mtime": "1789242678991846382",
+   "ctime": "1789242678991846382"
+  },
+  "teams/design/out/gpt64/marketing-review-src.png": {
+   "kind": "image",
+   "size": 1140538,
+   "mtime": "1789209579457001585",
+   "ctime": "1789209579457198461"
+  },
+  "teams/design/out/kenney-bbox.json": {
+   "size": 26426,
+   "mtime": "1789292146760173041",
+   "ctime": "1789292146760173041",
+   "lines": 1929,
+   "title": "배열 107: (배열",
+   "sections": 1,
+   "words": [
+    "file",
+    "0.25",
+    "teams/design/ref/kenney/city-kit-commercial/models/obj",
+    "teams/design/ref/kenney/city-kit-suburban/models/obj",
+    "0.5",
+    "0.2",
+    "0.4",
+    "0.27",
+    "0.01",
+    "1.1375",
+    "0.4375",
+    "0.2500001"
+   ]
+  },
+  "teams/design/out/kenney-parts.md": {
+   "size": 7854,
+   "mtime": "1789292236223544856",
+   "ctime": "1789292236223763688",
+   "lines": 100,
+   "title": "Kenney 세 세트 — 부품 목록 · 실측 · 색 띠",
+   "sections": 10,
+   "words": [
+    "0.767",
+    "세트",
+    "건물",
+    "목록",
+    "1.0",
+    "부품",
+    "렌더",
+    "모델",
+    "스크립트",
+    "실측",
+    "0.6713",
+    "1.293"
+   ]
+  },
+  "teams/design/out/kit/buildings.json": {
+   "size": 40506,
+   "mtime": "1789357336083487535",
+   "ctime": "1789357336083718870",
+   "lines": 350,
+   "title": "객체 10키: _note·unit·scale·modelDir·colormaps",
+   "sections": 10,
+   "words": [
+    "shape",
+    "color",
+    "rounded",
+    "radius",
+    "note",
+    "at",
+    "0.15",
+    "scale",
+    "file",
+    "model",
+    "colormap",
+    "1.39"
+   ]
+  },
+  "teams/design/out/kit/characters.json": {
+   "size": 11377,
+   "mtime": "1789498743159550241",
+   "ctime": "1789498743159767617",
+   "lines": 186,
+   "title": "객체 6키: _note·scale·modelDir·colormapDir·characters",
+   "sections": 6,
+   "words": [
+    "colormap",
+    "bottom",
+    "colors",
+    "hair",
+    "model",
+    "name",
+    "prop",
+    "silhouette",
+    "skin",
+    "sourceheight",
+    "top",
+    "worldheight"
+   ]
+  },
+  "teams/design/out/kit/colormap-bands.json": {
+   "size": 14045,
+   "mtime": "1789321744717317924",
+   "ctime": "1789321744717317924",
+   "lines": 1154,
+   "title": "객체 12키: female-a·female-b·female-c·female-d·female-e",
+   "sections": 12,
+   "words": [
+    "faces",
+    "hex",
+    "row",
+    "tile",
+    "low",
+    "0.343",
+    "high",
+    "3f3f46",
+    "0.176",
+    "dd9f78",
+    "cf7a55",
+    "0.029"
+   ]
+  },
+  "teams/design/out/kit/colormap-bands.md": {
+   "size": 4928,
+   "mtime": "1789319895015462820",
+   "ctime": "1789319895015615402",
+   "lines": 53,
+   "title": "colormap 칸 이름 — 어느 칸이 옷·머리·피부인가",
+   "sections": 5,
+   "words": [
+    "아래",
+    "머리",
+    "피부",
+    "py",
+    "이름",
+    "허리띠",
+    "body",
+    "0.03",
+    "어느",
+    "accent",
+    "top",
+    "검정"
+   ]
+  },
+  "teams/design/out/kit/colormap-roles-buildings.json": {
+   "size": 5825,
+   "mtime": "1789356559754337312",
+   "ctime": "1789356559754684962",
+   "lines": 75,
+   "title": "객체 6키: _note·tileGrid·source·colors·maps",
+   "sections": 6,
+   "words": [
+    "row",
+    "tile",
+    "px",
+    "py",
+    "0.40",
+    "화분",
+    "0.02",
+    "colors",
+    "leaf",
+    "roof",
+    "source",
+    "stone"
+   ]
+  },
+  "teams/design/out/kit/colormap-roles.json": {
+   "size": 11548,
+   "mtime": "1789342352279589754",
+   "ctime": "1789342352279785789",
+   "lines": 179,
+   "title": "객체 4키: _note·tileGrid·bodies·characterFixes",
+   "sections": 4,
+   "words": [
+    "low",
+    "row",
+    "tile",
+    "high",
+    "hair",
+    "bottom",
+    "top",
+    "shoes",
+    "accent",
+    "keep",
+    "roles",
+    "skin"
+   ]
+  },
+  "teams/design/out/kit/colormap-uv-commercial.md": {
+   "size": 27855,
+   "mtime": "1789354537561139729",
+   "ctime": "1789354537561139729",
+   "lines": 532,
+   "title": "colormap UV 실측",
+   "sections": 22,
+   "words": [
+    "0.0938",
+    "0.2188",
+    "0.4688",
+    "0.000",
+    "0.400",
+    "0.7188",
+    "0.050",
+    "2.000",
+    "0.020",
+    "0.270",
+    "0.4250",
+    "0.2750"
+   ]
+  },
+  "teams/design/out/kit/colormap-uv-suburban.md": {
+   "size": 4207,
+   "mtime": "1789354537601422929",
+   "ctime": "1789354537601422929",
+   "lines": 114,
+   "title": "colormap UV 실측",
+   "sections": 16,
+   "words": [
+    "0.000",
+    "0.5938",
+    "0.2188",
+    "px",
+    "py",
+    "원본",
+    "0.030",
+    "0.0938",
+    "범위",
+    "0.126",
+    "0.2750",
+    "0.326"
+   ]
+  },
+  "teams/design/out/kit/colormap-uv.md": {
+   "size": 61826,
+   "mtime": "1789319746166404534",
+   "ctime": "1789319746166404534",
+   "lines": 1157,
+   "title": "colormap UV 실측",
+   "sections": 37,
+   "words": [
+    "0.0938",
+    "0.7188",
+    "0.343",
+    "0.9688",
+    "0.5938",
+    "0.0250",
+    "0.2188",
+    "3f3f46",
+    "0.176",
+    "0.2250",
+    "0.8438",
+    "0.483"
+   ]
+  },
+  "teams/design/out/kit/colormap.png": {
+   "kind": "image",
+   "size": 8706,
+   "mtime": "1789347341447437568",
+   "ctime": "1789347341447568444"
+  },
+  "teams/design/out/kit/colormaps/commercial-cafe.png": {
+   "kind": "image",
+   "size": 12157,
+   "mtime": "1789356889075337533",
+   "ctime": "1789356889075337533"
+  },
+  "teams/design/out/kit/colormaps/commercial.png": {
+   "kind": "image",
+   "size": 12155,
+   "mtime": "1789356889069688848",
+   "ctime": "1789356889069688848"
+  },
+  "teams/design/out/kit/colormaps/people/boss.png": {
+   "kind": "image",
+   "size": 10811,
+   "mtime": "1789500034386663921",
+   "ctime": "1789500034386663921"
+  },
+  "teams/design/out/kit/colormaps/people/design-guide.png": {
+   "kind": "image",
+   "size": 11241,
+   "mtime": "1789500034401336928",
+   "ctime": "1789500034401336928"
+  },
+  "teams/design/out/kit/colormaps/people/design-ops.png": {
+   "kind": "image",
+   "size": 11222,
+   "mtime": "1789500034406001637",
+   "ctime": "1789500034406001637"
+  },
+  "teams/design/out/kit/colormaps/people/design-outside.png": {
+   "kind": "image",
+   "size": 11731,
+   "mtime": "1789500034410184300",
+   "ctime": "1789500034410184300"
+  },
+  "teams/design/out/kit/colormaps/people/dev-guide.png": {
+   "kind": "image",
+   "size": 11038,
+   "mtime": "1789500034414804799",
+   "ctime": "1789500034414804799"
+  },
+  "teams/design/out/kit/colormaps/people/dev-ops.png": {
+   "kind": "image",
+   "size": 8733,
+   "mtime": "1789500034419837428",
+   "ctime": "1789500034419837428"
+  },
+  "teams/design/out/kit/colormaps/people/dev-outside.png": {
+   "kind": "image",
+   "size": 10481,
+   "mtime": "1789500034423030707",
+   "ctime": "1789500034423030707"
+  },
+  "teams/design/out/kit/colormaps/people/finance-guide.png": {
+   "kind": "image",
+   "size": 9710,
+   "mtime": "1789500034435426610",
+   "ctime": "1789500034435426610"
+  },
+  "teams/design/out/kit/colormaps/people/finance-outside.png": {
+   "kind": "image",
+   "size": 11316,
+   "mtime": "1789500034441567082",
+   "ctime": "1789500034441567082"
+  },
+  "teams/design/out/kit/colormaps/people/finance-review.png": {
+   "kind": "image",
+   "size": 10114,
+   "mtime": "1789500034438333845",
+   "ctime": "1789500034438333845"
+  },
+  "teams/design/out/kit/colormaps/people/hq-chief.png": {
+   "kind": "image",
+   "size": 11349,
+   "mtime": "1789500034391809426",
+   "ctime": "1789500034391809426"
+  },
+  "teams/design/out/kit/colormaps/people/hq-outside.png": {
+   "kind": "image",
+   "size": 11347,
+   "mtime": "1789500034396648636",
+   "ctime": "1789500034396648636"
+  },
+  "teams/design/out/kit/colormaps/people/hq-secretary.png": {
+   "kind": "image",
+   "size": 11222,
+   "mtime": "1789500034444708694",
+   "ctime": "1789500034444708694"
+  },
+  "teams/design/out/kit/colormaps/people/hq-system.png": {
+   "kind": "image",
+   "size": 11217,
+   "mtime": "1789500034448024474",
+   "ctime": "1789500034448024474"
+  },
+  "teams/design/out/kit/colormaps/people/marketing-guide.png": {
+   "kind": "image",
+   "size": 11602,
+   "mtime": "1789500034426224319",
+   "ctime": "1789500034426224319"
+  },
+  "teams/design/out/kit/colormaps/people/marketing-outside.png": {
+   "kind": "image",
+   "size": 11320,
+   "mtime": "1789500034432335041",
+   "ctime": "1789500034432335041"
+  },
+  "teams/design/out/kit/colormaps/people/marketing-review.png": {
+   "kind": "image",
+   "size": 10115,
+   "mtime": "1789500034429305097",
+   "ctime": "1789500034429305097"
+  },
+  "teams/design/out/kit/colormaps/suburban.png": {
+   "kind": "image",
+   "size": 16531,
+   "mtime": "1789356889085166555",
+   "ctime": "1789356889085166555"
+  },
+  "teams/design/out/kit/concept.md": {
+   "size": 11809,
+   "mtime": "1789286268088251537",
+   "ctime": "1789286268088439333",
+   "lines": 131,
+   "title": "건물 키트 컨셉 — 첫 화면 아홉",
+   "sections": 11,
+   "words": [
+    "텍스처",
+    "2.5",
+    "plane",
+    "광장",
+    "성문",
+    "지붕",
+    "높이",
+    "찻집",
+    "box",
+    "성벽",
+    "기둥",
+    "흙벽"
+   ]
+  },
+  "teams/design/out/kit/concept.png": {
+   "kind": "image",
+   "size": 316893,
+   "mtime": "1789282934950738812",
+   "ctime": "1789282934950918854"
+  },
+  "teams/design/out/kit/parts-plan.md": {
+   "size": 12277,
+   "mtime": "1789311834951463821",
+   "ctime": "1789311834951672660",
+   "lines": 95,
+   "title": "부품 계획 — Kenney 세 세트를 서울 골목·집·랜드마크로",
+   "sections": 9,
+   "words": [
+    "세트",
+    "roundedbox",
+    "자리",
+    "골목",
+    "kenney",
+    "높이",
+    "부품",
+    "지붕",
+    "검정",
+    "머리",
+    "배율",
+    "부착물"
+   ]
+  },
+  "teams/design/out/kit/signs.json": {
+   "size": 3021,
+   "mtime": "1789356621255630605",
+   "ctime": "1789356621255782523",
+   "lines": 22,
+   "title": "객체 7키: _note·size·font·weight·fit",
+   "sections": 7,
+   "words": [
+    "1절",
+    "id",
+    "kind",
+    "source",
+    "text",
+    "village-branding",
+    "where",
+    "wood",
+    "이름",
+    "가운데",
+    "간판",
+    "댄의"
+   ]
+  },
+  "teams/design/out/kit/signs/boss.png": {
+   "kind": "image",
+   "size": 2064,
+   "mtime": "1789356898344577100",
+   "ctime": "1789356898344577100"
+  },
+  "teams/design/out/kit/signs/cafe.png": {
+   "kind": "image",
+   "size": 1384,
+   "mtime": "1789356898338041864",
+   "ctime": "1789356898338041864"
+  },
+  "teams/design/out/kit/signs/castle.png": {
+   "kind": "image",
+   "size": 1518,
+   "mtime": "1789356898351022461",
+   "ctime": "1789356898351022461"
+  },
+  "teams/design/out/kit/signs/design.png": {
+   "kind": "image",
+   "size": 1815,
+   "mtime": "1789356898323312998",
+   "ctime": "1789356898323312998"
+  },
+  "teams/design/out/kit/signs/dev.png": {
+   "kind": "image",
+   "size": 1238,
+   "mtime": "1789356898027323791",
+   "ctime": "1789356898027323791"
+  },
+  "teams/design/out/kit/signs/finance.png": {
+   "kind": "image",
+   "size": 1464,
+   "mtime": "1789356898329564523",
+   "ctime": "1789356898329564523"
+  },
+  "teams/design/out/kit/signs/hq.png": {
+   "kind": "image",
+   "size": 1342,
+   "mtime": "1789356898334045946",
+   "ctime": "1789356898334045946"
+  },
+  "teams/design/out/kit/signs/marketing.png": {
+   "kind": "image",
+   "size": 1817,
+   "mtime": "1789356898019429749",
+   "ctime": "1789356898019429749"
+  },
+  "teams/design/out/manifest.json": {
+   "size": 20225,
+   "mtime": "1789498758054573432",
+   "ctime": "1789498758054819475",
+   "lines": 90,
+   "title": "객체 15키: note·palette·style·height·idle",
+   "sections": 15,
+   "words": [
+    "file",
+    "who",
+    "source",
+    "헨리",
+    "request",
+    "pixellab",
+    "size",
+    "idle",
+    "note",
+    "walk",
+    "idlesource",
+    "walkstatus"
+   ]
+  },
+  "teams/design/out/numbers.md": {
+   "size": 9376,
+   "mtime": "1789476883326172627",
+   "ctime": "1789476883326434251",
+   "lines": 82,
+   "title": "숫자를 어떻게 보여 주나 — 한 벌 (헨리, 09-14)",
+   "sections": 8,
+   "words": [
+    "그림",
+    "숫자",
+    "글자",
+    "다섯",
+    "막대",
+    "카드",
+    "나리",
+    "막힌",
+    "시간",
+    "쓴다",
+    "작은",
+    "헨리"
+   ]
+  },
+  "teams/design/out/opsroom-design-review.md": {
+   "size": 5500,
+   "mtime": "1789280999365840448",
+   "ctime": "1789280999366140185",
+   "lines": 52,
+   "title": "작전실 화면 검수 — 클레멘타인",
+   "sections": 7,
+   "words": [
+    "화면",
+    "실무",
+    "카드",
+    "자리",
+    "작전실",
+    "클레멘타인",
+    "office",
+    "style.css",
+    "검수",
+    "네이버",
+    "눈금",
+    "대표"
+   ]
+  },
+  "teams/design/out/opsroom-tower-tabs-2.md": {
+   "size": 15750,
+   "mtime": "1789298818445175916",
+   "ctime": "1789298818445317875",
+   "lines": 156,
+   "title": "관제탑 네 탭 — 2판 (하영 목록에 맞춤)",
+   "sections": 12,
+   "words": [
+    "쓴다",
+    "카드",
+    "대표",
+    "결정",
+    "하영",
+    "대기",
+    "승인",
+    "알약",
+    "1판",
+    "뺀다",
+    "이름",
+    "자리"
+   ]
+  },
+  "teams/design/out/opsroom-tower-tabs.md": {
+   "size": 15919,
+   "mtime": "1789298824096254571",
+   "ctime": "1789298824096485822",
+   "lines": 154,
+   "title": "관제탑 서브 탭 둘 — \"팀\" · \"개인\" 화면 설계",
+   "sections": 12,
+   "words": [
+    "대표",
+    "카드",
+    "자리",
+    "개인",
+    "이름",
+    "묶음",
+    "알약",
+    "글자",
+    "bad",
+    "문장",
+    "상태",
+    "순서"
+   ]
+  },
+  "teams/design/out/palette.json": {
+   "size": 2449,
+   "mtime": "1789199243356253868",
+   "ctime": "1789199243356427369",
+   "lines": 52,
+   "title": "ppanam-32",
+   "sections": 4,
+   "words": [
+    "재무",
+    "그늘",
+    "짙은",
+    "outside",
+    "밝은",
+    "회색",
+    "guide",
+    "개발",
+    "디자인",
+    "마케팅",
+    "머리",
+    "1b1a1f"
+   ]
+  },
+  "teams/design/out/reference-samples.md": {
+   "size": 13381,
+   "mtime": "1789280881056326942",
+   "ctime": "1789280881056326942",
+   "lines": 130,
+   "title": "참고 화면 샘플 — 네이버 · 레딧 · ZEP",
+   "sections": 7,
+   "words": [
+    "카드",
+    "오른쪽",
+    "화면",
+    "아래",
+    "아이콘",
+    "zep",
+    "네이버",
+    "대표",
+    "상태",
+    "아바타",
+    "버튼",
+    "목록"
+   ]
+  },
+  "teams/design/out/review/first-scene.md": {
+   "size": 4820,
+   "mtime": "1789347922891860398",
+   "ctime": "1789347922892111525",
+   "lines": 47,
+   "title": "첫 화면 맞춤 — 1차 (대표 \"승인 시안과 너무 다르다\", 09-14 오전)",
+   "sections": 5,
+   "words": [
+    "없음",
+    "시안",
+    "재질",
+    "화면",
+    "그림자",
+    "렌더",
+    "받침",
+    "소품",
+    "parts.json",
+    "색표",
+    "승인",
+    "09-14"
+   ]
+  },
+  "teams/design/out/roadmap-swap.proposed.json": {
+   "size": 10471,
+   "mtime": "1789357986609019585",
+   "ctime": "1789357986609193628",
+   "lines": 67,
+   "title": "Three.js 인형 서울의 첫 화면 하나가 선다. 열다섯이 Kenney 인형 몸에 팀 색 옷·다른 머리·다른 실루엣으로 map.json 자리에 서 있고, 팀 집 다섯(골목 빌라)·댄의 집(한옥)·찻집·광장·회사(근정전)·남산타워·한강 다리가 Kenney 부품과 RoundedBox 로 서 있으며, 렌더 한 장이 8줄 채점 6개 이상 + 서울다움 넷(기와 지붕색·한글 간판·좁은 골목·남산타워와 한강 다리)으로 읽힌다. 개발팀이 teams/design/out/kit/ 의 파일을 그대로 꽂아 쓴다. 다른 도시에도 쓰는 방식(부품·규칙 파일)과 서울 한 장, 둘 다 있어야 끝이다(direction 8절). 키트화 규격·스크립트는 첫 화면 뒤 필요해지면 따로 연다.",
+   "sections": 5,
+   "words": [
+    "결정",
+    "대표",
+    "화면",
+    "인형",
+    "pass",
+    "파일",
+    "자리",
+    "kenney",
+    "얼굴",
+    "열다섯",
+    "소품",
+    "스크립트"
+   ]
+  },
+  "teams/design/out/roadmap.proposed.json": {
+   "size": 11499,
+   "mtime": "1789488432799588012",
+   "ctime": "1789488432799758057",
+   "lines": 68,
+   "title": "Three.js 인형 서울의 첫 화면 하나가 선다. 열다섯이 Kenney 인형 몸에 팀 색 옷·다른 머리·다른 실루엣으로 map.json 자리에 서 있고, 팀 집 다섯(골목 빌라)·댄의 집(한옥)·찻집·광장·회사(근정전)·남산타워·한강 다리가 Kenney 부품과 RoundedBox 로 서 있으며, 렌더 한 장이 8줄 채점 6개 이상 + 서울다움 넷(기와 지붕색·한글 간판·좁은 골목·남산타워와 한강 다리)으로 읽힌다. 개발팀이 teams/design/out/kit/ 의 파일을 그대로 꽂아 쓴다. 다른 도시에도 쓰는 방식(부품·규칙 파일)과 서울 한 장, 둘 다 있어야 끝이다(direction 8절). 키트화 규격·스크립트는 첫 화면 뒤 필요해지면 따로 연다.",
+   "sections": 6,
+   "words": [
+    "결정",
+    "대표",
+    "화면",
+    "인형",
+    "pass",
+    "파일",
+    "얼굴",
+    "자리",
+    "kenney",
+    "열다섯",
+    "deliverable",
+    "timebox"
+   ]
+  },
+  "teams/design/out/screens/blueprint-1.png": {
+   "kind": "image",
+   "size": 205923,
+   "mtime": "1789320608853870256",
+   "ctime": "1789320608854018713"
+  },
+  "teams/design/out/screens/blueprint-1.svg": {
+   "kind": "image",
+   "size": 21155,
+   "mtime": "1789355467324179180",
+   "ctime": "1789355467324411474"
+  },
+  "teams/design/out/screens/boss-walk-4dir.png": {
+   "kind": "image",
+   "size": 79550,
+   "mtime": "1789210122646221769",
+   "ctime": "1789210122646221769"
+  },
+  "teams/design/out/screens/cast-board-1.png": {
+   "kind": "image",
+   "size": 28800,
+   "mtime": "1789206257741665624",
+   "ctime": "1789206257741665624"
+  },
+  "teams/design/out/screens/cast-board-2.png": {
+   "kind": "image",
+   "size": 15243,
+   "mtime": "1789206489285189331",
+   "ctime": "1789206489285189331"
+  },
+  "teams/design/out/screens/cast64-board.png": {
+   "kind": "image",
+   "size": 27754,
+   "mtime": "1789209933323968589",
+   "ctime": "1789209933323968589"
+  },
+  "teams/design/out/screens/diff-0916.md": {
+   "size": 19974,
+   "mtime": "1789511031352685717",
+   "ctime": "1789511031352930841",
+   "lines": 134,
+   "title": "시안 대 실물 — 다른 점 목록 (2026-09-16 아침, 헨리)",
+   "sections": 13,
+   "words": [
+    "카드",
+    "시안",
+    "개발",
+    "결정",
+    "원문",
+    "없음",
+    "화면",
+    "사진",
+    "실물",
+    "대표",
+    "상황판",
+    "나리"
+   ]
+  },
+  "teams/design/out/screens/dolls-lineup-render.png": {
+   "kind": "image",
+   "size": 104878,
+   "mtime": "1789347858920884445",
+   "ctime": "1789347858921008238"
+  },
+  "teams/design/out/screens/dolls-lineup.png": {
+   "kind": "image",
+   "size": 1352188,
+   "mtime": "1789302936460633069",
+   "ctime": "1789302936460768196"
+  },
+  "teams/design/out/screens/seoul-toy-concept.png": {
+   "kind": "image",
+   "size": 2321652,
+   "mtime": "1789295358957557385",
+   "ctime": "1789295358957834756"
+  },
+  "teams/design/out/screens/sera-200.png": {
+   "kind": "image",
+   "size": 12876,
+   "mtime": "1789347858923726435",
+   "ctime": "1789347858923821478"
+  },
+  "teams/design/out/screens/sera-float.svg": {
+   "kind": "image",
+   "size": 4841,
+   "mtime": "1789315194372794741",
+   "ctime": "1789315194373135708"
+  },
+  "teams/design/out/screens/tower-tabs.png": {
+   "kind": "image",
+   "size": 1437340,
+   "mtime": "1789287025363902355",
+   "ctime": "1789287025364061608"
+  },
+  "teams/design/out/screens/typography-diff-0916.md": {
+   "size": 3007,
+   "mtime": "1789511000570305373",
+   "ctime": "1789511000570489997",
+   "lines": 21,
+   "title": "색·글꼴·간격 — 시안 대 실물 CSS (2026-09-16, 클레멘타인)",
+   "sections": 1,
+   "words": [
+    "고침",
+    "시안",
+    "10px",
+    "app.js",
+    "css",
+    "실물",
+    "11px",
+    "2026-09-16",
+    "간격",
+    "글꼴",
+    "클레멘타인",
+    "헨리가"
+   ]
+  },
+  "teams/design/out/screens/ui/analysis.svg": {
+   "kind": "image",
+   "size": 13712,
+   "mtime": "1789494254458075165",
+   "ctime": "1789494254458265994"
+  },
+  "teams/design/out/screens/ui/approval.svg": {
+   "kind": "image",
+   "size": 10614,
+   "mtime": "1789478352122576107",
+   "ctime": "1789478352122760314"
+  },
+  "teams/design/out/screens/ui/cards.svg": {
+   "kind": "image",
+   "size": 32193,
+   "mtime": "1789512768678996734",
+   "ctime": "1789512768679178982"
+  },
+  "teams/design/out/screens/ui/dashboard.svg": {
+   "kind": "image",
+   "size": 16497,
+   "mtime": "1789494248983587667",
+   "ctime": "1789494248983835910"
+  },
+  "teams/design/out/screens/ui/numbers.svg": {
+   "kind": "image",
+   "size": 12490,
+   "mtime": "1789478482027522143",
+   "ctime": "1789478482027749308"
+  },
+  "teams/design/out/screens/ui/person.svg": {
+   "kind": "image",
+   "size": 7121,
+   "mtime": "1789478478667286806",
+   "ctime": "1789478478667531471"
+  },
+  "teams/design/out/screens/ui/png/analysis.png": {
+   "kind": "image",
+   "size": 159439,
+   "mtime": "1789494206237255326",
+   "ctime": "1789494206237255326"
+  },
+  "teams/design/out/screens/ui/png/approval.png": {
+   "kind": "image",
+   "size": 118024,
+   "mtime": "1789479102563687987",
+   "ctime": "1789479102563687987"
+  },
+  "teams/design/out/screens/ui/png/cards.png": {
+   "kind": "image",
+   "size": 349437,
+   "mtime": "1789512210728202987",
+   "ctime": "1789512210728202987"
+  },
+  "teams/design/out/screens/ui/png/dashboard.png": {
+   "kind": "image",
+   "size": 144755,
+   "mtime": "1789494205528572641",
+   "ctime": "1789494205528572641"
+  },
+  "teams/design/out/screens/ui/png/numbers.png": {
+   "kind": "image",
+   "size": 111302,
+   "mtime": "1789479104221421696",
+   "ctime": "1789479104221421696"
+  },
+  "teams/design/out/screens/ui/png/person.png": {
+   "kind": "image",
+   "size": 111923,
+   "mtime": "1789479104844693219",
+   "ctime": "1789479104844693219"
+  },
+  "teams/design/out/screens/ui/png/profile.png": {
+   "kind": "image",
+   "size": 90843,
+   "mtime": "1789479105580209350",
+   "ctime": "1789479105580209350"
+  },
+  "teams/design/out/screens/ui/png/report.png": {
+   "kind": "image",
+   "size": 150175,
+   "mtime": "1789479106285696981",
+   "ctime": "1789479106285696981"
+  },
+  "teams/design/out/screens/ui/png/team-person.png": {
+   "kind": "image",
+   "size": 154796,
+   "mtime": "1789479106926093320",
+   "ctime": "1789479106926093320"
+  },
+  "teams/design/out/screens/ui/png/team.png": {
+   "kind": "image",
+   "size": 87284,
+   "mtime": "1789479107636264537",
+   "ctime": "1789479107636264537"
+  },
+  "teams/design/out/screens/ui/png/tower.png": {
+   "kind": "image",
+   "size": 226049,
+   "mtime": "1789479108297943032",
+   "ctime": "1789479108297943032"
+  },
+  "teams/design/out/screens/ui/png/workboard.png": {
+   "kind": "image",
+   "size": 171811,
+   "mtime": "1789513023023152030",
+   "ctime": "1789513023023152030"
+  },
+  "teams/design/out/screens/ui/profile.svg": {
+   "kind": "image",
+   "size": 7610,
+   "mtime": "1789478459787919952",
+   "ctime": "1789478459788092409"
+  },
+  "teams/design/out/screens/ui/report.svg": {
+   "kind": "image",
+   "size": 21996,
+   "mtime": "1789478432062988520",
+   "ctime": "1789478432063166810"
+  },
+  "teams/design/out/screens/ui/room.svg": {
+   "kind": "image",
+   "size": 17374,
+   "mtime": "1789512758578535563",
+   "ctime": "1789512758578804851"
+  },
+  "teams/design/out/screens/ui/team-person.svg": {
+   "kind": "image",
+   "size": 10981,
+   "mtime": "1789352946216553805",
+   "ctime": "1789352946217449855"
+  },
+  "teams/design/out/screens/ui/team.svg": {
+   "kind": "image",
+   "size": 6745,
+   "mtime": "1789478285041799504",
+   "ctime": "1789478285042014918"
+  },
+  "teams/design/out/screens/ui/tower.svg": {
+   "kind": "image",
+   "size": 18930,
+   "mtime": "1789478264833921827",
+   "ctime": "1789478264834485780"
+  },
+  "teams/design/out/screens/ui/workboard.svg": {
+   "kind": "image",
+   "size": 15421,
+   "mtime": "1789512938061714823",
+   "ctime": "1789512938061926654"
+  },
+  "teams/design/out/screens/walk-test-pixellab-vs-gpt.png": {
+   "kind": "image",
+   "size": 33783,
+   "mtime": "1789209080250764270",
+   "ctime": "1789209080250764270"
+  },
+  "teams/design/out/sera-float.md": {
+   "size": 5129,
+   "mtime": "1789345136929083336",
+   "ctime": "1789345136929271914",
+   "lines": 53,
+   "title": "떠 있는 세라 — 창 설계 1판 (솔라에게)",
+   "sections": 6,
+   "words": [
+    "세라",
+    "그림",
+    "막대",
+    "svg",
+    "배지",
+    "아이콘",
+    "없음",
+    "자리",
+    "누르면",
+    "말풍선",
+    "머리",
+    "화면"
+   ]
+  },
+  "teams/design/out/sprites/boss.png": {
+   "kind": "image",
+   "size": 9386,
+   "mtime": "1789200592012850926",
+   "ctime": "1789200592012850926"
+  },
+  "teams/design/out/sprites/design-guide-v2.png": {
+   "kind": "image",
+   "size": 1359,
+   "mtime": "1789198203973207181",
+   "ctime": "1789198203973207181"
+  },
+  "teams/design/out/sprites/design-guide.png": {
+   "kind": "image",
+   "size": 6908,
+   "mtime": "1789200715109948893",
+   "ctime": "1789200715109948893"
+  },
+  "teams/design/out/sprites/design-ops.png": {
+   "kind": "image",
+   "size": 9229,
+   "mtime": "1789200591839570021",
+   "ctime": "1789200591839570021"
+  },
+  "teams/design/out/sprites/design-outside.png": {
+   "kind": "image",
+   "size": 6495,
+   "mtime": "1789201073882213602",
+   "ctime": "1789201073882213602"
+  },
+  "teams/design/out/sprites/dev-guide.png": {
+   "kind": "image",
+   "size": 22309,
+   "mtime": "1789200591681060204",
+   "ctime": "1789200591681060204"
+  },
+  "teams/design/out/sprites/dev-ops.png": {
+   "kind": "image",
+   "size": 8156,
+   "mtime": "1789200887786146767",
+   "ctime": "1789200887786146767"
+  },
+  "teams/design/out/sprites/dev-outside.png": {
+   "kind": "image",
+   "size": 22323,
+   "mtime": "1789206385732345795",
+   "ctime": "1789206385732345795"
+  },
+  "teams/design/out/sprites/finance-guide.png": {
+   "kind": "image",
+   "size": 7727,
+   "mtime": "1789206386132080173",
+   "ctime": "1789206386132080173"
+  },
+  "teams/design/out/sprites/finance-review.png": {
+   "kind": "image",
+   "size": 22521,
+   "mtime": "1789206505584248913",
+   "ctime": "1789206505584248913"
+  },
+  "teams/design/out/sprites/hq-chief.png": {
+   "kind": "image",
+   "size": 22729,
+   "mtime": "1789206385984717240",
+   "ctime": "1789206385984717240"
+  },
+  "teams/design/out/sprites/marketing-review.png": {
+   "kind": "image",
+   "size": 23879,
+   "mtime": "1789206796938591530",
+   "ctime": "1789206796938591530"
+  },
+  "teams/design/out/sprites64/boss-walk.json": {
+   "size": 89,
+   "mtime": "1789244420232950060",
+   "ctime": "1789244420232950060",
+   "lines": 2,
+   "title": "객체 4키: walk·frames·cell·anchor",
+   "sections": 4,
+   "words": [
+    "anchor",
+    "cell",
+    "down",
+    "frames",
+    "left",
+    "right",
+    "up",
+    "walk"
+   ]
+  },
+  "teams/design/out/sprites64/boss-walk.png": {
+   "kind": "image",
+   "size": 24447,
+   "mtime": "1789244420215762667",
+   "ctime": "1789244420215762667"
+  },
+  "teams/design/out/sprites64/boss.png": {
+   "kind": "image",
+   "size": 1195,
+   "mtime": "1789208987117470133",
+   "ctime": "1789208987117470133"
+  },
+  "teams/design/out/sprites64/design-guide-walk.json": {
+   "size": 89,
+   "mtime": "1789244420329171680",
+   "ctime": "1789244420329171680",
+   "lines": 2,
+   "title": "객체 4키: walk·frames·cell·anchor",
+   "sections": 4,
+   "words": [
+    "anchor",
+    "cell",
+    "down",
+    "frames",
+    "left",
+    "right",
+    "up",
+    "walk"
+   ]
+  },
+  "teams/design/out/sprites64/design-guide-walk.png": {
+   "kind": "image",
+   "size": 29965,
+   "mtime": "1789244420312225117",
+   "ctime": "1789244420312225117"
+  },
+  "teams/design/out/sprites64/design-guide.png": {
+   "kind": "image",
+   "size": 1107,
+   "mtime": "1789208987263112131",
+   "ctime": "1789208987263112131"
+  },
+  "teams/design/out/sprites64/design-ops-walk.json": {
+   "size": 89,
+   "mtime": "1789244420436144113",
+   "ctime": "1789244420436144113",
+   "lines": 2,
+   "title": "객체 4키: walk·frames·cell·anchor",
+   "sections": 4,
+   "words": [
+    "anchor",
+    "cell",
+    "down",
+    "frames",
+    "left",
+    "right",
+    "up",
+    "walk"
+   ]
+  },
+  "teams/design/out/sprites64/design-ops-walk.png": {
+   "kind": "image",
+   "size": 27170,
+   "mtime": "1789244420419232550",
+   "ctime": "1789244420419232550"
+  },
+  "teams/design/out/sprites64/design-ops.png": {
+   "kind": "image",
+   "size": 1156,
+   "mtime": "1789207817313556320",
+   "ctime": "1789207817313556320"
+  },
+  "teams/design/out/sprites64/design-outside-walk.json": {
+   "size": 89,
+   "mtime": "1789245237703917167",
+   "ctime": "1789245237703917167",
+   "lines": 2,
+   "title": "객체 4키: walk·frames·cell·anchor",
+   "sections": 4,
+   "words": [
+    "anchor",
+    "cell",
+    "down",
+    "frames",
+    "left",
+    "right",
+    "up",
+    "walk"
+   ]
+  },
+  "teams/design/out/sprites64/design-outside-walk.png": {
+   "kind": "image",
+   "size": 21718,
+   "mtime": "1789245237687045061",
+   "ctime": "1789245237687045061"
+  },
+  "teams/design/out/sprites64/design-outside.png": {
+   "kind": "image",
+   "size": 1622,
+   "mtime": "1789208628313776176",
+   "ctime": "1789208628313776176"
+  },
+  "teams/design/out/sprites64/dev-guide.png": {
+   "kind": "image",
+   "size": 2000,
+   "mtime": "1789208628117209602",
+   "ctime": "1789208628117209602"
+  },
+  "teams/design/out/sprites64/dev-ops.png": {
+   "kind": "image",
+   "size": 1898,
+   "mtime": "1789209016907417434",
+   "ctime": "1789209016907417434"
+  },
+  "teams/design/out/sprites64/dev-outside.png": {
+   "kind": "image",
+   "size": 995,
+   "mtime": "1789208343719590998",
+   "ctime": "1789208343719590998"
+  },
+  "teams/design/out/sprites64/finance-guide.png": {
+   "kind": "image",
+   "size": 889,
+   "mtime": "1789209932994755710",
+   "ctime": "1789209932994755710"
+  },
+  "teams/design/out/sprites64/finance-outside.png": {
+   "kind": "image",
+   "size": 2004,
+   "mtime": "1789209933179249138",
+   "ctime": "1789209933179249138"
+  },
+  "teams/design/out/sprites64/finance-review.png": {
+   "kind": "image",
+   "size": 1144,
+   "mtime": "1789209867304377766",
+   "ctime": "1789209867304377766"
+  },
+  "teams/design/out/sprites64/hq-chief-walk.json": {
+   "size": 89,
+   "mtime": "1789262780864400646",
+   "ctime": "1789262780864400646",
+   "lines": 2,
+   "title": "객체 4키: walk·frames·cell·anchor",
+   "sections": 4,
+   "words": [
+    "anchor",
+    "cell",
+    "down",
+    "frames",
+    "left",
+    "right",
+    "up",
+    "walk"
+   ]
+  },
+  "teams/design/out/sprites64/hq-chief-walk.png": {
+   "kind": "image",
+   "size": 23650,
+   "mtime": "1789262780846383609",
+   "ctime": "1789262780846383609"
+  },
+  "teams/design/out/sprites64/hq-chief.png": {
+   "kind": "image",
+   "size": 1824,
+   "mtime": "1789208775734378271",
+   "ctime": "1789208775734378271"
+  },
+  "teams/design/out/sprites64/hq-outside.png": {
+   "kind": "image",
+   "size": 1829,
+   "mtime": "1789208814998017475",
+   "ctime": "1789208814998017475"
+  },
+  "teams/design/out/sprites64/marketing-guide.png": {
+   "kind": "image",
+   "size": 1830,
+   "mtime": "1789208815233099277",
+   "ctime": "1789208815233099277"
+  },
+  "teams/design/out/sprites64/marketing-outside.png": {
+   "kind": "image",
+   "size": 976,
+   "mtime": "1789209579374985575",
+   "ctime": "1789209579374985575"
+  },
+  "teams/design/out/sprites64/marketing-review.png": {
+   "kind": "image",
+   "size": 1750,
+   "mtime": "1789209579596085753",
+   "ctime": "1789209579596085753"
+  },
+  "teams/design/out/style.md": {
+   "size": 14685,
+   "mtime": "1789210293150738570",
+   "ctime": "1789210293150992689",
+   "lines": 123,
+   "title": "우리 마을 도트 양식서",
+   "sections": 11,
+   "words": [
+    "그림",
+    "머리",
+    "정지",
+    "시트",
+    "footline",
+    "걷기",
+    "대표",
+    "centerx",
+    "마을",
+    "pixellab",
+    "이름",
+    "planted"
+   ]
+  },
+  "teams/design/out/ui-spec.md": {
+   "size": 31828,
+   "mtime": "1789512947404098208",
+   "ctime": "1789512947404346955",
+   "lines": 175,
+   "title": "화면 시안 — 규격 (M5, 헨리)",
+   "sections": 16,
+   "words": [
+    "카드",
+    "결정",
+    "하영",
+    "자리",
+    "회차",
+    "글자",
+    "대표",
+    "이름",
+    "그림",
+    "결재",
+    "단계",
+    "대표님이"
+   ]
+  },
+  "teams/design/out/ux-flow.md": {
+   "size": 5083,
+   "mtime": "1789287058696603622",
+   "ctime": "1789287058696881419",
+   "lines": 56,
+   "title": "UX 흐름 · 장면별 우선순위 — 클레멘타인",
+   "sections": 6,
+   "words": [
+    "마을",
+    "관제탑",
+    "대표",
+    "카드",
+    "30초",
+    "누르면",
+    "우선순위",
+    "이미",
+    "흐름",
+    "ux",
+    "개인",
+    "발언"
+   ]
+  },
+  "teams/design/out/village-file-contract.md": {
+   "size": 9292,
+   "mtime": "1789357674559429708",
+   "ctime": "1789357674559668294",
+   "lines": 86,
+   "title": "마을 파일 계약 — 개발 ↔ 디자인 · 2판 (인형 서울: 모델 · 색표 · 간판)",
+   "sections": 8,
+   "words": [
+    "2판",
+    "파일",
+    "min",
+    "간판",
+    "max",
+    "부품",
+    "1판",
+    "color",
+    "png",
+    "개발",
+    "테라",
+    "colormap"
+   ]
+  },
+  "teams/design/out/words.md": {
+   "size": 2066,
+   "mtime": "1789312197050530733",
+   "ctime": "1789312197050770281",
+   "lines": 25,
+   "title": "디자인 방이 만든 말 — 세어 본 것",
+   "sections": 1,
+   "words": [
+    "쓴다",
+    "만든",
+    "서울",
+    "세어",
+    "대표가",
+    "디자인",
+    "방이",
+    "부품",
+    "사람들이",
+    "쓰는",
+    "3d",
+    "격자"
+   ]
+  },
+  "teams/design/out/인수인계-0914.md": {
+   "size": 7691,
+   "mtime": "1789360507403733173",
+   "ctime": "1789360507403988424",
+   "lines": 56,
+   "title": "디자인팀 인수인계 — 2026-09-14 저녁 (헨리 씀, 클레멘타인 몫 포함)",
+   "sections": 7,
+   "words": [
+    "대표",
+    "클레멘타인",
+    "파일",
+    "2판",
+    "하영",
+    "4단계",
+    "ui-spec",
+    "마크",
+    "본보기",
+    "시안",
+    "저녁",
+    "화면"
+   ]
+  },
+  "teams/design/outside.md": {
+   "size": 5192,
+   "mtime": "1789239682493700266",
+   "ctime": "1789239682493700266",
+   "lines": 82,
+   "title": "마크 — 디자인팀 외부감사",
+   "sections": 7,
+   "words": [
+    "판정",
+    "헨리",
+    "마크",
+    "revise",
+    "그림",
+    "봅니다",
+    "외부감사",
+    "클레멘타인",
+    "당신",
+    "디자인팀",
+    "1px",
+    "fail"
+   ]
+  },
+  "teams/design/roadmap.json": {
+   "size": 12678,
+   "mtime": "1789510945650344884",
+   "ctime": "1789510945650344884",
+   "lines": 77,
+   "title": "Three.js 인형 서울의 첫 화면 하나가 선다. 열다섯이 Kenney 인형 몸에 팀 색 옷·다른 머리·다른 실루엣으로 map.json 자리에 서 있고, 팀 집 다섯(골목 빌라)·댄의 집(한옥)·찻집·광장·회사(근정전)·남산타워·한강 다리가 Kenney 부품과 RoundedBox 로 서 있으며, 렌더 한 장이 8줄 채점 6개 이상 + 서울다움 넷(기와 지붕색·한글 간판·좁은 골목·남산타워와 한강 다리)으로 읽힌다. 개발팀이 teams/design/out/kit/ 의 파일을 그대로 꽂아 쓴다. 다른 도시에도 쓰는 방식(부품·규칙 파일)과 서울 한 장, 둘 다 있어야 끝이다(direction 8절). 키트화 규격·스크립트는 첫 화면 뒤 필요해지면 따로 연다.",
+   "sections": 7,
+   "words": [
+    "결정",
+    "대표",
+    "화면",
+    "인형",
+    "pass",
+    "마을",
+    "파일",
+    "얼굴",
+    "시안",
+    "자리",
+    "카드",
+    "deliverable"
+   ]
+  },
+  "teams/dev/decisions.md": {
+   "size": 159551,
+   "mtime": "1789513515440738399",
+   "ctime": "1789513515441107189",
+   "lines": 438,
+   "title": "개발팀 — 확정 조항",
+   "sections": 155,
+   "words": [
+    "대표",
+    "결정",
+    "대표가",
+    "원문",
+    "화면",
+    "카드",
+    "나리",
+    "자리",
+    "09-13",
+    "마을",
+    "승인",
+    "파일"
+   ]
+  },
+  "teams/dev/guide.md": {
+   "size": 7427,
+   "mtime": "1789239682492221241",
+   "ctime": "1789239682492221241",
+   "lines": 123,
+   "title": "테라 — 개발팀 실무",
+   "sections": 11,
+   "words": [
+    "네가",
+    "레오",
+    "솔라",
+    "마라",
+    "실무",
+    "대표",
+    "무엇",
+    "테라",
+    "개발팀",
+    "커밋",
+    "파일",
+    "너는"
+   ]
+  },
+  "teams/dev/journal/guide.md": {
+   "size": 26382,
+   "mtime": "1789510542789401919",
+   "ctime": "1789510542789401919",
+   "lines": 77,
+   "title": "2026-09-15 · 라운드 31 · 테라",
+   "sections": 19,
+   "words": [
+    "테라",
+    "라운드",
+    "손이",
+    "내가",
+    "나는",
+    "제일",
+    "레오가",
+    "개발팀",
+    "나가",
+    "막내고",
+    "머리",
+    "오늘"
+   ]
+  },
+  "teams/dev/journal/ops.md": {
+   "size": 14866,
+   "mtime": "1789510537883801793",
+   "ctime": "1789510537883801793",
+   "lines": 92,
+   "title": "솔라 일지",
+   "sections": 17,
+   "words": [
+    "솔라",
+    "라운드",
+    "오늘",
+    "내가",
+    "나는",
+    "일지",
+    "테라가",
+    "개발",
+    "것도",
+    "운영이다",
+    "2026-09-15",
+    "만든"
+   ]
+  },
+  "teams/dev/journal/outside.md": {
+   "size": 13676,
+   "mtime": "1789510549083893860",
+   "ctime": "1789510549083893860",
+   "lines": 141,
+   "title": "2026-09-15 · 라운드 31 · 레오",
+   "sections": 20,
+   "words": [
+    "레오",
+    "라운드",
+    "화면",
+    "나는",
+    "통과",
+    "2026-09-13",
+    "코드",
+    "마음이",
+    "외부감사이고",
+    "직접",
+    "2026-09-15",
+    "기록"
+   ]
+  },
+  "teams/dev/ops.md": {
+   "size": 6281,
+   "mtime": "1789239682492419953",
+   "ctime": "1789239682492419953",
+   "lines": 118,
+   "title": "솔라 — 개발팀 개발·운영",
+   "sections": 10,
+   "words": [
+    "운영",
+    "테라",
+    "개발",
+    "네가",
+    "솔라",
+    "레오",
+    "개발팀",
+    "너는",
+    "아무",
+    "그가",
+    "codex",
+    "node"
+   ]
+  },
+  "teams/dev/out/analysis-inventory.md": {
+   "size": 4149,
+   "mtime": "1789307740964838518",
+   "ctime": "1789307740965040727",
+   "lines": 38,
+   "title": "분석 탭 — 지금 그리는 것 전부 (대표가 고르는 목록, 결정 24)",
+   "sections": 4,
+   "words": [
+    "누가",
+    "대표가",
+    "했나",
+    "그리",
+    "라운드",
+    "목록",
+    "out",
+    "결정",
+    "대화록",
+    "막혔나",
+    "뭐가",
+    "산출물"
+   ]
+  },
+  "teams/dev/out/connect-ai-check.md": {
+   "size": 4600,
+   "mtime": "1789306360482805166",
+   "ctime": "1789306360482805166",
+   "lines": 69,
+   "title": "그 영상, 우리보다 나은가",
+   "sections": 8,
+   "words": [
+    "화면",
+    "파일",
+    "나은가",
+    "도구",
+    "모델",
+    "소스",
+    "영상",
+    "일하",
+    "프로그램",
+    "확장",
+    "ai",
+    "강의"
+   ]
+  },
+  "teams/dev/out/floating-sera-approach.md": {
+   "size": 3637,
+   "mtime": "1789316440727457090",
+   "ctime": "1789316440727685554",
+   "lines": 57,
+   "title": "떠 있는 세라 — 만드는 방법 한 장 (M7, 결정 87·88·89)",
+   "sections": 7,
+   "words": [
+    "결정",
+    "세라",
+    "tauri",
+    "그림",
+    "api/say",
+    "m7",
+    "ws",
+    "만드",
+    "방법",
+    "alwaysontop",
+    "api/boot",
+    "server/index.mjs"
+   ]
+  },
+  "teams/dev/out/free-search-no-card.md": {
+   "size": 9203,
+   "mtime": "1789301331601524145",
+   "ctime": "1789301331601524145",
+   "lines": 129,
+   "title": "카드 없이 쓰는 무료 웹검색 — 후보 정리",
+   "sections": 9,
+   "words": [
+    "없음",
+    "검색",
+    "네이버",
+    "명령",
+    "없습니다",
+    "서버",
+    "카드",
+    "필요없음",
+    "한국어",
+    "실측",
+    "한도",
+    "없이"
+   ]
+  },
+  "teams/dev/out/g-ux-r14.md": {
+   "size": 4923,
+   "mtime": "1789274414739365063",
+   "ctime": "1789274414739605351",
+   "lines": 44,
+   "title": "R14 G-UX 첫 반나절 (2026-09-13)",
+   "sections": 5,
+   "words": [
+    "닫기",
+    "g-ux",
+    "app.js",
+    "r14",
+    "서버",
+    "호명",
+    "2026-09-13",
+    "500px",
+    "css",
+    "note",
+    "style.css",
+    "반나절"
+   ]
+  },
+  "teams/dev/out/g-ux-r15-b.md": {
+   "size": 4122,
+   "mtime": "1789282087475877153",
+   "ctime": "1789282087476033653",
+   "lines": 33,
+   "title": "R15 G-UX 둘째 — 반나절 B \"승인 카드를 읽고 누를 수 있게\" (2026-09-13)",
+   "sections": 4,
+   "words": [
+    "카드",
+    "승인",
+    "결정",
+    "배지",
+    "style.css",
+    "누를",
+    "대표",
+    "읽고",
+    "2026-09-13",
+    "app.js",
+    "g-ux",
+    "note"
+   ]
+  },
+  "teams/dev/out/g-ux-r15.md": {
+   "size": 4309,
+   "mtime": "1789280968825721317",
+   "ctime": "1789280968825878769",
+   "lines": 30,
+   "title": "R15 G-UX 둘째 — 반나절 A \"지금 상태를 바로 알기\" (2026-09-13)",
+   "sections": 4,
+   "words": [
+    "app.js",
+    "둘째",
+    "일하",
+    "api/team",
+    "결정",
+    "반나절",
+    "요약",
+    "작업",
+    "테라",
+    "2026-09-13",
+    "g-ux",
+    "lastsignal"
+   ]
+  },
+  "teams/dev/out/gemini-check.md": {
+   "size": 3252,
+   "mtime": "1789348068086682964",
+   "ctime": "1789348068086856008",
+   "lines": 39,
+   "title": "Gemini(agy) 외부감사 다섯 자리 — 실전 확인",
+   "sections": 6,
+   "words": [
+    "gemini",
+    "자리",
+    "id",
+    "다섯",
+    "engine",
+    "실전",
+    "확인",
+    "agy",
+    "marketing",
+    "다음",
+    "외부감사",
+    "호출"
+   ]
+  },
+  "teams/dev/out/guard-r13.md": {
+   "size": 5610,
+   "mtime": "1789272608224910492",
+   "ctime": "1789272608225132863",
+   "lines": 58,
+   "title": "R13 가드 — 라운드 닫기 규칙을 코드로 (2026-09-13)",
+   "sections": 4,
+   "words": [
+    "pass",
+    "브랜치",
+    "거부",
+    "r13",
+    "닫기",
+    "카드",
+    "코드",
+    "note",
+    "가드",
+    "라운드",
+    "요청",
+    "2026-09-13"
+   ]
+  },
+  "teams/dev/out/m1-persona-link.md": {
+   "size": 12472,
+   "mtime": "1789288159043034212",
+   "ctime": "1789288159043427097",
+   "lines": 73,
+   "title": "M1 인격 이음 — 무엇을 고쳤고 어떻게 확인하나",
+   "sections": 6,
+   "words": [
+    "codex",
+    "세션",
+    "일지",
+    "라운드",
+    "레오",
+    "check",
+    "note",
+    "인격",
+    "exit",
+    "id",
+    "r18",
+    "시험"
+   ]
+  },
+  "teams/dev/out/m3-approval-chain.md": {
+   "size": 4976,
+   "mtime": "1789297275973259489",
+   "ctime": "1789297275973447490",
+   "lines": 54,
+   "title": "M3 승인 체인 실물 — 대표 없이 B 가 통과해 서버가 민 1건",
+   "sections": 7,
+   "words": [
+    "pass",
+    "카드",
+    "승인",
+    "푸시",
+    "1건",
+    "대표",
+    "m3",
+    "브랜치",
+    "서버가",
+    "없이",
+    "원격",
+    "제리"
+   ]
+  },
+  "teams/dev/out/m4-gux-third.md": {
+   "size": 5452,
+   "mtime": "1789310335298101956",
+   "ctime": "1789310335298349581",
+   "lines": 42,
+   "title": "M4 G-UX 셋째 — 상황판·용어·이어 열기 (R23 정리)",
+   "sections": 4,
+   "words": [
+    "결정",
+    "m4",
+    "상황판",
+    "카드",
+    "용어",
+    "codex",
+    "대표가",
+    "레오",
+    "에서",
+    "열기",
+    "자리",
+    "조건"
+   ]
+  },
+  "teams/dev/out/m6-screen-findings.md": {
+   "size": 3713,
+   "mtime": "1789310765866254953",
+   "ctime": "1789310765866254953",
+   "lines": 39,
+   "title": "화면이 왜 아직 보기 어려운가 — 실측",
+   "sections": 5,
+   "words": [
+    "대표",
+    "결정",
+    "보고",
+    "보기",
+    "알림",
+    "관제탑",
+    "실제",
+    "실측",
+    "어려운가",
+    "테라",
+    "화면이",
+    "급한"
+   ]
+  },
+  "teams/dev/out/m6-screen-inventory.md": {
+   "size": 16645,
+   "mtime": "1789319270599037758",
+   "ctime": "1789319270599270881",
+   "lines": 116,
+   "title": "M6 준비 — 지금 화면이 무엇을 어디서 읽나 · 보고서 탭 데이터 · 알림 묶음 뼈대",
+   "sections": 10,
+   "words": [
+    "승인",
+    "결정",
+    "알림",
+    "대표",
+    "보고서",
+    "카드",
+    "app.js",
+    "라운드",
+    "무엇",
+    "요청",
+    "화면",
+    "마을"
+   ]
+  },
+  "teams/dev/out/m7-memory.md": {
+   "size": 6530,
+   "mtime": "1789477668631331374",
+   "ctime": "1789477668631528414",
+   "lines": 55,
+   "title": "M7 기억 3층 마감 — 무엇을 만들었고 어떻게 확인하나",
+   "sections": 6,
+   "words": [
+    "마감",
+    "일지",
+    "자정",
+    "3층",
+    "m7",
+    "결정",
+    "기억",
+    "라운드",
+    "문제",
+    "테라",
+    "조건",
+    "1건"
+   ]
+  },
+  "teams/dev/out/m7-screens.md": {
+   "size": 8635,
+   "mtime": "1789487003841178295",
+   "ctime": "1789487003841549968",
+   "lines": 70,
+   "title": "7단계 헨리 시안대로 화면 다시 짜기 — 현황·앞으로·보고서 (R26 · 테라 · 2026-09-15 밤)",
+   "sections": 7,
+   "words": [
+    "대표",
+    "나리",
+    "카드",
+    "앞으",
+    "현황",
+    "단계",
+    "화면",
+    "보고서",
+    "커밋",
+    "대표님이",
+    "오늘",
+    "결재"
+   ]
+  },
+  "teams/dev/out/m8-failures.md": {
+   "size": 10951,
+   "mtime": "1789490486823734389",
+   "ctime": "1789490486824335824",
+   "lines": 99,
+   "title": "8단계 실패 수습 — 코드 넷과 일부러 깨뜨린 기록",
+   "sections": 10,
+   "words": [
+    "note",
+    "판정",
+    "마을",
+    "세션",
+    "침묵",
+    "8단계",
+    "sigkill",
+    "코드",
+    "check",
+    "상한",
+    "라운드",
+    "pass"
+   ]
+  },
+  "teams/dev/out/m9-status.md": {
+   "size": 15360,
+   "mtime": "1789509822728226960",
+   "ctime": "1789509822728437544",
+   "lines": 99,
+   "title": "9단계 현황 나머지와 뒷정리 — 상황 (R29, 테라)",
+   "sections": 8,
+   "words": [
+    "나리",
+    "카드",
+    "자리",
+    "회차",
+    "check",
+    "결정",
+    "재시작",
+    "pass",
+    "결재",
+    "대표",
+    "단계",
+    "실측"
+   ]
+  },
+  "teams/dev/out/mcp-catalog.md": {
+   "size": 15175,
+   "mtime": "1789297448450657278",
+   "ctime": "1789297448450795154",
+   "lines": 174,
+   "title": "MCP 카탈로그 — 내부회의용 (선정 안건)",
+   "sections": 20,
+   "words": [
+    "mcp",
+    "보류",
+    "무료",
+    "붙어있음",
+    "마케팅",
+    "검색",
+    "디자인",
+    "추천",
+    "api키",
+    "개발",
+    "넣자",
+    "무엇"
+   ]
+  },
+  "teams/dev/out/oss-research.md": {
+   "size": 32731,
+   "mtime": "1789281590159812984",
+   "ctime": "1789281590159812984",
+   "lines": 91,
+   "title": "오픈소스 리서치 — 2026-09-13 (독립검수 하위 에이전트)",
+   "sections": 10,
+   "words": [
+    "코드",
+    "맞음",
+    "mit",
+    "결정",
+    "jsdelivr",
+    "패턴",
+    "낮음",
+    "없음",
+    "미확인",
+    "라이선스",
+    "릴리스",
+    "2026-09"
+   ]
+  },
+  "teams/dev/out/p2-tools-permission.md": {
+   "size": 1965,
+   "mtime": "1789512544669319315",
+   "ctime": "1789512544669488521",
+   "lines": 43,
+   "title": "P2 — `node tools/…` 맨 명령이 막히는 원인 (32회차, 솔라)",
+   "sections": 4,
+   "words": [
+    "node",
+    "tools",
+    "원인",
+    "bash",
+    "명령",
+    "없이",
+    "32회차",
+    "p2",
+    "뒤에",
+    "막히",
+    "명령이",
+    "솔라"
+   ]
+  },
+  "teams/dev/out/rivals-check.md": {
+   "size": 8242,
+   "mtime": "1789307956957171387",
+   "ctime": "1789307956957171387",
+   "lines": 119,
+   "title": "우리랑 비슷한 곳들 — 파 보니",
+   "sections": 16,
+   "words": [
+    "있습니다",
+    "회사",
+    "막음",
+    "다른",
+    "아니오",
+    "감사역이",
+    "엔진",
+    "pass",
+    "감사",
+    "반박",
+    "통과",
+    "판정"
+   ]
+  },
+  "teams/dev/out/roadmap.proposed.json": {
+   "size": 20334,
+   "mtime": "1789492077543010202",
+   "ctime": "1789492077543182862",
+   "lines": 93,
+   "title": "이 작전실이 진짜 커맨드센터가 된다. 대표가 자리를 비워도 팀들이 승인 등급 안에서 스스로 달리고, 돌아온 대표는 관제탑 첫 화면 30초로 무엇이 통과하고 무엇이 막혔는지 안다. 마을 탭은 Three.js 로 그려진 인형 서울(결정 54·55)이라 디자인팀이 낸 glTF 부품과 수정 표를 그대로 꽂아 쓰고, 폰에서도 누가 어디 있는지 이름표로 보인다. 인격은 세션이 죽어도 리셋되지 않는다.",
+   "sections": 5,
+   "words": [
+    "결정",
+    "카드",
+    "화면",
+    "대표",
+    "라운드",
+    "pass",
+    "나리",
+    "헨리",
+    "부품",
+    "마을",
+    "인격",
+    "자리"
+   ]
+  },
+  "teams/dev/out/shots/b0628-first-1280.png": {
+   "kind": "image",
+   "size": 219133,
+   "mtime": "1789507732643770637",
+   "ctime": "1789507732643770637"
+  },
+  "teams/dev/out/shots/b0628-first-412.png": {
+   "kind": "image",
+   "size": 98391,
+   "mtime": "1789507727022684940",
+   "ctime": "1789507727022684940"
+  },
+  "teams/dev/out/shots/b0628-tower-1280.png": {
+   "kind": "image",
+   "size": 123798,
+   "mtime": "1789507744018134479",
+   "ctime": "1789507744018134479"
+  },
+  "teams/dev/out/shots/b0628-tower-412.png": {
+   "kind": "image",
+   "size": 73510,
+   "mtime": "1789507738401468355",
+   "ctime": "1789507738401468355"
+  },
+  "teams/dev/out/shots/b0635-open-1280.png": {
+   "kind": "image",
+   "size": 89702,
+   "mtime": "1789508127275454281",
+   "ctime": "1789508127275454281"
+  },
+  "teams/dev/out/shots/b0635-open-412.png": {
+   "kind": "image",
+   "size": 66030,
+   "mtime": "1789508121566977831",
+   "ctime": "1789508121566977831"
+  },
+  "teams/dev/out/shots/b0635-report-1280.png": {
+   "kind": "image",
+   "size": 164009,
+   "mtime": "1789508132874993032",
+   "ctime": "1789508132874993032"
+  },
+  "teams/dev/out/shots/b0640-dashboard-412.png": {
+   "kind": "image",
+   "size": 91015,
+   "mtime": "1789508375410204420",
+   "ctime": "1789508375410204420"
+  },
+  "teams/dev/out/shots/b0700-sera-412.png": {
+   "kind": "image",
+   "size": 117595,
+   "mtime": "1789509552916739268",
+   "ctime": "1789509552916739268"
+  },
+  "teams/dev/out/shots/b0715-finance-1280.png": {
+   "kind": "image",
+   "size": 185220,
+   "mtime": "1789509763951267702",
+   "ctime": "1789509763951267702"
+  },
+  "teams/dev/out/shots/b0748-open-412.png": {
+   "kind": "image",
+   "size": 68378,
+   "mtime": "1789512286379723221",
+   "ctime": "1789512286379723221"
+  },
+  "teams/dev/out/shots/b0805-open-412.png": {
+   "kind": "image",
+   "size": 59776,
+   "mtime": "1789513088667446632",
+   "ctime": "1789513088667446632"
+  },
+  "teams/dev/out/shots/r13-analysis-412w.png": {
+   "kind": "image",
+   "size": 66698,
+   "mtime": "1789273173991649007",
+   "ctime": "1789273173991649007"
+  },
+  "teams/dev/out/shots/r13-room-412w.png": {
+   "kind": "image",
+   "size": 121217,
+   "mtime": "1789272962892456685",
+   "ctime": "1789272962892456685"
+  },
+  "teams/dev/out/shots/r13-tower-412w.png": {
+   "kind": "image",
+   "size": 73181,
+   "mtime": "1789273168241358052",
+   "ctime": "1789273168241358052"
+  },
+  "teams/dev/out/shots/r13-world-412w.png": {
+   "kind": "image",
+   "size": 32402,
+   "mtime": "1789273180003872458",
+   "ctime": "1789273180003872458"
+  },
+  "teams/dev/out/shots/r21-tower-all-412.png": {
+   "kind": "image",
+   "size": 55891,
+   "mtime": "1789291985442417197",
+   "ctime": "1789291985442526029"
+  },
+  "teams/dev/out/shots/r21-tower-people-1440.png": {
+   "kind": "image",
+   "size": 120066,
+   "mtime": "1789291724336276157",
+   "ctime": "1789291724336381614"
+  },
+  "teams/dev/out/shots/r21-tower-people-412.png": {
+   "kind": "image",
+   "size": 60651,
+   "mtime": "1789291724334332342",
+   "ctime": "1789291724334417591"
+  },
+  "teams/dev/out/shots/r22-tower-asks-412.png": {
+   "kind": "image",
+   "size": 22313,
+   "mtime": "1789296823931930620",
+   "ctime": "1789296823932148575"
+  },
+  "teams/dev/out/shots/r22-tower-people-412.png": {
+   "kind": "image",
+   "size": 72349,
+   "mtime": "1789296823929074165",
+   "ctime": "1789296823929209330"
+  },
+  "teams/dev/out/shots/r23-bell-412.png": {
+   "kind": "image",
+   "size": 118709,
+   "mtime": "1789305703386027595",
+   "ctime": "1789305703386158013"
+  },
+  "teams/dev/out/shots/r23-people-412.png": {
+   "kind": "image",
+   "size": 82414,
+   "mtime": "1789305703389288623",
+   "ctime": "1789305703389445999"
+  },
+  "teams/dev/out/shots/r23b-bell-412.png": {
+   "kind": "image",
+   "size": 119070,
+   "mtime": "1789306186413008041",
+   "ctime": "1789306186413536795"
+  },
+  "teams/dev/out/shots/r23b-people-412.png": {
+   "kind": "image",
+   "size": 85725,
+   "mtime": "1789306186414300094",
+   "ctime": "1789306186414453220"
+  },
+  "teams/dev/out/shots/r23b-rail-end.png": {
+   "kind": "image",
+   "size": 17439,
+   "mtime": "1789306186415035058",
+   "ctime": "1789306186415273477"
+  },
+  "teams/dev/out/shots/r24-village-412.png": {
+   "kind": "image",
+   "size": 141585,
+   "mtime": "1789315833439184063",
+   "ctime": "1789315833439275316"
+  },
+  "teams/dev/out/shots/r24-village-inside-412.png": {
+   "kind": "image",
+   "size": 111857,
+   "mtime": "1789315833436238612",
+   "ctime": "1789315833436357698"
+  },
+  "teams/dev/out/shots/r24-village-wide-412.png": {
+   "kind": "image",
+   "size": 115560,
+   "mtime": "1789315833441393454",
+   "ctime": "1789315833441496415"
+  },
+  "teams/dev/out/shots/r25-dashboard-412.png": {
+   "kind": "image",
+   "size": 100756,
+   "mtime": "1789476283170866671",
+   "ctime": "1789476283170866671"
+  },
+  "teams/dev/out/shots/r25-dolls-lineup-1920.png": {
+   "kind": "image",
+   "size": 104878,
+   "mtime": "1789347668428438769",
+   "ctime": "1789347668428438769"
+  },
+  "teams/dev/out/shots/r25-person-pop-412.png": {
+   "kind": "image",
+   "size": 109420,
+   "mtime": "1789474905947169222",
+   "ctime": "1789474905947169222"
+  },
+  "teams/dev/out/shots/r25-room-412.png": {
+   "kind": "image",
+   "size": 111176,
+   "mtime": "1789474837842143172",
+   "ctime": "1789474837842143172"
+  },
+  "teams/dev/out/shots/r25-sera-200.png": {
+   "kind": "image",
+   "size": 12876,
+   "mtime": "1789347672071921413",
+   "ctime": "1789347672071921413"
+  },
+  "teams/dev/out/shots/r25-sera-room-412.png": {
+   "kind": "image",
+   "size": 106088,
+   "mtime": "1789474565000285345",
+   "ctime": "1789474565000285345"
+  },
+  "teams/dev/out/shots/r25-three-compare-412.png": {
+   "kind": "image",
+   "size": 44756,
+   "mtime": "1789475876228731636",
+   "ctime": "1789475876228731636"
+  },
+  "teams/dev/out/shots/r25-tower-all-412.png": {
+   "kind": "image",
+   "size": 64924,
+   "mtime": "1789476277357585391",
+   "ctime": "1789476277357585391"
+  },
+  "teams/dev/out/shots/r25-unity-village-412.png": {
+   "kind": "image",
+   "size": 58869,
+   "mtime": "1789474362177286474",
+   "ctime": "1789474362177286474"
+  },
+  "teams/dev/out/shots/r25-village-day-412.png": {
+   "kind": "image",
+   "size": 91272,
+   "mtime": "1789316182348148790",
+   "ctime": "1789316182348267626"
+  },
+  "teams/dev/out/shots/r25-village-day-wide-412.png": {
+   "kind": "image",
+   "size": 93783,
+   "mtime": "1789316182351134659",
+   "ctime": "1789316182351276371"
+  },
+  "teams/dev/out/shots/r25-village-night-412.png": {
+   "kind": "image",
+   "size": 68869,
+   "mtime": "1789316182354366868",
+   "ctime": "1789316182354489246"
+  },
+  "teams/dev/out/shots/r26-dashboard-412.png": {
+   "kind": "image",
+   "size": 99434,
+   "mtime": "1789482050964311789",
+   "ctime": "1789482050964311789"
+  },
+  "teams/dev/out/shots/r26-report-412.png": {
+   "kind": "image",
+   "size": 83507,
+   "mtime": "1789482045688532774",
+   "ctime": "1789482045688532774"
+  },
+  "teams/dev/out/shots/r26-room-head-412.png": {
+   "kind": "image",
+   "size": 111661,
+   "mtime": "1789476999640847406",
+   "ctime": "1789476999640847406"
+  },
+  "teams/dev/out/shots/r26-tower-412.png": {
+   "kind": "image",
+   "size": 64465,
+   "mtime": "1789481336210756676",
+   "ctime": "1789481336210756676"
+  },
+  "teams/dev/out/shots/r26-tower-all-412.png": {
+   "kind": "image",
+   "size": 71800,
+   "mtime": "1789480608565864033",
+   "ctime": "1789480608565864033"
+  },
+  "teams/dev/out/shots/r26-village-day-412.png": {
+   "kind": "image",
+   "size": 127279,
+   "mtime": "1789316404534127562",
+   "ctime": "1789316404534268399"
+  },
+  "teams/dev/out/shots/r26-village-day-wide-412.png": {
+   "kind": "image",
+   "size": 95282,
+   "mtime": "1789316404530620388",
+   "ctime": "1789316404530734849"
+  },
+  "teams/dev/out/shots/r26-village-inside-day-412.png": {
+   "kind": "image",
+   "size": 79619,
+   "mtime": "1789316404537403105",
+   "ctime": "1789316404537531734"
+  },
+  "teams/dev/out/shots/r27-dashboard-412.png": {
+   "kind": "image",
+   "size": 95994,
+   "mtime": "1789485533077677259",
+   "ctime": "1789485533858252833"
+  },
+  "teams/dev/out/shots/r27-report-412.png": {
+   "kind": "image",
+   "size": 84804,
+   "mtime": "1789486918923875618",
+   "ctime": "1789486918923875618"
+  },
+  "teams/dev/out/shots/r27-tower-412.png": {
+   "kind": "image",
+   "size": 81109,
+   "mtime": "1789485527215974532",
+   "ctime": "1789485533858179415"
+  },
+  "teams/dev/out/shots/r27-village-cutaway-412.png": {
+   "kind": "image",
+   "size": 109225,
+   "mtime": "1789317445077144830",
+   "ctime": "1789317445077268038"
+  },
+  "teams/dev/out/shots/r27-village-inside-team-412.png": {
+   "kind": "image",
+   "size": 68972,
+   "mtime": "1789317445081427979",
+   "ctime": "1789317445081539187"
+  },
+  "teams/dev/out/shots/r28-village-inside-1500.png": {
+   "kind": "image",
+   "size": 76723,
+   "mtime": "1789347939022556687",
+   "ctime": "1789347939022556687"
+  },
+  "teams/dev/out/shots/r29-analysis-412.png": {
+   "kind": "image",
+   "size": 63422,
+   "mtime": "1789495766628678441",
+   "ctime": "1789495766628678441"
+  },
+  "teams/dev/out/shots/r29-dashboard-412.png": {
+   "kind": "image",
+   "size": 92612,
+   "mtime": "1789493498556368643",
+   "ctime": "1789493498556368643"
+  },
+  "teams/dev/out/shots/r29-person-pop-412.png": {
+   "kind": "image",
+   "size": 111540,
+   "mtime": "1789496488290989684",
+   "ctime": "1789496488290989684"
+  },
+  "teams/dev/out/shots/r29-report-412.png": {
+   "kind": "image",
+   "size": 102727,
+   "mtime": "1789493504143593625",
+   "ctime": "1789493504143593625"
+  },
+  "teams/dev/out/shots/r29-tower-412.png": {
+   "kind": "image",
+   "size": 70553,
+   "mtime": "1789497968438684463",
+   "ctime": "1789497968438684463"
+  },
+  "teams/dev/out/shots/r29-tower-people-412.png": {
+   "kind": "image",
+   "size": 69239,
+   "mtime": "1789494259352481236",
+   "ctime": "1789494259352481236"
+  },
+  "teams/dev/out/shots/r29-tower-teams-412.png": {
+   "kind": "image",
+   "size": 105991,
+   "mtime": "1789494252268794436",
+   "ctime": "1789494252268794436"
+  },
+  "teams/dev/out/shots/r29-village-412.png": {
+   "kind": "image",
+   "size": 149909,
+   "mtime": "1789496510285206530",
+   "ctime": "1789496510285206530"
+  },
+  "teams/dev/out/shots/r30-approval-pop-412.png": {
+   "kind": "image",
+   "size": 116732,
+   "mtime": "1789500774035465325",
+   "ctime": "1789500774035465325"
+  },
+  "teams/dev/out/shots/r30-tower-412.png": {
+   "kind": "image",
+   "size": 58156,
+   "mtime": "1789500888865382770",
+   "ctime": "1789500888865382770"
+  },
+  "teams/dev/out/shots/r31-tower-412.png": {
+   "kind": "image",
+   "size": 72942,
+   "mtime": "1789503506589372351",
+   "ctime": "1789503506589372351"
+  },
+  "teams/dev/out/t2-tension.md": {
+   "size": 6295,
+   "mtime": "1789512641588637338",
+   "ctime": "1789512641588777586",
+   "lines": 88,
+   "title": "T2 — \"회차 닫혀도 세션을 버리지 않는다\" 가 CLAUDE.md 와 부딪힌다",
+   "sections": 6,
+   "words": [
+    "다음",
+    "라운드",
+    "세션",
+    "claude.md",
+    "id",
+    "team",
+    "컨텍스트",
+    "프로세스",
+    "자동",
+    "reset",
+    "대화",
+    "이어열기"
+   ]
+  },
+  "teams/dev/out/three/first-scene.md": {
+   "size": 7813,
+   "mtime": "1789317533252603670",
+   "ctime": "1789317533252819377",
+   "lines": 58,
+   "title": "M5 — 마을 그림을 Three.js 로, 첫 화면 (인형 서울)",
+   "sections": 8,
+   "words": [
+    "마을",
+    "부품",
+    "그림",
+    "화면",
+    "colormap",
+    "결정",
+    "인형",
+    "m5",
+    "서울",
+    "bfs",
+    "kenney",
+    "three.js"
+   ]
+  },
+  "teams/dev/out/tower-people.md": {
+   "size": 9828,
+   "mtime": "1789292005541171506",
+   "ctime": "1789292005541416795",
+   "lines": 65,
+   "title": "M2 관제탑 탭 — 사람별 집계 `people` + 전체/팀/개인/요청 뼈대",
+   "sections": 7,
+   "words": [
+    "대표",
+    "카드",
+    "개인",
+    "오늘",
+    "전체",
+    "자리",
+    "people",
+    "마지막",
+    "없음",
+    "다섯",
+    "발언",
+    "요청"
+   ]
+  },
+  "teams/dev/out/unfinished-all.md": {
+   "size": 6347,
+   "mtime": "1789311511898866836",
+   "ctime": "1789311511898866836",
+   "lines": 74,
+   "title": "아직 안 된 것 — 전부",
+   "sections": 7,
+   "words": [
+    "개발",
+    "작음",
+    "파일",
+    "총괄",
+    "마을",
+    "마케팅",
+    "이름",
+    "화면",
+    "결정",
+    "대기",
+    "대표",
+    "전부"
+   ]
+  },
+  "teams/dev/out/unity-vs-three.md": {
+   "size": 6569,
+   "mtime": "1789474707509955844",
+   "ctime": "1789474707510172430",
+   "lines": 57,
+   "title": "유니티 vs Three.js — 나란히 한 장, 며칠 걸리나 (결정 123 · 127)",
+   "sections": 6,
+   "words": [
+    "유니티",
+    "결정",
+    "그림자",
+    "조각",
+    "three",
+    "오늘",
+    "디자인",
+    "마을",
+    "색표",
+    "며칠",
+    "인형",
+    "buildings.json"
+   ]
+  },
+  "teams/dev/out/ux-audit-r14.md": {
+   "size": 21764,
+   "mtime": "1789275555345254558",
+   "ctime": "1789275555345254558",
+   "lines": 63,
+   "title": "작전실 사용성 검수 — 2026-09-13 (독립검수, 폰 412px)",
+   "sections": 6,
+   "words": [
+    "app.js",
+    "카드",
+    "대표",
+    "auto",
+    "style.css",
+    "결정",
+    "mid",
+    "room",
+    "라운드",
+    "승인",
+    "판정",
+    "tower"
+   ]
+  },
+  "teams/dev/out/village-file-contract.md": {
+   "size": 9292,
+   "mtime": "1789359324763718745",
+   "ctime": "1789359324763848704",
+   "lines": 86,
+   "title": "마을 파일 계약 — 개발 ↔ 디자인 · 2판 (인형 서울: 모델 · 색표 · 간판)",
+   "sections": 8,
+   "words": [
+    "2판",
+    "파일",
+    "min",
+    "간판",
+    "max",
+    "부품",
+    "1판",
+    "color",
+    "png",
+    "개발",
+    "테라",
+    "colormap"
+   ]
+  },
+  "teams/dev/out/w1-wake-hook.md": {
+   "size": 4008,
+   "mtime": "1789512842791351068",
+   "ctime": "1789512842791572690",
+   "lines": 64,
+   "title": "W1 — \"뒤에\" 주인을 실제로 깨우는 훅 자리 (server/conductor.mjs 몫)",
+   "sections": 4,
+   "words": [
+    "note",
+    "자리",
+    "team",
+    "w1",
+    "wake",
+    "server/conductor.mjs",
+    "이미",
+    "actor",
+    "if",
+    "to",
+    "깨우",
+    "뒤에"
+   ]
+  },
+  "teams/dev/out/watchdogs/README.md": {
+   "size": 3328,
+   "mtime": "1789320880310543624",
+   "ctime": "1789320880310543624",
+   "lines": 49,
+   "title": "하네스가 밤새 돌린 임시 시계들 — 참고용",
+   "sections": 6,
+   "words": [
+    "임시",
+    "돌린",
+    "건지",
+    "밤새",
+    "시계",
+    "시계들",
+    "참고용",
+    "하네스가",
+    "node",
+    "경로",
+    "기록",
+    "도는"
+   ]
+  },
+  "teams/dev/out/인수인계-0914.md": {
+   "size": 7143,
+   "mtime": "1789360149919558838",
+   "ctime": "1789360149919785755",
+   "lines": 48,
+   "title": "개발팀 인수인계 — 2026-09-14 낮 → 09-15 밤 9시",
+   "sections": 7,
+   "words": [
+    "화면",
+    "파일",
+    "그림",
+    "솔라",
+    "유니티",
+    "node",
+    "나리",
+    "오늘",
+    "재시작",
+    "관제탑",
+    "카드",
+    "커밋"
+   ]
+  },
+  "teams/dev/outside.md": {
+   "size": 6413,
+   "mtime": "1789271405892440214",
+   "ctime": "1789271405892784791",
+   "lines": 117,
+   "title": "레오 — 개발팀 외부감사",
+   "sections": 8,
+   "words": [
+    "테라",
+    "당신",
+    "레오",
+    "외부감사",
+    "없습니다",
+    "개발팀",
+    "마십시오",
+    "이름",
+    "판정",
+    "pass",
+    "revise",
+    "번호"
+   ]
+  },
+  "teams/dev/roadmap.json": {
+   "size": 21274,
+   "mtime": "1789510817546378579",
+   "ctime": "1789510817546378579",
+   "lines": 102,
+   "title": "이 작전실이 진짜 커맨드센터가 된다. 대표가 자리를 비워도 팀들이 승인 등급 안에서 스스로 달리고, 돌아온 대표는 관제탑 첫 화면 30초로 무엇이 통과하고 무엇이 막혔는지 안다. 마을 탭은 Three.js 로 그려진 인형 서울(결정 54·55)이라 디자인팀이 낸 glTF 부품과 수정 표를 그대로 꽂아 쓰고, 폰에서도 누가 어디 있는지 이름표로 보인다. 인격은 세션이 죽어도 리셋되지 않는다.",
+   "sections": 5,
+   "words": [
+    "결정",
+    "카드",
+    "화면",
+    "대표",
+    "나리",
+    "라운드",
+    "pass",
+    "헨리",
+    "부품",
+    "deliverable",
+    "status",
+    "timebox"
+   ]
+  },
+  "teams/dev/shelf.md": {
+   "size": 2158,
+   "mtime": "1789513243360128653",
+   "ctime": "1789513243360337442",
+   "lines": 31,
+   "title": "책장 — 개발",
+   "sections": 4,
+   "words": [
+    "개발",
+    "책장",
+    "grep",
+    "tools/library.mjs",
+    "으로",
+    "이름",
+    "find",
+    "시험",
+    "화면",
+    "node",
+    "read",
+    "경로"
+   ]
+  },
+  "teams/finance/guide.md": {
+   "size": 7031,
+   "mtime": "1789506656287437382",
+   "ctime": "1789506656287565342",
+   "lines": 73,
+   "title": "유진 — 경영 팀장",
+   "sections": 9,
+   "words": [
+    "숫자",
+    "초안",
+    "경영",
+    "노라",
+    "유진",
+    "비용",
+    "빅터",
+    "앞에서",
+    "팀장",
+    "감사",
+    "결정",
+    "대표"
+   ]
+  },
+  "teams/finance/journal/guide.md": {
+   "size": 4372,
+   "mtime": "1789504265567827461",
+   "ctime": "1789504265567827461",
+   "lines": 13,
+   "title": "2026-09-15 · 라운드 4 · 유진",
+   "sections": 3,
+   "words": [
+    "라운드",
+    "유진",
+    "파일",
+    "노라",
+    "노라가",
+    "2026-09-15",
+    "않는",
+    "나는",
+    "남이",
+    "수치",
+    "여섯",
+    "자리"
+   ]
+  },
+  "teams/finance/journal/outside.md": {
+   "size": 2486,
+   "mtime": "1789504271056176953",
+   "ctime": "1789504271056176953",
+   "lines": 13,
+   "title": "2026-09-15 · 라운드 4 · 빅터",
+   "sections": 3,
+   "words": [
+    "2026-09-15",
+    "라운드",
+    "빅터",
+    "외부",
+    "동료들",
+    "합의",
+    "검사",
+    "교차",
+    "나는",
+    "눈으",
+    "뒤편",
+    "라운드였다"
+   ]
+  },
+  "teams/finance/journal/review.md": {
+   "size": 3050,
+   "mtime": "1789504258742935296",
+   "ctime": "1789504258742935296",
+   "lines": 13,
+   "title": "2026-09-15 · 라운드 4 · 노라",
+   "sections": 3,
+   "words": [
+    "노라",
+    "라운드",
+    "파일",
+    "2026-09-15",
+    "결정",
+    "근거",
+    "나는",
+    "내가",
+    "여섯",
+    "유진",
+    "유진이",
+    "이번엔"
+   ]
+  },
+  "teams/finance/out/daily-template.md": {
+   "size": 9699,
+   "mtime": "1789512376572167000",
+   "ctime": "1789512376572375331",
+   "lines": 97,
+   "title": "아침 한 장 — 세 칸 틀과 팀당 한 줄 본보기 (경영 4단계, 1판)",
+   "sections": 11,
+   "words": [
+    "결정",
+    "나리",
+    "대표님",
+    "아침",
+    "대리",
+    "카드",
+    "경영",
+    "막힌",
+    "무엇",
+    "본보기",
+    "팀당",
+    "4단계"
+   ]
+  },
+  "teams/finance/out/report/감사-M2-유진.md": {
+   "size": 4702,
+   "mtime": "1789498057886188521",
+   "ctime": "1789498057886365813",
+   "lines": 44,
+   "title": "M2 보고서 틀 — 조사·비교·시안 · 내부 감사 (유진)",
+   "sections": 10,
+   "words": [
+    "시안",
+    "머리",
+    "잣대",
+    "숫자",
+    "파일",
+    "m3",
+    "감사",
+    "다섯",
+    "비교",
+    "조사",
+    "결정",
+    "목록"
+   ]
+  },
+  "teams/finance/out/report/감사-M3-유진.md": {
+   "size": 5308,
+   "mtime": "1789503936083622552",
+   "ctime": "1789503936083847638",
+   "lines": 48,
+   "title": "M3 보고서 틀 — 매뉴얼과 실물 교체 · 내부 감사 (유진)",
+   "sections": 11,
+   "words": [
+    "실물",
+    "파일",
+    "감사",
+    "매뉴얼",
+    "잣대",
+    "노라가",
+    "유진",
+    "순서",
+    "원문",
+    "유진이",
+    "정하실",
+    "grep"
+   ]
+  },
+  "teams/finance/out/report/매뉴얼.md": {
+   "size": 9011,
+   "mtime": "1789504218172119362",
+   "ctime": "1789504218172303948",
+   "lines": 94,
+   "title": "보고서 매뉴얼",
+   "sections": 5,
+   "words": [
+    "정하실",
+    "오늘",
+    "결정",
+    "막힌",
+    "머리",
+    "회차",
+    "단계",
+    "n/m",
+    "다섯",
+    "없으면",
+    "그림",
+    "기준값"
+   ]
+  },
+  "teams/finance/out/report/비교.md": {
+   "size": 2686,
+   "mtime": "1789491462630720936",
+   "ctime": "1789491462630958594",
+   "lines": 34,
+   "title": "보고서 틀 — 비교",
+   "sections": 3,
+   "words": [
+    "비교",
+    "화면",
+    "기준",
+    "단위",
+    "0건",
+    "tower",
+    "글자",
+    "보고서",
+    "시안",
+    "주석",
+    "tower.svg",
+    "대상"
+   ]
+  },
+  "teams/finance/out/report/시안-2026-09-14.md": {
+   "size": 2655,
+   "mtime": "1789497079641414840",
+   "ctime": "1789497079641775174",
+   "lines": 37,
+   "title": "보고서 틀 — 시안 2판 (2026-09-14 일일보고서를 결정 80 다섯 + 85③ 으로 다시 씀)",
+   "sections": 8,
+   "words": [
+    "결정",
+    "시안",
+    "2026-09-14",
+    "2판",
+    "85③",
+    "다섯",
+    "일일보고서",
+    "헨리",
+    "1판",
+    "대표님",
+    "도면",
+    "마을"
+   ]
+  },
+  "teams/finance/out/report/실물-2026-09-15-출처.md": {
+   "size": 3958,
+   "mtime": "1789503740451017806",
+   "ctime": "1789503740451252017",
+   "lines": 17,
+   "title": "실물 2026-09-15-경영틀.md — 받아쓰기 출처",
+   "sections": 1,
+   "words": [
+    "원문",
+    "노라",
+    "여덟",
+    "grep",
+    "디자인",
+    "받아쓰기",
+    "실물",
+    "유진",
+    "0줄",
+    "2026-09-15-경영틀.md",
+    "next",
+    "progress.json"
+   ]
+  },
+  "teams/finance/out/report/잣대.md": {
+   "size": 7602,
+   "mtime": "1789497495298837931",
+   "ctime": "1789497495299067974",
+   "lines": 72,
+   "title": "보고서 틀 — 잣대",
+   "sections": 8,
+   "words": [
+    "결정",
+    "숫자",
+    "다섯",
+    "목록",
+    "n/m",
+    "보고서",
+    "잣대",
+    "통과",
+    "파일",
+    "tower.svg",
+    "단계",
+    "머리"
+   ]
+  },
+  "teams/finance/out/report/조사.md": {
+   "size": 4422,
+   "mtime": "1789484415092721986",
+   "ctime": "1789484415092966826",
+   "lines": 42,
+   "title": "보고서 틀 — 조사",
+   "sections": 4,
+   "words": [
+    "시안",
+    "숫자",
+    "조사",
+    "보고서",
+    "비교",
+    "전체",
+    "기준",
+    "문장",
+    "0건",
+    "하네스",
+    "1/5",
+    "2026-09-15t14"
+   ]
+  },
+  "teams/finance/out/roadmap.proposed.json": {
+   "size": 4481,
+   "mtime": "1789477728672489336",
+   "ctime": "1789477728672489336",
+   "lines": 35,
+   "title": "어느 자리도 서고를 통째로 읽지 않는다. 물으면 사서(유진)가 목차와 색인만 보고 이 문서 이 절, 이 줄 을 짚어 주고, 안 읽을 것도 같이 말한다. 문서가 바뀌면 바뀐 장만 다시 읽어 색인을 고친다 — 대표 결정 09-14(teams/dev/decisions.md 116번). 그리고 대표에게 가는 보고서가 12살도 30초 안에 읽고, 늘 최신 상태를 담는다 — 대표 결정 09-15: 보고서 템플릿 개선 경영팀한테 맡겨라. 레퍼런스 리서치 → 비교 분석 → 샘플 제작 → 최종 검수. 꼭 써야하는 것, 도표, 그래프, 쉬운 워딩(12살도 이해), 필요하면 매뉴얼.",
+   "sections": 5,
+   "words": [
+    "보고서",
+    "대표",
+    "09-14",
+    "목차",
+    "문서",
+    "비교",
+    "사서",
+    "시안",
+    "결정",
+    "색인",
+    "서고",
+    "통과"
+   ]
+  },
+  "teams/finance/out/사서-물음-다섯.md": {
+   "size": 19634,
+   "mtime": "1789357105720464202",
+   "ctime": "1789357105720704788",
+   "lines": 158,
+   "title": "사서 물음 다섯 — 통과 조건 라)",
+   "sections": 12,
+   "words": [
+    "색인",
+    "맞다",
+    "본문",
+    "확인",
+    "규칙",
+    "읽을",
+    "목차",
+    "번호",
+    "사서",
+    "0바이트",
+    "find",
+    "대표"
+   ]
+  },
+  "teams/finance/out/인수인계-0914.md": {
+   "size": 5140,
+   "mtime": "1789360140950290533",
+   "ctime": "1789360140950500951",
+   "lines": 34,
+   "title": "경영팀 인수인계 — 2026-09-14 (유진·노라 → 09-15 밤 9시의 우리)",
+   "sections": 6,
+   "words": [
+    "유진",
+    "노라",
+    "사서",
+    "find",
+    "node",
+    "tools/library.mjs",
+    "파일",
+    "판정",
+    "09-15",
+    "2026-09-14",
+    "3판",
+    "9시"
+   ]
+  },
+  "teams/finance/outside.md": {
+   "size": 8290,
+   "mtime": "1789506656292162714",
+   "ctime": "1789506656292255882",
+   "lines": 78,
+   "title": "빅터 — 경영 바깥눈",
+   "sections": 9,
+   "words": [
+    "계산",
+    "초안",
+    "경영",
+    "빅터",
+    "다른",
+    "노라",
+    "회사",
+    "바깥눈",
+    "자리가",
+    "합계",
+    "당신",
+    "둘이"
+   ]
+  },
+  "teams/finance/review.md": {
+   "size": 7088,
+   "mtime": "1789506656289877945",
+   "ctime": "1789506656289960404",
+   "lines": 73,
+   "title": "노라 — 경영 감사",
+   "sections": 9,
+   "words": [
+    "숫자",
+    "근거",
+    "초안",
+    "경영",
+    "노라",
+    "유진",
+    "자리가",
+    "감사",
+    "빅터",
+    "출처",
+    "않는다",
+    "자리"
+   ]
+  },
+  "teams/finance/roadmap.json": {
+   "size": 5751,
+   "mtime": "1789509559938473366",
+   "ctime": "1789509559938473366",
+   "lines": 46,
+   "title": "어느 자리도 서고를 통째로 읽지 않는다. 물으면 사서(유진)가 목차와 색인만 보고 이 문서 이 절, 이 줄 을 짚어 주고, 안 읽을 것도 같이 말한다. 문서가 바뀌면 바뀐 장만 다시 읽어 색인을 고친다 — 대표 결정 09-14(teams/dev/decisions.md 116번). 그리고 대표에게 가는 보고서가 12살도 30초 안에 읽고, 늘 최신 상태를 담는다 — 대표 결정 09-15: 보고서 템플릿 개선 경영팀한테 맡겨라. 레퍼런스 리서치 → 비교 분석 → 샘플 제작 → 최종 검수. 꼭 써야하는 것, 도표, 그래프, 쉬운 워딩(12살도 이해), 필요하면 매뉴얼.",
+   "sections": 5,
+   "words": [
+    "pass",
+    "결정",
+    "대표",
+    "보고서",
+    "실물",
+    "아침",
+    "09-14",
+    "나리",
+    "목차",
+    "문서",
+    "비교",
+    "사서"
+   ]
+  },
+  "teams/hq/chief.md": {
+   "size": 7134,
+   "mtime": "1789239682490913260",
+   "ctime": "1789239682490913260",
+   "lines": 126,
+   "title": "톰 — 총괄",
+   "sections": 9,
+   "words": [
+    "대표",
+    "배분",
+    "네가",
+    "않는다",
+    "대표가",
+    "제리",
+    "마라",
+    "팀에",
+    "팀이",
+    "승인",
+    "원문",
+    "총괄"
+   ]
+  },
+  "teams/hq/journal/outside.md": {
+   "size": 0,
+   "mtime": "1789288006369946443",
+   "ctime": "1789288006370153490",
+   "lines": 1,
+   "title": "",
+   "sections": 1,
+   "words": []
+  },
+  "teams/hq/out/daily/2026-09-14.md": {
+   "size": 2917,
+   "mtime": "1789342937714220029",
+   "ctime": "1789342937714413482",
+   "lines": 40,
+   "title": "일일보고서 — 2026-09-14 아침",
+   "sections": 7,
+   "words": [
+    "대표님",
+    "도면",
+    "직책",
+    "화면",
+    "1판",
+    "2026-09-14",
+    "결정",
+    "디자인",
+    "마을",
+    "아침",
+    "일일보고서",
+    "글자"
+   ]
+  },
+  "teams/hq/out/daily/2026-09-15-경영틀.md": {
+   "size": 4627,
+   "mtime": "1789509829473474160",
+   "ctime": "1789509829473721495",
+   "lines": 46,
+   "title": "일일보고서 — 2026-09-15 (경영 틀)",
+   "sections": 7,
+   "words": [
+    "나리",
+    "경영",
+    "노라",
+    "방향",
+    "화면",
+    "대표",
+    "디자인",
+    "보고서",
+    "2026-09-15",
+    "5단계",
+    "낱말",
+    "대조"
+   ]
+  },
+  "teams/hq/out/daily/2026-09-15.md": {
+   "size": 6455,
+   "mtime": "1789500345115397324",
+   "ctime": "1789500345115635326",
+   "lines": 51,
+   "title": "일일보고서 — 2026-09-15 (밤 9시 20분 깸 → 16일 새벽 1시 마감)",
+   "sections": 8,
+   "words": [
+    "대표님",
+    "나리",
+    "개발",
+    "나리가",
+    "닫힘",
+    "방향",
+    "위임",
+    "화면",
+    "16일",
+    "7단계",
+    "claude",
+    "결정"
+   ]
+  },
+  "teams/hq/out/daily/2026-09-16.md": {
+   "size": 2855,
+   "mtime": "1789508877854354408",
+   "ctime": "1789508877854527409",
+   "lines": 47,
+   "title": "일일보고서 — 2026-09-16 (아침 한 장)",
+   "sections": 7,
+   "words": [
+    "화면",
+    "대표님",
+    "아침",
+    "감사",
+    "그림",
+    "2026-09-16",
+    "닫음",
+    "디자인",
+    "보고서",
+    "시안",
+    "얼굴",
+    "일일보고서"
+   ]
+  },
+  "teams/hq/out/plan-table.md": {
+   "size": 4610,
+   "mtime": "1789351653359578090",
+   "ctime": "1789351653359842548",
+   "lines": 42,
+   "title": "예정 작업 표 — 1판 (2026-09-14 낮, 톰)",
+   "sections": 4,
+   "words": [
+    "대기",
+    "화면",
+    "하영",
+    "결정",
+    "오늘",
+    "테라",
+    "로드맵",
+    "솔라",
+    "헨리",
+    "다음",
+    "대표님",
+    "모든"
+   ]
+  },
+  "teams/hq/out/proxy-decisions.md": {
+   "size": 9939,
+   "mtime": "1789513470709457591",
+   "ctime": "1789513470709457591",
+   "lines": 20,
+   "title": "대표님 대신 정한 것 (결정 85 — 톰·제리 대리 결정, 최신이 위)",
+   "sections": 1,
+   "words": [
+    "결정",
+    "대리",
+    "대표",
+    "나리",
+    "원문",
+    "제리",
+    "노라",
+    "로드맵",
+    "대조",
+    "디자인",
+    "세라",
+    "위임"
+   ]
+  },
+  "teams/hq/out/reports/README.md": {
+   "size": 1284,
+   "mtime": "1789319138260082921",
+   "ctime": "1789319138260082921",
+   "lines": 16,
+   "title": "일일보고서 · 주간계획서",
+   "sections": 1,
+   "words": [
+    "결정",
+    "일일보고서",
+    "주간계획서",
+    "시각",
+    "대리",
+    "대표가",
+    "대표님",
+    "대화록",
+    "아침",
+    "않는다",
+    "어젯밤",
+    "오늘"
+   ]
+  },
+  "teams/hq/out/sera/2026-09-14-첫보고-초안.md": {
+   "size": 2506,
+   "mtime": "1789360319268848557",
+   "ctime": "1789360319269215059",
+   "lines": 30,
+   "title": "대표님께 — 오늘 낮 한 장 (09-14 11시 반, 세라 초안)",
+   "sections": 1,
+   "words": [
+    "그림",
+    "오늘",
+    "09-14",
+    "11시",
+    "나리",
+    "대표님께",
+    "세라",
+    "초안",
+    "관제탑",
+    "단계",
+    "대표님",
+    "돼요"
+   ]
+  },
+  "teams/hq/out/sera/2026-09-16-아침-초안.md": {
+   "size": 3093,
+   "mtime": "1789509801396345659",
+   "ctime": "1789509801396624285",
+   "lines": 45,
+   "title": "대표님께 — 09-16 아침 한 장 (세라, 화면 글 규칙 꼴로 다시 씀 07:5x)",
+   "sections": 4,
+   "words": [
+    "정한",
+    "화면",
+    "나리",
+    "대표님",
+    "세라",
+    "아침",
+    "대표님께",
+    "09-16",
+    "5x",
+    "규칙",
+    "꼴로",
+    "나리가"
+   ]
+  },
+  "teams/hq/out/usability-0916.md": {
+   "size": 3576,
+   "mtime": "1789507367521208190",
+   "ctime": "1789507367521287024",
+   "lines": 35,
+   "title": "사용성 검수 1판 — 2026-09-16 06:1x (나리, 대표 페르소나)",
+   "sections": 6,
+   "words": [
+    "개발",
+    "대표",
+    "나리",
+    "화면",
+    "보고서",
+    "사용성",
+    "페르소나",
+    "1x",
+    "1판",
+    "2026-09-16",
+    "검수",
+    "누가"
+   ]
+  },
+  "teams/hq/out/권한-현황-0916.md": {
+   "size": 2541,
+   "mtime": "1789510945566525836",
+   "ctime": "1789510945566525836",
+   "lines": 31,
+   "title": "권한 현황 — 자리별 되는 것·막힌 것 (2026-09-16 07:3x, 나리 실측 1판)",
+   "sections": 4,
+   "words": [
+    "나리",
+    "명령",
+    "node",
+    "실측",
+    "권한",
+    "2x",
+    "3x",
+    "대표",
+    "막힌",
+    "자리별",
+    "현황",
+    "1판"
+   ]
+  },
+  "teams/hq/out/나리-인수인계-0914.md": {
+   "size": 6334,
+   "mtime": "1789359679707886852",
+   "ctime": "1789359679708043102",
+   "lines": 62,
+   "title": "나리 인수인계 — 2026-09-14 오후 1시 20분",
+   "sections": 8,
+   "words": [
+    "오늘",
+    "내가",
+    "화면",
+    "나리",
+    "대표",
+    "보고",
+    "결정",
+    "승인",
+    "1시",
+    "2026-09-14",
+    "20분",
+    "node"
+   ]
+  },
+  "teams/hq/out/대표-화면-글-규칙-0916.md": {
+   "size": 8568,
+   "mtime": "1789508271551107937",
+   "ctime": "1789508271551107937",
+   "lines": 73,
+   "title": "대표 화면 글 규칙 — 결정 138 (나리 위임 136, 2026-09-16 06:4x)",
+   "sections": 7,
+   "words": [
+    "대표",
+    "화면",
+    "결정",
+    "나리",
+    "규칙",
+    "마을",
+    "막힌",
+    "번호",
+    "보고서",
+    "헨리",
+    "회차",
+    "4x"
+   ]
+  },
+  "teams/hq/out/따라가기-0916.md": {
+   "size": 157,
+   "mtime": "1789511069679149813",
+   "ctime": "1789511069679468770",
+   "lines": 2,
+   "title": "옮김 — 이 파일은 teams/hq/out/따라가기.md 로 합쳐졌다 (나리 09-16 07:2x: 한 파일, 최신이 위). 여기엔 아무것도 안 쓴다.",
+   "sections": 1,
+   "words": [
+    "파일",
+    "09-16",
+    "2x",
+    "teams/hq/out/따라가기.md",
+    "나리",
+    "쓴다",
+    "아무것",
+    "여기엔",
+    "옮김",
+    "최신이",
+    "합쳐졌다"
+   ]
+  },
+  "teams/hq/out/따라가기.md": {
+   "size": 8998,
+   "mtime": "1789513523730966940",
+   "ctime": "1789513523731170356",
+   "lines": 96,
+   "title": "따라가기 (톰, 운영 총괄 ④ · 결정 142·143·144) — 한 파일, 최신이 위. 세라는 이 파일을 본다",
+   "sections": 11,
+   "words": [
+    "나리",
+    "카드",
+    "판정",
+    "세라",
+    "솔라",
+    "결정",
+    "하영",
+    "대기",
+    "테라",
+    "1x",
+    "파일",
+    "다섯"
+   ]
+  },
+  "teams/hq/out/사용성-개선-계획-0916.md": {
+   "size": 9025,
+   "mtime": "1789510436978536593",
+   "ctime": "1789510436978536593",
+   "lines": 91,
+   "title": "사용성 개선 계획 — 기본 (2026-09-16 07:1x, 나리)",
+   "sections": 9,
+   "words": [
+    "대표님",
+    "테라",
+    "카드",
+    "세라",
+    "대표님이",
+    "영어",
+    "회차",
+    "나리",
+    "상황판",
+    "화면",
+    "대표",
+    "보고"
+   ]
+  },
+  "teams/hq/out/아침에-할-것.md": {
+   "size": 7800,
+   "mtime": "1789325453814740578",
+   "ctime": "1789325453814740578",
+   "lines": 75,
+   "title": "아침에 제일 먼저 할 것 — 독립검수",
+   "sections": 9,
+   "words": [
+    "파일",
+    "내가",
+    "화면",
+    "아침",
+    "제일",
+    "결정",
+    "뒀다",
+    "감사",
+    "대표",
+    "대표님",
+    "도면",
+    "밤새"
+   ]
+  },
+  "teams/hq/out/역할-재조정안-톰-0916.md": {
+   "size": 4104,
+   "mtime": "1789510142233096857",
+   "ctime": "1789510142233096857",
+   "lines": 54,
+   "title": "역할 재조정안 — 톰을 운영 총괄로 (2026-09-16 07:2x, 나리 → 대표)",
+   "sections": 7,
+   "words": [
+    "결정",
+    "대표",
+    "나리",
+    "총괄",
+    "운영",
+    "재조정안",
+    "판정",
+    "기록",
+    "아침",
+    "역할",
+    "총괄실",
+    "톰을"
+   ]
+  },
+  "teams/hq/out/외부감사-멈춤.md": {
+   "size": 7603,
+   "mtime": "1789341916258903122",
+   "ctime": "1789341916258903122",
+   "lines": 110,
+   "title": "외부 감사 다섯이 전부 멈췄습니다 — 대표님만 정하실 수 있는 것",
+   "sections": 10,
+   "words": [
+    "감사",
+    "제가",
+    "외부",
+    "gemini",
+    "대표님",
+    "레오",
+    "없습니다",
+    "전부",
+    "다섯이",
+    "됩니다",
+    "실제",
+    "종료"
+   ]
+  },
+  "teams/hq/out/운영-간트-0916.md": {
+   "size": 6907,
+   "mtime": "1789512036120281950",
+   "ctime": "1789512036120733111",
+   "lines": 72,
+   "title": "(폐기 — 작업보드-0916.md 로 대체. 날짜 칸 배치는 대표 의도가 아니었다) ppanam 운영 간트 — 제안 1판",
+   "sections": 4,
+   "words": [
+    "카드",
+    "줄기",
+    "테라",
+    "대표",
+    "솔라",
+    "감사",
+    "나리",
+    "운영",
+    "하영",
+    "헨리",
+    "날짜",
+    "다섯"
+   ]
+  },
+  "teams/hq/out/인수인계-0914.md": {
+   "size": 8357,
+   "mtime": "1789360370761102044",
+   "ctime": "1789360370761355254",
+   "lines": 70,
+   "title": "총괄실 인수인계 — 2026-09-14 (톰 → 내일 밤 9시의 톰)",
+   "sections": 11,
+   "words": [
+    "대표",
+    "내일",
+    "총괄실",
+    "9시",
+    "결정",
+    "내가",
+    "테라",
+    "화면",
+    "list",
+    "다섯",
+    "대기",
+    "대표가"
+   ]
+  },
+  "teams/hq/out/인수인계-0915.md": {
+   "size": 2916,
+   "mtime": "1789360116535865404",
+   "ctime": "1789360116535865404",
+   "lines": 47,
+   "title": "인수인계 — 2026-09-15 밤 9시에 이 파일부터 연다",
+   "sections": 6,
+   "words": [
+    "9시",
+    "인수인계",
+    "파일",
+    "09-14",
+    "2026-09-15",
+    "나리",
+    "연다",
+    "감시",
+    "node",
+    "nw_log",
+    "scratchpad",
+    "개발"
+   ]
+  },
+  "teams/hq/out/작업보드-0916.md": {
+   "size": 3566,
+   "mtime": "1789512321309501879",
+   "ctime": "1789512321309501879",
+   "lines": 31,
+   "title": "작업 보드 — 동시에, 병목 안 겹치게, 모두가 보고, 끝나면 넘기며 알린다 (2026-09-16 08:0x)",
+   "sections": 5,
+   "words": [
+    "동시",
+    "보드",
+    "자리",
+    "대표",
+    "뒤에",
+    "모두가",
+    "병목",
+    "서브에이전트",
+    "작업",
+    "0x",
+    "겹치게",
+    "끝나면"
+   ]
+  },
+  "teams/hq/out/전체-작업표-0916.md": {
+   "size": 5985,
+   "mtime": "1789511140386656067",
+   "ctime": "1789511140386656067",
+   "lines": 53,
+   "title": "전체 작업표 — 긴급한 것부터 (2026-09-16 07:2x, 나리 → 대표)",
+   "sections": 5,
+   "words": [
+    "테라",
+    "솔라",
+    "나리",
+    "대표",
+    "세라",
+    "감사",
+    "레오",
+    "카드",
+    "토큰",
+    "하영",
+    "다섯",
+    "마을"
+   ]
+  },
+  "teams/hq/out/점검-0916.md": {
+   "size": 32956,
+   "mtime": "1789508290714026567",
+   "ctime": "1789508290714026567",
+   "lines": 261,
+   "title": "ppanam 전체 점검 — 2026-09-16 아침 (나리, 위임 12시간 끝자락)",
+   "sections": 17,
+   "words": [
+    "대표",
+    "회차",
+    "인격",
+    "파일",
+    "나리",
+    "화면",
+    "세션",
+    "pass",
+    "판정",
+    "단계",
+    "자리",
+    "결정"
+   ]
+  },
+  "teams/hq/out/카드-체계-0916.md": {
+   "size": 5810,
+   "mtime": "1789512522857225006",
+   "ctime": "1789512522857225006",
+   "lines": 66,
+   "title": "카드 체계 — 팀 상황 카드 · 판정 카드 · 결재 카드 · 탭 (2026-09-16 07:3x, 나리 → 헨리·테라·하영)",
+   "sections": 7,
+   "words": [
+    "카드",
+    "결재",
+    "판정",
+    "상황",
+    "회차",
+    "다섯",
+    "블록",
+    "나리",
+    "누가",
+    "대표",
+    "무엇",
+    "상황판"
+   ]
+  },
+  "teams/hq/out/화면이-답하는-질문.md": {
+   "size": 7932,
+   "mtime": "1789357243104989342",
+   "ctime": "1789357243104989342",
+   "lines": 95,
+   "title": "화면이 답하는 질문 — 1판",
+   "sections": 13,
+   "words": [
+    "결정",
+    "대표가",
+    "자리",
+    "질문",
+    "관제탑",
+    "화면",
+    "상황판",
+    "카드",
+    "것이다",
+    "내가",
+    "답하",
+    "보고서"
+   ]
+  },
+  "teams/hq/outside.md": {
+   "size": 6416,
+   "mtime": "1789239682491171431",
+   "ctime": "1789239682491171431",
+   "lines": 127,
+   "title": "제리 — 총괄실 대조역",
+   "sections": 9,
+   "words": [
+    "원문",
+    "배분",
+    "대표",
+    "총괄실",
+    "톰이",
+    "제리",
+    "revise",
+    "너는",
+    "네가",
+    "대조",
+    "대조역",
+    "대표가"
+   ]
+  },
+  "teams/hq/roadmap.json": {
+   "size": 6280,
+   "mtime": "1789506480065751132",
+   "ctime": "1789506480065751132",
+   "lines": 49,
+   "title": "대표가 한 번만 말하면 원문이 팀에 그대로 가고, 대표가 없어도 B 는 톰·제리로 돌고, 아침엔 한 장(세라 아침 한 장 + 톰 일일보고서)만 보면 무엇이 통과했고 무엇이 대표 손에 있는지 안다. 총괄실은 산출물을 만들지 않는다 — 일이 어디로 갈지와 누가 무엇을 기다리는지를 정한다.",
+   "sections": 5,
+   "words": [
+    "결정",
+    "대표",
+    "대표가",
+    "제리",
+    "총괄실",
+    "카드",
+    "아침",
+    "위임",
+    "일일보고서",
+    "통과",
+    "09-16",
+    "deliverable"
+   ]
+  },
+  "teams/marketing/guide.md": {
+   "size": 8933,
+   "mtime": "1789239682491388394",
+   "ctime": "1789239682491388394",
+   "lines": 153,
+   "title": "하영 — 마케팅팀 실무",
+   "sections": 12,
+   "words": [
+    "다니엘",
+    "안젤",
+    "마라",
+    "않는다",
+    "대표",
+    "그건",
+    "네가",
+    "실무",
+    "근거",
+    "쓴다",
+    "하영",
+    "너는"
+   ]
+  },
+  "teams/marketing/journal/guide.md": {
+   "size": 22215,
+   "mtime": "1789492169046748929",
+   "ctime": "1789492169046748929",
+   "lines": 61,
+   "title": "2026-09-15 · 라운드 35 · 하영",
+   "sections": 15,
+   "words": [
+    "하영",
+    "오늘",
+    "라운드",
+    "내가",
+    "나는",
+    "안젤",
+    "안젤이",
+    "대표가",
+    "마케팅",
+    "빠르고",
+    "틀리면",
+    "손이"
+   ]
+  },
+  "teams/marketing/journal/outside.md": {
+   "size": 9842,
+   "mtime": "1789492171723273572",
+   "ctime": "1789492171723273572",
+   "lines": 97,
+   "title": "2026-09-15 · 라운드 35 · 다니엘",
+   "sections": 14,
+   "words": [
+    "다니엘",
+    "라운드",
+    "씨가",
+    "하영",
+    "나는",
+    "오늘",
+    "외부감사이고",
+    "통과",
+    "원문",
+    "2026-09-13",
+    "생각합니다",
+    "안젤"
+   ]
+  },
+  "teams/marketing/journal/review.md": {
+   "size": 15877,
+   "mtime": "1789492156164390921",
+   "ctime": "1789492156164390921",
+   "lines": 59,
+   "title": "2026-09-15 · 라운드 35 · 안젤",
+   "sections": 14,
+   "words": [
+    "안젤",
+    "하영이",
+    "라운드",
+    "나는",
+    "내가",
+    "내부감사고",
+    "마음이다",
+    "마케팅팀",
+    "하영",
+    "다니엘",
+    "뼈대",
+    "2026-09-13"
+   ]
+  },
+  "teams/marketing/out/ahead-five.md": {
+   "size": 3680,
+   "mtime": "1789511353956018769",
+   "ctime": "1789511353956260726",
+   "lines": 19,
+   "title": "앞으로 첫 층 — 대표님이 시킨 일 다섯, 한 줄씩 (1판)",
+   "sections": 1,
+   "words": [
+    "나리",
+    "다섯",
+    "시킨",
+    "앞으",
+    "세라",
+    "인격",
+    "1판",
+    "개발",
+    "대표님이",
+    "보고서",
+    "줄씩",
+    "결정"
+   ]
+  },
+  "teams/marketing/out/bar/design.bar.md": {
+   "size": 2863,
+   "mtime": "1789511394719997829",
+   "ctime": "1789511394720209786",
+   "lines": 14,
+   "title": "디자인 물건이 통과하려면 — bar 1판 (하영 초안, 09-16 — 헨리가 고친다)",
+   "sections": 1,
+   "words": [
+    "결정",
+    "09-16",
+    "디자인",
+    "얼굴",
+    "09-14",
+    "물건이",
+    "붙은",
+    "사전",
+    "하영",
+    "헨리가",
+    "1판",
+    "bar"
+   ]
+  },
+  "teams/marketing/out/bar/dev.bar.md": {
+   "size": 2855,
+   "mtime": "1789511401253044811",
+   "ctime": "1789511401253304809",
+   "lines": 14,
+   "title": "개발 물건이 통과하려면 — bar 1판 (하영 초안, 09-16 — 테라가 고친다)",
+   "sections": 1,
+   "words": [
+    "결정",
+    "09-16",
+    "하영",
+    "개발",
+    "화면",
+    "09-14",
+    "1판",
+    "bar",
+    "고친다",
+    "글자",
+    "누가",
+    "물건이"
+   ]
+  },
+  "teams/marketing/out/bar/finance.bar.md": {
+   "size": 2762,
+   "mtime": "1789511408037809188",
+   "ctime": "1789511408038077853",
+   "lines": 14,
+   "title": "경영 물건이 통과하려면 — bar 1판 (하영 초안, 09-16 — 유진이 고친다)",
+   "sections": 1,
+   "words": [
+    "결정",
+    "09-16",
+    "보고서",
+    "1판",
+    "bar",
+    "경영",
+    "고친다",
+    "대표",
+    "물건이",
+    "비용",
+    "서고",
+    "숫자"
+   ]
+  },
+  "teams/marketing/out/bar/hq.bar.md": {
+   "size": 2622,
+   "mtime": "1789511398146386784",
+   "ctime": "1789511398146591617",
+   "lines": 14,
+   "title": "총괄 물건이 통과하려면 — bar 1판 (하영 초안, 09-16 — 톰이 고친다)",
+   "sections": 1,
+   "words": [
+    "결정",
+    "원문",
+    "09-16",
+    "톰이",
+    "1판",
+    "bar",
+    "고친다",
+    "대표",
+    "목록",
+    "물건이",
+    "초안",
+    "총괄"
+   ]
+  },
+  "teams/marketing/out/bar/marketing.bar.md": {
+   "size": 2758,
+   "mtime": "1789511427177902191",
+   "ctime": "1789511427178156148",
+   "lines": 14,
+   "title": "마케팅 물건이 통과하려면 — bar 1판 (하영 초안, 09-16)",
+   "sections": 1,
+   "words": [
+    "결정",
+    "마케팅",
+    "인격",
+    "않고",
+    "원문",
+    "09-16",
+    "1판",
+    "bar",
+    "화면",
+    "물건이",
+    "이어지",
+    "초안"
+   ]
+  },
+  "teams/marketing/out/bar/README.md": {
+   "size": 1463,
+   "mtime": "1789506981130189489",
+   "ctime": "1789506981130330907",
+   "lines": 12,
+   "title": "퀄리티 잣대 한 장 — `teams/<팀>/bar.md` 첫 판 (초안, 하영)",
+   "sections": 1,
+   "words": [
+    "다섯",
+    "bar.md",
+    "teams",
+    "잣대",
+    "하영",
+    "대표가",
+    "초안",
+    "퀄리티",
+    "감사",
+    "결정",
+    "나리",
+    "대표"
+   ]
+  },
+  "teams/marketing/out/blueprint-words.md": {
+   "size": 6744,
+   "mtime": "1789314155813255390",
+   "ctime": "1789314155813520814",
+   "lines": 76,
+   "title": "도면 1판 — 칸과 줄에 붙는 말",
+   "sections": 9,
+   "words": [
+    "결정",
+    "대표",
+    "도면",
+    "대표가",
+    "붙일",
+    "이름",
+    "목표",
+    "1판",
+    "감사",
+    "단계",
+    "마케팅",
+    "세라"
+   ]
+  },
+  "teams/marketing/out/boss-lines-2.md": {
+   "size": 3183,
+   "mtime": "1789511386893535776",
+   "ctime": "1789511386893917399",
+   "lines": 27,
+   "title": "대표 화면 글 — 자로 잰 2판 (안젤, 09-16)",
+   "sections": 4,
+   "words": [
+    "없음",
+    "boss",
+    "걸림",
+    "화면",
+    "blocked",
+    "안젤",
+    "자로",
+    "09-16",
+    "다섯",
+    "대표",
+    "총괄",
+    "2판"
+   ]
+  },
+  "teams/marketing/out/boss-lines.md": {
+   "size": 7879,
+   "mtime": "1789509815375400513",
+   "ctime": "1789509815375615389",
+   "lines": 56,
+   "title": "대표 화면 글 — 본보기 열 줄 (결정 138, 1판)",
+   "sections": 6,
+   "words": [
+    "화면",
+    "나리",
+    "pass",
+    "결정",
+    "대표",
+    "디자인",
+    "무엇",
+    "누가",
+    "카드",
+    "경영",
+    "규칙",
+    "본보기"
+   ]
+  },
+  "teams/marketing/out/branding-check.md": {
+   "size": 5624,
+   "mtime": "1789489241314712294",
+   "ctime": "1789489241314837589",
+   "lines": 40,
+   "title": "브랜딩 실물 대조 — 1판",
+   "sections": 6,
+   "words": [
+    "실물",
+    "buildings.json",
+    "자리",
+    "파일",
+    "6f9a4a",
+    "e9dfcf",
+    "나리",
+    "대조",
+    "마을",
+    "브랜딩",
+    "안젤",
+    "위임"
+   ]
+  },
+  "teams/marketing/out/card-words.md": {
+   "size": 8228,
+   "mtime": "1789511566210064537",
+   "ctime": "1789511566210320952",
+   "lines": 67,
+   "title": "카드 글 규칙 — 팀 상황 카드 · 판정 카드 · 결재 카드 · 탭 (1판 → 2판 고침 09-16 08:xx)",
+   "sections": 7,
+   "words": [
+    "카드",
+    "나리",
+    "글자",
+    "대표님",
+    "머리",
+    "블록",
+    "사전",
+    "멈춤",
+    "상황판",
+    "판정",
+    "화면",
+    "결재"
+   ]
+  },
+  "teams/marketing/out/opsroom-content-2.md": {
+   "size": 31745,
+   "mtime": "1789479675796641327",
+   "ctime": "1789479675796887368",
+   "lines": 197,
+   "title": "관제탑 내용 선정 2판 — 헨리 시안 다섯 장, 줄마다 쓴다 / 안 쓴다 / 빠져 있다",
+   "sections": 12,
+   "words": [
+    "쓴다",
+    "결정",
+    "카드",
+    "대표가",
+    "1판",
+    "대표",
+    "나리",
+    "누가",
+    "자리",
+    "헨리",
+    "다섯",
+    "현황"
+   ]
+  },
+  "teams/marketing/out/opsroom-content.md": {
+   "size": 11677,
+   "mtime": "1789298631215406684",
+   "ctime": "1789298631215785935",
+   "lines": 94,
+   "title": "관제탑 — 대표가 실제로 보는 순서와 누르는 것",
+   "sections": 9,
+   "words": [
+    "쓴다",
+    "대표가",
+    "결정",
+    "대표",
+    "카드",
+    "관제탑",
+    "버튼",
+    "원문",
+    "누를",
+    "라운드",
+    "n분",
+    "대기"
+   ]
+  },
+  "teams/marketing/out/opsroom-words.md": {
+   "size": 101348,
+   "mtime": "1789511554744698170",
+   "ctime": "1789511554744980960",
+   "lines": 604,
+   "title": "작전실 말 — 우리 말을 사람 말로",
+   "sections": 29,
+   "words": [
+    "카드",
+    "대표",
+    "글자",
+    "화면",
+    "결정",
+    "자리",
+    "이름",
+    "나리",
+    "대표가",
+    "회차",
+    "후보",
+    "대표님이"
+   ]
+  },
+  "teams/marketing/out/review-boss-lines-2.md": {
+   "size": 2772,
+   "mtime": "1789511330127634475",
+   "ctime": "1789511330127856890",
+   "lines": 14,
+   "title": "하영이 안젤 것을 봄 — `boss-lines-2.md` · bar 확정본 (R36, 09-16 아침)",
+   "sections": 1,
+   "words": [
+    "개발",
+    "안젤",
+    "없음",
+    "하영이",
+    "확정본",
+    "09-16",
+    "bar",
+    "디자인",
+    "줄을",
+    "boss-lines-2.md",
+    "r36",
+    "떨어뜨릴"
+   ]
+  },
+  "teams/marketing/out/roadmap-2.proposed.json": {
+   "size": 3092,
+   "mtime": "1789353390280484433",
+   "ctime": "1789353390280772228",
+   "lines": 23,
+   "title": "우리 세계가 실제 사람이 쓰는 살아 있는 곳이 된다 — 구성·UX·UI·단어·관제탑·분석·대시보드·보고서·브랜딩. 대표가 관제탑 어느 탭을 열어도 30초 안에 무엇을 봐야 하는지 알고, 글자와 카드가 맥락으로 이어지고, 사람과 마을이 한 세계로 읽힌다. 대표 결정 126(09-14): 트립튜드가 아니라 이것이 먼저다.",
+   "sections": 6,
+   "words": [
+    "결정",
+    "대표가",
+    "로드맵",
+    "대표",
+    "안젤이",
+    "하영",
+    "화면",
+    "단계",
+    "관제탑",
+    "통과",
+    "바이블",
+    "브랜딩"
+   ]
+  },
+  "teams/marketing/out/roadmap-3.proposed.json": {
+   "size": 14477,
+   "mtime": "1789354817934371529",
+   "ctime": "1789354817934690282",
+   "lines": 61,
+   "title": "우리 세계가 실제 사람이 쓰는 살아 있는 곳이 된다 — 구성·UX·UI·단어·관제탑·분석·대시보드·보고서·브랜딩. 대표가 관제탑 어느 탭을 열어도 30초 안에 무엇을 봐야 하는지 알고, 글자와 카드가 맥락으로 이어지고, 사람과 마을이 한 세계로 읽힌다. 대표 결정 126(09-14): 트립튜드가 아니라 이것이 먼저다.",
+   "sections": 6,
+   "words": [
+    "안젤",
+    "하영",
+    "결정",
+    "화면",
+    "하영이",
+    "다섯",
+    "내용",
+    "안젤이",
+    "통과",
+    "나리",
+    "대표",
+    "대표가"
+   ]
+  },
+  "teams/marketing/out/roadmap.proposed.json": {
+   "size": 5186,
+   "mtime": "1789299031131617519",
+   "ctime": "1789299031131953069",
+   "lines": 60,
+   "title": "열다섯이 한 세계를 같은 문장으로 안다. 대표가 바이블을 읽으면 누가 누군지, 왜 그런 사람인지, 마을 어디에 있는지 알아본다. 세션이 압축되거나 다시 떠도 프롬프트의 열 줄과 바이블 경로 하나로 제자리로 돌아온다. 읽는 판(대표)을 먼저 쓰고 거기서 프롬프트용(세션)을 뽑는다. 바이블이 정본이고 인격 파일 열다섯은 바이블에서 다시 생성된다 — 지금 파일은 재료다 — 대표 결정 09-13.",
+   "sections": 4,
+   "words": [
+    "결정",
+    "바이블",
+    "대표",
+    "파일",
+    "문구",
+    "인격",
+    "deliverable",
+    "status",
+    "title",
+    "마을",
+    "열다섯",
+    "대표가"
+   ]
+  },
+  "teams/marketing/out/screen-30s-test.md": {
+   "size": 24849,
+   "mtime": "1789499404751032580",
+   "ctime": "1789499404751214207",
+   "lines": 156,
+   "title": "붙은 화면 30초 시험 — 1판 (5단계, 둘이 같이)",
+   "sections": 21,
+   "words": [
+    "자리",
+    "화면",
+    "나리",
+    "안젤",
+    "하영",
+    "30초",
+    "문장",
+    "카드",
+    "테라",
+    "경영",
+    "대표",
+    "마을"
+   ]
+  },
+  "teams/marketing/out/screen-text-frames.md": {
+   "size": 31350,
+   "mtime": "1789508443966211117",
+   "ctime": "1789508443966410701",
+   "lines": 274,
+   "title": "화면 글 틀 — 앞으로(대시보드) · 분석 — 1판",
+   "sections": 26,
+   "words": [
+    "회차",
+    "자리",
+    "계획표",
+    "단계",
+    "분석",
+    "화면",
+    "시안",
+    "5판",
+    "대표님이",
+    "멈춤",
+    "앞으",
+    "라운드"
+   ]
+  },
+  "teams/marketing/out/shots/usability-dashboard-412.png": {
+   "kind": "image",
+   "size": 90743,
+   "mtime": "1789513503461922019",
+   "ctime": "1789513503461922019"
+  },
+  "teams/marketing/out/shots/usability-report-1280.png": {
+   "kind": "image",
+   "size": 158334,
+   "mtime": "1789513517183594069",
+   "ctime": "1789513517183594069"
+  },
+  "teams/marketing/out/shots/usability-report-412.png": {
+   "kind": "image",
+   "size": 82162,
+   "mtime": "1789513510067033606",
+   "ctime": "1789513510067033606"
+  },
+  "teams/marketing/out/shots/usability-room-412.png": {
+   "kind": "image",
+   "size": 108151,
+   "mtime": "1789513489173135546",
+   "ctime": "1789513489173135546"
+  },
+  "teams/marketing/out/shots/usability-tower-412.png": {
+   "kind": "image",
+   "size": 49532,
+   "mtime": "1789513496174385527",
+   "ctime": "1789513496174385527"
+  },
+  "teams/marketing/out/village-branding.md": {
+   "size": 13298,
+   "mtime": "1789489196207828192",
+   "ctime": "1789489196207994114",
+   "lines": 68,
+   "title": "마을 브랜딩 — 아홉 자리, 한 장 (2판 + 디자인 답)",
+   "sections": 8,
+   "words": [
+    "자리",
+    "이름",
+    "city.json",
+    "간판",
+    "디자인",
+    "경영",
+    "댄의",
+    "헨리",
+    "2판",
+    "direction.md",
+    "10-world.md",
+    "마을"
+   ]
+  },
+  "teams/marketing/out/world-bible/00-audit.md": {
+   "size": 10523,
+   "mtime": "1789309876263822898",
+   "ctime": "1789309876264097732",
+   "lines": 95,
+   "title": "실사표 — 열다섯 자리의 인격 자산, 지금 무엇이 있고 무엇이 없나",
+   "sections": 8,
+   "words": [
+    "자리",
+    "지도에",
+    "대표",
+    "없음",
+    "5줄",
+    "성별",
+    "열다섯",
+    "파일",
+    "결정",
+    "인격",
+    "무엇이",
+    "내력"
+   ]
+  },
+  "teams/marketing/out/world-bible/10-world.md": {
+   "size": 23029,
+   "mtime": "1789313206017771274",
+   "ctime": "1789313206018085532",
+   "lines": 151,
+   "title": "세계 — 마을·궁·시간·규칙 한 벌",
+   "sections": 11,
+   "words": [
+    "자리",
+    "대표",
+    "결정",
+    "마을",
+    "이름",
+    "코드",
+    "direction.md",
+    "서울",
+    "대표가",
+    "회사",
+    "않는다",
+    "찻집"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/boss.md": {
+   "size": 4158,
+   "mtime": "1789283671160204040",
+   "ctime": "1789283671160387288",
+   "lines": 53,
+   "title": "댄 — 대표",
+   "sections": 9,
+   "words": [
+    "대표",
+    "결정",
+    "2절",
+    "10-world.md",
+    "쓴다",
+    "대표가",
+    "대표실",
+    "열넷",
+    "자리",
+    "09-13",
+    "116행",
+    "7번"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/design.guide.md": {
+   "size": 5069,
+   "mtime": "1789281038948978330",
+   "ctime": "1789281038949113324",
+   "lines": 75,
+   "title": "헨리 — 디자인 메인",
+   "sections": 13,
+   "words": [
+    "그림",
+    "디자인",
+    "초안",
+    "guide.md",
+    "구도가",
+    "대표",
+    "헨리",
+    "10-world.md",
+    "메인",
+    "예쁜",
+    "구도",
+    "아침"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/design.ops.md": {
+   "size": 4735,
+   "mtime": "1789281070236832289",
+   "ctime": "1789281070237029280",
+   "lines": 74,
+   "title": "클레멘타인 — 디자인 보조",
+   "sections": 13,
+   "words": [
+    "ops.md",
+    "디자인",
+    "초안",
+    "헨리",
+    "10-world.md",
+    "마크",
+    "클레멘타인",
+    "그림",
+    "보조",
+    "센다",
+    "잔액",
+    "전에"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/design.outside.md": {
+   "size": 4772,
+   "mtime": "1789281102589885378",
+   "ctime": "1789281102590077287",
+   "lines": 74,
+   "title": "마크 — 디자인 외부감사",
+   "sections": 13,
+   "words": [
+    "초안",
+    "디자인",
+    "마크",
+    "헨리",
+    "10-world.md",
+    "30행",
+    "outside.md",
+    "외부감사",
+    "대충",
+    "맞아요",
+    "사람이",
+    "예쁘다"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/dev.guide.md": {
+   "size": 6013,
+   "mtime": "1789280928938080506",
+   "ctime": "1789280928938274414",
+   "lines": 78,
+   "title": "테라 — 개발 실무",
+   "sections": 13,
+   "words": [
+    "guide.md",
+    "레오",
+    "솔라",
+    "테라",
+    "제일",
+    "10-world.md",
+    "개발",
+    "대표",
+    "초안",
+    "그의",
+    "실무",
+    "15행"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/dev.ops.md": {
+   "size": 5382,
+   "mtime": "1789280965276447381",
+   "ctime": "1789280965276705745",
+   "lines": 77,
+   "title": "솔라 — 개발·운영",
+   "sections": 13,
+   "words": [
+    "개발",
+    "테라",
+    "ops.md",
+    "운영",
+    "10-world.md",
+    "레오",
+    "솔라",
+    "아무",
+    "초안",
+    "26행",
+    "3시",
+    "경로"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/dev.outside.md": {
+   "size": 5407,
+   "mtime": "1789281004086273693",
+   "ctime": "1789281004086519433",
+   "lines": 76,
+   "title": "레오 — 개발 외부감사",
+   "sections": 13,
+   "words": [
+    "테라",
+    "outside.md",
+    "초안",
+    "개발",
+    "레오",
+    "컴퓨터에선",
+    "10-world.md",
+    "외부감사",
+    "자리",
+    "32행",
+    "대표",
+    "되는데요"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/finance.guide.md": {
+   "size": 3425,
+   "mtime": "1789309887272085888",
+   "ctime": "1789309887272336846",
+   "lines": 66,
+   "title": "유진 — 경영 팀장",
+   "sections": 13,
+   "words": [
+    "숫자",
+    "초안",
+    "유진",
+    "10-world.md",
+    "팀장",
+    "경영",
+    "81행",
+    "비용",
+    "앞에서",
+    "정해진",
+    "decisions.md",
+    "감사"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/finance.outside.md": {
+   "size": 3645,
+   "mtime": "1789309892582024736",
+   "ctime": "1789309892583115613",
+   "lines": 65,
+   "title": "빅터 — 경영 바깥눈",
+   "sections": 13,
+   "words": [
+    "계산",
+    "초안",
+    "10-world.md",
+    "빅터",
+    "바깥눈",
+    "경영",
+    "자리",
+    "회사",
+    "노라",
+    "독일",
+    "사람이",
+    "2번"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/finance.review.md": {
+   "size": 3409,
+   "mtime": "1789309889978915878",
+   "ctime": "1789309889979154962",
+   "lines": 66,
+   "title": "노라 — 경영 감사",
+   "sections": 13,
+   "words": [
+    "숫자",
+    "근거",
+    "초안",
+    "10-world.md",
+    "노라",
+    "감사",
+    "경영",
+    "유진",
+    "노르웨이",
+    "사람이",
+    "원문",
+    "자리"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/hq.chief.md": {
+   "size": 5738,
+   "mtime": "1789280837212156441",
+   "ctime": "1789280837212357015",
+   "lines": 83,
+   "title": "톰 — 총괄",
+   "sections": 14,
+   "words": [
+    "10-world.md",
+    "chief.md",
+    "제리",
+    "초안",
+    "대표",
+    "총괄",
+    "결정",
+    "자리",
+    "25행",
+    "2절",
+    "게시판",
+    "그가"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/hq.outside.md": {
+   "size": 5538,
+   "mtime": "1789280875140723042",
+   "ctime": "1789280875140955699",
+   "lines": 77,
+   "title": "제리 — 총괄실 대조역",
+   "sections": 13,
+   "words": [
+    "그녀",
+    "초안",
+    "원문",
+    "outside.md",
+    "총괄실",
+    "톰이",
+    "톰의",
+    "chief.md",
+    "대조역",
+    "제리",
+    "10-world.md",
+    "24행"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/hq.secretary.md": {
+   "size": 7396,
+   "mtime": "1789313970840150981",
+   "ctime": "1789313970840401904",
+   "lines": 78,
+   "title": "세라 — 총괄실 비서 (대표의 비서)",
+   "sections": 13,
+   "words": [
+    "대표",
+    "세라",
+    "대표가",
+    "초안",
+    "비서",
+    "자리",
+    "총괄실",
+    "결정",
+    "원문",
+    "내일",
+    "아침",
+    "화면"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/marketing.guide.md": {
+   "size": 5879,
+   "mtime": "1789280483770697160",
+   "ctime": "1789280483771052728",
+   "lines": 78,
+   "title": "하영 — 마케팅 실무",
+   "sections": 13,
+   "words": [
+    "초안",
+    "하영",
+    "10-world.md",
+    "guide.md",
+    "누가",
+    "마케팅",
+    "실무",
+    "안젤",
+    "다니엘",
+    "대표",
+    "대행사",
+    "문장"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/marketing.outside.md": {
+   "size": 5598,
+   "mtime": "1789280790875286167",
+   "ctime": "1789280790875513449",
+   "lines": 77,
+   "title": "다니엘 — 마케팅 외부감사",
+   "sections": 13,
+   "words": [
+    "마케팅",
+    "10-world.md",
+    "초안",
+    "outside.md",
+    "다니엘",
+    "하영",
+    "다들",
+    "다른",
+    "외부감사",
+    "29행",
+    "문장",
+    "업계"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/marketing.review.md": {
+   "size": 5239,
+   "mtime": "1789280753056196176",
+   "ctime": "1789280753056435457",
+   "lines": 76,
+   "title": "안젤 — 마케팅 내부감사",
+   "sections": 13,
+   "words": [
+    "하영",
+    "안젤",
+    "10-world.md",
+    "초안",
+    "파리",
+    "마케팅",
+    "문장",
+    "review.md",
+    "내부감사",
+    "브랜드",
+    "인용",
+    "판정"
+   ]
+  },
+  "teams/marketing/out/world-bible/20-people/README.md": {
+   "size": 8597,
+   "mtime": "1789477344607286001",
+   "ctime": "1789477344607516156",
+   "lines": 103,
+   "title": "사람들의 내력 — 이 폴더의 틀",
+   "sections": 7,
+   "words": [
+    "자리",
+    "파일",
+    "초안",
+    "비움",
+    "없음",
+    "결정",
+    "인격",
+    "8c",
+    "대표",
+    "쓴다",
+    "10-world.md",
+    "마일스톤"
+   ]
+  },
+  "teams/marketing/out/world-bible/30-relations.md": {
+   "size": 24319,
+   "mtime": "1789293011210281244",
+   "ctime": "1789293011210527451",
+   "lines": 178,
+   "title": "관계도 — 열다섯 사이의 선",
+   "sections": 10,
+   "words": [
+    "5절",
+    "테라",
+    "하영",
+    "헨리",
+    "대표",
+    "제리",
+    "다니엘",
+    "레오",
+    "초안",
+    "결정",
+    "다섯",
+    "마크"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/117-check.md": {
+   "size": 15869,
+   "mtime": "1789478343416406370",
+   "ctime": "1789478343416628409",
+   "lines": 63,
+   "title": "결정 117 재기 — 인격 열다섯, 이름 가리고 다섯 줄",
+   "sections": 6,
+   "words": [
+    "안젤",
+    "안젤이",
+    "테라",
+    "레오",
+    "부분",
+    "마크",
+    "표본",
+    "실무",
+    "r33",
+    "결정",
+    "다섯",
+    "하영"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/40-fold.md": {
+   "size": 6817,
+   "mtime": "1789512111367045775",
+   "ctime": "1789512111367277480",
+   "lines": 57,
+   "title": "인격 파일을 40줄로 접는 틀 — 1판",
+   "sections": 6,
+   "words": [
+    "자리",
+    "파일",
+    "40줄",
+    "인격",
+    "초안",
+    "경로",
+    "다섯",
+    "명령",
+    "접는",
+    "표본",
+    "하영",
+    "1판"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/40/marketing.guide.md": {
+   "size": 4123,
+   "mtime": "1789506591985099390",
+   "ctime": "1789506591985270475",
+   "lines": 40,
+   "title": "하영 — 마케팅팀 실무",
+   "sections": 6,
+   "words": [
+    "안젤",
+    "다니엘",
+    "마케팅팀",
+    "실무",
+    "하영",
+    "node",
+    "근거",
+    "서쪽",
+    "않는다",
+    "대표",
+    "묻는다",
+    "밖은"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/design.guide.md": {
+   "size": 11275,
+   "mtime": "1789302817185556703",
+   "ctime": "1789302817185821276",
+   "lines": 98,
+   "title": "헨리 — 디자인팀 메인 디자인",
+   "sections": 12,
+   "words": [
+    "그림",
+    "마크",
+    "대표",
+    "클레멘타인",
+    "디자인",
+    "예쁜",
+    "헨리",
+    "구도가",
+    "존댓말",
+    "않는다",
+    "자가",
+    "구도"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/design.ops.md": {
+   "size": 9831,
+   "mtime": "1789314337050807665",
+   "ctime": "1789314337051067714",
+   "lines": 91,
+   "title": "클레멘타인 — 디자인팀 보조 디자인",
+   "sections": 11,
+   "words": [
+    "헨리",
+    "마크",
+    "그림",
+    "전에",
+    "디자인",
+    "센다",
+    "창고",
+    "클레멘타인",
+    "팔레트",
+    "대표",
+    "세고",
+    "장비"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/design.outside.md": {
+   "size": 10305,
+   "mtime": "1789477947946224309",
+   "ctime": "1789477947946468598",
+   "lines": 93,
+   "title": "마크 — 디자인팀 외부감사",
+   "sections": 11,
+   "words": [
+    "헨리",
+    "클레멘타인",
+    "같이",
+    "그림",
+    "파일",
+    "당신",
+    "마크",
+    "판정",
+    "둘이",
+    "사람이",
+    "초안",
+    "검사"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/dev.guide.md": {
+   "size": 12319,
+   "mtime": "1789302715158957065",
+   "ctime": "1789302715159150153",
+   "lines": 105,
+   "title": "테라 — 개발팀 실무",
+   "sections": 13,
+   "words": [
+    "레오",
+    "솔라",
+    "대표",
+    "제일",
+    "네가",
+    "않는다",
+    "테라",
+    "개발팀",
+    "실무",
+    "초안",
+    "겁니다",
+    "롤백"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/dev.ops.md": {
+   "size": 10913,
+   "mtime": "1789317084550384899",
+   "ctime": "1789317084550782731",
+   "lines": 94,
+   "title": "솔라 — 개발팀 개발·운영",
+   "sections": 11,
+   "words": [
+    "테라",
+    "레오",
+    "개발",
+    "운영",
+    "경로",
+    "솔라",
+    "아무",
+    "자리",
+    "롤백",
+    "않는다",
+    "네가",
+    "개발팀"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/dev.outside.md": {
+   "size": 12444,
+   "mtime": "1789478440487225811",
+   "ctime": "1789478440487495476",
+   "lines": 100,
+   "title": "레오 — 개발팀 외부감사",
+   "sections": 12,
+   "words": [
+    "당신",
+    "테라",
+    "레오",
+    "다른",
+    "회사",
+    "않습니다",
+    "파일",
+    "방에서",
+    "솔라",
+    "다섯",
+    "초안",
+    "같이"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/finance.guide.md": {
+   "size": 7031,
+   "mtime": "1789506417812592190",
+   "ctime": "1789506417812853234",
+   "lines": 73,
+   "title": "유진 — 경영 팀장",
+   "sections": 9,
+   "words": [
+    "숫자",
+    "초안",
+    "경영",
+    "노라",
+    "유진",
+    "비용",
+    "빅터",
+    "앞에서",
+    "팀장",
+    "감사",
+    "결정",
+    "대표"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/finance.outside.md": {
+   "size": 8290,
+   "mtime": "1789506428114121376",
+   "ctime": "1789506428114385253",
+   "lines": 78,
+   "title": "빅터 — 경영 바깥눈",
+   "sections": 9,
+   "words": [
+    "계산",
+    "초안",
+    "경영",
+    "빅터",
+    "다른",
+    "노라",
+    "회사",
+    "바깥눈",
+    "자리가",
+    "합계",
+    "당신",
+    "둘이"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/finance.review.md": {
+   "size": 7088,
+   "mtime": "1789506423299319084",
+   "ctime": "1789506423299498503",
+   "lines": 73,
+   "title": "노라 — 경영 감사",
+   "sections": 9,
+   "words": [
+    "숫자",
+    "근거",
+    "초안",
+    "경영",
+    "노라",
+    "유진",
+    "자리가",
+    "감사",
+    "빅터",
+    "출처",
+    "않는다",
+    "자리"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/hq.chief.duties-0916.md": {
+   "size": 4752,
+   "mtime": "1789510350463547002",
+   "ctime": "1789510350463739705",
+   "lines": 40,
+   "title": "톰 — \"네가 하는 일\" · \"승인\" 절 다시 쓰기 초안 (운영 총괄, 09-16)",
+   "sections": 3,
+   "words": [
+    "나리",
+    "네가",
+    "결정",
+    "대리",
+    "대표",
+    "승인",
+    "판정",
+    "09-16",
+    "제리",
+    "않는다",
+    "운영",
+    "원문"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/hq.chief.md": {
+   "size": 11204,
+   "mtime": "1789303077211207863",
+   "ctime": "1789303077211494617",
+   "lines": 100,
+   "title": "톰 — 총괄",
+   "sections": 13,
+   "words": [
+    "제리",
+    "대표",
+    "결정",
+    "않는다",
+    "자리",
+    "제리가",
+    "총괄실",
+    "네가",
+    "다섯",
+    "배분",
+    "원문",
+    "총괄"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/hq.outside.md": {
+   "size": 11736,
+   "mtime": "1789508696650842685",
+   "ctime": "1789508696651103479",
+   "lines": 95,
+   "title": "제리 — 총괄실 대조역",
+   "sections": 12,
+   "words": [
+    "원문",
+    "총괄실",
+    "당신",
+    "제리",
+    "톰이",
+    "회사",
+    "배분",
+    "대표",
+    "대표가",
+    "초안",
+    "톰의",
+    "않는다"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/hq.secretary.md": {
+   "size": 12744,
+   "mtime": "1789510487950469163",
+   "ctime": "1789510487950672496",
+   "lines": 87,
+   "title": "세라 — 비서실 비서 (대표의 비서)",
+   "sections": 10,
+   "words": [
+    "대표",
+    "대표가",
+    "결정",
+    "비서",
+    "세라",
+    "않는다",
+    "아침",
+    "자리가",
+    "초안",
+    "비서실",
+    "톰의",
+    "네가"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/hq.system.md": {
+   "size": 13469,
+   "mtime": "1789477846127118494",
+   "ctime": "1789477846127336159",
+   "lines": 95,
+   "title": "나리 — 비서실 독립검수 (자리 id `system`)",
+   "sections": 10,
+   "words": [
+    "나리",
+    "자리",
+    "결정",
+    "본인",
+    "없음",
+    "이름",
+    "7행",
+    "비서실",
+    "숫자",
+    "09-15",
+    "대표",
+    "세라"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/marketing.guide.md": {
+   "size": 10438,
+   "mtime": "1789477713498778403",
+   "ctime": "1789477713499008859",
+   "lines": 107,
+   "title": "하영 — 마케팅팀 실무",
+   "sections": 13,
+   "words": [
+    "안젤",
+    "다니엘",
+    "하영",
+    "않는다",
+    "근거",
+    "대표",
+    "실무",
+    "마케팅팀",
+    "문장",
+    "쓴다",
+    "초안",
+    "다섯"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/marketing.outside.md": {
+   "size": 11483,
+   "mtime": "1789306182356803870",
+   "ctime": "1789306182357052289",
+   "lines": 103,
+   "title": "다니엘 — 마케팅팀 외부감사",
+   "sections": 13,
+   "words": [
+    "않는다",
+    "다른",
+    "당신",
+    "다니엘",
+    "안젤",
+    "마케팅",
+    "하영",
+    "문장",
+    "파일",
+    "초안",
+    "마케팅팀",
+    "외부감사"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/marketing.review.md": {
+   "size": 10605,
+   "mtime": "1789317405948517390",
+   "ctime": "1789317405948808681",
+   "lines": 101,
+   "title": "안젤 — 마케팅팀 내부감사",
+   "sections": 12,
+   "words": [
+    "하영",
+    "다니엘",
+    "안젤",
+    "않는다",
+    "근거",
+    "문장",
+    "본다",
+    "내부감사",
+    "마케팅팀",
+    "초안",
+    "방에서",
+    "자리"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/nari.lines.md": {
+   "size": 7448,
+   "mtime": "1789477728594549067",
+   "ctime": "1789477728594549067",
+   "lines": 65,
+   "title": "나리 — 인격 파일에 넣을 한 줄들 (받은 그대로, 모으는 중)",
+   "sections": 11,
+   "words": [
+    "나리",
+    "결정",
+    "자리",
+    "제가",
+    "마케팅",
+    "파일",
+    "다른",
+    "세라",
+    "숫자",
+    "인격",
+    "총괄실",
+    "하영"
+   ]
+  },
+  "teams/marketing/out/world-bible/40-persona/README.md": {
+   "size": 15709,
+   "mtime": "1789477060154146326",
+   "ctime": "1789477060154376950",
+   "lines": 101,
+   "title": "인격 파일 재생성 — 이 폴더의 틀",
+   "sections": 8,
+   "words": [
+    "파일",
+    "자리",
+    "하영",
+    "결정",
+    "자리가",
+    "말투",
+    "방에서",
+    "바이블",
+    "다니엘",
+    "대표",
+    "이름",
+    "제리"
+   ]
+  },
+  "teams/marketing/out/인수인계-0914.md": {
+   "size": 4464,
+   "mtime": "1789360416359379788",
+   "ctime": "1789360416359704540",
+   "lines": 44,
+   "title": "마케팅 인수인계 — 2026-09-14 13:40 (하영 씀, 안젤 몫은 안젤이 방에서 준 대로)",
+   "sections": 7,
+   "words": [
+    "안젤",
+    "안젤이",
+    "하영",
+    "헨리",
+    "방에서",
+    "마케팅",
+    "통과",
+    "2026-09-14",
+    "2판",
+    "근거",
+    "내용",
+    "대로"
+   ]
+  },
+  "teams/marketing/outside.md": {
+   "size": 7832,
+   "mtime": "1789239682492060946",
+   "ctime": "1789239682492060946",
+   "lines": 141,
+   "title": "다니엘 — 마케팅팀 외부감사",
+   "sections": 10,
+   "words": [
+    "문장",
+    "다니엘",
+    "않는다",
+    "하영",
+    "당신",
+    "마라",
+    "외부감사",
+    "이름",
+    "그건",
+    "너는",
+    "다른",
+    "마케팅"
+   ]
+  },
+  "teams/marketing/review.md": {
+   "size": 7274,
+   "mtime": "1789239682491864985",
+   "ctime": "1789239682491864985",
+   "lines": 133,
+   "title": "안젤 — 마케팅팀 내부감사",
+   "sections": 10,
+   "words": [
+    "않는다",
+    "하영",
+    "문장",
+    "본다",
+    "안젤",
+    "근거",
+    "내부감사",
+    "지적",
+    "너는",
+    "마케팅팀",
+    "말을",
+    "결론이"
+   ]
+  },
+  "teams/marketing/roadmap.json": {
+   "size": 14669,
+   "mtime": "1789492346512110590",
+   "ctime": "1789492346512110590",
+   "lines": 87,
+   "title": "우리 세계가 실제 사람이 쓰는 살아 있는 곳이 된다 — 구성·UX·UI·단어·관제탑·분석·대시보드·보고서·브랜딩. 대표가 관제탑 어느 탭을 열어도 30초 안에 무엇을 봐야 하는지 알고, 글자와 카드가 맥락으로 이어지고, 사람과 마을이 한 세계로 읽힌다. 대표 결정 126(09-14): 트립튜드가 아니라 이것이 먼저다.",
+   "sections": 6,
+   "words": [
+    "안젤",
+    "하영",
+    "결정",
+    "화면",
+    "하영이",
+    "다섯",
+    "내용",
+    "안젤이",
+    "통과",
+    "나리",
+    "대표",
+    "대표가"
+   ]
+  },
+  "teams/marketing/traps.md": {
+   "size": 2372,
+   "mtime": "1789512103590521694",
+   "ctime": "1789512103590818274",
+   "lines": 16,
+   "title": "마케팅 방 함정 — 회차마다 한 줄 (traps, 육성)",
+   "sections": 1,
+   "words": [
+    "하영",
+    "함정",
+    "traps",
+    "마케팅",
+    "육성",
+    "회차마다",
+    "r36",
+    "쓴다",
+    "화면",
+    "회차",
+    "09-16",
+    "r31"
+   ]
+  },
+  "teams/sera/out/우선순위-0915.md": {
+   "size": 12562,
+   "mtime": "1789509735765564262",
+   "ctime": "1789509735765863722",
+   "lines": 96,
+   "title": "밀린 일 우선순위 — 2026-09-15 밤 (세라 4판 — 나리 검토 셋 + 톰 원문 대조 셋 + 나리 재검토 둘 반영)",
+   "sections": 6,
+   "words": [
+    "나리",
+    "대표",
+    "세라",
+    "보고서",
+    "화면",
+    "대표가",
+    "원문",
+    "통과",
+    "경영",
+    "사진",
+    "오늘",
+    "개발"
+   ]
+  },
+  "teams/sera/secretary.md": {
+   "size": 12744,
+   "mtime": "1789512208155686205",
+   "ctime": "1789512208155778370",
+   "lines": 87,
+   "title": "세라 — 비서실 비서 (대표의 비서)",
+   "sections": 10,
+   "words": [
+    "대표",
+    "대표가",
+    "결정",
+    "비서",
+    "세라",
+    "않는다",
+    "아침",
+    "자리가",
+    "초안",
+    "비서실",
+    "톰의",
+    "네가"
+   ]
+  }
+ }
+}

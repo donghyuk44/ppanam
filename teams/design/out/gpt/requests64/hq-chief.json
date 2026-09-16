@@ -1,0 +1,11 @@
+{
+ "name": "hq-chief-64",
+ "prompt": "The attached images are STYLE references only (classic Korean MMORPG pixel art). For more of that style, browse these two games and study their character sprites: 바람의나라: 연 https://baramy.nexon.com/ and 도깨비의세계 https://dokkaebi.kakaogames.com/preregister/ . Learn from them: thick 1px dark outlines, dithered shading, saturated but limited palette, about 3 to 3.5 heads tall with a large head and voluminous hair, slight 3/4 top-down view, light coming from the upper left. Then draw a NEW original character (not a copy of any reference): a 31-year-old American man, the company's chief of staff who takes the CEO's one sentence and decides which team does what, in Joseon-fantasy attire - short blond hair (#d8b25c) under a black samo official's hat (사모, a rounded black cap with two small stiff wings sticking out sideways at the back), fair skin, two clearly visible dark eyes, a bright confident smile. Clothing: a deep green official's robe (관복, #1f5f4f) with a dark belt, over white hanbok, white pants, black boots. Holds a rolled paper dispatch scroll in his right hand. Requirements: one character, full body, idle standing pose, facing the viewer (south), centered on a flat solid magenta background (#FF00FF), no drop shadow, no text, no border, no scenery. Render as crisp pixel art about 64 pixels tall (head to feet), then upscale exactly 8x with nearest-neighbor so every logical pixel is a sharp 8x8 block on a 512x512 canvas, and give me that PNG to download.",
+ "refs": [
+  "ref/baram/char_magician.png",
+  "ref/baram/char_thief.png",
+  "ref/dokkaebi/i1540213767.jpg"
+ ],
+ "from": "hq-chief.json",
+ "note": "하네스가 시트 절을 64px 정지 그림 절로 바꿈 (대표 결정 2026-09-12)"
+}

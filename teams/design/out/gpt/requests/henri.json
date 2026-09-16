@@ -1,0 +1,9 @@
+{
+  "name": "henri",
+  "prompt": "The attached images are STYLE references only (classic Korean MMORPG pixel art). For more of that style, browse these two games and study their character sprites: 바람의나라: 연 https://baramy.nexon.com/ and 도깨비의세계 https://dokkaebi.kakaogames.com/preregister/ . Learn from them: thick dark outlines, dithered shading, saturated but limited palette, about 4 heads tall with a large head and voluminous hair, slight 3/4 top-down view. Then draw a NEW original character (not a copy of any reference): a young court painter (도화서 화원) of a Joseon-fantasy world, the company's head designer, 29 years old, French - light chestnut-brown hair, slightly wavy, tied up in a small topknot with a black horsehair headband (망건) and NO hat, a long thin ink brush tucked behind his right ear, fair skin, thin eyebrows, small round glasses, a relaxed faint smile. Clothing: a jade-green dopo robe (밝은 옥색, not blue) with a plum-purple belt cord (세조대) tied at the waist, over a white hanbok, white pants, black flat shoes. In his left hand he holds a folded sketchbook (화첩) against his chest; his right hand hangs down loosely. Requirements: one character, full body, idle pose, facing the viewer (south), centered on a flat solid magenta background (#FF00FF), no drop shadow, no text, no border, no scenery. Render as crisp pixel art about 64 pixels tall, then upscale exactly 8x with nearest-neighbor so every pixel is a sharp 8x8 block on a 512x512 canvas.",
+  "refs": [
+    "ref/baram/char_magician.png",
+    "ref/baram/char_thief.png",
+    "ref/dokkaebi/i1540213767.jpg"
+  ]
+}

@@ -1,0 +1,262 @@
+{
+ "path": "teams/design/out/kit/colormap-uv-suburban.md",
+ "size": 4207,
+ "mtime": "1789354537601422929",
+ "ctime": "1789354537601422929",
+ "team": "디자인",
+ "title": "colormap UV 실측",
+ "lines": 114,
+ "sections": [
+  {
+   "level": 1,
+   "title": "colormap UV 실측",
+   "from": 1,
+   "to": 4,
+   "bytes": 153,
+   "words": [
+    "colormap",
+    "uv",
+    "실측",
+    "colormap.png",
+    "obj",
+    "px",
+    "py",
+    "단위"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "fence-low.obj",
+   "from": 5,
+   "to": 6,
+   "bytes": 17,
+   "words": [
+    "fence-low.obj"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "fence-low",
+   "from": 7,
+   "to": 17,
+   "bytes": 454,
+   "words": [
+    "0.000",
+    "0.5938",
+    "fence-low",
+    "0.100",
+    "0.150",
+    "0.170",
+    "0.2750",
+    "0.3250"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "fence-low",
+   "from": 18,
+   "to": 28,
+   "bytes": 454,
+   "words": [
+    "0.000",
+    "0.5938",
+    "fence-low",
+    "0.100",
+    "0.150",
+    "0.170",
+    "0.2750",
+    "0.3250"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "path-stones-short.obj",
+   "from": 29,
+   "to": 30,
+   "bytes": 25,
+   "words": [
+    "path-stones-short.obj"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "path-stones-short",
+   "from": 31,
+   "to": 37,
+   "bytes": 222,
+   "words": [
+    "path-stones-short",
+    "0.000",
+    "0.010",
+    "0.0938",
+    "0.3250",
+    "0.4250",
+    "626880",
+    "747990"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "path-stones-short",
+   "from": 38,
+   "to": 44,
+   "bytes": 222,
+   "words": [
+    "path-stones-short",
+    "0.000",
+    "0.010",
+    "0.0938",
+    "0.3250",
+    "0.4250",
+    "626880",
+    "747990"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "planter.obj",
+   "from": 45,
+   "to": 46,
+   "bytes": 15,
+   "words": [
+    "planter.obj"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "planter",
+   "from": 47,
+   "to": 58,
+   "bytes": 509,
+   "words": [
+    "0.030",
+    "planter",
+    "0.050",
+    "0.0938",
+    "0.2188",
+    "0.000",
+    "0.177",
+    "0.3950"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "planter",
+   "from": 59,
+   "to": 70,
+   "bytes": 509,
+   "words": [
+    "0.030",
+    "planter",
+    "0.050",
+    "0.0938",
+    "0.2188",
+    "0.000",
+    "0.177",
+    "0.3950"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "tree-large.obj",
+   "from": 71,
+   "to": 72,
+   "bytes": 18,
+   "words": [
+    "tree-large.obj"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "tree-large",
+   "from": 73,
+   "to": 82,
+   "bytes": 394,
+   "words": [
+    "0.326",
+    "tree-large",
+    "0.2188",
+    "0.000",
+    "0.427",
+    "0.5938",
+    "0.767",
+    "0.0250"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "tree-large",
+   "from": 83,
+   "to": 92,
+   "bytes": 394,
+   "words": [
+    "0.326",
+    "tree-large",
+    "0.2188",
+    "0.000",
+    "0.427",
+    "0.5938",
+    "0.767",
+    "0.0250"
+   ]
+  },
+  {
+   "level": 2,
+   "title": "tree-small.obj",
+   "from": 93,
+   "to": 94,
+   "bytes": 18,
+   "words": [
+    "tree-small.obj"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "tree-small",
+   "from": 95,
+   "to": 104,
+   "bytes": 394,
+   "words": [
+    "0.126",
+    "tree-small",
+    "0.2188",
+    "0.000",
+    "0.227",
+    "0.567",
+    "0.5938",
+    "0.0250"
+   ]
+  },
+  {
+   "level": 3,
+   "title": "tree-small",
+   "from": 105,
+   "to": 114,
+   "bytes": 394,
+   "words": [
+    "0.126",
+    "tree-small",
+    "0.2188",
+    "0.000",
+    "0.227",
+    "0.567",
+    "0.5938",
+    "0.0250"
+   ]
+  }
+ ],
+ "words": [
+  "0.000",
+  "0.5938",
+  "0.2188",
+  "px",
+  "py",
+  "원본",
+  "0.030",
+  "0.0938",
+  "범위",
+  "0.126",
+  "0.2750",
+  "0.326"
+ ]
+}
