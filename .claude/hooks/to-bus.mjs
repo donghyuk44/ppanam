@@ -172,7 +172,12 @@ switch (ev) {
     const text = hook.last_assistant_message;
     if (!text) break;
     if (/^\s*<analysis\b/i.test(text)) bail('압축 속말 — 기록 안 함');
-    if (!/[가-힣]/.test(text) && (text.match(/[A-Za-z]{3,}/g) || []).length >= 8) bail('영어 속말 — 기록 안 함');
+    // 영어 속말 — 통째로 영어면 걸렸는데(가-힣 0개), 코드·명령 예시에 한글 낱말 몇 개만 섞이면 안
+    // 걸렸다(백틱 안 한글 둘이 방패가 된 400자 영어 요약, 나리 09-16 실측). 비율로 본다 — 영어 글자가
+    // 한글 글자의 6배를 넘고 40자 이상이면 덩이. 정상적인 한글 문장 속 영어 낱말 몇 개는 안 걸린다.
+    const koreanChars = (text.match(/[가-힣]/g) || []).length;
+    const latinChars = (text.match(/[A-Za-z]/g) || []).length;
+    if (latinChars >= 40 && latinChars > koreanChars * 6) bail('영어 속말 — 기록 안 함');
     const actor = ev === 'Stop' ? ME : actorOf(hook.agent_type);
     if (!actor) bail('캐스트가 아닌 서브에이전트 — 기록 안 함');
 
