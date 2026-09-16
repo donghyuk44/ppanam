@@ -23,6 +23,7 @@
   --me:       #24466B;
   --me-line:  #24466B;
   --me-ink:   #23200f;
+  --me-bg:    #EEF3F9;
   --bad:      #D9482B;
   --bad-bg:   #fdf6f4;
   --bad-line: #ddb3ad;
@@ -52,6 +53,7 @@
     --me:       #E0AA55;
     --me-line:  #a98a2c;
     --me-ink:   #1b1708;
+    --me-bg:    #1F2E44;
     --bad:      #F0846B;
     --bad-bg:   #2c1f1d;
     --bad-line: #5e3b36;
@@ -320,7 +322,7 @@ body {
 .outf__fold { margin-top: 4px; font-size: 12px; }
 .outf__fold summary { cursor: pointer; color: var(--ink-3); }
 .outf__fold pre { margin: 6px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; background: var(--sunk); padding: 8px; border-radius: 6px; }
-.row.me .bub { background: #EEF3F9; border-color: var(--me); color: #1B2430; border-radius: 14px 3px 14px 14px; }
+.row.me .bub { background: var(--me-bg); border-color: var(--me); color: var(--ink); border-radius: 14px 3px 14px 14px; }
 .row.me.cont .bub { border-radius: 14px; }
 
 .tool {
