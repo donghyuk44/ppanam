@@ -1,0 +1,464 @@
+{
+  "note": "작업 보드 — 대표 원문 09-16 08:0x: 동일 타임라인에 동시에 · 병목이 안 겹치게 우선순위 · 모두가 남의 작업 수순을 봄 · 끝나면 다음으로 넘어가며 다른 팀에 알림. 날짜 없음 — 상태와 '뒤에'만. 서버가 채우기 전엔 나리·톰이 손으로. 시각은 UTC 서브에이전트는 한 자리 최대 둘, 모델 opus·sonnet(대표 08:1x).",
+  "bottlenecks": [
+    "app.js(테라)",
+    "server(솔라)",
+    "나리 판정",
+    "재시작",
+    "헨리 시안",
+    "하영 글"
+  ],
+  "items": [
+    {
+      "id": "T1",
+      "stream": "토큰",
+      "what": "토큰 장부 + 대시보드 '오늘 쓴 것'",
+      "team": "dev",
+      "seat": "ops",
+      "after": [],
+      "bottleneck": "server(솔라)",
+      "status": "진행",
+      "note": "독립검수 09:30: todayUsage(usage.mjs:52)가 세션 누적 costUsd 를 줄마다 더해 3.8배 부풂 → 솔라 고침. 대시보드 \"오늘 쓴 것\" 한 줄은 아직 0"
+    },
+    {
+      "id": "T2",
+      "stream": "토큰",
+      "what": "회차 닫혀도 세션 안 버림",
+      "team": "dev",
+      "seat": "ops",
+      "after": [],
+      "bottleneck": "server(솔라)",
+      "status": "감사 대기",
+      "note": "나리 판단(08:0x): 회차 닫힘엔 안 죽이고 단계 닫힘에만 비운다. CLAUDE.md 대화록 표 한 줄을 같이 고친다(테라)"
+    },
+    {
+      "id": "T3",
+      "stream": "토큰",
+      "what": "외부감사 인격 전문 재전송 중단 · 들려주기 커서",
+      "team": "dev",
+      "seat": "ops",
+      "after": [],
+      "bottleneck": "server(솔라)",
+      "status": "감사 대기",
+      "note": "personaAnchor — d61339a 에 섞여 커밋됨(클레멘타인 커밋, 내용은 솔라 서브에이전트 T3). 테라 감사"
+    },
+    {
+      "id": "T4",
+      "stream": "토큰",
+      "what": "큰 파일 전문 읽기 금지 · 책장 절",
+      "team": "dev",
+      "seat": "ops",
+      "after": [],
+      "bottleneck": "server(솔라)",
+      "status": "감사 대기",
+      "note": "session.mjs assemblePrompt — 서브에이전트"
+    },
+    {
+      "id": "P1",
+      "stream": "권한",
+      "what": "권한 현황표",
+      "team": "hq",
+      "seat": "system",
+      "after": [],
+      "bottleneck": null,
+      "status": "통과"
+    },
+    {
+      "id": "P2",
+      "stream": "권한",
+      "what": "팀 세션 도구 막힘 원인·풀기",
+      "team": "dev",
+      "seat": "ops",
+      "after": [],
+      "bottleneck": null,
+      "status": "통과"
+    },
+    {
+      "id": "P3",
+      "stream": "권한",
+      "what": "훅 Bash 기록 (대표 손, 모아서 한 번)",
+      "team": "hq",
+      "seat": "boss",
+      "after": [
+        "P2"
+      ],
+      "bottleneck": "대표",
+      "status": "대기"
+    },
+    {
+      "id": "G1",
+      "stream": "화면 글",
+      "what": "다섯 팀 상황판 줄 사람 말",
+      "team": "all",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "통과"
+    },
+    {
+      "id": "G2",
+      "stream": "화면 글",
+      "what": "서버 검사 + '누가 뭘 했나' 사람 말",
+      "team": "dev",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": "app.js(테라)",
+      "status": "통과"
+    },
+    {
+      "id": "G3",
+      "stream": "화면 글",
+      "what": "판정 카드(통과·다시 + 한 줄, 자세히 접힘)로 도장 대체",
+      "team": "dev",
+      "seat": "guide",
+      "after": [
+        "C2",
+        "C6"
+      ],
+      "bottleneck": "app.js(테라)",
+      "status": "대기"
+    },
+    {
+      "id": "C1",
+      "stream": "카드 체계",
+      "what": "구조·블록·내용",
+      "team": "hq",
+      "seat": "system",
+      "after": [],
+      "bottleneck": null,
+      "status": "통과"
+    },
+    {
+      "id": "C2",
+      "stream": "카드 체계",
+      "what": "카드 글 규칙 · 판정 한 줄 본보기",
+      "team": "marketing",
+      "seat": "guide",
+      "after": [
+        "C1"
+      ],
+      "bottleneck": "하영 글",
+      "status": "통과"
+    },
+    {
+      "id": "C3",
+      "stream": "카드 체계",
+      "what": "카드 셋 시안 412·1280",
+      "team": "design",
+      "seat": "guide",
+      "after": [
+        "C2"
+      ],
+      "bottleneck": "헨리 시안",
+      "status": "통과"
+    },
+    {
+      "id": "C4",
+      "stream": "카드 체계",
+      "what": "카드 CSS 토큰",
+      "team": "design",
+      "seat": "ops",
+      "after": [
+        "C3"
+      ],
+      "bottleneck": null,
+      "status": "진행"
+    },
+    {
+      "id": "C5",
+      "stream": "카드 체계",
+      "what": "카드 재료 API /api/card/<팀>",
+      "team": "dev",
+      "seat": "ops",
+      "after": [
+        "C1"
+      ],
+      "bottleneck": "server(솔라)",
+      "status": "감사 대기",
+      "note": "index.mjs — 서브에이전트, 지금 시작 가능"
+    },
+    {
+      "id": "C6",
+      "stream": "카드 체계",
+      "what": "카드 부품 card.js (새 파일, 임시 모양)",
+      "team": "dev",
+      "seat": "guide",
+      "after": [
+        "C1"
+      ],
+      "bottleneck": null,
+      "status": "감사 대기",
+      "note": "테라 서브에이전트 — app.js 안 건드림, 지금 시작 가능"
+    },
+    {
+      "id": "C7",
+      "stream": "카드 체계",
+      "what": "부품을 채팅 맨 위·대시보드·비서실 세 곳에, 탭 다섯 표준어",
+      "team": "dev",
+      "seat": "guide",
+      "after": [
+        "C5",
+        "C6"
+      ],
+      "bottleneck": "app.js(테라)",
+      "status": "대기"
+    },
+    {
+      "id": "C8",
+      "stream": "카드 체계",
+      "what": "30초 시험·사진 412·1280",
+      "team": "hq",
+      "seat": "system",
+      "after": [
+        "C7"
+      ],
+      "bottleneck": "나리 판정",
+      "status": "대기"
+    },
+    {
+      "id": "S1",
+      "stream": "시안 대 실물",
+      "what": "다섯 화면 diff",
+      "team": "design",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "통과"
+    },
+    {
+      "id": "S2",
+      "stream": "시안 대 실물",
+      "what": "색·글꼴·간격 CSS",
+      "team": "design",
+      "seat": "ops",
+      "after": [],
+      "bottleneck": null,
+      "status": "감사 대기"
+    },
+    {
+      "id": "S3",
+      "stream": "시안 대 실물",
+      "what": "다섯 화면 '같다'",
+      "team": "design",
+      "seat": "guide",
+      "after": [
+        "S2",
+        "G2"
+      ],
+      "bottleneck": "헨리 시안",
+      "status": "대기"
+    },
+    {
+      "id": "O1",
+      "stream": "운영",
+      "what": "멈춤 감시 ㉡~㉣ + 순찰 표",
+      "team": "dev",
+      "seat": "ops",
+      "after": [],
+      "bottleneck": "server(솔라)",
+      "status": "감사 대기",
+      "note": "conductor.mjs — 서브에이전트 | 독립검수 09:30: ㉢ 이 ownerOf 한 자리만 불러 노라 71분 못 잡음 → 몫 걸린 자리를 부르기 · 판정 완료 뒤 N분 안 round_end 없으면 실무에게 \"닫으세요\""
+    },
+    {
+      "id": "O2",
+      "stream": "운영",
+      "what": "따라가기 표 · 결정 기록 · 카드 옮김",
+      "team": "hq",
+      "seat": "chief",
+      "after": [],
+      "bottleneck": null,
+      "status": "진행"
+    },
+    {
+      "id": "O3",
+      "stream": "운영",
+      "what": "세라 대표용 카드(그 전엔 세 줄)",
+      "team": "sera",
+      "seat": "secretary",
+      "after": [
+        "O2"
+      ],
+      "bottleneck": null,
+      "status": "진행"
+    },
+    {
+      "id": "F1",
+      "stream": "운영",
+      "what": "아침 한 장 세 칸 틀 + 팀당 한 줄 본보기(daily-template.md)",
+      "team": "finance",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "감사 대기",
+      "note": "노라 떨어뜨릴 이유 셋 → 빅터 판정"
+    },
+    {
+      "id": "F2",
+      "stream": "운영",
+      "what": "아침 한 장 잣대 두 줄 · 매뉴얼 쓰는 순서 절",
+      "team": "finance",
+      "seat": "review",
+      "after": [],
+      "bottleneck": null,
+      "status": "감사 대기",
+      "note": "유진 떨어뜨릴 이유 셋 → 빅터 판정"
+    },
+    {
+      "id": "O4",
+      "stream": "운영",
+      "what": "아침 한 장 자동 생성 06:30",
+      "team": "dev",
+      "seat": "ops",
+      "after": [],
+      "bottleneck": "server(솔라)",
+      "status": "감사 대기",
+      "note": "유진 틀 나옴 — 노라·빅터 판정 대기(F1). 솔라 시작은 가능, 틀이 바뀌면 따라감"
+    },
+    {
+      "id": "W1",
+      "stream": "운영",
+      "what": "작업 보드 배선 — work.json 을 브리프에(내 다음 일·나를 기다리는 사람), 판정·산출물로 자동 완료, 끝나면 '뒤에' 주인 호명, 타임라인 탭에 그대로, 그리고 대시보드에도 보드 블록(줄기별 진행·막힘·다음, 누가 누구를 기다리나) — 대표 08:2x '대시보드에서 보여야 해'",
+      "team": "dev",
+      "seat": "ops",
+      "after": [],
+      "bottleneck": "server(솔라)",
+      "status": "통과",
+      "note": "이게 대표가 말한 관리 시스템 — 지금 시작"
+    },
+    {
+      "id": "H1",
+      "stream": "인격·자리",
+      "what": "톰 운영 절 · 세라 절",
+      "team": "marketing",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "감사 대기"
+    },
+    {
+      "id": "H2",
+      "stream": "인격·자리",
+      "what": "세라 인격 파일 붙임",
+      "team": "marketing",
+      "seat": "guide",
+      "after": [
+        "H1"
+      ],
+      "bottleneck": null,
+      "status": "통과"
+    },
+    {
+      "id": "H3",
+      "stream": "인격·자리",
+      "what": "인격 40줄 접기 · traps",
+      "team": "marketing",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": "하영 글",
+      "status": "통과"
+    },
+    {
+      "id": "M0",
+      "stream": "최후",
+      "what": "마을 · 세라 앱 · 유니티 · 세계 이름 · 크레딧 · 유료 MCP",
+      "team": "-",
+      "seat": "-",
+      "after": [],
+      "bottleneck": null,
+      "status": "안 함"
+    },
+    {
+      "id": "L1",
+      "stream": "화면 글",
+      "what": "화면 낱말·문법 전수 정리 — 표준 제품 낱말(이슈·활동·완료·진행 중·승인 필요·결과물·검토 중)과 개조식 문장, 지어낸 말·구어체('뭐가 막혔나','누가 뭘 했나','대표님 손','방에 한마디') 제거. 상황판 줄도 개조식",
+      "team": "marketing",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": "하영 글",
+      "status": "통과",
+      "note": "대표 08:3x '단어들이랑 문법들 아직도 자연스럽지 않은 게 너무 많다'. 안젤이 잣대(이 낱말 쓰는 서비스 셋)로 잼 → 테라가 화면에"
+    },
+    {
+      "id": "U1",
+      "stream": "카드 체계",
+      "what": "설정 탭 서브탭 '세계관' — 전 인원(열일곱 + 대표) 프로필·설정(이름·직책·팀·얼굴·인격 파일·모델·권한)을 한 곳에서",
+      "team": "design",
+      "seat": "ops",
+      "after": [
+        "C3"
+      ],
+      "bottleneck": "헨리 시안",
+      "status": "진행",
+      "note": "대표 08:3x. 헨리 시안 → 하영 글 → 테라 부품(C7 뒤) 대표 08:5x: 설정 탭 인격 목록에 나리 여섯 번·톰 다섯 번 중복(자리 단위 나열) + 없는 파일 열한 줄 — 사람 단위로 한 번씩(열일곱+대표), 나리·톰·대표는 팀 \"전체\", 파일은 사람마다 하나(hq/ 밑), 없으면 \"없음\". 테라가 지금 32회차에 먼저 고침(U1 시안 전에) 08:5x 주인을 클레멘타인으로 — 얼굴 열일곱·색표를 만든 사람이 프로필 카드 주인"
+    },
+    {
+      "id": "X1",
+      "stream": "화면 글",
+      "what": "UI·UX 사용성 검수 — 회차마다 대표 페르소나로 412·1280 여섯 탭·카드·알림을 직접 눌러 못 씀/헷갈림/거슬림 표(teams/marketing/out/usability-<날짜>-R<회차>.md). 나리는 둘째 눈",
+      "team": "marketing",
+      "seat": "review",
+      "after": [],
+      "bottleneck": null,
+      "status": "진행",
+      "note": "대표 08:4x '사용성 검수 배정은 안젤에게'. 사진은 node tools/screen-shot.mjs — 허용 줄 고쳐져 안젤이 직접 찍음"
+    },
+    {
+      "id": "TL1",
+      "stream": "카드 체계",
+      "what": "타임라인 탭 시안 — 작업판 전체(줄기 × 상태, 자리별 보기, 기다림) 412·1280",
+      "team": "design",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": "헨리 시안",
+      "status": "대기",
+      "note": "헨리 — 대시보드 블록(workboard.svg)의 전체 판"
+    },
+    {
+      "id": "R1",
+      "stream": "카드 체계",
+      "what": "리포트 탭 시안 — 아침·저녁 한 장 화면(유진 세 칸 틀을 화면으로) + 분석 둘째 탭 412·1280",
+      "team": "design",
+      "seat": "ops",
+      "after": [
+        "F1"
+      ],
+      "bottleneck": null,
+      "status": "감사 대기",
+      "note": "클레멘타인 주인. 유진 틀 판정 뒤"
+    },
+    {
+      "id": "G4",
+      "stream": "화면 글",
+      "what": "리포트 탭 '대리 결정' 카드 셋이 [C]·카드 번호·결정 번호를 그대로 보임 — 사람 말 검사 적용(안젤 X1 표)",
+      "team": "dev",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": "app.js(테라)",
+      "status": "통과",
+      "note": "안젤 usability-0916-R36.md"
+    },
+    {
+      "id": "L2",
+      "stream": "화면 글",
+      "what": "하영 L1 표(screen-words-l1.md)대로 index.html·app.js 글자 바꾸기 — 안젤 잣대 통과분",
+      "team": "dev",
+      "seat": "guide",
+      "after": [
+        "L1"
+      ],
+      "bottleneck": "app.js(테라)",
+      "status": "진행"
+    },
+    {
+      "id": "I1",
+      "stream": "카드 체계",
+      "what": "초상 열일곱 — 어도비 파이어플라이(대표 계정)로 후보 68장 생성(됨) → 헨리·대표 고름 → 배경 제거·정사각 → 세계관 카드·얼굴 칩",
+      "team": "design",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "통과",
+      "note": "대표가 09:17~09:21 열여섯 자리 고름(picks-0916.json). chip/·card/ 16장 잘라 둠. 테라(국적·성격 반영)·대표(나이) 다시 뽑는 중 — 나리. 다음: 클레멘타인 U1 카드·칩 꽂기, 헨리 자른 선 확인"
+    }
+  ]
+}

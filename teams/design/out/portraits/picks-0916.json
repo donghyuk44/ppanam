@@ -1,0 +1,31 @@
+{
+ "picked_at": "2026-09-16 09:17~09:21 KST",
+ "by": "대표 (초상 고르기 판)",
+ "source": "teams/design/out/portraits/fe/<seat>-<n>.png",
+ "picks": {
+  "hq-system": 4,
+  "hq-chief": 1,
+  "hq-outside": 4,
+  "hq-secretary": 2,
+  "dev-guide": 4,
+  "dev-ops": 4,
+  "dev-outside": 1,
+  "design-guide": 2,
+  "design-ops": 3,
+  "design-outside": 1,
+  "marketing-guide": 1,
+  "marketing-review": 3,
+  "marketing-outside": 2,
+  "finance-guide": 3,
+  "finance-review": 4,
+  "finance-outside": 1
+ },
+ "notes": {
+  "dev-guide": "대표 지시(09:4x) \"그만 만들어\" — 고르신 4번 그대로 굳힘",
+  "boss": "대표 지시(09:4x): 생성 안 함. 페이스북 프로필 사진 원본(1080)을 boss-source-1080.jpg 로 받아 boss-512.png → chip/card. 실사 사진이라 열여섯 그림과 결이 다름 — 대표 뜻"
+ },
+ "crops": {
+  "chip": "394x394, x 59~453 y 20~414 (클레멘타인 chip-crop.md)",
+  "card": "512x430, y 0~430 (쇄골 선까지, 헨리 확인 대기)"
+ }
+}
