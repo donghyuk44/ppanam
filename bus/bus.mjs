@@ -2053,7 +2053,8 @@ const JUDGES = new Set(['review', 'outside']);
 /**
  * 사람별 집계 (대표 결정 40 · M2) — 관제탑 개인 탭 카드의 값 중 **대화록에서 나오는 것**. 계약은 docs/event-schema.md 3절 "사람별 집계".
  * 세션 상태(busy·lastSignal)와 일지 첫 문장은 서버가 얹는다 (server/index.mjs summaryOf) — 여기는 파일을 안 읽는 순수 함수라
- * `round.mjs check` 가 돌려본다. 대표는 `boss` 로 모양이 다르다(마지막 지시·오늘 지시 수). system 은 사람이 아니다.
+ * `round.mjs check` 가 돌려본다. 대표는 `boss` 로 모양이 다르다(마지막 지시·오늘 지시 수). system(나리)은 총괄실 세션 하나로 어느 방에서나
+ * 불리므로(ROAM) 사람 줄에 낀다 — 대시보드 멤버 탭 실측(대표 12:13 "대시보드에 멤버쪽 나리가 없다").
  *
  * 뒤에서 앞으로 훑는다 — 마지막 발언·그 뒤의 도구 줄·이 라운드의 대표 호출은 최근 것이 먼저 나오고,
  * 오늘 밖으로 나갔고 모두의 마지막 발언을 찾았으면 더 볼 게 없다.
@@ -2065,7 +2066,7 @@ const JUDGES = new Set(['review', 'outside']);
 export function peopleOf(log, cast, { now = Date.now(), progress = null } = {}) {
   const agents = cast ?? {};
   const boardEmpty = Array.isArray(progress?.boss) && progress.boss.length === 0;
-  const ids = Object.keys(agents).filter((a) => a !== 'system' && a !== 'boss');
+  const ids = Object.keys(agents).filter((a) => a !== 'boss');   // system(나리) 도 이 방 사람 — ROAM, 총괄실 밖에서도 불린다(나리 결정)
   const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
   const isToday = (ts) => new Date(ts).getTime() >= dayStart.getTime();
   const isPass = (e) => isPassLine(e.text);
