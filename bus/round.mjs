@@ -26,7 +26,7 @@ import {
   addressees, callsBoss, asksBoss, bossParagraph, bossCallOf, bossNotesOf, doneOf, blockedSpansOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
   mergeProgress, normalizeProgress, progressText, writeProgress, readProgress, progressFresh, proxyEligible, proxyForbidden, delegationActive, overdue, setMilestoneStatus,
-  roomRules, allowedIn, plansOf, timeboxRounds, DEFAULT_ROUND_MS, stageTable, swapSection, pausedMs, roundLengthMs, needsOf, requestApproval,
+  roomRules, allowedIn, plansOf, timeboxRounds, stageTable, swapSection, pausedMs, needsOf, requestApproval,
 } from './bus.mjs';
 
 const argv = process.argv.slice(2);
@@ -1741,85 +1741,68 @@ switch (cmd) {
           && sp3.every((p) => p.length <= PIECE) && sp3.join(' ') === '가 '.repeat(70).trim()
           && sp4.length === PIECES && sp4[PIECES - 1].endsWith(' …')
           && spBoss.every((p) => p.length <= PIECE + 2) && spBoss.length >= 3 && spBoss.length <= PIECES && splitSpeech('') .length === 0;
-        // 앞날 띠(대시보드, 헨리 시안 1판 · 결정 128) — plansOf 순수. timebox × 회차 평균, 지난 것 없음, 대표 timebox 는 gated, 막힘은 blocked, 늦음은 late ms.
-        const pNow = Date.parse('2026-09-14T03:00:00Z');
-        const pRounds = [{ startedAt: '2026-09-13T14:00:00Z', endedAt: '2026-09-13T16:00:00Z' }, { startedAt: '2026-09-13T10:00:00Z', endedAt: '2026-09-13T11:00:00Z' }];   // 평균 90분
+        // 단계 띠(대시보드, 헨리 시안 1판 · 결정 128) — plansOf 순수. 지난 것 없음, 대표 timebox 는 gated, 막힘은 blocked.
+        // 시각 예측(예정 끝·늦음·회차 평균)은 결정 188 뒤로 뺐다 — 옛 계산은 커밋 로그에.
         const pRoad = { milestones: [
           { n: 5, title: '지난', status: 'pass', timebox: '1 라운드' }, { n: 6, title: '지금', status: 'now', timebox: '2 라운드' },
           { n: 7, title: '다음', status: 'wait', timebox: '반 라운드' }, { n: 8, title: '대표 뒤', status: 'wait', timebox: '대표 방향 뒤 정함' }, { n: 9, title: '그 뒤', status: 'wait', timebox: '1 라운드' } ] };
-        const p1 = plansOf({ roadmap: pRoad, state: { phase: 'running', round: 25, milestone: 6, startedAt: '2026-09-14T01:00:00Z' }, rounds: pRounds, now: pNow });
-        const p2 = plansOf({ roadmap: pRoad, state: { phase: 'blocked', round: 25, milestone: 6, startedAt: '2026-09-13T20:00:00Z' }, rounds: pRounds, progress: { blocked: ['디스크 꽉 참'] }, now: pNow });
-        const p3 = plansOf({ roadmap: { milestones: [] }, state: { phase: 'idle' }, rounds: [], now: pNow });
+        const p1 = plansOf({ roadmap: pRoad, state: { phase: 'running', round: 25, milestone: 6 } });
+        const p2 = plansOf({ roadmap: pRoad, state: { phase: 'blocked', round: 25, milestone: 6 }, progress: { blocked: ['디스크 꽉 참'] } });
+        const p3 = plansOf({ roadmap: { milestones: [] }, state: { phase: 'idle' } });
         const s1 = p1.stages;
-        const plansOk = p1.roundMs === 90 * 60_000 && s1.length === 4 && s1.map((s) => s.status).join(',') === 'running,planned,gated,planned'
-          && s1[0].plannedFrom === '2026-09-14T01:00:00.000Z' && s1[0].plannedTo === '2026-09-14T04:00:00.000Z' && s1[0].late === 0
-          && s1[1].plannedFrom === '2026-09-14T04:00:00.000Z' && s1[1].plannedTo === '2026-09-14T04:45:00.000Z'
-          && s1[2].plannedTo === null && s1[2].gate === '대표 방향 뒤 정함' && s1[3].plannedFrom === '2026-09-14T04:45:00.000Z'
-          && p2.stages[0].status === 'blocked' && p2.stages[0].blockedWhy === '디스크 꽉 참' && p2.stages[0].late === 4 * 3600_000
-          && p3.stages.length === 0 && p3.roundMs === DEFAULT_ROUND_MS && timeboxRounds('대표가 방식을 고른 뒤 2 라운드') === null;
-        // 문은 열렸으면 문이 아니다(나리 실측 09-15 23:10 — 경영 2단계가 착수됐는데 '대표가 정한 뒤'): status now 면 timebox 에 '대표' 가 있어도 running(숫자 있으면 그 수, 없으면 1 라운드) · timebox 없는 wait 는 planned 인데 날짜 없음(지어내지 않음) · '대표' 글자 있는 wait 만 gated
-        const p4 = plansOf({ roadmap: { milestones: [{ n: 2, title: '틀', status: 'now', timebox: '대표가 방식을 고른 뒤 2 라운드' }, { n: 3, title: '매뉴얼', status: 'wait' }, { n: 4, title: '문', status: 'wait', timebox: '대표 방향 뒤' }] }, state: { phase: 'running', round: 3, milestone: 1, startedAt: '2026-09-14T01:00:00Z' }, rounds: pRounds, now: pNow });
-        const p4Ok = p4.stages.map((s) => s.status).join(',') === 'running,planned,gated' && p4.stages[0].plannedTo === '2026-09-14T04:00:00.000Z' && p4.stages[0].gate === null
-          && p4.stages[1].plannedFrom === null && p4.stages[1].gate === null && p4.stages[2].gate === '대표 방향 뒤';
-        const p5 = plansOf({ roadmap: { milestones: [{ n: 2, title: '틀', status: 'now' }] }, state: { phase: 'running', round: 3, milestone: 2, startedAt: '2026-09-14T01:00:00Z' }, rounds: pRounds, now: pNow });
-        const p5Ok = p5.stages[0].status === 'running' && p5.stages[0].plannedTo === '2026-09-14T02:30:00.000Z';   // timebox 없는 지금 단계 = 1 라운드
+        const plansOk = s1.length === 4 && s1.map((s) => s.status).join(',') === 'running,planned,gated,planned'
+          && s1[2].gate === '대표 방향 뒤 정함' && p2.stages[0].status === 'blocked' && p2.stages[0].blockedWhy === '디스크 꽉 참'
+          && p3.stages.length === 0 && timeboxRounds('대표가 방식을 고른 뒤 2 라운드') === null;
+        // 문은 열렸으면 문이 아니다(나리 실측 09-15 23:10 — 경영 2단계가 착수됐는데 '대표가 정한 뒤'): status now 면 timebox 에 '대표' 가 있어도 running · timebox 없는 wait 는 planned · '대표' 글자 있는 wait 만 gated
+        const p4 = plansOf({ roadmap: { milestones: [{ n: 2, title: '틀', status: 'now', timebox: '대표가 방식을 고른 뒤 2 라운드' }, { n: 3, title: '매뉴얼', status: 'wait' }, { n: 4, title: '문', status: 'wait', timebox: '대표 방향 뒤' }] }, state: { phase: 'running', round: 3, milestone: 1 } });
+        const p4Ok = p4.stages.map((s) => s.status).join(',') === 'running,planned,gated' && p4.stages[0].gate === null
+          && p4.stages[1].gate === null && p4.stages[2].gate === '대표 방향 뒤';
+        const p5 = plansOf({ roadmap: { milestones: [{ n: 2, title: '틀', status: 'now' }] }, state: { phase: 'running', round: 3, milestone: 2 } });
+        const p5Ok = p5.stages[0].status === 'running';   // timebox 없는 지금 단계도 문이 아니다
         // '팀별 단계' 절 — 서버가 roadmap 에서 만들어 plan-table.md 의 그 절만 바꿔 끼운다(톰 09-14). 위·아래 절은 그대로.
-        // 시각은 때 글자(하영 T9 — "오늘 13:00" 이 아니라 "낮 13:00") · 점선은 gateWhat("대표님이 정한 뒤") · 빈 줄은 계획표 파일 유무로 말 둘(T7)
-        const tbl = stageTable([{ id: 'dev', name: '개발', room: '개발 작전실', ...p1 }, { id: 'hq', name: '총괄', room: '총괄실', hasRoadmap: false, ...p3 }, { id: 'finance', name: '경영', room: '경영 방', hasRoadmap: true, ...p3 }], { now: pNow });
+        // 예정 칸은 결정 188 뒤로 뺐다(지금 단계는 정의상 gate 가 없어 늘 빈 칸이 됐다) · 점선은 gateWhat("대표님이 정한 뒤") · 빈 줄은 계획표 파일 유무로 말 둘(T7)
+        const tbl = stageTable([{ id: 'dev', name: '개발', room: '개발 작전실', ...p1 }, { id: 'hq', name: '총괄', room: '총괄실', hasRoadmap: false, ...p3 }, { id: 'finance', name: '경영', room: '경영 방', hasRoadmap: true, ...p3 }]);
         const md = '# 표\n\n## 대표님이 물으신 것\n\n| a |\n| --- |\n| 1 |\n\n## 팀별 단계\n\n| 옛 | 표 |\n| --- | --- |\n| 손 | 글 |\n\n## 대표님 손에 있는 것\n\n| b |\n| --- |\n| 2 |\n';
         const swapped = swapSection(md, '팀별 단계', tbl);
         const swapped2 = swapSection('# 표\n\n## 대표님이 물으신 것\n\n| a |\n', '팀별 단계', tbl);
-        const tblOk = tbl.includes('| 개발 작전실 | 6단계 지금 | 하는 중 | 낮 13:00까지 | 7단계 다음 → 8단계 대표 뒤 — 대표님이 정한 뒤 → 9단계 그 뒤 |')
-          && tbl.includes('| 총괄실 |  | 단계 없음 |  | 계획표 아직 없어요 |') && tbl.includes('| 경영 방 |  | 단계 없음 |  | 다음 단계 아직 없어요 |')
+        const tblOk = tbl.includes('| 개발 작전실 | 6단계 지금 | 하는 중 | 7단계 다음 → 8단계 대표 뒤 — 대표님이 정한 뒤 → 9단계 그 뒤 |')
+          && tbl.includes('| 총괄실 |  | 단계 없음 | 계획표 아직 없어요 |') && tbl.includes('| 경영 방 |  | 단계 없음 | 다음 단계 아직 없어요 |')
           && !swapped.includes('| 손 | 글 |') && swapped.includes('| 1 |') && swapped.includes('| 2 |') && swapped.indexOf('## 팀별 단계') < swapped.indexOf('## 대표님 손에') && swapped.includes(tbl)
           && swapped2.endsWith(tbl + '\n') && swapped2.includes('| a |');
         out.push(['팀별 단계 절(stageTable·swapSection)', tblOk ? '✓ roadmap 에서 표 · 가운데 절만 바꿔 끼움 · 위·아래 그대로 · 절 없으면 끝에' : '✗ ' + JSON.stringify({ tbl, swapped, swapped2 })]);
-        // 멈춘 구간(state/pauses.json, 톰 09-15 "대표가 멈추라 한 시간은 빼라") — pausedMs 순수 · plansOf 의 late·예정·회차 평균 · blockedOf 의 wait
+        // 멈춘 구간(state/pauses.json, 톰 09-15 "대표가 멈추라 한 시간은 빼라") — pausedMs 순수 · blockedOf 의 wait(지난 사실이라 결정 188 대상 아님, B 목록)
         const { blockedOf: blockedOf2 } = await import('../server/public/notify.js');
         const pz = [{ from: '2026-09-14T04:00:00Z', to: '2026-09-15T12:00:00Z' }];   // 32시간
         const pmOk = pausedMs('2026-09-14T00:00:00Z', '2026-09-15T13:00:00Z', pz) === 32 * 3600_000 && pausedMs('2026-09-14T05:00:00Z', '2026-09-14T06:00:00Z', pz) === 3600_000
           && pausedMs('2026-09-13T00:00:00Z', '2026-09-14T04:00:00Z', pz) === 0 && pausedMs('x', 1, pz) === 0;
         const pNow2 = Date.parse('2026-09-15T13:00:00Z');   // 멈춤 뒤 한 시간
-        const pLate = plansOf({ roadmap: { milestones: [{ n: 6, title: '지금', status: 'now', timebox: '2 라운드' }] }, state: { phase: 'running', round: 25, milestone: 6, startedAt: '2026-09-14T00:00:00Z' }, rounds: pRounds, now: pNow2, pauses: pz });
-        const pLate0 = plansOf({ roadmap: { milestones: [{ n: 6, title: '지금', status: 'now', timebox: '2 라운드' }] }, state: { phase: 'running', round: 25, milestone: 6, startedAt: '2026-09-14T00:00:00Z' }, rounds: pRounds, now: pNow2 });
-        const pRoundsPaused = [{ startedAt: '2026-09-14T03:00:00Z', endedAt: '2026-09-15T12:30:00Z' }];   // 33.5h 인데 32h 멈춤 → 1.5h
-        const pauseOk = pmOk && pLate.stages[0].late === (37 - 32 - 3) * 3600_000 && pLate0.stages[0].late === (37 - 3) * 3600_000   // 00:00 시작 + 2×90분 = 03:00 예정, 지금 13:00 다음날 = 37h 뒤. 멈춤 32h 빼면 2h 늦음
-          && roundLengthMs(pRoundsPaused, { pauses: pz }) === 1.5 * 3600_000
+        const pauseOk = pmOk
           && blockedOf2({ teams: [{ id: 'dev', name: '개발', room: '개발실' }], summaries: { dev: { cast: {}, progress: { at: '2026-09-14T03:00:00Z', blocked: ['진짜'] } } } }, { now: pNow2, pauses: pz })[0].wait === (34 - 32) * 3600_000;
-        out.push(['멈춘 시간 빼기(pausedMs)', pauseOk ? '✓ 겹친 만큼만 · 늦음 37h→2h · 회차 33.5h→1.5h · 기다림 34h→2h' : '✗ ' + JSON.stringify({ pmOk, late: pLate.stages[0].late / 3600_000, late0: pLate0.stages[0].late / 3600_000, rl: roundLengthMs(pRoundsPaused, { pauses: pz }) / 3600_000 })]);
-        out.push(['앞날 띠(plansOf)', plansOk && p4Ok && p5Ok ? '✓ 회차 평균 90분 · 지난 것 없음 · 지금→다음 잇기 · 반 라운드 · 대표 timebox 는 gated · 막힘 blocked+late 4h · 빈 계획표 · 착수된 단계는 문이 아님 · timebox 없으면 날짜 없음' : '✗ ' + JSON.stringify({ plansOk, p4Ok, p5Ok, p4: p4.stages, p5: p5.stages })]);
-        // 하영 화면 글 틀 1판 5절 T1~T9(req_9cd62767) — 계약·계산 어긋남. 순수한 부분만 여기서.
-        // T2 예정 끝이 멈춤 안에 떨어지면 옮긴 만큼의 멈춤도 또 빼야 한다 — 디자인 4단계 실물: 09-14 04:04:56Z 시작 · 11시간 1분 예정 · 멈춤 04:35Z~09-15 12:13Z → 끝은 12:13Z + (11:01 − 0:30) = 22:44Z, 지금 13:35Z 는 안 늦음(전엔 01:37Z 로 세워 1시간 22분 늦음)
-        const { endAfterWork, gateWhatOf, ownersOf, ROUND_MIN_MS, ROUND_MAX_MS } = await import('./bus.mjs');
+        out.push(['멈춘 시간 빼기(pausedMs)', pauseOk ? '✓ 겹친 만큼만 · 기다림 34h→2h(blockedOf)' : '✗ ' + JSON.stringify({ pmOk })]);
+        out.push(['단계 띠(plansOf)', plansOk && p4Ok && p5Ok ? '✓ 지난 것 없음 · 반 라운드 · 대표 timebox 는 gated · 막힘 blocked · 빈 계획표 · 착수된 단계는 문이 아님' : '✗ ' + JSON.stringify({ plansOk, p4Ok, p5Ok, p4: p4.stages, p5: p5.stages })]);
+        // 하영 화면 글 틀 1판 5절 T1~T9(req_9cd62767) — 계약·계산 어긋남. 순수한 부분만 여기서. T2(예정 끝 계산)·T3(회차 평균)는 결정 188 뒤로 걷었다.
+        const { gateWhatOf, ownersOf, ROUND_MIN_MS, ROUND_MAX_MS } = await import('./bus.mjs');
         const { clockWord, dayWord, timeWord, spanWord } = await import('../server/public/when.js');
-        const dz = [{ from: '2026-09-14T04:35:00Z', to: '2026-09-15T12:13:00Z' }];
-        const dFrom = Date.parse('2026-09-14T04:04:56Z'), dWork = 11 * 3600_000 + 60_000;
-        const dEnd = endAfterWork(dFrom, dWork, dz);
-        const dPlan = plansOf({ roadmap: { milestones: [{ n: 4, title: '화면 시안', status: 'now', timebox: '2 라운드' }] }, state: { phase: 'running', round: 16, milestone: 4, startedAt: '2026-09-14T04:04:56Z' },
-          rounds: [{ startedAt: '2026-09-13T00:00:00Z', endedAt: '2026-09-13T05:30:30Z' }], now: Date.parse('2026-09-15T13:35:00Z'), pauses: dz });
-        const t2Ok = dEnd === Date.parse('2026-09-15T22:43:56Z') && endAfterWork(0, 60_000, []) === 60_000 && dPlan.stages[0].late === 0 && dPlan.stages[0].plannedTo === '2026-09-15T22:43:56.000Z';
-        // T3 1분 미만·일주일 넘는 회차는 평균에서 뺀다(시험·시드) — 넷 중 둘만 남아 평균 2시간
-        const t3Rounds = [{ startedAt: '2026-09-12T03:37:57.976Z', endedAt: '2026-09-12T03:37:57.977Z' }, { startedAt: '2026-09-13T00:00:00Z', endedAt: '2026-09-13T01:00:00Z' }, { startedAt: '2026-09-01T06:31:46Z', endedAt: '2026-09-13T03:49:52Z' }, { startedAt: '2026-09-13T02:00:00Z', endedAt: '2026-09-13T05:00:00Z' }];
-        const t3Ok = roundLengthMs(t3Rounds) === 2 * 3600_000 && roundLengthMs([t3Rounds[0], t3Rounds[2]]) === DEFAULT_ROUND_MS && ROUND_MIN_MS === 60_000 && ROUND_MAX_MS === 7 * 86_400_000;
+        const t3Ok = ROUND_MIN_MS === 60_000 && ROUND_MAX_MS === 7 * 86_400_000;
         // T4·T5 조건이 붙은 timebox 는 셀 수 없어 점선 — 대표면 "대표님이 정한 뒤"(대표님이 여실 단계 카드), 아니면 "{무엇} 뒤"(카드엔 안 옴). 착수된 단계는 그대로 센다
-        const t4 = plansOf({ roadmap: { milestones: [{ n: 4, title: '틀', status: 'now', timebox: '2 라운드' }, { n: 5, title: '붙이기', status: 'wait', timebox: '1 라운드 — 테라 붙인 뒤' }, { n: 6, title: '문', status: 'wait', timebox: '대표 방향 뒤 정함' }] }, state: { phase: 'running', round: 3, milestone: 4, startedAt: '2026-09-14T01:00:00Z' }, rounds: pRounds, now: pNow });
-        const t4now = plansOf({ roadmap: { milestones: [{ n: 5, title: '붙이기', status: 'now', timebox: '1 라운드 — 테라 붙인 뒤' }] }, state: { phase: 'running', round: 4, milestone: 5, startedAt: '2026-09-14T01:00:00Z' }, rounds: pRounds, now: pNow });
-        const t4Ok = t4.stages.map((s) => s.status).join(',') === 'running,gated,gated' && t4.stages[1].gateWhat === '테라 붙인 뒤' && t4.stages[1].gateBoss === false && t4.stages[1].gate === '1 라운드 — 테라 붙인 뒤' && t4.stages[1].plannedTo === null
-          && t4.stages[2].gateWhat === '대표님이 정한 뒤' && t4.stages[2].gateBoss === true && t4.stages[0].rounds === 2 && t4.stages[0].gateWhat === null
-          && t4now.stages[0].status === 'running' && t4now.stages[0].plannedTo === '2026-09-14T02:30:00.000Z'
+        const t4 = plansOf({ roadmap: { milestones: [{ n: 4, title: '틀', status: 'now', timebox: '2 라운드' }, { n: 5, title: '붙이기', status: 'wait', timebox: '1 라운드 — 테라 붙인 뒤' }, { n: 6, title: '문', status: 'wait', timebox: '대표 방향 뒤 정함' }] }, state: { phase: 'running', round: 3, milestone: 4 } });
+        const t4now = plansOf({ roadmap: { milestones: [{ n: 5, title: '붙이기', status: 'now', timebox: '1 라운드 — 테라 붙인 뒤' }] }, state: { phase: 'running', round: 4, milestone: 5 } });
+        const t4Ok = t4.stages.map((s) => s.status).join(',') === 'running,gated,gated' && t4.stages[1].gateWhat === '테라 붙인 뒤' && t4.stages[1].gateBoss === false && t4.stages[1].gate === '1 라운드 — 테라 붙인 뒤'
+          && t4.stages[2].gateWhat === '대표님이 정한 뒤' && t4.stages[2].gateBoss === true && t4.stages[0].gateWhat === null
+          && t4now.stages[0].status === 'running'
           && gateWhatOf('대표가 방식을 고른 뒤 2 라운드') === '대표님이 정한 뒤' && gateWhatOf('반 라운드 — 디자인 시안 온 뒤') === '디자인 시안 온 뒤' && timeboxRounds('1 라운드 — 테라 붙인 뒤') === null && timeboxRounds('2 라운드') === 2;
         // T6 담당 점 둘 — cast 에서 다른 회사·대표·안내 뺀 둘, 팀장 먼저
         const t6cast = { agents: { guide: { name: '유진', initial: '유', color: '#6f9a4a', model: 'claude' }, review: { name: '노라', initial: '노', color: '#a8541f', model: 'claude' }, outside: { name: '빅터', model: 'codex' }, boss: { name: '댄', model: null }, system: { name: '나리', model: null } } };
         const t6 = ownersOf(t6cast, { owner: 'guide' }), t6b = ownersOf({ agents: { chief: { name: '톰', initial: '톰', color: '#1f5f4f', model: 'claude' }, outside: { name: '제리', model: 'gemini' }, secretary: { name: '세라', initial: '세', color: '#2f6f8f', model: 'claude' } } }, { owner: 'chief' });
         const t6Ok = t6.map((o) => o.initial).join('') === '유노' && t6[0].color === '#6f9a4a' && t6b.map((o) => o.name).join('·') === '톰·세라' && ownersOf(null).length === 0;
-        // T8 막힌 이유 기본 글 · T9 때 글자(새벽 0~5 · 아침 6~9 · 낮 10~16 · 저녁 17~19 · 밤 20~23) · 날(오늘·내일·모레·N일·N월 N일) · 길이
-        const t8 = plansOf({ roadmap: { milestones: [{ n: 6, title: '지금', status: 'now', timebox: '1 라운드' }] }, state: { phase: 'blocked', round: 25, milestone: 6, startedAt: '2026-09-14T01:00:00Z' }, rounds: pRounds, now: pNow });
+        // T8 막힌 이유 기본 글 · T9 때 글자(새벽 0~5 · 아침 6~9 · 낮 10~16 · 저녁 17~19 · 밤 20~23) · 날(오늘·내일·모레·N일·N월 N일) · 길이 — when.js 는 타임라인 말고도 쓰여 그대로 시험
+        const t8 = plansOf({ roadmap: { milestones: [{ n: 6, title: '지금', status: 'now', timebox: '1 라운드' }] }, state: { phase: 'blocked', round: 25, milestone: 6 } });
         const tn = Date.parse('2026-09-15T13:35:00Z');   // 우리 시각 09-15 밤 22:35
         const t9Ok = clockWord('2026-09-15T23:41:00Z') === '아침 8:41' && clockWord('2026-09-15T16:05:00Z') === '새벽 1:05' && clockWord('2026-09-15T03:13:00Z') === '낮 12:13' && clockWord('2026-09-15T09:00:00Z') === '저녁 18:00' && clockWord('2026-09-15T11:00:00Z') === '밤 20:00' && clockWord('x') === ''
           && dayWord(tn, tn) === '오늘' && dayWord('2026-09-15T16:05:00Z', tn) === '내일' && dayWord('2026-09-17T00:00:00Z', tn) === '모레' && dayWord('2026-09-20T03:00:00Z', tn) === '20일' && dayWord('2026-10-02T16:00:00Z', tn) === '10월 3일'
           && timeWord('2026-09-15T16:05:00Z', tn) === '내일 새벽 1:05' && timeWord('2026-09-15T13:20:48Z', tn) === '밤 22:20' && spanWord(82 * 60_000 + 29_000) === '1시간 22분' && spanWord(40 * 60_000) === '40분' && spanWord(0) === '0분' && spanWord(50 * 3600_000) === '2일 2시간';
-        const framesOk = t2Ok && t3Ok && t4Ok && t6Ok && t8.stages[0].blockedWhy === '검토에서 멈춤 — 대표님 판단 기다림' && t9Ok;
-        out.push(['화면 글 틀 T1~T9(plansOf·when.js)', framesOk ? '✓ 예정 끝이 멈춤 안이면 또 밈(디자인 4단계 늦음 0) · 1분 미만·일주일 넘는 회차 뺌 · "… 뒤" 는 점선(대표만 카드) · 담당 둘 · 막힘 기본 글 · 때 글자' : '✗ ' + JSON.stringify({ t2Ok, dEnd: new Date(dEnd).toISOString(), dPlan: dPlan.stages[0], t3Ok, rl: roundLengthMs(t3Rounds), t4Ok, t4: t4.stages, t6Ok, t6, t6b, t8: t8.stages[0].blockedWhy, t9Ok })]);
+        const framesOk = t3Ok && t4Ok && t6Ok && t8.stages[0].blockedWhy === '검토에서 멈춤 — 대표님 판단 기다림' && t9Ok;
+        out.push(['화면 글 틀 T1~T9(plansOf·when.js)', framesOk ? '✓ 회차 길이 범위 상수 · "… 뒤" 는 점선(대표만 카드) · 담당 둘 · 막힘 기본 글 · 때 글자(다른 화면이 아직 씀)' : '✗ ' + JSON.stringify({ t3Ok, t4Ok, t4: t4.stages, t6Ok, t6, t6b, t8: t8.stages[0].blockedWhy, t9Ok })]);
         // 비서실 규칙(결정 132, 계약 0절) — roomRules·allowedIn 순수. 실제 teams.json 의 sera 가 그 규칙을 갖는지도 본다.
         const sr = roomRules('sera'), hr = roomRules('hq'), dr = roomRules('dev');
         const rulesOk = sr.owner === 'secretary' && hr.owner === 'chief' && dr.owner === 'guide' && !hr.speakers && !dr.only

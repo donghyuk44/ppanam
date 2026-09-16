@@ -15,7 +15,6 @@ import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { findOutPaths, outItem } from '../server/public/outlink.js';
-import { timeWord, spanWord } from '../server/public/when.js';
 import { bossOk } from '../server/public/bosswords.js';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -2409,21 +2408,20 @@ export function bossNotesOf(log, cast, { now = Date.now(), limit = 30 } = {}) {
  *   커밋·산출물은 나리 결정(09-15, 위임 136) — "지금 세는 게 승인·판정 카드뿐이라 만든 사람은 안 보이고 감사만 보인다. 만든 게 한 것이다."
  */
 /**
- * 앞날 띠 (대시보드 = "앞으로 언제 뭐가 되나", 헨리 시안 1판 dashboard.svg · 결정 128) — 한 팀의 단계들을 시간 위에 놓는다. 순수 — check 가 돌린다.
- * 지난 것(pass)은 없다(나리 규칙 — 현황과 안 겹치게). 예정 시각은 손으로 안 적는다 — timebox("2 라운드") × 이 팀 회차 평균 길이.
+ * 단계 띠 (대시보드, 헨리 시안 1판 dashboard.svg · 결정 128) — 한 팀의 단계 순서와 상태. 순수 — check 가 돌린다.
+ * 지난 것(pass)은 없다(나리 규칙 — 현황과 안 겹치게). 시각 예측은 없다(결정 188, 대표 09-16 "몇 시에 한다고
+ * 정해진 거 다 파기" — 예정 끝·늦음 계산이 여기 있었는데, 화면이 더 안 읽어 걷었다. 옛 계산은 커밋 로그에).
  *
  * @param roadmap   { milestones: [{ n, title, status, timebox }] }
- * @param state     round.json — { phase, round, milestone, startedAt }
- * @param rounds    rounds.jsonl 항목들(최근 것 먼저여도 된다) — startedAt·endedAt 으로 회차 길이
+ * @param state     round.json — { phase, milestone }
  * @param progress  progress.json(blocked[]·boss[]) 또는 null
- * @param now       ms
- * @returns { stages: [{ n, title, status, plannedFrom, plannedTo, late, blockedWhy, gate }], roundMs }
+ * @returns { stages: [{ n, title, status, gate, gateWhat, gateBoss, blockedWhy }] }
  *   status: running(지금 단계) · planned(잡힌 예정) · gated(대표 답 뒤 — gate 에 무엇) · blocked(FAIL 로 막힘)
  */
-export const DEFAULT_ROUND_MS = 90 * 60_000;
 /**
  * 멈춘 시간(state/pauses.json — [{ from, to, why }], 대표가 "쉬어라" 한 구간을 나리·톰이 손으로 적는다).
- * 늦음·기다림·회차 길이에서 뺀다 — 09-14 낮~09-15 밤(사용량 1%) 하루가 통째로 "41시간 늦음"·"33시간째" 로 대표 화면에 섰다(톰 09-15). 순수 — check 가 돌린다.
+ * 기다린·막힌 시간(지난 사실)에서 뺀다 — 09-14 낮~09-15 밤(사용량 1%) 하루가 통째로 "41시간 늦음"·"33시간째" 로
+ * 대표 화면에 섰다(톰 09-15). 순수 — check 가 돌린다.
  */
 export function readPauses() {
   const list = readJSON(path.join(ROOT, 'state', 'pauses.json'), []);
@@ -2436,12 +2434,6 @@ export function pausedMs(a, b, pauses = []) {
   let sum = 0;
   for (const p of pauses) { const f = typeof p.from === 'number' ? p.from : Date.parse(p.from), t = typeof p.to === 'number' ? p.to : Date.parse(p.to); sum += Math.max(0, Math.min(e, t) - Math.max(s, f)); }
   return sum;
-}
-/** from 에서 work ms 만큼 일한 끝 시각 — 멈춘 구간은 건너뛴다. 예정 끝이 멈춤 안에 떨어지면 옮긴 만큼의 멈춤도 다시 빼야 해서 자리 잡을 때까지 민다(하영 T2 — 디자인 4단계 거짓 '1시간 22분 늦음'). 순수. */
-export function endAfterWork(from, work, pauses = []) {
-  let to = from + work, mark = from;
-  for (let i = 0; i < 64; i++) { const extra = pausedMs(mark, to, pauses); if (!extra) break; mark = to; to += extra; }
-  return to;
 }
 /** timebox 글자에 회차 수가 있나 — "2 라운드" 2 · "반 라운드" 0.5. 조건이 붙은 것("대표 방향 뒤 정함" · "1 라운드 — 테라 붙인 뒤")은 셀 수 없어 null — 그 조건이 끝나야 센다(하영 T4: 셀 수 없는 것은 점선). */
 export function timeboxRounds(timebox) {
@@ -2459,45 +2451,25 @@ export function gateWhatOf(timebox) {
   const m = /^(.*?뒤)/.exec(t);
   return (m ? m[1] : t).trim() || s;
 }
-/** 회차 평균 길이 — 닫힌 회차 최근 n 개, 멈춤 뺀 것. 1분 미만·일주일 넘는 회차는 시험·시드(디자인 09-12 0.2초 셋 · 경영 09-01 11일)라 뺀다(하영 T3). */
+/** 회차 길이 유효 범위(rounds.jsonl 요약에서 시험·시드 뺌 — 1분 미만·일주일 넘는 회차는 디자인 09-12 0.2초 셋·경영 09-01 11일). */
 export const ROUND_MIN_MS = 60_000, ROUND_MAX_MS = 7 * 86_400_000;
-export function roundLengthMs(rounds, { fallback = DEFAULT_ROUND_MS, n = 8, pauses = [] } = {}) {
-  const lens = (rounds ?? []).filter((r) => r.startedAt && r.endedAt).map((r) => Date.parse(r.endedAt) - Date.parse(r.startedAt) - pausedMs(r.startedAt, r.endedAt, pauses)).filter((x) => Number.isFinite(x) && x >= ROUND_MIN_MS && x <= ROUND_MAX_MS);
-  const last = lens.slice(0, n);
-  return last.length ? Math.round(last.reduce((a, b) => a + b, 0) / last.length) : fallback;
-}
-export function plansOf({ roadmap, state, rounds = [], progress = null, now = Date.now(), pauses = [] } = {}) {
-  const roundMs = roundLengthMs(rounds, { pauses });
+export function plansOf({ roadmap, state, progress = null } = {}) {
   const ms = (roadmap?.milestones ?? []).filter((m) => m.status !== 'pass').sort((a, b) => (a.n ?? 0) - (b.n ?? 0));
   const phase = state?.phase ?? 'idle';
   // 막힌 이유가 비면 사전 말(하영 6판 6절 — FAIL 은 우리 말, 화면엔 '검토에서 멈춤')
   const blockedWhy = phase === 'blocked' ? (progress?.blocked?.[0] ?? '검토에서 멈춤 — 대표님 판단 기다림') : null;
   const stages = [];
-  let cursor = null;   // 앞 단계가 끝나는 시각 — 다음 단계는 여기서 시작
   for (const m of ms) {
     // 지금 단계(status now — 착수 카드가 통과됐다)는 timebox 에 조건이 있어도 문이 아니다 — 문은 이미 열렸다(나리 실측 09-15 23:10: 경영 2단계가 착수됐는데 '대표가 정한 뒤' 로 섰다).
-    // timebox 가 아예 없으면 문이 아니라 **잡히지 않은 것** — 날짜 없이 'N단계' 만(지어내지 않는다). 문(gated)은 글자에 조건("대표" · "… 뒤")이 있을 때 — 대표면 gateBoss(대표님이 여실 단계 카드), 아니면 다른 팀·다른 일 뒤(하영 T4).
+    // timebox 가 아예 없으면 문이 아니라 **잡히지 않은 것** — 순서만(지어내지 않는다). 문(gated)은 글자에 조건("대표" · "… 뒤")이 있을 때 — 대표면 gateBoss(대표님이 여실 단계 카드), 아니면 다른 팀·다른 일 뒤(하영 T4).
     const isNow = m.status === 'now' || m.n === state?.milestone;
     const tb = String(m.timebox ?? '').trim();
     const box = timeboxRounds(m.timebox) ?? (m.status === 'now' ? (Number(/(\d+(?:\.\d+)?)\s*라운드/.exec(tb)?.[1]) || 1) : null);
     const gate = box == null && /대표|뒤/.test(tb) ? tb : null;
-    let from = null, to = null;
-    if (box != null) {
-      from = isNow ? (state?.startedAt && phase !== 'idle' ? Date.parse(state.startedAt) : now) : (cursor ?? now);
-      to = endAfterWork(from, box * roundMs, pauses);   // 멈춤은 일한 시간이 아니다 — 창 안 멈춤만큼 뒤로, 옮긴 자리가 또 멈춤이면 또(T2). 창 뒤의 멈춤은 late 에서 뺀다
-      cursor = Math.max(to, now);
-    }
-    const late = isNow && to != null && now > to ? Math.max(0, now - to - pausedMs(to, now, pauses)) : 0;
     const status = isNow && blockedWhy ? 'blocked' : gate ? 'gated' : isNow ? 'running' : 'planned';
-    stages.push({
-      n: m.n, title: m.title, status, gate, gateWhat: gate ? gateWhatOf(tb) : null, gateBoss: gate ? /대표/.test(tb) : false,
-      rounds: box,
-      plannedFrom: from != null ? new Date(from).toISOString() : null,
-      plannedTo: to != null ? new Date(to).toISOString() : null,
-      late, blockedWhy: isNow ? blockedWhy : null,
-    });
+    stages.push({ n: m.n, title: m.title, status, gate, gateWhat: gate ? gateWhatOf(tb) : null, gateBoss: gate ? /대표/.test(tb) : false, blockedWhy: isNow ? blockedWhy : null });
   }
-  return { stages, roundMs };
+  return { stages };
 }
 /**
  * 담당 점 둘(하영 1-3, 결정 128 "누가") — 그 팀 cast 에서 다른 회사(외부 감사)·대표·안내를 뺀 둘, 팀장(roomRules owner) 먼저. 계획표 owner 칸은 마케팅만 있어 cast 가 정본. 순수.
@@ -2579,16 +2551,18 @@ export function repeatsOf(approvals, roundsByTeam) {
  * 순수 — check 가 돌린다. 세는 숫자 없음(헨리) — 단계 번호·낱말·시각만. 시각은 우리 시각(서울).
  */
 const STATUS_WORD = { running: '하는 중', planned: '대기', gated: '대기(대표)', blocked: '막힘' };
-export function stageTable(teamsOut, { now = Date.now() } = {}) {
-  const rows = ['| 팀 | 지금 단계 | 상태 | 예정 | 다음 |', '| --- | --- | --- | --- | --- |'];
+// 예정(까지 남은 시각) 칸은 결정 188 뒤로 뺐다 — 지금 단계는 정의상 gate 가 없어(문은 아직 안 열린 단계만)
+// 늘 빈 칸이 됐다. 순서·상태·다음만 남는다.
+export function stageTable(teamsOut) {
+  const rows = ['| 팀 | 지금 단계 | 상태 | 다음 |', '| --- | --- | --- | --- |'];
   for (const t of teamsOut) {
     const cur = t.stages.find((s) => s.status === 'running' || s.status === 'blocked');
     const rest = t.stages.filter((s) => s !== cur);
     const cell = (s) => (s == null ? '' : String(s).replace(/\|/g, '·').replace(/\n/g, ' '));
-    const status = cur ? STATUS_WORD[cur.status] + (cur.blockedWhy ? ` — ${cur.blockedWhy}` : '') + (cur.late ? ` · ${spanWord(cur.late)} 늦음` : '') : t.stages.length ? '대기' : '단계 없음';
+    const status = cur ? STATUS_WORD[cur.status] + (cur.blockedWhy ? ` — ${cur.blockedWhy}` : '') : t.stages.length ? '대기' : '단계 없음';
     // 빈 줄 말 둘(하영 1-2) — 계획표 파일이 없으면 "계획표 아직 없어요", 있는데 pass 뿐이면 "다음 단계 아직 없어요". 점선 칸은 gateWhat("대표님이 정한 뒤" · "테라 붙인 뒤"), 원문(gate)은 화면 펼친 줄에
     const next = rest.map((s) => `${s.n != null ? s.n + '단계 ' : ''}${s.title}${s.status === 'gated' ? ` — ${s.gateWhat}` : ''}`).join(' → ') || (t.stages.length ? '' : t.hasRoadmap === false ? '계획표 아직 없어요' : '다음 단계 아직 없어요');
-    rows.push(`| ${cell(t.room ?? t.name)} | ${cur ? cell(`${cur.n}단계 ${cur.title}`) : cell(t.stages[0] ? `${t.stages[0].n}단계 ${t.stages[0].title}` : '')} | ${cell(status)} | ${cur?.plannedTo ? timeWord(cur.plannedTo, now) + '까지' : cur?.gateWhat ?? ''} | ${cell(next)} |`);
+    rows.push(`| ${cell(t.room ?? t.name)} | ${cur ? cell(`${cur.n}단계 ${cur.title}`) : cell(t.stages[0] ? `${t.stages[0].n}단계 ${t.stages[0].title}` : '')} | ${cell(status)} | ${cell(next)} |`);
   }
   return rows.join('\n');
 }

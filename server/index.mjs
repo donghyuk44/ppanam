@@ -333,8 +333,8 @@ const server = http.createServer((req, res) => {
   }
 
   // 예정 작업 표(결정 128) — teams/hq/out/plan-table.md 를 그대로 읽어 대시보드 맨 위에 띄운다. 읽기만, 톰이 파일로 관리한다.
-  // 대시보드 = "앞으로 언제 뭐가 되나"(나리 정본 · 헨리 시안 1판 dashboard.svg · 결정 128). text·at 은 1판(plan-table.md) 그대로, 그 위에 앞날 띠 —
-  // 팀마다 bus.plansOf(로드맵 × 회차 평균 길이, 순수) + 대표가 정해야 열리는 것(C 승인 · 상황판 boss[] · gated 단계). 계약 3절 "화면 넷 + 카드".
+  // 대시보드 = "지금 어디까지 왔고 다음이 뭔가"(나리 정본 · 헨리 시안 1판 dashboard.svg · 결정 128). text·at 은 1판(plan-table.md) 그대로, 그 위에 단계 띠 —
+  // 팀마다 bus.plansOf(로드맵 순서·상태, 순수 — 결정 188 뒤로 시각 예측은 뺐다) + 대표가 정해야 열리는 것(C 승인 · 상황판 boss[] · gated 단계). 계약 3절 "화면 넷 + 카드".
   if (url.pathname === '/api/dashboard') {
     const file = path.join(paths('hq').out, 'plan-table.md');
     let text = null, at = null;
@@ -346,7 +346,7 @@ const server = http.createServer((req, res) => {
     // bossGates 는 대표 문(gateBoss)인 단계뿐 — 다른 팀·다른 일 뒤(테라 붙인 뒤)는 점선이지만 대표님이 여실 단계가 아니다(T4). C 승인·상황판 boss[] 는 관제탑 ③ 내 차례의 목록이라 여기 또 두면 '같은 것을 두 군데' 다(톰 req_2749e30e).
     const bossGates = [];
     const teamsOut = rows.map((t) => {
-      const plan = bus.plansOf({ roadmap: readRoadmap(t.id), state: isOffice(t.id) ? { phase: 'idle' } : readState(t.id), rounds: isOffice(t.id) ? [] : listRounds(t.id), progress: bus.readProgress(t.id), now, pauses: bus.readPauses() });
+      const plan = bus.plansOf({ roadmap: readRoadmap(t.id), state: isOffice(t.id) ? { phase: 'idle' } : readState(t.id), progress: bus.readProgress(t.id) });
       for (const s of plan.stages) if (s.status === 'gated' && s.gateBoss) bossGates.push({ kind: 'stage', team: t.id, what: `${s.n != null ? s.n + '단계 ' : ''}${s.title} — ${s.gate}`, id: s.n });
       const cast = readCast(t.id), owner = bus.roomRules(t.id).owner;
       const color = cast.agents?.[owner]?.color ?? null;
@@ -356,7 +356,7 @@ const server = http.createServer((req, res) => {
       return { id: t.id, name: t.name, room: t.room, color, hasRoadmap: fs.existsSync(paths(t.id).roadmap), owners: bus.ownersOf(cast, { owner }), usage: todayUsage(t.id, new Date(now)), ...plan };
     });
     // '팀별 단계' 절은 서버가 roadmap 에서 만들어 끼운다(톰 09-14: "손으로 세는 건 썩는다") — 톰이 쓰는 건 위·아래 두 표뿐. 정본은 표 파일 + roadmap 둘이 한 화면에.
-    const merged = bus.swapSection(text ?? '', '팀별 단계', bus.stageTable(teamsOut, { now }));
+    const merged = bus.swapSection(text ?? '', '팀별 단계', bus.stageTable(teamsOut));
     return json(res, 200, { text: merged, at, now: new Date(now).toISOString(), teams: teamsOut, bossGates });
   }
 
