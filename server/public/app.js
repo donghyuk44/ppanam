@@ -1779,12 +1779,37 @@ function loadUsage(rerender = null) {
     if (changed && rerender) rerender();
   }).catch(() => {});
 }
+/**
+ * 팀별 세 줄(진행 중·다음·예정) — 하영 teams/marketing/out/팀별-세줄.md 의 표(| 팀 | 지금 | 다음 | 그 뒤 | 팀장 답 |)를 읽는다(대표 15:1x, 나리 16:2x). 팀장이 맞다고 한 글자가 정본.
+ * 60초 캐시. 앞으로 상황판에 같은 칸 셋(--now --next --after)이 생기면 거기서(솔라) — 이 1판은 손으로 쓴 파일.
+ */
+const three = { byTeam: {}, fetchedAt: 0 };
+function loadThreeLines(rerender = null) {
+  if (Date.now() - three.fetchedAt < 60_000) return;
+  three.fetchedAt = Date.now();
+  fetch('/out/marketing/' + encodeURIComponent('팀별-세줄.md')).then((r) => (r.ok ? r.text() : '')).then((md) => {
+    // 첫 표(| 팀 | 지금 | 다음 | 그 뒤 | 팀장 답 |)만 — 밑의 "재료 → 줄" 표는 머리가 "지금 ←" 라 다른 표다(첫 사진에서 그 표가 덮어썼다)
+    const next = {};
+    let inTable = false;
+    for (const line of md.split('\n')) {
+      if (!line.trim().startsWith('|')) { if (inTable) break; continue; }
+      const c = line.split('|').slice(1, -1).map((s) => s.trim());
+      if (c[0] === '팀') { inTable = c[1] === '지금' && c[2] === '다음'; continue; }
+      if (!inTable || c.length < 4 || /^-+$/.test(c[0])) continue;
+      const t = teams.find((x) => x.name === c[0] || x.room === c[0] || x.id === c[0]);
+      if (t) next[t.id] = { now: c[1] || null, next: c[2] || null, later: c[3] || null };
+    }
+    const changed = JSON.stringify(next) !== JSON.stringify(three.byTeam);
+    three.byTeam = next;
+    if (changed && rerender) rerender();
+  }).catch(() => {});
+}
 /** 카드 노드 — 재료가 아직 없으면 null. 문 셋: 파일 → 새 창, 자세히 → 그 팀 채팅, 결재 단추 → 기존 결재 팝업(사유 칸·대리 안내가 거기 있다 — 결정 길은 하나). */
 function teamCardNode(team, rerender = null) {
-  loadCard(team, rerender); if (SHOW_USAGE) loadUsage(rerender);
+  loadCard(team, rerender); if (SHOW_USAGE) loadUsage(rerender); loadThreeLines(rerender);
   const d0 = cards.byTeam[team];
   if (!d0) return null;
-  const d = { ...d0, usage: SHOW_USAGE ? (d0.usage ?? usage.byTeam[team] ?? null) : null };   // 서버가 카드 재료에 usage 를 실으면 그것, 아니면 /api/dashboard 것
+  const d = { ...d0, usage: SHOW_USAGE ? (d0.usage ?? usage.byTeam[team] ?? null) : null, three: d0.three ?? three.byTeam[team] ?? null };   // usage·three 는 서버가 카드 재료에 실으면 그것, 아니면 화면이 읽은 것
   // 이름·색은 화면이 아는 것으로 채운다 — 서버가 옛 판(2dacf61)이면 name 이 없어 카드 머리에 hq·dev 가 그대로 섰다(나리 R32 ③)
   const t = teams.find((x) => x.id === team);
   return teamCard({ ...d, name: d.name ?? t?.name ?? team, color: d.color ?? teamColor(team) }, {

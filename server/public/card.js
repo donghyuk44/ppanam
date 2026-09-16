@@ -21,6 +21,7 @@
 //   boss: { id: 'apr_…', text: '…' } | null,         // 대표님이 할 동작 하나 + 단추 둘(승인 · 반려) → onDecide(id, 'PASS'|'REVISE')
 //   stage: { n: 10, total: 11, round: 32 } | null,   // 꼬리 "10/11 단계 · 32회차 · 자세히 →"(onOpen(null) 로 팀 방)
 //   usage: { turns: 12, costUsd: 0.84 } | null,       // 꼬리 "오늘 쓴 것 12번 $0.84" — 토큰 장부(T1, /api/dashboard teams[].usage). 없으면 안 그림
+//   three: { now, next, later } | null,               // 팀별 세 줄(하영 팀별-세줄.md, 팀장 확인분) — 진행 중·다음·예정. now 가 있으면 doing 대신 그 줄
 // }
 
 import { bossOk, NOT_YET } from '/bosswords.js';
@@ -28,7 +29,7 @@ import { bossOk, NOT_YET } from '/bosswords.js';
 /* ── 글자 — card-words.md 2판 머리 ── */
 
 const STATE_WORD = { working: '진행 중', blocked: '차단됨', boss: '승인 대기' };
-const BLOCK_WORD = { doing: '진행 중', done: '된 것', blocked: '막힌 것', boss: '승인 대기' };
+const BLOCK_WORD = { doing: '진행 중', next: '다음', later: '예정', done: '된 것', blocked: '막힌 것', boss: '승인 대기' };   // 진행 중·다음·예정 — 대표 원문(나리 16:2x)
 const VERDICT_WORD = { PASS: '승인', REVISE: '반려', FAIL: '보류' };
 const BTN = { PASS: '승인', REVISE: '반려' };
 const MORE = '자세히 →';
@@ -144,8 +145,13 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
   const t = timeNode(d.at); if (t) head.appendChild(t);
   card.appendChild(head);
 
-  // 진행 중 — 한 줄
-  if (d.doing?.text) card.appendChild(block('doing', [personLine(d.doing.who, said(d.doing.text))]));
+  // 진행 중 · 다음 · 예정 — 팀별 세 줄(대표 15:1x "팀별로 지금 하는 것·다음·그 뒤를 볼 수가 없다", 머리 글자는 대표 원문 "진행 중 · 다음 · 예정" — 나리 16:2x).
+  // 재료는 하영 팀별-세줄.md(팀장이 맞다고 한 글자가 정본, d.three) — 있으면 그 줄이 '진행 중' 이고 없으면 상황판 doing. 자에 안 맞는 줄은 안 그린다(지어 쓰지 않는다)
+  const three = d.three ?? {};
+  if (three.now && bossOk(three.now)) card.appendChild(block('doing', [el('span', 'card__text', three.now)]));
+  else if (d.doing?.text) card.appendChild(block('doing', [personLine(d.doing.who, said(d.doing.text))]));
+  if (three.next && bossOk(three.next)) card.appendChild(block('next', [el('span', 'card__text', three.next)]));
+  if (three.later && bossOk(three.later)) card.appendChild(block('later', [el('span', 'card__text', three.later)]));
 
   // 된 것 — 0~3, 파일 있으면 누르면 열림
   const done = (d.done ?? []).slice(0, 3).map((x) => {
