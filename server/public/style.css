@@ -243,6 +243,7 @@ body {
   background: var(--panel);
 }
 .composer__msg[hidden] { display: none; }
+.composer__retry { font: inherit; font-size: 12px; font-weight: 500; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 2px 9px; cursor: pointer; }   /* C14 '못 보냈어요 · 다시 보내기' */
 
 .feed { overflow-y: auto; overscroll-behavior: contain; background: var(--ground); padding: 0 16px 22px; }
 .stream { display: flex; flex-direction: column; gap: 11px; padding-top: 16px; }

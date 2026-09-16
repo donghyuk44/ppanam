@@ -798,12 +798,28 @@ function markMentions() {
 
 /* ── 팀 전환 ── */
 
+/** 다시 붙은 뒤 채우기(C14) — 보던 방을 다시 받는다. 서버가 막 뜨는 중이라 못 받으면 2초 뒤 다시(한 번 실패로 화면을 비우지 않는다). */
+async function refill(tries = 0) {
+  if (!active) return;
+  const ok = await selectTeam(active);
+  if (!ok) { if (tries < 5) setTimeout(() => refill(tries + 1), 2000); return; }
+  if (view === 'tower') renderTower(); if (view === 'dashboard') loadDashboard(); if (view === 'analysis') loadAnalysis();
+}
+
 async function selectTeam(id) {
   // 주소는 여기서 건드리지 않는다. 팀과 화면이 같이 정해진 뒤에 한 번만 쓴다 —
   // 중간에 쓰면 히스토리에 지나가는 상태가 한 칸씩 남아 뒤로가기가 어긋난다.
+  const prev = active;
   active = id;
   unread[id] = 0;
-  const r = await fetch(`/api/team?team=${encodeURIComponent(id)}`).then((x) => x.json());
+  // 서버가 막 뜨는 중이면 오류 JSON 이나 실패가 온다 — 그때 cast·events 를 undefined 로 덮으면 화면이 통째로 빈다(대표 13:11 총괄실 빈 화면의 한 길). 있던 것을 두고 false 로 돌아간다.
+  // 그때 active 도 되돌린다 — 안 그러면 입력창은 새 방에 보내고 화면은 옛 방인 채로 갈린다(code-review 지적). 배너는 소켓이 끊겼을 때만, 아니면 짧게 한 줄.
+  const r = await fetch(`/api/team?team=${encodeURIComponent(id)}`).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+  if (!r?.events || !r.cast) {
+    active = prev;
+    if (ws?.readyState !== 1) say('서버에 다시 연결 중…', 0); else say('방을 못 불러왔어요 — 잠시 뒤 다시');
+    return false;
+  }
   cast = r.cast; roadmap = r.roadmap; journal = r.journal ?? {};
   // /api/team 의 요약은 부팅·방송과 같은 모양(세션·차례 포함)이다. 레일·관제탑이 읽는 summaries 에도 넣어 둘이 어긋나지 않게.
   summary = r.summary; summaries[id] = r.summary;
@@ -815,6 +831,7 @@ async function selectTeam(id) {
   cards.fetchedAt[active] = 0; renderRoomCard();   // 방을 바꾸면 그 팀 카드를 새로(C7 — 채팅 맨 위 한 장)
   app.dataset.side = '0';
   $('scrim').hidden = true;
+  return true;
 }
 
 /** 레일에서 팀을 눌렀을 때. 관제탑이면 그 방으로 들어가고, 분석이면 그 팀 분석으로 갈아탄다. */
@@ -867,24 +884,32 @@ async function jumpTo(team, id) {
 
 /* ── 연결 ── */
 
-let ws = null, retry = 0, everOpened = false;
+let ws = null, retry = 0, everOpened = false, openedAt = 0, reconnectTimer = null;
+// 다시 붙기(C14 — 대표 13:11 '총괄방에 대화 안 보여 버그 터진 듯': 13:12 재시작 뒤 화면이 안 붙어 ws 실패 245번). 간격 1·2·5·10초, 붙어서 5초를 버틴 뒤에야 처음으로 돌린다(붙자마자 끊기는 틈에 400ms 로 돌던 것).
+const RECONNECT_MS = [1000, 2000, 5000, 10000];
+window.ppanamDebug = { closeWs: () => ws?.close() };   // 사진용 — screen-shot.mjs 손질 줄에서 끊김을 흉내 낸다(C14 실측). 화면 동작엔 안 쓴다
 
 function connect() {
   ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
 
   ws.onopen = () => {
-    retry = 0;
+    openedAt = Date.now();
     $('liveDot').dataset.on = '1';
+    say(null);   // '서버에 다시 연결 중…' 지움
     if (active) renderWork();
-    // 끊겼다 붙었다. 그 사이 발언은 소켓으로 안 왔다 — 보던 방을 다시 불러온다. 안 그러면 화면이 조용히 빠진다.
-    if (everOpened && active) selectTeam(active).then(() => { if (view === 'tower') renderTower(); if (view === 'dashboard') loadDashboard(); if (view === 'analysis') loadAnalysis(); });
+    // 끊겼다 붙었다. 그 사이 발언은 소켓으로 안 왔다 — 보던 방을 다시 불러온다(마지막 사건 뒤를 채운다). 안 그러면 화면이 조용히 빠진다.
+    if (everOpened && active) refill();
     everOpened = true;
   };
   ws.onclose = () => {
     $('liveDot').dataset.on = '0';
     if (active) renderWork();   // 폰에는 점만으로 모자라다 — 둘째 줄에 "끊김" 글자
-    retry = Math.min(retry + 1, 6);
-    setTimeout(connect, 400 * 2 ** (retry - 1));
+    if (openedAt && Date.now() - openedAt > 5000) retry = 0;   // 오래 붙어 있다 끊긴 것 — 처음부터
+    openedAt = 0;
+    const wait = RECONNECT_MS[Math.min(retry, RECONNECT_MS.length - 1)];
+    retry += 1;
+    say(`서버에 다시 연결 중… ${Math.round(wait / 1000)}초 뒤`, 0);
+    clearTimeout(reconnectTimer); reconnectTimer = setTimeout(connect, wait);
   };
 
   ws.onmessage = (ev) => {
@@ -1201,20 +1226,31 @@ input.addEventListener('keydown', (e) => {
   else if (e.key === 'Escape') slashPop.hidden = true;
 }, true);   // capture — 보내기(Enter) 핸들러보다 먼저
 
+/** 못 보냈을 때(C14) — 입력창 위에 '못 보냈어요 · 다시 보내기' 단추. 글은 입력창에 돌려 두지 않고 단추가 쥔다 — 대표가 다시 치지 않게. */
+function sayFailed(text, why) {
+  const box = $('composerMsg');
+  clearTimeout(msgTimer);
+  box.replaceChildren();
+  box.append(`못 보냈어요${why ? ` — ${why}` : ''} · `);
+  const b = el('button', 'composer__retry', '다시 보내기'); b.type = 'button';
+  b.addEventListener('click', () => { say('보내는 중', 0); sendSay(text); });
+  box.appendChild(b);
+  box.hidden = false;
+}
 async function sendSay(text) {
   // 말풍선은 여기서 그리지 않는다. 지시가 세션에 들어가면 훅이 남긴다.
   let r;
   try {
     r = await post('/api/say', { text, team: active });
   } catch {
-    input.value = text; fitInput();
-    return say('서버 연결 실패');
+    return sayFailed(text, '서버 연결 실패');
   }
   if (!r.ok) {
-    input.value = text; fitInput();
-    say(r.data.error ?? '전송 실패');
-    if (r.data.needsRound) { pendingSay = text; showOpen(true, { topic: text.split('\n')[0].slice(0, 80) }); }
+    if (r.data.needsRound) { input.value = text; fitInput(); say(r.data.error ?? '전송 실패'); pendingSay = text; showOpen(true, { topic: text.split('\n')[0].slice(0, 80) }); return; }
+    sayFailed(text, r.data.error ?? null);
+    return;
   }
+  say(null);
 }
 
 $('composer').addEventListener('submit', async (e) => {
