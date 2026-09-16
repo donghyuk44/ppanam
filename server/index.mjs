@@ -392,8 +392,12 @@ const server = http.createServer((req, res) => {
       const teamApprovals = listApprovals({ team: t.id });
       return readLog(t.id).filter((e) => e.type === 'note' && e.meta?.proxy && Date.parse(e.ts) >= since && Date.parse(e.ts) < until).map((e) => {
         const apr = e.meta.approval ? teamApprovals.find((a) => a.id === e.meta.approval) : null;
-        const boss = e.meta.boss ?? apr?.decisions?.find((d) => d.boss)?.boss ?? null;
-        return { team: t.id, id: e.id, ts: e.ts, text: e.text, approval: e.meta.approval ?? null, boss };
+        // by — boss 줄과 같은 결정에서 찾는다(테라 요청 16:0x): 화면이 대표가 직접 찍은 C 와 대리(system)
+        // 판정을 가르려면 누가 찍었는지가 있어야 한다. boss 텍스트가 붙은 그 결정의 by — 없으면 마지막 결정의 by.
+        const bossDecision = apr?.decisions?.find((d) => d.boss);
+        const boss = e.meta.boss ?? bossDecision?.boss ?? null;
+        const by = bossDecision?.by ?? apr?.decisions?.[apr.decisions.length - 1]?.by ?? null;
+        return { team: t.id, id: e.id, ts: e.ts, text: e.text, approval: e.meta.approval ?? null, boss, by };
       });
     });
     const dayKey = new Date(until - 1 + 9 * 3600_000).toISOString().slice(0, 10);   // 창의 끝 날(우리 시각) — 아침 보고서 파일 이름
