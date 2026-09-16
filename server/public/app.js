@@ -1967,6 +1967,9 @@ function renderTowerPeople(grid) {
     const s = summaries[t.id] ?? {};
     const cast = s.cast ?? {};
     const people = Object.entries(s.people ?? {}).filter(([id]) => id !== 'boss' && cast[id] && !cast[id].from);
+    // 나리(hq:system, N1 세션) — 서버 people 이 아직 system 을 빼면(bus.peopleOf, 솔라 재시작 전) 총괄 칸에 카드 없이 서는 게 아니라 안 섰다(대표 12:13 "대시보드에 멤버쪽 나리가 없다").
+    // 세션 있는 자리(cast model)면 화면이 빈 상태로라도 세운다 — 서버가 주기 시작하면 그 값이 이긴다. 색은 C16 노랑(data-hand server).
+    if (t.id === 'hq' && cast.system?.model && !s.people?.system) { const ss = s.sessions?.system; people.push(['system', { state: ss?.busy ? 'working' : 'waiting', alive: !!ss?.alive, doing: null, lastSignal: null }]); }
     if (!people.length) continue;
     const box = el('details', 'pgroup');
     let open = true; try { open = localStorage.getItem(groupKey(t.id)) !== '0'; } catch { /* 기본은 펼침 */ }
@@ -2038,6 +2041,7 @@ document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closePop
  * 발언 수·검토 결과 수·일지 줄은 없다(시안 메모). 엔진·모델 줄(결정 69)은 대표 손잡이라 맨 밑에 그대로. */
 function personCard(t, id, a, p) {
   const card = el('div', 'pcard'); card.dataset.actor = `${t.id}:${id}`;
+  if (id === 'system' && a?.model) card.dataset.hand = 'server';   // 서버 나리 — 이름 박스 노랑(C16, 대표 12:13 "카드 색은 C16 대로")
   const st = WORK_PILL[p.state] ?? WORK_PILL.waiting;
   if (p.bossCall) card.dataset.alert = '1';
   card.appendChild(pcardTop(a, pill(st[0], st[1])));
