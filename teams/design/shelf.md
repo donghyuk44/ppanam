@@ -7,7 +7,7 @@
 ## 읽을 것 (경로만 먼저 보고, 필요한 절만)
 
 - `teams/design/out/ui-spec.md` (234줄 · 43KB · 절 14) — 화면 시안 규격 정본. **하루에 8번 읽힌 파일** — 화면 이름(현황·앞으로·보고서·카드) 절만.
-- `teams/design/out/screens/ui/png/<화면>.png` — 시안 그림. 지금 고치는 화면 한 장만 연다(tower·dashboard 4번, analysis 3번, report 2번 읽힘). `tower` 는 png 가 없고 svg 만 있다(헨리 09-16) — 글자 줄만 `grep -n '<text'`.
+- `teams/design/out/screens/ui/png/<화면>.png` — 시안 그림. 지금 고치는 화면 한 장만 연다(tower·dashboard 4번, analysis 3번, report 2번 읽힘). `tower.png` 는 저장소엔 없고(`.gitignore` 183행, 100KB 그림 목록) 이 PC 본 체크아웃엔 있다 — 다른 PC·워크트리면 없으니 `tower.svg` 글자 줄만 `grep -n '<text'`(유진·헨리 09-16).
 - `teams/design/out/kit/characters.json` (185줄 · 11KB) — 얼굴·인형 색표. 자리 하나 볼 땐 `grep -n '"<자리>"'`.
 - `server/public/style.css` (1151줄 · 73KB, 09-16 04:5x 기준 — 줄 수는 자란다) — 실물 색·간격. **전문 금지** — 화면 칸 이름(`.report`·`.tower`)으로 `grep -n` 한 뒤 그 블록만. `card.css`(117줄)는 통째로 돼도 된다.
 - `teams/design/out/screens/diff-0916.md` (133줄 · 20KB · 절 12) — 시안 대 실물 다른 점. 화면 절만.
