@@ -94,7 +94,7 @@ if (cast.agents && !cast.agents[o.actor]) {
 let rec;
 try {
   // hand:'cli' — 이 자리 세션이 스스로 낸 말이 아니라 명령줄로 대신 친 말이다(C16, 대표 말풍선 색 구분 —
-  // 서버 세션 자리는 노랑, 이 길로 온 것은 파랑). 훅(.claude/hooks/to-bus.mjs)이 남기는 말은 hand:'session'.
+  // 서버 세션 자리는 노랑, 이 길로 온 것은 파랑). 훅(.claude/hooks/to-bus.mjs)이 남기는 말은 hand:'server'.
   rec = o.type === 'verdict'
     ? recordVerdict(team, { actor: o.actor, verdict: o.verdict, text, target: o.target })
     : emit(team, { actor: o.actor, type: o.type, text, meta: { ...(o.tool ? { tool: o.tool } : {}), hand: 'cli' } });

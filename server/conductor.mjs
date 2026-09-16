@@ -295,7 +295,7 @@ export const ROAM_HOME = { system: 'hq', secretary: 'sera' };
 
 /**
  * 집이 아닌 방에서 로밍 자리(system·secretary)가 불렸다. 진짜 기록(그의 진짜 대화)은 집 대화록에 남고,
- * 부른 방에는 meta.via:<집>·meta.hand:'session' 사본이 선다(hand — C16, 서버 세션이 낸 진짜 말이라는 뜻).
+ * 부른 방에는 meta.via:<집>·meta.hand:'server' 사본이 선다(hand — C16, 서버 세션이 낸 진짜 말이라는 뜻).
  * sendAndWait 을 쓰므로(진행 중인 턴이 있으면 큐에 서서) 기다렸다 처리한다 — fire-and-forget.
  */
 function callHomeElsewhere(actor, team, kind = 'called') {
@@ -310,7 +310,7 @@ function callHomeElsewhere(actor, team, kind = 'called') {
   session.sendAndWait(home, quiet(body), actor, { kind: 'called', internal: true }).then((text) => {
     const t = String(text ?? '').trim();
     if (!t || t === '(패스)') return;
-    try { emit(team, { actor, type: 'message', text: t, meta: { via: home, hand: 'session' } }); } catch { /* 방이 닫혔으면 조용히 넘어간다 */ }
+    try { emit(team, { actor, type: 'message', text: t, meta: { via: home, hand: 'server' } }); } catch { /* 방이 닫혔으면 조용히 넘어간다 */ }
   }).catch((e) => note(team, `${nameOf(home, actor)}에게 묻지 못했습니다 — ${String(e.message ?? e).slice(0, 160)}`));
 }
 
