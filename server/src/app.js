@@ -1698,6 +1698,8 @@ function loadCard(team, rerender = null) {
 }
 /** 오늘 쓴 것(토큰 장부 T1) — /api/dashboard 의 teams[].usage 를 팀별로 60초 캐시. 팀 카드 꼬리 '오늘 쓴 것 N번 $X' 가 쓴다(나리: 현황 '오늘 쓴 것' 은 테라). */
 const usage = { byTeam: {}, fetchedAt: 0 };
+// 오늘 쓴 것은 잠시 숨김(나리 대리 결정 12:5x — 장부가 sessionId 없는 줄을 누적값째 더해 총괄 $329 중 $214 가 거품, 틀린 돈이 보이는 것보다 안 보이는 게 낫다). 솔라 델타 고침(withCostDeltas, team·actor 묶음) 뒤 true 로.
+const SHOW_USAGE = false;
 function loadUsage(rerender = null) {
   if (Date.now() - usage.fetchedAt < 60_000) return;
   usage.fetchedAt = Date.now();
@@ -1709,10 +1711,10 @@ function loadUsage(rerender = null) {
 }
 /** 카드 노드 — 재료가 아직 없으면 null. 문 셋: 파일 → 새 창, 자세히 → 그 팀 채팅, 결재 단추 → 기존 결재 팝업(사유 칸·대리 안내가 거기 있다 — 결정 길은 하나). */
 function teamCardNode(team, rerender = null) {
-  loadCard(team, rerender); loadUsage(rerender);
+  loadCard(team, rerender); if (SHOW_USAGE) loadUsage(rerender);
   const d0 = cards.byTeam[team];
   if (!d0) return null;
-  const d = { ...d0, usage: d0.usage ?? usage.byTeam[team] ?? null };   // 서버가 카드 재료에 usage 를 실으면 그것, 아니면 /api/dashboard 것
+  const d = { ...d0, usage: SHOW_USAGE ? (d0.usage ?? usage.byTeam[team] ?? null) : null };   // 서버가 카드 재료에 usage 를 실으면 그것, 아니면 /api/dashboard 것
   // 이름·색은 화면이 아는 것으로 채운다 — 서버가 옛 판(2dacf61)이면 name 이 없어 카드 머리에 hq·dev 가 그대로 섰다(나리 R32 ③)
   const t = teams.find((x) => x.id === team);
   return teamCard({ ...d, name: d.name ?? t?.name ?? team, color: d.color ?? teamColor(team) }, {
