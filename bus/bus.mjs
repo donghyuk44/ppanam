@@ -1830,44 +1830,56 @@ export function timelineOf() {
   return { streams, topBlockers };
 }
 
+const isVerdictCandidate = (cast, id) => id !== 'boss' && id !== 'system' && !JUDGES.has(id) && cast[id];
+
+/**
+ * 이름 찾기 — 명시된 표시(`대상: <자리>`)가 있으면 그대로, 없으면 자유 글에서 제일 먼저 나온 이름의 자리.
+ * matched:false 는 "아무 이름도 못 찾아 guide 로 떨어졌다" — guide 가 실제로 불려서 나온 값이 아니다,
+ * withVerdictTarget 이 이 구분으로 조용한 기본값(테라 code-review 지적 ③)을 방에 note 로 남긴다.
+ * 감사 자리(JUDGES)는 후보에서 뺀다 — "레오, 솔라 서버 것 봐줘"에서 레오가 먼저 나온다고 대상이 되면
+ * 안 된다(2판 코드 점검 #1). 순수 — round.mjs check 가 돌려본다.
+ */
+export function resolveVerdictTarget(team, flowTargetText) {
+  const cast = readCast(team).agents ?? {};
+  const text = String(flowTargetText ?? '');
+  const marked = /(?:^|[\s·])대상:\s*([a-z]+)/.exec(text)?.[1];
+  if (marked && isVerdictCandidate(cast, marked)) return { seat: marked, matched: true };
+  let best = null, bestAt = Infinity;
+  for (const [id, a] of Object.entries(cast)) {
+    if (!isVerdictCandidate(cast, id) || !a?.name) continue;
+    const i = text.indexOf(a.name);
+    if (i >= 0 && i < bestAt) { bestAt = i; best = id; }
+  }
+  return best ? { seat: best, matched: true } : { seat: 'guide', matched: false };
+}
+
 /**
  * 판정 흐름(startVerdict)의 target 은 자리 이름이 아니라 자유 글(예: "솔라 서버 것 봐줘")이다. 훅이
  * recordVerdict 에 넘기는 target(누가 평가받았나)은 지금 'guide' 로 고정돼 있어(테라 code-review 지적,
  * dea1182), 실무 아닌 다른 자리(ops 등, 결정 125 서로 감사)가 평가받아도 항상 guide 로 찍힌다 — 그 자리의
- * work.json 자동 진행(advanceWorkOnPass)이 엉뚱한 항목을 건드리는 원인.
- *
- * startVerdict 가 흐름을 열 때 이 함수로 대상을 한 번 정해 그 글 끝에 `· 대상: <자리>` 를 박아 둔다(세라
- * 조건, apr_132205cc) — 그러니 이 함수가 먼저 보는 건 그 명시된 표시다, 있으면 이름 찾기 없이 그대로 믿는다.
- * 표시가 없는 옛 글(또는 사람이 자유롭게 쓴 --ask 질문)만 이름을 찾는다 — 제일 먼저 나온 이름의 자리,
- * 없으면 'guide'(예전 기본값 그대로). 감사 자리(JUDGES — outside·review)는 이름 찾기 후보에서 뺀다: 판정
- * 흐름 글은 보통 "레오, 솔라 서버 것 봐줘"처럼 감사역을 먼저 부르고 그다음 대상을 말한다 — 감사역 이름이
- * 앞에 온다고 그 자리가 평가받은 게 되면 안 된다(2판 코드 점검 #1).
- * 알려진 한계(code-review 지적, 범위 밖으로 남김): 이름 찾기는 낱말 경계 없이 부분 문자열로 찾는다 — 지금
- * 이름들이 전부 뚜렷해 실사용 위험은 낮지만, 다른 이름이 어떤 낱말 안에 그대로 들어 있으면 잘못 짚을 수 있다.
+ * work.json 자동 진행(advanceWorkOnPass)이 엉뚱한 항목을 건드리는 원인. resolveVerdictTarget 의 seat 만 돌려준다
+ * (알려진 한계, code-review 지적, 범위 밖으로 남김: 이름 찾기는 낱말 경계 없이 부분 문자열로 찾는다).
  */
 export function verdictTargetActor(team, flowTargetText) {
-  const cast = readCast(team).agents ?? {};
-  const text = String(flowTargetText ?? '');
-  const isCandidate = (id) => id !== 'boss' && id !== 'system' && !JUDGES.has(id) && cast[id];
-  const marked = /(?:^|[\s·])대상:\s*([a-z]+)/.exec(text)?.[1];
-  if (marked && isCandidate(marked)) return marked;
-  let best = null, bestAt = Infinity;
-  for (const [id, a] of Object.entries(cast)) {
-    if (!isCandidate(id) || !a?.name) continue;
-    const i = text.indexOf(a.name);
-    if (i >= 0 && i < bestAt) { bestAt = i; best = id; }
-  }
-  return best ?? 'guide';
+  return resolveVerdictTarget(team, flowTargetText).seat;
 }
 
 /**
- * startVerdict 가 흐름을 열 때 한 번 부른다 — target 글 끝에 `· 대상: <자리>` 를 박는다(세라 조건,
- * apr_132205cc: "판정 요청마다 '대상:' 을 반드시 싣는다"). verdictTargetActor 가 이 표시를 최우선으로
- * 읽으므로, 여기서 정한 자리와 나중에 recordVerdict 가 기록하는 자리가 어긋나지 않는다 — 같은 글, 같은 함수.
+ * startVerdict 가 흐름을 열 때 한 번 부른다 — target 글 **앞**에 `대상: <자리> · ` 를 박는다(세라 조건,
+ * apr_132205cc: "판정 요청마다 '대상:' 을 반드시 싣는다"). 글 끝이 아니라 앞인 이유(테라 code-review 지적
+ * ②) — 훅(.claude/hooks/to-bus.mjs 124행)이 저장하는 첫 줄을 200자로 자르는데, 표시를 끝에 두면 target
+ * 글이 길 때(테라 32회차 요청, 300자+) 잘려 나가 표시가 사라진다. 앞에 두면 자르기가 뒤를 먹어도 표시는 산다.
+ * explicitSeat(테라 지적 ①) — 청하는 쪽이 자리를 직접 적은 것(`--target`, `/api/verdict` 의 targetSeat)이면
+ * 이름 찾기보다 우선한다 — 자유 글 짐작은 "테라 화면 + 솔라 서버"처럼 둘을 한 번에 청하면 하나로 뭉개진다.
+ * verdictTargetActor 가 이 표시를 최우선으로 읽으므로, 여기서 정한 자리와 나중에 recordVerdict 가 기록하는
+ * 자리가 어긋나지 않는다 — 같은 글, 같은 함수.
+ * @returns { text, seat, matched } — matched:false 면 아무도 안 불려 guide 로 기본값이 갔다는 뜻(호출부가 note 로 남긴다).
  */
-export function withVerdictTarget(team, target) {
-  const seat = verdictTargetActor(team, target);
-  return { text: `${target} · 대상: ${seat}`, seat };
+export function withVerdictTarget(team, target, explicitSeat = null) {
+  const cast = readCast(team).agents ?? {};
+  if (explicitSeat && isVerdictCandidate(cast, explicitSeat)) return { text: `대상: ${explicitSeat} · ${target}`, seat: explicitSeat, matched: true };
+  const { seat, matched } = resolveVerdictTarget(team, target);
+  return { text: `대상: ${seat} · ${target}`, seat, matched };
 }
 
 export function recordVerdict(team, { actor, verdict, text, target = 'guide', round = null, sha = undefined, engine = null, workId = null }) {

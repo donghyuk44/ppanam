@@ -8,6 +8,7 @@
 //   node bus/round.mjs end -v PASS --summary "1안 확정"
 //   node bus/round.mjs end --next --summary "로드맵 교체" [-m 1 --topic "…"]   # 닫고 그 자리에서 다음 라운드를 연다 (결정 25)
 //   node bus/round.mjs log --limit 20
+//   node bus/round.mjs verdict "무엇을 판정하나" [--target <자리>]   # 서로 감사(결정 125)면 --target 으로 누구를 보는지 직접 적는다
 //   node bus/round.mjs check                         # 닫기 가드 자가 시험 (임시 방에서, 기록 안 남음)
 //
 // 라운드가 끝나도 대화록은 지워지지 않는다. 비워지는 건 AI 컨텍스트뿐이다.
@@ -28,7 +29,7 @@ import {
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
-const o = { team: null, milestone: null, verdict: null, limit: 20, topic: null, summary: null, next: false, auditor: null };
+const o = { team: null, milestone: null, verdict: null, limit: 20, topic: null, summary: null, next: false, auditor: null, target: null };
 const words = [];
 
 for (let i = 1; i < argv.length; i++) {
@@ -41,6 +42,7 @@ for (let i = 1; i < argv.length; i++) {
   else if (a === '--summary') o.summary = argv[++i];
   else if (a === '--next') o.next = true;
   else if (a === '--auditor') o.auditor = argv[++i];   // 이 회차의 안 걸음 감사 자리(결정 125) — start · end --next 에
+  else if (a === '--target') o.target = argv[++i];   // verdict 의 판정 대상 자리 — 청하는 쪽이 직접 적는다(테라 code-review 지적 ①), 안 주면 글에서 이름 짐작
   else words.push(a);
 }
 
@@ -152,7 +154,16 @@ switch (cmd) {
     // 판정 대상은 손으로 쓴 글자가 그대로 계약이 된다 — `--help` 가 대상으로 들어가 레오가 그걸로 REVISE 를 줬다 (R20). 빈 문구·플래그 모양은 거부.
     const bad = verdictTargetError(phrase);
     if (bad) { console.error(`오류: ${bad}`); process.exit(2); }
-    const r = await viaServer({ team, target: phrase }, '/api/verdict');
+    // --target — 누가 평가받는지 직접 적는다(테라 code-review 지적 ①). 안 주면 서버가 문구에서 이름을 짐작한다 —
+    // "테라 화면 + 솔라 서버" 처럼 둘을 한 번에 청할 땐 짐작이 하나로 뭉개지니, 서로 감사(결정 125)에선 꼭 쓴다.
+    if (o.target) {
+      const cast = readCast(team).agents ?? {};
+      if (o.target === 'boss' || o.target === 'system' || !cast[o.target]) {
+        console.error(`오류: --target ${o.target} 은 이 방의 자리가 아닙니다 (${Object.keys(cast).filter((k) => k !== 'boss' && k !== 'system').join(' · ')}).`);
+        process.exit(2);
+      }
+    }
+    const r = await viaServer({ team, target: phrase, targetSeat: o.target }, '/api/verdict');
     if (!r) { console.error('오류: 판정 흐름은 서버가 돌립니다. 서버(npm start)가 떠 있어야 합니다.'); process.exit(1); }
     console.log(`[${team}] 판정 시작 — ${r.flow.target}. 결과는 판정 카드로 방에 남고 너에게 들립니다. 기다리는 동안 (패스).`);
     break;
@@ -739,19 +750,27 @@ switch (cmd) {
         out.push(['판정 대상 자리 찾기(target 고정 버그)', vt1 === 'ops' && vt2 === 'guide' && vt3 === 'ops' && vt4 === 'guide' && vt5 === 'ops' && vt6 === 'guide'
           ? '✓ 이름 있으면 그 자리 · 없으면 guide · 글 순서로 먼저 나온 이름 · boss·system 은 후보 아님 · 감사역(outside·review) 도 후보 아님(2판 #1)'
           : '✗ ' + JSON.stringify({ vt1, vt2, vt3, vt4, vt5, vt6 })]);
-        // 대상 없는 판정 요청 0건(세라 조건, apr_132205cc) — withVerdictTarget 이 target 글에 '· 대상: <자리>' 를 박고,
-        // verdictTargetActor 는 그 표시를 이름 찾기보다 먼저 읽는다 — 왕복해도 같은 자리, 그리고 표시 자체가 늘 있다.
+        // 대상 없는 판정 요청 0건(세라 조건, apr_132205cc) — withVerdictTarget 이 target 글 **앞**에
+        // '대상: <자리> · ' 를 박고, verdictTargetActor 는 그 표시를 이름 찾기보다 먼저 읽는다 — 왕복해도
+        // 같은 자리, 표시 자체가 늘 있다. matched:false 는 아무 이름도 못 찾아 guide 로 기본값이 갔다는 뜻
+        // (테라 code-review 지적 ③ — 조용한 기본값을 구분한다).
         const { withVerdictTarget } = await import('./bus.mjs');
-        const w1 = withVerdictTarget(T, '솔라 서버 것 봐줘');           // 이름이 있어도
-        const w2 = withVerdictTarget(T, '이번 라운드 산출물');          // 이름이 없어도(guide 로 박힘)
-        const w3 = withVerdictTarget(T, '레오, 솔라 서버 것 봐줘');      // 감사역이 먼저 나와도
-        const hasMark = (s) => /· 대상: [a-z]+/.test(s);
+        const w1 = withVerdictTarget(T, '솔라 서버 것 봐줘');                 // 이름이 있으면 matched
+        const w2 = withVerdictTarget(T, '이번 라운드 산출물');                // 이름이 없으면 guide · matched:false
+        const w3 = withVerdictTarget(T, '레오, 솔라 서버 것 봐줘');            // 감사역이 먼저 나와도
+        const w4 = withVerdictTarget(T, '테라 화면 + 솔라 서버 봐줘', 'ops');  // 직접 적은 자리가 이름 짐작을 이긴다(지적 ①)
+        // 표시를 앞에 두는 이유(지적 ②) — 훅이 첫 줄을 200자로 자른다. 글이 220자여도 앞의 표시는 안 잘린다.
+        const w5 = withVerdictTarget(T, '솔라 '.repeat(60) + '서버 것 봐줘');   // 220자 안팎
+        const hasMark = (s) => /^대상: [a-z]+ · /.test(s);
         const roundTrip = (w) => verdictTargetActor(T, w.text) === w.seat;
-        const wWant = w1.seat === 'ops' && w2.seat === 'guide' && w3.seat === 'ops'
-          && hasMark(w1.text) && hasMark(w2.text) && hasMark(w3.text) && roundTrip(w1) && roundTrip(w2) && roundTrip(w3);
+        const survives200 = /^대상: [a-z]+ · /.test(w5.text.slice(0, 200));
+        const wWant = w1.seat === 'ops' && w1.matched === true && w2.seat === 'guide' && w2.matched === false && w3.seat === 'ops'
+          && w4.seat === 'ops' && w4.matched === true
+          && hasMark(w1.text) && hasMark(w2.text) && hasMark(w3.text) && hasMark(w4.text)
+          && roundTrip(w1) && roundTrip(w2) && roundTrip(w3) && roundTrip(w4) && survives200;
         out.push(['대상 없는 판정 요청 0건(withVerdictTarget)', wWant
-          ? '✓ 글마다 · 대상: <자리> 를 박음 · 없는 경우 없음 · verdictTargetActor 왕복해도 같은 자리'
-          : '✗ ' + JSON.stringify({ w1, w2, w3 })]);
+          ? '✓ 글 앞에 대상: <자리> · 를 박음(200자 잘려도 삶) · matched 로 조용한 기본값 구분 · explicitSeat 가 짐작을 이김 · 왕복해도 같은 자리'
+          : '✗ ' + JSON.stringify({ w1, w2, w3, w4, survives200 })]);
       }
       // 닫히는 중 쌓인 차례는 다음 라운드로 (결정 25) — 호명·제3자만 넘기고 판정·침묵·점심은 버린다. 순수 함수 pickCarry.
       const { pickCarry, staleCalls, mergeCarry } = await import('../server/conductor.mjs');

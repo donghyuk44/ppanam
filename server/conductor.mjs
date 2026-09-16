@@ -478,7 +478,7 @@ function dispatch(team) {
  * REVISE 가 나오면 흐름은 끝나고 실무가 호명 차례를 받는다(판정 카드는 어차피 그가 듣는다). FAIL 이면 방이 막힌다.
  * 둘 다 PASS 면 note — 라운드를 PASS 로 닫는 것은 실무나 대표가 한다(자동으로 닫지 않는다).
  */
-export function startVerdict(team, target) {
+export function startVerdict(team, target, targetSeat = null) {
   const r = room(team);
   const state = readState(team);
   if (isOffice(team)) throw new Error('총괄실에는 판정이 없습니다.');
@@ -497,10 +497,18 @@ export function startVerdict(team, target) {
   r.verdictAsk = null;   // 흐름이 돌면 말로 부른 기록은 할 일을 다했다
   // 대상을 여기서 한 번 정해 글에 박는다(세라 조건 — 판정 요청마다 '대상:' 명시, apr_132205cc) — 클로드
   // 감사역(giveTurn)도 codex·gemini 감사역(bus/outside.mjs)도 같은 이 글을 받으니 어느 길이든 같은 값이다.
+  // targetSeat 는 청하는 쪽이 직접 적은 것(--target, /api/verdict) — 자유 글 짐작보다 우선한다(테라
+  // code-review 지적 ①: "테라 화면 + 솔라 서버" 처럼 둘을 한 번에 청하면 짐작은 하나로 뭉개진다).
   const targetText = String(target ?? '').trim() || '이번 라운드 산출물';
-  r.flow = { target: withVerdictTarget(team, targetText).text, steps, i: 0, asked: 0, skipped: outsideWhy && out ? ['outside'] : [], reason: outsideWhy };
+  const vt = withVerdictTarget(team, targetText, targetSeat);
+  r.flow = { target: vt.text, steps, i: 0, asked: 0, skipped: outsideWhy && out ? ['outside'] : [], reason: outsideWhy };
   // meta.target — 판정 대상 글 그대로. 닫을 때 bus.artifactsOf 가 여기서 out/ 경로를 읽어 산출물이 비었는지 본다(8단계).
   emit(team, { actor: 'system', type: 'note', text: `판정 시작 — ${r.flow.target}. ${steps.map((s) => nameOf(team, s)).join(' → ')} 순서.`, meta: { verdictFlow: 'start', steps, skipped: r.flow.skipped, reason: outsideWhy, target: r.flow.target } });
+  // 대상을 못 찾아 guide 로 기본값이 갔다 — 조용히 넘어가지 않는다(테라 code-review 지적 ③, 세라가 걸었던
+  // "조용히 guide 로 잇는 병"과 같은 자리). --target 을 쓰라고 바로 알려 준다.
+  if (!vt.matched) {
+    emit(team, { actor: 'system', type: 'note', text: `판정 대상을 글에서 못 찾아 ${nameOf(team, 'guide')}(기본값)로 갑니다 — 다른 자리를 보게 하려면 node bus/round.mjs verdict --target <자리> "…" 로 다시 부르세요.`, meta: { verdictFlow: 'target-default' } });
+  }
   if (out && outsideWhy) {
     const why = outsideWhy === 'suspended' ? `중단 중 — ${out.suspended} 복귀 예정` : outsideWhy === 'not-foreign' ? `자리 엔진이 ${out.model ?? '없음'} 이라 외부 감사가 아님` : '자리 없음';
     emit(team, { actor: 'system', type: 'note', text: `외부 감사 없이 판정합니다 — ${nameOf(team, 'outside')} ${why}. 이 라운드는 기록에 '외부 감사 안 봄' 으로 남고, 돌아오면 다시 봅니다 (결정 118).`, meta: { verdictFlow: 'skip', skipped: ['outside'], reason: outsideWhy } });
