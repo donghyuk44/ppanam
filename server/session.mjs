@@ -113,6 +113,11 @@ function forgetId(team, actor) {
  */
 export function personaOf(team, actor) {
   try { const s = fs.readFileSync(path.join(paths(team).dir, `${actor}.md`), 'utf8').trim(); if (s) return s; } catch { /* 없다 */ }
+  // 나리(system)는 회사 전체를 보는 한 사람이라 팀마다 인격을 따로 안 둔다(N1) — teams/hq/system.md 하나를
+  // 모든 방에서 쓴다. teams/<팀>/system.md 가 있으면(나중에 팀별로 갈라지면) 그게 우선이다(위 줄).
+  if (actor === 'system' && team !== 'hq') {
+    try { const s = fs.readFileSync(path.join(paths('hq').dir, 'system.md'), 'utf8').trim(); if (s) return s; } catch { /* hq 에도 없으면 아래 공용으로 */ }
+  }
   try {
     const s = fs.readFileSync(path.join(ROOT, '.claude', 'agents', `${actor}.md`), 'utf8');
     return s.replace(/^---[\s\S]*?\n---\n/, '').trim() || null;
@@ -202,8 +207,10 @@ export function shelfOf(team) {
 export function briefOf(team, actor) {
   const cast = readCast(team).agents ?? {};
   const me = cast[actor]?.name ?? actor;
+  // system(나리)도 이제 서버 세션으로 차례를 받는다(N1) — 다른 자리들이 이름을 불러 그를 부를 수 있어야 하니
+  // 방 사람 목록에 그도 들어간다. boss(대표)는 세션이 아니라 계속 뺀다.
   const people = Object.entries(cast)
-    .filter(([id]) => id !== 'boss' && id !== 'system')
+    .filter(([id]) => id !== 'boss')
     .map(([id, a]) => `${a.name}(${id}${isForeign(a.model) ? ', 다른 회사 모델' : ''})`).join(' · ');
   const lines = ['## 지금 이 방', `너는 ${me}(${actor})다. 이 방 사람: ${people}. 대표: ${cast.boss?.name ?? '대표'}.`];
   if (isOffice(team)) {

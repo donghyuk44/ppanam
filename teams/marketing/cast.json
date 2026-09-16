@@ -12,15 +12,17 @@
       "name": "안젤",
       "initial": "안",
       "color": "#a8541f",
-      "title": "감사",
+      "title": "마케팅 담당",
       "does": "논리와 구조 감사",
       "model": "claude",
       "llm": "sonnet",
-      "disallow": [
+      "disallowWas": [
         "Write",
         "Edit",
         "NotebookEdit"
-      ]
+      ],
+      "note": "09-16 07:2x 나리 대리: 쓰기 금지 해제 — 대표 원문 \"모든 작업자들이 각자 작업, 상호 감사 + 외부 감사\". 만든 사람이 판정 못 하는 건 selfPassError 가 지킨다.",
+      "titleWas": "감사"
     },
     "outside": {
       "name": "다니엘",
@@ -43,9 +45,10 @@
       "name": "나리",
       "initial": "나",
       "color": "#8a8175",
-      "title": "검수",
+      "title": "사장",
       "does": "파일을 열어 다시 센다 · 재시작·스크린샷·유니티처럼 저장소 밖에 손이 닿는 일 (자동 안내 글도 이 자리 이름으로 뜬다)",
-      "model": null
+      "model": "claude",
+      "titleWas": "검수"
     }
   }
 }
