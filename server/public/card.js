@@ -20,6 +20,7 @@
 //   blocked: [{ text: '…', who: '나리' | null }],    // 0~2, who = 누가 풀 수 있나. 빨간 띠
 //   boss: { id: 'apr_…', text: '…' } | null,         // 대표님이 할 동작 하나 + 단추 둘(승인 · 반려) → onDecide(id, 'PASS'|'REVISE')
 //   stage: { n: 10, total: 11, round: 32 } | null,   // 꼬리 "10/11 단계 · 32회차 · 자세히 →"(onOpen(null) 로 팀 방)
+//   usage: { turns: 12, costUsd: 0.84 } | null,       // 꼬리 "오늘 쓴 것 12번 $0.84" — 토큰 장부(T1, /api/dashboard teams[].usage). 없으면 안 그림
 // }
 
 import { bossOk, NOT_YET } from '/bosswords.js';
@@ -176,15 +177,16 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
     card.appendChild(block('boss', [row]));
   }
 
-  // 꼬리 — "10/11 단계 · 32회차 · 자세히 →" (옅게)
-  if (d.stage || onOpen) {
+  // 꼬리 — "10/11 단계 · 32회차 · 오늘 쓴 것 12번 $0.84 · 자세히 →" (옅게). 오늘 쓴 것은 토큰 장부(T1, 대표 09-16 "톰 역할 토큰을 걱정했는데 지금은 잴 수가 없다") — d.usage { turns, costUsd } 가 있을 때만
+  if (d.stage || d.usage || onOpen) {
     const foot = el('footer', 'card__foot');
+    const bits = [];
     if (d.stage) {
-      const bits = [];
       if (d.stage.n != null) bits.push(d.stage.total != null ? `${d.stage.n}/${d.stage.total} 단계` : `${d.stage.n}단계`);
       if (d.stage.round != null) bits.push(`${d.stage.round}회차`);
-      foot.appendChild(el('span', 'card__stage', bits.join(' · ')));
     }
+    if (d.usage && (d.usage.turns > 0 || d.usage.costUsd > 0)) bits.push(`오늘 쓴 것 ${d.usage.turns ?? 0}번${d.usage.costUsd > 0 ? ` $${Number(d.usage.costUsd).toFixed(2)}` : ''}`);
+    if (bits.length) foot.appendChild(el('span', 'card__stage', bits.join(' · ')));
     if (onOpen) {
       const more = el('button', 'card__more', MORE); more.type = 'button';
       more.addEventListener('click', (e) => { e.stopPropagation(); onOpen(null); });
