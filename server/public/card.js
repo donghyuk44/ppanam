@@ -29,7 +29,7 @@ import { bossOk, NOT_YET } from '/bosswords.js';
 /* ── 글자 — card-words.md 2판 머리 ── */
 
 const STATE_WORD = { working: '진행 중', blocked: '차단됨', boss: '승인 대기' };
-const BLOCK_WORD = { doing: '진행 중', now: '지금', next: '다음', later: '그 뒤', done: '된 것', blocked: '막힌 것', boss: '승인 대기' };   // 세 줄 머리는 하영 사전 "지금 · 다음 · 그 뒤"(카드 apr_b676e5c2 제리 ② 대조, 나리 16:3x) — 알약 '진행 중' 은 상태, 이 셋은 일
+const BLOCK_WORD = { doing: '진행 중', now: '진행 중', next: '다음', later: '예정', done: '된 것', blocked: '막힌 것', boss: '승인 대기' };   // 세 줄 머리 '진행 중 · 다음 · 예정' — 대표 15:2x "지금·다음·그 뒤는 진짜 쓰는 낱말이 아니다"(톰 16:4x 최종, 하영 사전 0-3 에 올림). 알약 '진행 중' 은 상태, 이 셋은 일
 const VERDICT_WORD = { PASS: '승인', REVISE: '반려', FAIL: '보류' };
 const BTN = { PASS: '승인', REVISE: '반려' };
 const MORE = '자세히 →';
