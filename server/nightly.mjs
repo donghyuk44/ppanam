@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { ROOT, listTeams, roomRules, isOffice, readLog, listRounds, listApprovals, readProgress, readState, readCast, paths, emit, appendJournal, quiet, readDelegation } from '../bus/bus.mjs';
 import { nightlyOf, nightlyHqOf, proxyLinesOf, nightlyJournalPrompt, dayKeySeoul, dayStartOf } from '../bus/nightly.mjs';
 import { bossOk, NOT_YET } from './public/bosswords.js';
+import { clockWord } from './public/when.js';
 
 const STORE = path.join(ROOT, 'state', 'nightly.json');
 const JOURNAL_TIMEOUT = Number(process.env.PPANAM_JOURNAL_TIMEOUT || 3 * 60_000);
@@ -152,12 +153,14 @@ const line = (s) => { const v = String(s ?? '').trim(); return v && bossOk(v) ? 
 /**
  * 아침 한 장 — 팀당 한 줄 셋(된 것 · 막힌 것 · 대표님 손) + 조건부 대리 결정. 읽기만, 쓰지 않는다.
  * @param day    'YYYY-MM-DD'(우리 시각, 파일 이름·머리글만 — 창 경계가 아니다)
- * @param now    창은 지금부터 24시간 앞(회차 닫힘·결정이 다시 만들 때마다 "요즘 하루"를 담는다 — 06:30 경계 없음, 결정 188)
+ * @param now    지금(ms)
+ * @param since  창의 시작(ms) — **지난 장을 만든 뒤부터**(유진 daily-template.md 2절 "때": 기간 고정 없음).
+ *   null 이면 지난 장이 없다는 뜻 — 팀당 마지막 PASS 하나를 기간 조건 없이 그냥 쓴다. runMorning 이 target
+ *   파일의 mtime 을 넘긴다.
  * @returns { day, md, counts: { blocked, boss }, skipped: [{ team, text }] }  skipped = 자에 안 맞아 뺀 재료(규칙 4, 팀 방에 알릴 것)
  */
-export function buildMorning(day, { now = Date.now() } = {}) {
-  const end = now, start = end - 86_400_000;
-  const inWin = (ts) => { const t = Date.parse(ts ?? ''); return Number.isFinite(t) && t >= start && t < end; };
+export function buildMorning(day, { now = Date.now(), since = null } = {}) {
+  const inWin = (ts) => { if (since == null) return true; const t = typeof ts === 'number' ? ts : Date.parse(ts ?? ''); return Number.isFinite(t) && t >= since; };
   const teams = rooms();
   const delegating = !!readDelegation(now);   // 위임 중이면 C 카드 줄은 안 낸다(유진 틀 2절 표 4행) — 톰·제리가 대리한다
   const skipped = [];
@@ -167,7 +170,7 @@ export function buildMorning(day, { now = Date.now() } = {}) {
     const name = readCast(t.id).agents?.[owner]?.name ?? t.name;
     const rs = [...listRounds(t.id)].filter((r) => r.verdict === 'PASS' && inWin(r.endedAt)).sort((a, b) => Date.parse(a.endedAt) - Date.parse(b.endedAt));
     const raw = rs.at(-1)?.topic ?? (readProgress(t.id)?.done ?? [])[0] ?? null;
-    if (!raw) return `- ${t.name} · 어제는 낸 게 없어요`;
+    if (!raw) return `- ${t.name} · 어제는 낸 게 없어요`;   // 유진 daily-template.md 1절 표기 그대로 — 창이 하루가 아니어도 이 문구
     const ok = line(raw);
     if (!ok) skipped.push({ team: t.id, text: raw });
     return ok ? `- ${name} · ${ok}` : `- ${t.name} · ${NOT_YET}`;
@@ -196,19 +199,20 @@ export function buildMorning(day, { now = Date.now() } = {}) {
     const m = l.match(/^- (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})/);
     if (!m) return [];
     const t = Date.parse(`${m[1]}T${m[2]}:00+09:00`);
-    if (!Number.isFinite(t) || t < start || t >= end) return [];
+    if (!Number.isFinite(t) || !inWin(t)) return [];
     const who = (l.match(/(나리|톰|제리)\s*(?:대리|위임)/g) ?? []).at(-1)?.match(/나리|톰|제리/)?.[0] ?? '나리';
     return [`- ${who} · ${NOT_YET}`];
   });
 
   const wd = WEEKDAY[new Date(`${day}T00:00:00+09:00`).getUTCDay()];
+  // 결정 188 뒤로 06:30 기준이 아니다 — 만든 그때가 기준(유진 daily-template.md 1절 "시각은 만든 그때").
   const md = [
     `# 아침 한 장 — ${day}`,
-    `${wd}요일 아침 여섯 시 반 기준 · 서버가 상황판에서 만듦`, '',
+    `${wd}요일 ${clockWord(now)} 기준 · 서버가 상황판에서 만듦`, '',
     ...(proxyLines.length ? ['## 대표님 대신 정한 것', '', ...proxyLines, '되돌리시려면 방에 한마디.', ''] : []),
     '## 된 것', '', ...doneLines, '',
     `## 막힌 것 ${blockedLines.length}`, '', ...(blockedLines.length ? blockedLines : []), '',
-    `## 대표님 손 ${bossLines.length}`, '', ...(bossLines.length ? bossLines : []), '',
+    bossLines.length ? `## 대표님 손 ${bossLines.length}` : '## 대표님 손 0 — 오늘은 없어요', '', ...bossLines, '',
   ].join('\n');
   return { day, md, counts: { blocked: blockedLines.length, boss: bossLines.length }, skipped };
 }
@@ -237,7 +241,8 @@ export async function runMorning({ now = Date.now(), session = null } = {}) {
   if (mtime >= activity) return null;   // 마지막으로 쓴 뒤로 새 사건이 없다 — 이미 최신
   morningRunning = true;
   try {
-    const out = buildMorning(day, { now });
+    // 창은 "지난 장을 만든 뒤 → 지금" 하나(유진 daily-template.md 2절) — 지난 장이 없으면(mtime 0) 기간 조건 없이.
+    const out = buildMorning(day, { now, since: mtime || null });
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, out.md);
     writeStore({ ...readStore(), morning: { day, at: new Date(now).toISOString(), auto, blocked: out.counts.blocked, boss: out.counts.boss } });
