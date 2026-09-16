@@ -25,9 +25,9 @@ export function doingWord(doing, { live = true, toolPhrase = null, firstLine = (
   const s = String(firstLine(doing.text) ?? '').trim() || '작업 중';
   return s.length > MAX_LEN ? s.slice(0, MAX_LEN - 1).trimEnd() + '…' : s;
 }
-/** 작업 보드 병목 줄 — work.json 의 "server(솔라)"·"app.js(테라)" 는 괄호 안 사람의 "손", "나리 판정"·"재시작" 은 그대로. "솔라 손 뒤에 7건 — 유진·노라 기다림". */
+/** 작업 보드 병목 줄 — work.json 의 "server(솔라)"·"app.js(테라)" 는 괄호 안 사람의 차례, "나리 판정"·"재시작" 은 그대로. "솔라 차례 뒤에 7건 — 유진·노라 기다림"("손" 은 지은 말 — 적대검수 opus ⑤). */
 export function gateLine(bottleneck, count, who = '') {
   const m = /^(.*?)\s*\((.+?)\)\s*$/.exec(String(bottleneck ?? ''));
-  const gate = m ? `${m[2]} 손` : String(bottleneck ?? '');
+  const gate = m ? `${m[2]} 차례` : String(bottleneck ?? '');
   return `${gate} 뒤에 ${count}건${who ? ` — ${who} 기다림` : ''}`;
 }
