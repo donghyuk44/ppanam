@@ -385,7 +385,17 @@ const server = http.createServer((req, res) => {
       .map((it) => ({ ...it, name: doneName(t.id, it) })) }));
     const next = Object.fromEntries(rooms.map((t) => [t.id, bus.readProgress(t.id)?.next ?? []]));
     const images = rooms.flatMap((t) => listOut(t.id).filter((f) => /\.(png|jpe?g|gif|webp)$/i.test(f.name) && Date.parse(f.at) >= since && Date.parse(f.at) < until).map((f) => ({ team: t.id, name: f.name, at: f.at, url: `/out/${t.id}/${f.name.split('/').map(encodeURIComponent).join('/')}` })));
-    const proxy = rooms.flatMap((t) => readLog(t.id).filter((e) => e.type === 'note' && e.meta?.proxy && Date.parse(e.ts) >= since && Date.parse(e.ts) < until).map((e) => ({ team: t.id, id: e.id, ts: e.ts, text: e.text, approval: e.meta.approval ?? null })));
+    // boss — 사람 말 한 줄(테라 요청 14:5x). text 는 원문 그대로라 카드 번호·경로가 섞여 자 검사에 걸린다 —
+    // meta.boss(--boss 로 그때 실은 것) 나, 없으면 승인 레코드에서 --boss-line 으로 뒤늦게 채운 값을 찾는다.
+    // doneOf 의 대리 결정 처리와 같은 찾기(bus.mjs) — 여긴 doneOf 를 안 거치는 별도 길이라 여기서도 한다.
+    const proxy = rooms.flatMap((t) => {
+      const teamApprovals = listApprovals({ team: t.id });
+      return readLog(t.id).filter((e) => e.type === 'note' && e.meta?.proxy && Date.parse(e.ts) >= since && Date.parse(e.ts) < until).map((e) => {
+        const apr = e.meta.approval ? teamApprovals.find((a) => a.id === e.meta.approval) : null;
+        const boss = e.meta.boss ?? apr?.decisions?.find((d) => d.boss)?.boss ?? null;
+        return { team: t.id, id: e.id, ts: e.ts, text: e.text, approval: e.meta.approval ?? null, boss };
+      });
+    });
     const dayKey = new Date(until - 1 + 9 * 3600_000).toISOString().slice(0, 10);   // 창의 끝 날(우리 시각) — 아침 보고서 파일 이름
     let chief = null; try { chief = fs.readFileSync(path.join(paths('hq').out, 'daily', `${dayKey}.md`), 'utf8'); } catch { /* 그날 글이 없다 */ }
     // 자정 마감 한 장(M7) — 창의 끝 날 바로 전날(마지막으로 닫힌 하루) 의 대표용 장. 없으면 null — 지어내지 않는다.
