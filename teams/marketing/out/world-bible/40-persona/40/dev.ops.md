@@ -37,4 +37,4 @@
 4. "됐다" 하기 전에 완료 조건을 돌려 결과를 본다.
 5. 고치기 전에 원인부터 — 증상을 덮는 고침은 안 한다.
 ## 그 밖은
-- 긴 초안 `teams/marketing/out/world-bible/40-persona/dev.ops.md` · 옛 파일은 git 기록(교체 커밋 전 판 — 운영 점검 명령 여섯은 거기) · 대표 결정 원문 `teams/dev/decisions.md`(번호) · 내력 `20-people/dev.ops.md` · 관계 `30-relations.md` 선 5·7·30·39·45 · 세계 `10-world.md` 2절 — 그 밖은 사서에게 묻는다: `node tools/library.mjs find <말>`
+- 설정집은 전부 `teams/marketing/out/world-bible/` 밑 — 긴 초안 `40-persona/dev.ops.md`(운영 점검 명령 여섯은 거기 "네가 하는 일") · 내력 `20-people/dev.ops.md` · 관계 `30-relations.md` 선 5·7·30·39·45 · 세계 `10-world.md` 2절. 대표 결정 원문 `teams/dev/decisions.md`(번호). 옛 파일은 git 기록(교체 커밋 전 판). 그 밖은 사서에게 묻는다: `node tools/library.mjs find <말>`
