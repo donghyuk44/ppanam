@@ -2018,11 +2018,13 @@ function renderTowerPeople(grid) {
 
   // 나리(system)는 비서실 묶음에만 — 세라·나리 둘(대표 16:5x "나리가 또 이리저리 팀마다 다 들어가있다", 결정 185). 여섯 방 cast 가 다 system 을 갖고
   // peopleOf 도 다 주지만(43daf85) 카드는 한 자리에만 세운다. 세션(노랑 손)은 hq 에 살아서 상태·하는 일은 hq 것을 쓴다 — 비서실 방엔 세라·대표 말만 남아 거기 people 은 비어 있다.
+  // 세라(secretary)도 같은 뜻 — 총괄실 cast 의 비서 자리(model null)는 카드로 안 세운다, 총괄은 톰·제리 둘(나리 대리 결정, apr_b311eafb 덧).
   const NARI_HOME = 'sera';
+  const SERA_SEATS = new Set(['system', 'secretary']);
   for (const t of teams) {
     const s = summaries[t.id] ?? {};
     const cast = { ...(s.cast ?? {}) };
-    const people = Object.entries(s.people ?? {}).filter(([id]) => id !== 'boss' && cast[id] && !cast[id].from && (id !== 'system' || t.id === NARI_HOME));
+    const people = Object.entries(s.people ?? {}).filter(([id]) => id !== 'boss' && cast[id] && !cast[id].from && (!SERA_SEATS.has(id) || t.id === NARI_HOME));
     if (t.id === NARI_HOME && cast.system) {
       const hq = summaries.hq ?? {};
       if (hq.cast?.system?.model) cast.system = { ...cast.system, ...hq.cast.system };   // 노랑 손(C16)은 hq cast 의 model 로 정해진다
