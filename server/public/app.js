@@ -468,6 +468,8 @@ function bossLines(lines, none) {
 }
 /** 결재 제목 — 올린 사람이 --boss 로 적은 한 줄(r.boss)이 자에 맞으면 그것, 아니면 원문(r.what)을 재고, 둘 다 아니면 "아직 쉬운 말로 안 적음" + 원문 펼침. */
 const bossTitle = (r) => bossOk(r.boss) ? r.boss : r.what;
+/** 줄이 팀 이름으로 시작하나("총괄 · …", "경영: …") — 그러면 머리에 팀 이름을 또 안 붙인다(daily-words 1절, 폴드 QA #4). */
+const startsWithTeam = (text, teamName) => !!teamName && new RegExp(`^\\s*${teamName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(팀)?\\s*[·:—\\-]`).test(String(text ?? ''));
 
 function renderSide() {
   // 비서실(세라 방)은 상황판·회차·로드맵이 없다 — "상황판 없음 · 진행 중인 회차 없음 · 로드맵 없음" 빈 블록 셋을 대표가 보고 화냈다(나리 R32 ④). 참여·일지만 남긴다.
@@ -1938,7 +1940,8 @@ function renderTowerAll(grid) {
     }
     for (const b of fromBoard) {
       const row = el('button', 'dash__row'); row.type = 'button';
-      row.appendChild(el('b', null, b.teamName));   // 머리는 팀 이름 한 번 — '상황판' 은 어디서 왔나지 제목이 아니다(폴드 QA #4, daily-words 1절)
+      // 머리는 팀 이름 한 번 — 줄이 이미 팀 이름으로 시작하면 머리를 안 붙인다(daily-words 1절, 폴드 QA #4 반쪽). '상황판' 은 어디서 왔나지 제목이 아니다
+      if (!startsWithTeam(b.text, b.teamName)) row.appendChild(el('b', null, b.teamName));
       row.appendChild(bossLine(b.text, 'dash__sub'));
       row.addEventListener('click', goRoom(teams.find((t) => t.id === b.team)));
       sec3.appendChild(row);
@@ -2614,7 +2617,7 @@ function renderReport(r) {
       row.addEventListener('click', () => { const tg = it.target ?? {}; if (it.kind === 'approval') { const a = approvals.find((x) => x.id === (tg.approval ?? String(it.id).split(':')[1])); if (a) openApprovalPop(a); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
       sec.appendChild(row);
     }
-    for (const b of fromBoard) { const row = el('button', 'dash__row'); row.type = 'button'; row.appendChild(el('b', null, b.teamName)); row.appendChild(bossLine(b.text, 'dash__sub')); row.addEventListener('click', () => jumpTo(b.team, null)); sec.appendChild(row); }   // 머리는 팀 이름 한 번(폴드 QA #4)
+    for (const b of fromBoard) { const row = el('button', 'dash__row'); row.type = 'button'; if (!startsWithTeam(b.text, b.teamName)) row.appendChild(el('b', null, b.teamName)); row.appendChild(bossLine(b.text, 'dash__sub')); row.addEventListener('click', () => jumpTo(b.team, null)); sec.appendChild(row); }   // 머리는 팀 이름 한 번, 줄이 팀 이름으로 시작하면 머리 없음(폴드 QA #4, daily-words 1절)
     body.appendChild(sec);
   }
 
