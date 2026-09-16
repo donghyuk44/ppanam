@@ -165,7 +165,7 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 
 - **출처**: `SubagentStop` 훅의 `last_assistant_message`
 - `meta.partial` — 계약 필드이나 **미구현**(안 지킴 — 타이핑 말풍선은 만들지 않았다. 자리만 있고 코드가 없다).
-- `meta.cards: ['dev', 'design', …]` — **팀 상황 카드를 말풍선 밑에**. 화면은 팀마다 `GET /api/card/<팀>`(모양은 `server/public/card.js` 머리 JSDoc)을 받아 `card.js teamCard` 로 그린다 — 글 세 줄 대신 카드. 여섯 장까지. 재료가 없으면(404) 그 장은 안 그린다. 세라의 06:30·18:30 보고가 이걸 싣는 건 서버(세라 세션·nightly) 몫.
+- `meta.cards: ['dev', 'design', …]` — **팀 상황 카드를 말풍선 밑에**. 화면은 팀마다 `GET /api/card/<팀>`(모양은 `server/public/card.js` 머리 JSDoc)을 받아 `card.js teamCard` 로 그린다 — 글 세 줄 대신 카드. 여섯 장까지. 재료가 없으면(404) 그 장은 안 그린다. 세라의 보고가 이걸 싣는 건 서버(세라 세션·nightly) 몫 — 정해 둔 시각은 없다(결정 187·188).
 
 - `meta.hand: 'server' | 'cli'` — **나리(`system`) 말이 어느 손에서 왔나**. `server` = 총괄실 서버 세션(`hq:system`) → 이름 박스 노랑 · `cli` = `say.mjs --as system`(관리 창 나리) → 파랑. 찍는 건 서버, 화면은 `.row[data-hand]`. 없으면 색 없음.
 - `meta.roam: '<팀 id>'` — **다른 방에 한 답의 원본**(나리·세라 로밍, `callHomeElsewhere` 가 집 방 기록에 원본을 남기고 그 방엔 사본 `meta.via`). 집 방 화면에선 **접힌 말풍선**(`app.js foldBubble` — "개발 방에 답함 · 펼치기", 펼치면 원문 + 그 방 열기)로만. 찍는 건 서버. 인용(`meta.quote`)도 같은 부품.
@@ -275,7 +275,7 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 | `kind` | 어디서 | `text` | `mine` (대표 손이 필요한가) | `target` |
 | --- | --- | --- | --- | --- |
 | `boss` 대표 차례(빨강) | 팀 요약 `bossCall`(결정을 청했는데 답 없음, 8절) + `people[by].bossCall.text` | 그 말 앞머리 80자 | 예. 위임 중엔 돈·바깥·`.claude` 물음(`bossCall.forbidden` = `proxyForbidden`)만 | 그 방, 그 말풍선 |
-| `approval` 승인 대기 | `approvals` 대기 중 C(대표 판단)·B(톰·제리) | 대표 몫(`mine`)은 한 장씩 `what · 10분 안`(대리 못 하는 돈·바깥은 `what · 대표님만`). 나머지(B, 위임 중 대리될 C)는 **한 항목** `톰·제리가 보는 중 N건`(`id: approval:theirs`, `name: 톰·제리`, `team: hq`) — 원문째 늘어놓지 않는다 | C 만. 위임 중엔 대리 못 하는 C(`proxyable:false` — 서버가 `proxyEligible` 로 잰 것)만. 접힌 항목은 아니오 | 관제탑 맨 위 결재 띠(접힌 항목은 띠의 "톰·제리가 보는 중" 줄을 편다) |
+| `approval` 승인 대기 | `approvals` 대기 중 C(대표 판단)·B(결정 자리 — 위임 중엔 나리, 아니면 톰. 총괄실 자체 카드만 제리도, 결정 141·162·`bus.needsOf` 팀 스코프) | 대표 몫(`mine`)은 한 장씩 `what`(대리 못 하는 돈·바깥·외부 공유는 `what · 대표님만`, 그 밖엔 정해 둔 시각 없음 — 결정 188). 나머지(B, 위임 중 대리될 C)는 **한 항목** `톰·제리가 보는 중 N건`(`id: approval:theirs`, `name: 톰·제리`, `team: hq`) — 원문째 늘어놓지 않는다(안 지킴 — 이 이름표는 아직 늘 "톰·제리" 라 적는다, 실제로는 팀 카드는 결정 자리 혼자·hq 카드만 제리도 붙는다. `server/public/notify.js`·`app.js` 쪽 이름표 코드는 다음 커밋) | C 만. 위임 중엔 대리 못 하는 C(`proxyable:false` — 서버가 `proxyEligible` 로 잰 것)만. 접힌 항목은 아니오 | 관제탑 맨 위 결재 띠(접힌 항목은 띠의 "톰·제리가 보는 중" 줄을 편다) |
 | `blocked` 막힘 | 팀 요약 `needsBoss`(`blocked`·`attempts`·`silent`) | 이유 한 줄(`BOSS_WHY`) | 예. 위임 중엔 아니오(톰·제리가 푼다) | 그 방 |
 | `report` 보고 | `bossNotes[]` 중 `ask` 아닌 것(오늘) | 그 말 앞머리 160자 | 아니오 — 읽을 것이지 누를 것이 아니다 | 그 방, 그 말풍선 |
 
@@ -719,6 +719,10 @@ codex 를 부르기 전에 `note` 로 거부된다.
 `server/public/outlink.js` 를 쓴다. 발언 밑에는 그림·md 미리보기가 최대 6개까지 붙는다(관제탑 카드의 마지막 말에는 안 붙는다).
 
 ### 대리 결정 — 대표가 10분 넘게 답이 없으면 톰·제리가 대신 (결정 85)
+
+**(안 지킴 — 결정 141·188 로 대리 판단이 나리로 바뀌었고, 위임 스위치가 켜져 있으면 10분·조용 조건 없이 즉시다.
+코드는 아직 이 절 그대로 10분 시계로 돈다 — C 카드만 위임 중 즉시(734행)이고, 방의 물음·FAIL 풀기는 위임 중에도
+10분 그대로다. 아래는 지금 코드가 실제로 하는 것.)**
 
 **이미 도는 B 길을 그대로 탄다** — 서버(`notifier.mjs`)가
 틱마다 대표 차례를 보고, 10분 넘게 기다린 것을 총괄실에 `[등급 B]` 승인 요청 "대리 결정 — …" 으로 올린다(`action { type: 'proxy', kind, team, ref }`).
