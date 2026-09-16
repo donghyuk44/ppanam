@@ -274,6 +274,7 @@ function bossWhyOf(t) {
  * 읽음은 브라우저가 기억한다(localStorage) — 새 저장소 없음.
  */
 const READ_KEY = 'ppanam.notify.read';
+const BELL_EMPTY = '보실 것 없어요. 팀이 일하는 중이에요.';   // 종 빈 줄 — 하영 사전 7판 3-1 247행 글자 그대로(나리 34회차, "확인할 항목 없음" 은 기계 말)
 const readIds = () => { try { return new Set(JSON.parse(localStorage.getItem(READ_KEY) ?? '[]')); } catch { return new Set(); } };
 const saveRead = (set) => { try { localStorage.setItem(READ_KEY, JSON.stringify([...set].slice(-500))); } catch { /* 저장소 없음 */ } };
 const notifications = () => notificationsOf({ teams, summaries, approvals }, { read: readIds(), delegation });
@@ -287,7 +288,7 @@ function renderBossBadge() {
   const num = $('bellN');
   num.hidden = n === 0;
   num.textContent = n ? (n > 99 ? '99+' : String(n)) : '';
-  $('bossBadge').title = n ? `안 읽은 알림 ${n}` : (items.length ? `알림 ${items.length} · 확인할 항목 없음` : '확인할 항목 없음');
+  $('bossBadge').title = n ? `안 읽은 알림 ${n}` : (items.length ? `알림 ${items.length} · ${BELL_EMPTY}` : BELL_EMPTY);
   if (!$('bellMenu').hidden) renderBellMenu();
 }
 // 화면 글자는 하영 사전(teams/marketing/out/opsroom-words.md 3절 확정본, 결정 43 ⑥·100) 그대로 — 여기서 새로 짓지 않는다. 회차·단계·계획표·결재·낸 것·검토 결과.
@@ -309,7 +310,7 @@ function renderBellMenu() {
   tools.append(all, gear);
   head.appendChild(tools);
   m.appendChild(head);
-  if (!items.length) { m.appendChild(el('div', 'bell__empty', '확인할 항목 없음')); return; }
+  if (!items.length) { m.appendChild(el('div', 'bell__empty', BELL_EMPTY)); return; }
   let lastKind = null;
   for (const it of items) {
     if (it.kind !== lastKind) { m.appendChild(el('div', `nt__kind nt__kind--${it.kind}`, KIND_LABEL[it.kind] ?? it.kind)); lastKind = it.kind; }
