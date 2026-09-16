@@ -435,10 +435,33 @@ export const sameSlot = (a, b) => a === b || (DECIDERS.has(a) && DECIDERS.has(b)
 /** 아직 안 답한 판정자 — needs 중 같은 칸의 판정이 없는 것. 톰이 답한 칸은 나리 몫으로 다시 세지 않는다. */
 export const leftOf = (r, dg = readDelegation()) => needsOf(r, dg).filter((w) => !(r?.decisions ?? []).some((d) => sameSlot(d.by, w)));
 
+/**
+ * D2 — 규칙은 검사기가 막는다(teams/hq/out/참고-비교-0916.md #2 "글로 된 규칙은 안 지켜진다", 대표 승인
+ * 10:0x). 이 회차의 도구 줄(훅 기록)에서 어기면 카드가 안 열린다:
+ *   · 서브에이전트 둘 이상(Agent 도구) — 한 번에 하나만(작업보드 병목 규칙).
+ *   · server/public/app.js 직접 수정 — build:public 산출물, server/src/app.js 만 편집한다.
+ * 모델 허용은 castChangeError 가 이미 다른 자리에서 막고, 큰 파일 통읽기는 훅이 아직 offset·limit
+ * 을 안 남겨(대표 손, R32 matcher 처럼 훅 쪽 변경) 검사기가 볼 신호가 없다 — 이번 범위 밖으로 남긴다.
+ * 순수 — round.mjs check 가 돌려본다.
+ */
+export function d2GuardError(events) {
+  const agentCount = (events ?? []).filter((e) => e.type === 'tool' && e.meta?.tool === 'Agent').length;
+  if (agentCount >= 2) return `서브에이전트를 이 회차에서 ${agentCount}번 썼습니다 — 한 번에 하나만(작업보드 병목 규칙).`;
+  const badApp = (events ?? []).find((e) => e.type === 'tool' && (e.meta?.tool === 'Edit' || e.meta?.tool === 'Write') && /server\/public\/app\.js$/.test(String(e.text ?? '')));
+  if (badApp) return 'server/public/app.js 를 직접 고쳤습니다 — build:public 산출물입니다. server/src/app.js 만 편집하세요.';
+  return null;
+}
+
 export function requestApproval(team, { by = 'guide', grade, what, detail = '', action = null, files = [], small = false }) {
   const g = String(grade || '').toUpperCase();
   if (!APPROVAL_GRADES[g]) throw new Error(`등급은 A / B / C 중 하나여야 합니다.`);
   if (!what?.trim()) throw new Error('무엇을 승인받을지가 비어 있습니다.');
+  // D2 — 이 회차에 규칙을 어겼으면 카드 자체를 안 연다(조용히 통과시키지 않는다).
+  {
+    const st = readState(team);
+    const guardErr = d2GuardError(readLog(team).filter((e) => e.round === st.round));
+    if (guardErr) throw new Error(`카드를 못 엽니다 — ${guardErr}`);
+  }
   // 작은 B 는 실행 대상(푸시·착수·로드맵·요청 블록)이 없는 B 만 — 그런 건 톰 혼자 보면 된다. 대상이 있으면 큰 것이다.
   if (small && (g !== 'B' || action)) throw new Error(`작은 B(--small) 는 실행 대상 없는 B 만입니다 — 재시작·문구 한 줄·임시 파일 태그. ${g !== 'B' ? `등급 ${g} 는 안 됩니다.` : `--push·--next·--roadmap·--to 는 큰 것입니다.`}`);
   // 카드에 붙일 산출물 — teams/<팀>/out/ 기준 상대 경로. 요청 시 있어야 한다 (대표 결정 36).

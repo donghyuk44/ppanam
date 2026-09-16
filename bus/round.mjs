@@ -741,6 +741,34 @@ switch (cmd) {
           ? '✓ 파일 있으면 통과 · 없으면 대기 · doneCheck 없으면 통과 · 걸린 항목 없어도 통과(item null) · ..로 저장소 밖은 이유 있는 거부(2판 #10)'
           : '✗ ' + JSON.stringify({ dc1, dc2, dc3, dc4, dc5 })]);
       }
+      // D2 — 규칙은 검사기가 막는다(참고-비교-0916 #2 "글로 된 규칙은 안 지켜진다"). d2GuardError 는
+      // 순수: 이 회차 도구 줄에서 Agent 둘 이상이면 거부, server/public/app.js 를 Edit·Write 로 고쳤으면
+      // 거부(server/src/app.js 는 통과 — 빌드 산출물이 아니라 소스).
+      {
+        const { d2GuardError } = await import('./bus.mjs');
+        const g1 = d2GuardError([{ type: 'tool', meta: { tool: 'Agent' } }]);
+        const g2 = d2GuardError([{ type: 'tool', meta: { tool: 'Agent' } }, { type: 'tool', meta: { tool: 'Agent' } }]);
+        const g3 = d2GuardError([{ type: 'tool', meta: { tool: 'Edit' }, text: `${ROOT}/server/public/app.js` }]);
+        const g4 = d2GuardError([{ type: 'tool', meta: { tool: 'Edit' }, text: `${ROOT}/server/src/app.js` }]);
+        const gWant = g1 === null && g2?.includes('서브에이전트') && g3?.includes('server/public/app.js') && g4 === null;
+        out.push(['D2 — 규칙은 검사기가 막는다(d2GuardError)', gWant
+          ? '✓ Agent 하나는 통과 · 둘 이상 거부 · public/app.js 직접 수정 거부 · src/app.js 는 통과'
+          : '✗ ' + JSON.stringify({ g1, g2, g3, g4 })]);
+        // 실물 — requestApproval 이 이 회차에 위반이 있으면 카드를 아예 안 연다. T 는 이 check 내내 쓰는
+        // 공유 로그라 위반 사건을 거기 남기면 뒤 시험들이 걸린다 — 별도 임시 팀에서 한 번만.
+        const T2 = '_check_d2';
+        fs.rmSync(paths(T2).dir, { recursive: true, force: true }); fs.mkdirSync(paths(T2).dir, { recursive: true });
+        fs.writeFileSync(paths(T2).roadmap, JSON.stringify({ milestones: [{ n: 1, title: '시험', status: 'now' }] }));
+        let blocked;
+        try {
+          startRound(T2, { milestone: 1, topic: 'D2 시험' });
+          emit(T2, { actor: 'ops', type: 'tool', text: `${ROOT}/server/public/app.js`, meta: { tool: 'Edit' } });
+          blocked = refuses(() => requestApproval(T2, { grade: 'B', what: 'D2 위반 있는 회차의 요청' }), '카드를 못 엽니다');
+        } finally {
+          fs.rmSync(paths(T2).dir, { recursive: true, force: true });
+        }
+        out.push(['D2 — requestApproval 이 위반 회차에서 거부', blocked === '✓ 거부' ? '✓ 카드를 못 엽니다' : '✗ ' + blocked]);
+      }
       // work.json 통과 겹쳐 쓰기(2판 코드 점검 #12, "그럴 법함") — writeWorkIfUnchanged 는 CAS: 쓰기 직전
       // 파일이 읽었을 때(before)와 다르면(다른 프로세스가 먼저 썼으면) 버리고 false, 남의 변경을 안 덮는다.
       // advanceWorkOnPass 는 그러면 새로 읽어 다시 시도한다 — 두 방 PASS 훅이 겹쳐도 서로 안 지운다.
