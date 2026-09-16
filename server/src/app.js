@@ -67,7 +67,7 @@ const roomAgents = () => Object.entries(cast.agents ?? {}).filter(([id, a]) => i
  * codex 자리는 세션이 없다 — 부를 때만 프로세스가 뜬다. 사회자가 돌리는 중이면 busy, 차례가 잡혔으면 turn, 아니면
  * off 다. 쉬는 codex 를 "듣는 중" 으로 그렸었다 (레오 R15 감사).
  */
-const STATE_LABEL = { off: '자는 중', idle: '듣는 중', busy: '일하는 중', turn: '차례 기다림' };   // "일하는 중" 은 관제탑 알약과 같은 글자(하영 ③)
+const STATE_LABEL = { off: '오프라인', idle: '수신 중', busy: '진행 중', turn: '답변 대기' };   // "일하는 중" 은 관제탑 알약과 같은 글자(하영 ③)
 function stateOf(id) {
   const c = summary.conductor ?? {};
   const a = cast.agents?.[id];
@@ -140,12 +140,12 @@ function outFileNode(f) {
   const box = el('div', 'outf'); box.dataset.kind = f.kind;
   const a = el('a', 'outa', `${f.team}/${f.root ?? 'out'}/${f.rel}`); a.href = f.url; a.target = '_blank'; a.rel = 'noopener';
   box.appendChild(a);
-  if (f.missing) { box.appendChild(el('span', 'outf__miss', ' — 파일이 없습니다')); return box; }
+  if (f.missing) { box.appendChild(el('span', 'outf__miss', ' — 파일 없음')); return box; }
   if (f.size != null) box.appendChild(el('span', 'outf__meta', ` ${fmtSize(f.size)}`));
   if (f.kind === 'image') {
     const link = el('a'); link.href = f.url; link.target = '_blank'; link.rel = 'noopener';
     const img = el('img', 'outf__img'); img.src = f.url; img.alt = f.rel; img.loading = 'lazy';
-    img.addEventListener('error', () => { link.replaceWith(el('span', 'outf__miss', ' — 그림을 못 불러왔습니다')); });
+    img.addEventListener('error', () => { link.replaceWith(el('span', 'outf__miss', ' — 이미지 없음')); });
     link.appendChild(img);
     box.appendChild(link);
   } else if (f.kind === 'md' || f.kind === 'text') {
@@ -155,7 +155,7 @@ function outFileNode(f) {
     d.addEventListener('toggle', async () => {
       if (!d.open || pre.dataset.loaded) return;
       pre.dataset.loaded = '1';
-      pre.textContent = '불러오는 중…';
+      pre.textContent = '로딩 중';
       try { const r = await fetch(f.url); pre.textContent = r.ok ? await r.text() : `읽지 못했습니다 (${r.status})`; }
       catch (e) { pre.textContent = `읽지 못했습니다 — ${e.message}`; }
     });
@@ -198,7 +198,7 @@ function renderRail() {
     body.appendChild(el('span', 'team__name', t.name));
     const sub = s.round
       ? `${s.round}회차${s.milestonesTotal ? ` · ${s.milestone}단계` : ''}`
-      : s.logCount ? '쉬는 중' : '아직 시작 안 함';
+      : s.logCount ? '대기' : '시작 전';
     body.appendChild(el('span', 'team__sub', sub));
     b.appendChild(body);
 
@@ -238,7 +238,7 @@ function bossTurns() {
 /** 방 하나가 대표 차례인 이유 — 한 줄. */
 function bossWhyOf(t) {
   const s = summaries[t.id] ?? {};
-  if (s.needsBoss) return BOSS_WHY[s.needsBossWhy] ?? '대표님 답을 기다려요';
+  if (s.needsBoss) return BOSS_WHY[s.needsBossWhy] ?? '답변 필요';
   if (s.bossCall) return `${ga(s.cast?.[s.bossCall.by]?.name ?? s.bossCall.by)} 불렀습니다 · ${ago(s.bossCall.ts)}`;
   return '';
 }
@@ -262,12 +262,12 @@ function renderBossBadge() {
   const num = $('bellN');
   num.hidden = n === 0;
   num.textContent = n ? (n > 99 ? '99+' : String(n)) : '';
-  $('bossBadge').title = n ? `안 읽은 알림 ${n}` : (items.length ? `알림 ${items.length} · 정하실 것 없어요` : '보실 것 없어요');
+  $('bossBadge').title = n ? `안 읽은 알림 ${n}` : (items.length ? `알림 ${items.length} · 확인할 항목 없음` : '확인할 항목 없음');
   if (!$('bellMenu').hidden) renderBellMenu();
 }
 // 화면 글자는 하영 사전(teams/marketing/out/opsroom-words.md 3절 확정본, 결정 43 ⑥·100) 그대로 — 여기서 새로 짓지 않는다. 회차·단계·계획표·결재·낸 것·검토 결과.
-const BOSS_WHY = { blocked: '대표님 답을 기다려요 — 검토에서 멈춤이 났어요', attempts: '대표님 답을 기다려요 — 세 번 고쳐도 안 돼서요', silent: '하루 넘게 아무 말이 없어요' };
-const KIND_LABEL = { boss: '정하실 것', approval: '결재', blocked: '멈춤', report: '보고' };
+const BOSS_WHY = { blocked: '검토 필요 — 반려 뒤 중단', attempts: '검토 필요 — 3회 반려', silent: '24시간 이상 활동 없음' };
+const KIND_LABEL = { boss: '정하실 것', approval: '결재', blocked: '차단됨', report: '보고' };
 function renderBellMenu() {
   const m = $('bellMenu');
   m.replaceChildren();
@@ -279,11 +279,11 @@ function renderBellMenu() {
   const all = el('button', 'nt__all', '모두 읽음'); all.type = 'button';
   all.disabled = !items.some((it) => it.unread);
   all.addEventListener('click', (e) => { e.stopPropagation(); markRead(items.map((it) => it.id)); renderBellMenu(); });
-  const gear = el('button', 'nt__gear', '⚙'); gear.type = 'button'; gear.title = '알림 설정 — 아직 자리만'; gear.disabled = true;
+  const gear = el('button', 'nt__gear', '⚙'); gear.type = 'button'; gear.title = '알림 설정(준비 중)'; gear.disabled = true;
   tools.append(all, gear);
   head.appendChild(tools);
   m.appendChild(head);
-  if (!items.length) { m.appendChild(el('div', 'bell__empty', '보실 것 없어요. 팀이 일하는 중이에요.')); return; }
+  if (!items.length) { m.appendChild(el('div', 'bell__empty', '확인할 항목 없음')); return; }
   let lastKind = null;
   for (const it of items) {
     if (it.kind !== lastKind) { m.appendChild(el('div', `nt__kind nt__kind--${it.kind}`, KIND_LABEL[it.kind] ?? it.kind)); lastKind = it.kind; }
@@ -336,14 +336,14 @@ $('railMore')?.addEventListener('click', () => { const nav = $('teams'); nav.scr
 
 function renderHead() {
   const t = teams.find((x) => x.id === active);
-  $('roomName').textContent = t?.room ?? '팀 방';   // 방 이름은 teams.json room("개발 방") — 하영 사전 0-1 (덤) 작전실 → 팀 방
+  $('roomName').textContent = t?.room ?? '채팅';   // 방 이름은 teams.json room("개발 방") — 하영 사전 0-1 (덤) 작전실 → 팀 방
   // 총괄실은 대표와의 1:1 이라 라운드가 없다. 늘 열려 있다.
   const office = t?.kind === 'office';
   // 라운드가 "있다" 는 번호가 아니라 phase 다. 번호는 닫힌 뒤에도 남아서, 번호로 그리면 닫힌 방이
   // "R14 · 라운드 닫기 · 입력 가능" 으로 보이고 보내면 409, 닫으면 두 번 닫힌다 (Fable 재점검, 2026-09-12).
   const open = office || summary.phase === 'running' || summary.phase === 'blocked';
   const blocked = !office && summary.phase === 'blocked';
-  document.title = open && !office ? `${summary.round}회차 · ${t?.name ?? '팀 방'}` : (t?.room ?? '팀 방');
+  document.title = open && !office ? `${summary.round}회차 · ${t?.name ?? '채팅'}` : (t?.room ?? '채팅');
   const turns = bossTurns().n;
   if (turns) document.title = `(${turns}) ` + document.title;   // 탭 제목에도 — 다른 창에 있어도 보이게
 
@@ -357,10 +357,10 @@ function renderHead() {
       ? `대표님 답을 기다려요 — 검토에서 멈춤이 났어요. 여기에 답을 적으면 ${summary.round}회차가 이어져요`
       : open
         ? (summary.topic ? `${summary.milestone}단계 — ${summary.topic}` : `${summary.milestone}단계`)
-        : '지금 하는 회차 없음';
+        : '진행 중인 회차 없음';
   const c = summary.conductor ?? {};
   const turnNote = c.flow ? `검토 중 · ${who(c.flow.waiting ?? c.flow.step).name} 차례` : c.pending?.length ? `차례: ${c.pending.map((p) => who(p.split(':')[0]).name).join(', ')}` : '';
-  $('rprog').textContent = [turnNote, open && summary.attempt > 0 ? `다시 ${summary.attempt}번째` : ''].filter(Boolean).join(' · ');
+  $('rprog').textContent = [turnNote, open && summary.attempt > 0 ? `반려 ${summary.attempt}회` : ''].filter(Boolean).join(' · ');
   app.dataset.alert = (open && summary.attempt > 0) || summary.needsBoss ? '1' : '0';
 
   renderWork();
@@ -368,7 +368,7 @@ function renderHead() {
   const rb = $('roundBtn');
   // 막힌 방(FAIL)은 대표가 말해 풀기 전엔 닫히지 않는다 — 버튼을 보여 주면 누르고 거부당한다 (가드 R13).
   rb.hidden = office || blocked;
-  rb.textContent = open ? '회차 마무리' : '회차 시작';
+  rb.textContent = open ? '회차 종료' : '회차 시작';
   if (office) $('roundOpen').hidden = true;
 
   // 라운드 밖에서도 쓸 수 있다. 보내면 첫 줄이 주제로 채워진 열기 폼이 뜨고, 열리면 그 말이 첫 지시로 들어간다 (결정 19).
@@ -379,8 +379,8 @@ function renderHead() {
   input.placeholder = office
     ? `${who(owner).name}에게 말하기`   // 총괄실은 톰, 비서실은 세라(나리 실측 09-15: 비서실도 '톰에게' 였다)
     : blocked
-      ? '답을 적으면 회차가 이어져요'
-      : open ? `${ownerName}에게 말하기` : '말하면 회차가 시작돼요 — 첫 줄이 주제가 돼요';
+      ? '답변 시 회차 재개'
+      : open ? `${ownerName}에게 말하기` : '첫 메시지 = 주제';
 
   const crew = $('crew');
   crew.replaceChildren();
@@ -402,7 +402,7 @@ function renderHead() {
  */
 function renderWork() {
   const states = roomAgents().map(([id, a]) => [id, a, stateOf(id)]);
-  const off = ws?.readyState !== 1 ? '서버와 끊겼어요 — 다시 붙는 중 · ' : '';
+  const off = ws?.readyState !== 1 ? '연결 끊김 — 재연결 중 · ' : '';
   $('roomWho').textContent = off + states.map(([, a, st]) => `${a.name} ${STATE_LABEL[st]}`).join(' · ');
 
   const busy = states.filter(([, , st]) => st === 'busy');
@@ -414,7 +414,7 @@ function renderWork() {
   const signals = busy.map(([id]) => sessions[id]?.lastSignal).filter(Boolean).map((ts) => new Date(ts).getTime());
   const queued = busy.reduce((n, [id]) => n + (sessions[id]?.queued ?? 0), 0);
   work.textContent = [
-    `${busy.map(([, a]) => a.name).join('·')} 일하는 중`,
+    `${busy.map(([, a]) => a.name).join('·')} 진행 중`,
     signals.length ? moved(Math.max(...signals)) : '',
     queued ? `기다리는 말 ${queued}` : '',
   ].filter(Boolean).join(' · ');
@@ -453,12 +453,12 @@ function renderSide() {
   // 첫 카드 — 지금 어디까지 왔나 (결정 23, 계약 3절 "상황판"). 실무가 progress.mjs 로 쓴 것을 그대로. 안 썼으면 안 쓴 채로 보이게.
   const pg = $('cardProgress');
   pg.replaceChildren();
-  pg.appendChild(el('div', 'card__k', '지금 어디까지'));
+  pg.appendChild(el('div', 'card__k', '진행 상황'));
   const p = summary.progress;
   if (!p) {
-    pg.appendChild(el('div', 'card__note', '상황판이 아직 비어 있어요.'));
+    pg.appendChild(el('div', 'card__note', '상황판 없음'));
   } else {
-    for (const [k, label] of [['doing', '하는 것'], ['blocked', '막힌 것'], ['boss', '대표님이 보실 것'], ['next', '다음']]) {
+    for (const [k, label] of [['doing', '지금'], ['blocked', '이슈'], ['boss', '대표님이 보실 것'], ['next', '다음']]) {
       const items = p[k] ?? [];
       const row = el('div', 'prog__row'); row.dataset.k = k; row.dataset.n = String(items.length);
       row.appendChild(el('div', 'prog__k', label));
@@ -475,7 +475,7 @@ function renderSide() {
   rq.replaceChildren();
   rq.hidden = !mine.length;
   if (mine.length) {
-    rq.appendChild(el('div', 'card__k', `다른 팀에 부탁한 일 ${mine.length}`));
+    rq.appendChild(el('div', 'card__k', `다른 팀에 요청한 일 ${mine.length}`));
     for (const x of mine) rq.appendChild(requestCard(x, renderSide));
   }
   if (!requestsLoaded || Date.now() - requestsFetchedAt > 30_000) loadRequests().then((changed) => { if (changed && view === 'room') renderSide(); });
@@ -490,7 +490,7 @@ function renderSide() {
     const dl = el('dl');
     for (const [k, v] of [
       ['단계', summary.milestone ? `${summary.milestone} / ${summary.milestonesTotal || '—'} 단계` : '—'],
-      ['상태', summary.needsBoss ? '대표님 답 기다림' : summary.phase === 'running' ? '일하는 중' : '쉬는 중'],
+      ['상태', summary.needsBoss ? '답변 필요' : summary.phase === 'running' ? '진행 중' : '대기'],
       // 대화록 N건 — 뺐다(하영 3-2: opsroom-content.md 3절)
     ]) {
       const row = el('div', 'kv');
@@ -502,15 +502,15 @@ function renderSide() {
     const g = el('div', 'gauge');
     for (let i = 1; i <= 3; i++) g.appendChild(el('div', i <= (summary.attempt ?? 0) ? 'on' : ''));
     r.appendChild(g);
-    r.appendChild(el('div', 'card__note', summary.attempt ? `다시 ${summary.attempt}번째 — 셋이면 대표님께 가요` : '다시 0번 — 셋이면 대표님께 가요'));
+    r.appendChild(el('div', 'card__note', summary.attempt ? `반려 ${summary.attempt}회 — 3회 시 대표 검토` : '반려 0회 — 3회 시 대표 검토'));
   } else {
-    r.appendChild(el('div', 'card__note', '지금 하는 회차가 없어요.'));
+    r.appendChild(el('div', 'card__note', '진행 중인 회차 없음'));
   }
 
   // 계획표
   const m = $('cardRoadmap');
   m.replaceChildren();
-  m.appendChild(el('div', 'card__k', '계획표'));
+  m.appendChild(el('div', 'card__k', '로드맵'));
   if (roadmap.destination) {
     const d = el('div', 'dest');
     d.appendChild(el('div', 'dest__k', '목표'));
@@ -531,11 +531,11 @@ function renderSide() {
     }
     m.appendChild(list);
   } else {
-    m.appendChild(el('div', 'card__note', '계획표가 아직 없어요.'));
+    m.appendChild(el('div', 'card__note', '로드맵 없음'));
   }
   if (roadmap.cutList?.length) {
     const c = el('div', 'cut');
-    c.appendChild(el('div', 'cut__k', '지금 안 하는 것'));
+    c.appendChild(el('div', 'cut__k', '제외'));
     const ul = el('ul');
     for (const x of roadmap.cutList) ul.appendChild(el('li', null, x));
     c.appendChild(ul);
@@ -570,7 +570,7 @@ function renderSide() {
   j.appendChild(el('div', 'card__k', '일지'));
   const entries = Object.entries(journal);
   if (!entries.length) {
-    j.appendChild(el('div', 'card__note', '아직 없어요. 회차가 끝나면 사람마다 한 문단씩 남아요.'));
+    j.appendChild(el('div', 'card__note', '일지 없음 — 회차 종료 시 생성'));
   } else {
     for (const [id, text] of entries) {
       const d = el('details', 'jr');
@@ -646,7 +646,7 @@ function draw(e) {
         stack.appendChild(name);
       }
       // 대표를 불렀다 — 멘션 표시 (결정 19-2).
-      if (called) stack.appendChild(el('div', 'callmark', '@ 대표님을 불렀습니다'));
+      if (called) stack.appendChild(el('div', 'callmark', '@대표 멘션'));
       stack.appendChild(bubble(e.text));
       row.appendChild(stack);
       return row;
@@ -713,9 +713,9 @@ function emptyView() {
   const s = svg('M4 5h16M4 12h16M4 19h9', 30, 1.4);
   s.style.opacity = '.45';
   n.appendChild(s);
-  n.appendChild(el('div', 'quiet__t', '아직 조용해요'));
+  n.appendChild(el('div', 'quiet__t', '활동 없음'));
   const p = el('div', 'quiet__s');
-  p.textContent = '위의 "회차 시작" 을 누르고 주제를 적으면 팀이 일을 시작해요.';
+  p.textContent = '회차 시작 후 주제 입력';
   n.appendChild(p);
   return n;
 }
@@ -924,14 +924,14 @@ const showOpen = (on, { topic = '' } = {}) => {
     for (const m of roadmap.milestones ?? []) {
       const o = document.createElement('option');
       o.value = String(m.n);
-      o.textContent = `${m.n}. ${m.title}${m.status === 'pass' ? ' (끝)' : m.status === 'now' ? ' (지금)' : ''}`;
+      o.textContent = `${m.n}. ${m.title}${m.status === 'pass' ? ' (완료)' : m.status === 'now' ? ' (지금)' : ''}`;
       if (m.status === 'pass') o.disabled = true;
       sel.appendChild(o);
     }
-    if (!sel.options.length) { const o = document.createElement('option'); o.value = ''; o.textContent = '계획표 없음'; sel.appendChild(o); }
+    if (!sel.options.length) { const o = document.createElement('option'); o.value = ''; o.textContent = '로드맵 없음'; sel.appendChild(o); }
     sel.value = pick ? String(pick.n) : '';
-    sel.title = pick ? `${pick.n}단계 "${pick.title}"${now ? '' : ' — 앞 것이 끝나 다음 것. 착수는 톰·제리 결재가 먼저'}` : '계획표가 아직 없어요';
-    $('roundTopic').placeholder = pick ? `비우면 "${pick.title.slice(0, 40)}" 가 주제` : '이번 회차에서 뭘 하나요';
+    sel.title = pick ? `${pick.n}단계 "${pick.title}"${now ? '' : ' — 앞 것이 끝나 다음 것. 착수는 톰·제리 결재가 먼저'}` : '로드맵 없음';
+    $('roundTopic').placeholder = pick ? `비우면 "${pick.title.slice(0, 40)}" 가 주제` : '이번 회차';
     $('roundTopic').focus();
   } else pendingSay = null;
 };
@@ -944,9 +944,9 @@ $('roundBtn').addEventListener('click', async () => {
   // 판정은 감사역이 낸다. 여기서 닫는 건 판정 없이 라운드를 접는 것이다.
   if (!confirm(`${summary.round}회차를 마무리해요.\n\n대화 기록은 그대로 남고, 다음 회차는 새로 시작해요.`)) return;
   const r = await post('/api/round', { team: active, action: 'end' });
-  if (!r.ok) say(r.data.error ?? '회차를 마무리하지 못했어요.');
-  else if (r.data.deferred) say(`${cast.agents?.guide?.name ?? '팀장'}이 일하는 중이에요. 이 말 끝나면 닫을게요.`, 10000);   // 하영 3-2 toast — 이름은 그 방 실무
-  else if (r.data.accepted) say('마무리하는 중 — 사람마다 일지 한 문단을 받은 뒤 끝나요. 끝나면 방에 안내가 남아요.', 10000);
+  if (!r.ok) say(r.data.error ?? '종료 실패');
+  else if (r.data.deferred) say(`${cast.agents?.guide?.name ?? '팀장'}이 진행 중이에요. 이 말 끝나면 닫을게요.`, 10000);   // 하영 3-2 toast — 이름은 그 방 실무
+  else if (r.data.accepted) say('종료 중 — 일지 수집', 10000);
 });
 
 $('roundCancel').addEventListener('click', () => showOpen(false));
@@ -970,10 +970,10 @@ $('roundOpen').addEventListener('submit', async (e) => {
       const { next } = suggestMilestone();
       return say(next
         ? `앞 단계가 끝났어요. 다음은 ${next.n}단계 "${next.title}" — 단계 칸에서 ${next.n} 을 고르고 시작을 누르면 열려요. (다음 착수는 톰·제리 결재가 먼저라, 열린 뒤 그 결재를 걸어 주세요.)`
-        : '계획표의 단계가 전부 끝났어요. 계획표를 다시 짜야 해요.', 0);
+        : '마일스톤 전부 완료 — 로드맵 갱신 필요', 0);
     }
-    if (/전부 pass/.test(err)) return say('계획표의 단계가 전부 끝났어요. 계획표를 다시 짜야 해요.', 0);
-    return say(err || '회차를 시작하지 못했어요.', 0);
+    if (/전부 pass/.test(err)) return say('마일스톤 전부 완료 — 로드맵 갱신 필요', 0);
+    return say(err || '시작 실패', 0);
   }
   const first = pendingSay;
   showOpen(false);
@@ -1019,11 +1019,11 @@ $('uploadFile').addEventListener('change', async () => {
     r.onerror = () => reject(r.error);
     r.readAsDataURL(f);
   }).catch(() => null);
-  if (!data) return say('그림을 읽지 못했습니다.');
-  say('올리는 중…', 0);
+  if (!data) return say('이미지 로딩 실패');
+  say('업로드 중', 0);
   const r = await post('/api/upload', { team: active, mime: f.type, data }).catch(() => null);
-  if (!r?.ok) return say(r?.data?.error ?? '그림을 올리지 못했습니다.');
-  say('올렸습니다.');
+  if (!r?.ok) return say(r?.data?.error ?? '이미지 업로드 실패');
+  say('업로드 완료');
 });
 
 async function sendSay(text) {
@@ -1033,11 +1033,11 @@ async function sendSay(text) {
     r = await post('/api/say', { text, team: active });
   } catch {
     input.value = text; fitInput();
-    return say('서버에 닿지 못했습니다.');
+    return say('서버 연결 실패');
   }
   if (!r.ok) {
     input.value = text; fitInput();
-    say(r.data.error ?? '지시를 전달하지 못했습니다.');
+    say(r.data.error ?? '전송 실패');
     if (r.data.needsRound) { pendingSay = text; showOpen(true, { topic: text.split('\n')[0].slice(0, 80) }); }
   }
 }
@@ -1149,7 +1149,7 @@ function mdFold(label, url) {
   const body = el('div'); d.appendChild(body);
   d.addEventListener('toggle', async () => {
     if (!d.open || body.dataset.loaded) return;
-    body.dataset.loaded = '1'; body.textContent = '불러오는 중…';
+    body.dataset.loaded = '1'; body.textContent = '로딩 중';
     try { const r = await fetch(url); body.replaceChildren(r.ok ? mdLite(await r.text()) : el('p', null, `읽지 못했어요 (${r.status})`)); }
     catch (e) { body.textContent = `읽지 못했어요 — ${e.message}`; }
   });
@@ -1159,16 +1159,16 @@ async function loadSettings() {
   const body = $('setBody');
   body.replaceChildren();
   // ① 권한 현황 — 나리 표(teams/hq/out/권한-현황-0916.md)를 그대로. 바꾸는 손은 대표(settings.json)라 여기선 읽기만.
-  body.appendChild(el('div', 'set__k', '권한 — 자리마다 되는 것 · 막힌 것'));
-  const perm = el('div'); body.appendChild(perm); perm.textContent = '불러오는 중…';
-  fetch('/out/hq/' + encodeURIComponent('권한-현황-0916.md')).then(async (r) => { perm.replaceChildren(r.ok ? mdLite(await r.text()) : el('p', null, '권한 표를 아직 못 읽어요 — teams/hq/out/권한-현황-0916.md')); }).catch(() => { perm.textContent = '권한 표를 아직 못 읽어요'; });
+  body.appendChild(el('div', 'set__k', '권한'));
+  const perm = el('div'); body.appendChild(perm); perm.textContent = '로딩 중';
+  fetch('/out/hq/' + encodeURIComponent('권한-현황-0916.md')).then(async (r) => { perm.replaceChildren(r.ok ? mdLite(await r.text()) : el('p', null, '권한 표 없음')); }).catch(() => { perm.textContent = '권한 표 없음'; });
   // ② 낱말 사전 — 하영(teams/marketing/out/opsroom-words.md). 길어서 접힘.
-  body.appendChild(el('div', 'set__k', '낱말 — 화면에 쓰는 말과 뜻'));
-  body.appendChild(mdFold('낱말 사전 펼치기 (하영)', '/out/marketing/opsroom-words.md'));
+  body.appendChild(el('div', 'set__k', '용어'));
+  body.appendChild(mdFold('용어 사전', '/out/marketing/opsroom-words.md'));
   // ③ 인격 — **사람 단위로 한 번씩**(열일곱 + 대표), 줄은 이름 · 직책 · 팀 · 파일(대표 09-16 08:5x "중복 배치가 너무 많다" — 자리 단위로 돌리니 나리가 여섯 번, 톰이 다섯 번 서고
   // 열한 줄이 없는 파일을 가리켰다, 나리 R32). 총괄실 사람(톰·제리·세라·나리)과 대표는 팀 칸에 '전체', 파일은 사람마다 하나(hq/·sera/ 밑). 없는 파일은 '없음' — 경로를 지어내지 않는다:
   // 있는지는 /api/actor 가 인격을 돌려주는가로 잰다(system·대표는 카드가 없어 404 → 없음). 이 규칙이 세계관 서브탭(U1)의 정본.
-  body.appendChild(el('div', 'set__k', '인격 — 사람마다 파일 하나'));
+  body.appendChild(el('div', 'set__k', '프로필'));
   const ul = el('ul', 'set__list'); body.appendChild(ul);
   const people = new Map();   // 이름 → { name, title, teamWord, team, seat }. 총괄실을 먼저 돌아 톰·제리·세라·나리의 집이 hq 가 되게
   const HQ_SEATS = new Set(['chief', 'system', 'secretary']);
@@ -1193,7 +1193,7 @@ async function loadSettings() {
   list.forEach((p, i) => row(p.name, p.title, p.teamWord, files[i]));
   // ④ 숨김 화면 — 마을은 탭에서 뺐다(대표 09-16 '마을은 최최최최후'). 여기 링크로만.
   const hid = el('p', 'set__hidden');
-  const a = el('a', null, '숨김 화면 — 마을 열기'); a.href = `#${active ?? 'hq'}/world`; hid.append('마을은 아직 손볼 게 많아 탭에서 뺐어요. ', a);
+  const a = el('a', null, '마을 열기'); a.href = `#${active ?? 'hq'}/world`; hid.append('마을(준비 중) ', a);
   body.appendChild(hid);
 }
 
@@ -1212,10 +1212,10 @@ const ago = (ts) => {
 };
 /** "N분 전에 움직임" — 결정 31 "안죽었어요" 의 자리(하영 3-1: 신호 → 움직임, 1시간 넘으면 "N시간째 조용함", 없으면 "오늘 움직임 없음"). */
 const moved = (ts) => {
-  if (!ts) return '오늘 움직임 없음';
+  if (!ts) return '오늘 활동 없음';
   const s = Math.floor((Date.now() - new Date(ts)) / 1000);
-  if (s < 60) return '방금 움직임';
-  if (s < 3600) return `${Math.floor(s / 60)}분 전에 움직임`;
+  if (s < 60) return '방금 활동';
+  if (s < 3600) return `${Math.floor(s / 60)}분 전에 활동`;
   if (s < 86400) return `${Math.floor(s / 3600)}시간째 조용함`;
   return `${Math.floor(s / 86400)}일째 조용함`;
 };
@@ -1244,8 +1244,8 @@ function previewNode(r) {
   const box = el('div', 'apr__pv');
   // 미리보기가 없는 종류(request·proxy — bus.approvalPreview 가 아직 안 푼다)는 사실대로. 전엔 "옛 서버?" 라고 해서 대표가 서버를 다시 켰다(하네스 R25).
   if (!p) {
-    if (a.type === 'request') { const to = a.to ?? {}; box.appendChild(kvTable([['부탁', `${teams.find((t) => t.id === to.team)?.name ?? to.team ?? '?'} 팀 ${summaries[to.team]?.cast?.[to.actor]?.name ?? to.actor ?? ''}에게${a.mode === 'milestone' ? ' — 단계 끝까지(공동 프로젝트)' : ''}`], ...(a.why ? [['왜', a.why]] : []), ...(a.due ? [['기한', a.due]] : [])])); return box; }
-    if (a.type === 'proxy') { box.appendChild(kvTable([['대리 결정', a.kind === 'approval' ? `대표님 대신 결재 ${a.ref} 를 통과시킬지` : a.kind === 'unblock' ? `${a.team} 방의 멈춤을 대표님 대신 풀지` : `${a.team} 방의 물음에 대표님 대신 답할지`]])); return box; }
+    if (a.type === 'request') { const to = a.to ?? {}; box.appendChild(kvTable([['요청', `${teams.find((t) => t.id === to.team)?.name ?? to.team ?? '?'} 팀 ${summaries[to.team]?.cast?.[to.actor]?.name ?? to.actor ?? ''}에게${a.mode === 'milestone' ? ' — 단계 끝까지(공동 프로젝트)' : ''}`], ...(a.why ? [['사유', a.why]] : []), ...(a.due ? [['기한', a.due]] : [])])); return box; }
+    if (a.type === 'proxy') { box.appendChild(kvTable([['대리 결정', a.kind === 'approval' ? `대리 승인 여부 — 결재 ${a.ref}` : a.kind === 'unblock' ? `${a.team} 방의 멈춤을 대표님 대신 풀지` : `${a.team} 방의 물음에 대표님 대신 답할지`]])); return box; }
     box.appendChild(el('div', 'tcard__quiet', `이 종류(${a.type})는 아직 미리보기가 없어요 — 위 글이 전부예요.`)); return box;
   }
   if (p.error) { box.appendChild(el('div', 'err', `바뀌는 것을 읽지 못했습니다 — ${p.error}`)); return box; }
@@ -1258,8 +1258,8 @@ function previewNode(r) {
     ]));
   } else if (a.type === 'milestone') {
     box.appendChild(kvTable([
-      ['착수', `마일스톤 ${p.n} — ${p.title ?? ''}`],
-      ['통과 조건', p.deliverable ?? '(로드맵에 없음)'],
+      ['시작', `마일스톤 ${p.n} — ${p.title ?? ''}`],
+      ['완료 조건', p.deliverable ?? '(로드맵에 없음)'],
     ]));
   } else if (a.type === 'roadmap') {
     const ms = el('div');
@@ -1268,9 +1268,9 @@ function previewNode(r) {
     if (p.cutList.length) for (const c of p.cutList) cut.appendChild(el('div', null, `· ${c}`)); else cut.textContent = '(없음)';
     box.appendChild(kvTable([
       ['교체', `out/${p.file} → roadmap.json — 지금 로드맵은 통째로 바뀐다`],
-      ['목적지', p.destination ?? '(없음)'],
+      ['목표', p.destination ?? '(없음)'],
       [`마일스톤 ${p.milestones.length}`, ms],
-      ['하지 않는 것', cut],
+      ['제외', cut],
     ]));
   } else {
     box.appendChild(el('div', null, `행동: ${a.type}`));
@@ -1283,7 +1283,7 @@ function previewNode(r) {
  * 줄 = 누가 · 어디 · 결재 기다림 · N분 전 → 주제 → [읽고 답하기]. 누르면 카드가 팝업으로(approvalCard) — 왜 → 바뀌는 것 → N이 쓴 원문 → 낸 것 → 확인 / 돌려보냄.
  * 누른 뒤엔 카드가 사라지지 않고 그 줄이 "됐어요 — 확인, 개발에 전해졌어요 · 밤 10:50" 로 남는다(evt_f054428919 "전송이 안 된 거야?" 의 답, 5판 3-5-1). 낱말은 하영 5판. */
 const decidedLines = [];   // 이 화면에서 누른 것 — [{ id, text }] 새로 고침 전까지
-const GRADE_WORD = { A: '혼자 해도 됨', B: '총괄이 봄', C: '대표님이 정함' };   // 하영 1절 — 대표가 B·C 를 외울 이유가 없다
+const GRADE_WORD = { A: '자동 승인', B: '검토 중', C: '대표 승인' };   // 하영 1절 — 대표가 B·C 를 외울 이유가 없다
 /** 시각을 때와 같이 — "아침 8:41 · 낮 12:13 · 새벽 3시 · 저녁 6시 · 밤 10:50"(하영 5판 3-5-1, 결정 101 우리 시각). :00 이면 "N시". */
 function whenKo(ts) {
   const d = new Date(ts); if (Number.isNaN(d.getTime())) return '';
@@ -1295,7 +1295,7 @@ function whenKo(ts) {
 function approvalHead(r) {
   const t = teams.find((x) => x.id === r.team);
   const who = (summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by;
-  return `${who} · ${t?.name ?? r.team} · 결재 기다림 · ${ago(r.ts)}`;
+  return `${who} · ${t?.name ?? r.team} · 승인 필요 · ${ago(r.ts)}`;
 }
 let theirsOpen = false;   // 띠의 "톰·제리가 보는 중 N건" 줄을 폈나 — 새로 그릴 때도 유지, 그 카드가 다 빠지면 다시 접힘
 function renderApprovals() {
@@ -1318,14 +1318,14 @@ function renderApprovals() {
     head.appendChild(el('span', 'apr__team', approvalHead(r)));
     row.appendChild(head);
     row.appendChild(bossLine(bossTitle(r), 'apr__what'));   // 제목은 --boss 한 줄, 아니면 원문을 잰다(결정 140)
-    row.appendChild(el('span', 'apr__go', mine.includes(r) ? '읽고 답하기' : '읽기'));
+    row.appendChild(el('span', 'apr__go', mine.includes(r) ? '확인' : '읽기'));
     row.addEventListener('click', () => openApprovalPop(r));
     return row;
   };
   for (const r of mine) box.appendChild(line(r));
   if (theirs.length) {
     const fold = el('button', 'apr apr--fold'); fold.type = 'button'; fold.setAttribute('aria-expanded', String(theirsOpen));
-    fold.appendChild(el('span', 'apr__what', `${deciders(delegation)}가 보는 중 ${theirs.length}건`));
+    fold.appendChild(el('span', 'apr__what', `검토 중 ${theirs.length}건`));
     fold.appendChild(el('span', 'apr__go', theirsOpen ? '접기' : '보기'));
     fold.addEventListener('click', () => { theirsOpen = !theirsOpen; renderApprovals(); });
     box.appendChild(fold);
@@ -1336,7 +1336,7 @@ function renderApprovals() {
 function openApprovalPop(r) {
   closePop();
   const scrim = el('div', 'scrim pop__scrim'); scrim.addEventListener('click', closePop);
-  const pop = el('div', 'pop pop--apr'); pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', '결재 카드');
+  const pop = el('div', 'pop pop--apr'); pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', '결재');
   const x = el('button', 'pop__x', '×'); x.type = 'button'; x.title = '닫기'; x.addEventListener('click', closePop);
   pop.appendChild(x);
   pop.appendChild(approvalCard(r));
@@ -1358,7 +1358,7 @@ function approvalCard(r) {
   head.appendChild(g);
   head.appendChild(el('span', 'apr__team', approvalHead(r)));
   if (r.note) {
-    const link = el('button', 'apr__link', '방에서 보기 →'); link.type = 'button';
+    const link = el('button', 'apr__link', '채팅 열기'); link.type = 'button';
     link.addEventListener('click', () => { closePop(); jumpTo(r.team, r.note); });
     head.appendChild(link);
   }
@@ -1373,13 +1373,13 @@ function approvalCard(r) {
   // 왜 — 대표 원문이 있으면 그 말부터(세라 자리, 결정 98 — 아직 세라가 안 바꾼 카드는 요청자 글 첫 문장 한 줄). 원문 칸은 그대로, 줄이지 않는다(5판 3-5-1 "N이 쓴 원문").
   // R31 ①(나리): 왜와 원문이 같은 글로 두 번 찍히지 않게 — 왜는 한 줄, 원문은 그 한 줄보다 긴 것이 있을 때만(같으면 칸 숨김). 왜가 주제와 같은 글이면 그 칸도 숨긴다.
   const detail = r.detail || '';
-  const why = detail ? oneLine(detail) : '왜 하는지가 안 적혔어요 — 올린 사람에게 물어보세요';   // 안 적힌 때의 글은 하영 196행
+  const why = detail ? oneLine(detail) : '사유 없음 — 요청자에게 문의';   // 안 적힌 때의 글은 하영 196행
   if (why.trim() !== (r.what ?? '').trim()) {
-    card.appendChild(el('div', 'apr__k', '왜'));
+    card.appendChild(el('div', 'apr__k', '사유'));
     card.appendChild(linked('apr__why', why));
   }
   const pv = previewNode(r);
-  if (pv) { card.appendChild(el('div', 'apr__k', '바뀌는 것')); card.appendChild(pv); }
+  if (pv) { card.appendChild(el('div', 'apr__k', '변경 사항')); card.appendChild(pv); }
   if (detail && detail.trim() !== why.trim()) {
     const who = (summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by;
     card.appendChild(el('div', 'apr__k', `${who}이 쓴 원문`));
@@ -1398,19 +1398,19 @@ function approvalCard(r) {
     if (proxied) card.appendChild(el('div', 'apr__proxy', `지금은 ${deciders(delegation)}가 정해요 · 직접 누르셔도 돼요`));
     const act = el('div', 'apr__act');
     const err = el('div', 'apr__err'); err.hidden = true;
-    const reasonBox = el('input', 'apr__reason'); reasonBox.type = 'text'; reasonBox.placeholder = '왜 — 한 마디'; reasonBox.hidden = true;
+    const reasonBox = el('input', 'apr__reason'); reasonBox.type = 'text'; reasonBox.placeholder = '사유 — 한 줄'; reasonBox.hidden = true;
     const decide = async (d) => {
       const reason = d === 'REVISE' ? reasonBox.value.trim() : '';
       if (d === 'REVISE' && !reason) { reasonBox.hidden = false; reasonBox.focus(); return; }
       const res = await post('/api/approvals', { id: r.id, decision: d, reason });
-      if (!res.ok) { err.textContent = res.data.error ?? '안 눌렸어요. 한 번 더 눌러 보세요.'; err.hidden = false; return; }
+      if (!res.ok) { err.textContent = res.data.error ?? '실패 — 다시 시도'; err.hidden = false; return; }
       const t = teams.find((x) => x.id === r.team);
-      decidedLines.unshift({ id: r.id, text: `됐어요 — ${d === 'PASS' ? '확인' : '돌려보냄'}, ${t?.name ?? r.team}에 전해졌어요 · ${whenKo(Date.now())}` });
+      decidedLines.unshift({ id: r.id, text: `됐어요 — ${d === 'PASS' ? '승인' : '반려'}, ${t?.name ?? r.team}에 전해졌어요 · ${whenKo(Date.now())}` });
       approvals = approvals.filter((x) => x.id !== r.id);
       closePop(); renderApprovals(); renderBossBadge();
     };
     for (const d of ['PASS', 'REVISE']) {
-      const b = el('button', null, d === 'PASS' ? '확인' : '돌려보냄'); b.type = 'button'; b.dataset.d = d;   // 하영 79행 — 승인/반려 가 아니라 확인/돌려보냄
+      const b = el('button', null, d === 'PASS' ? '승인' : '반려'); b.type = 'button'; b.dataset.d = d;   // 하영 79행 — 승인/반려 가 아니라 확인/돌려보냄
       b.addEventListener('click', () => decide(d));
       act.appendChild(b);
     }
@@ -1419,8 +1419,8 @@ function approvalCard(r) {
     card.appendChild(reasonBox);
     card.appendChild(err);
     card.appendChild(el('div', 'apr__hint', proxied
-      ? '돌려보냄을 누르면 한 줄 칸이 열려요 — "왜" 한 마디.\n되돌리시려면 방에 한마디.'   // 위임 중엔 10분이 아니라 바로 대리된다 — 그 줄만 뺀다(하영 331행 꼬리)
-      : '돌려보냄을 누르면 한 줄 칸이 열려요 — "왜" 한 마디.\n10분 안 누르시면 톰·제리가 대신 정해요 — 돈이 나가거나 밖으로 가는 일은 빼고. 되돌리시려면 방에 한마디.'));
+      ? '반려 시 사유 한 줄 입력. 되돌리기는 답하기'   // 위임 중엔 10분이 아니라 바로 대리된다 — 그 줄만 뺀다(하영 331행 꼬리)
+      : '반려 시 사유 한 줄 입력. 10분 무응답 시 대리 결정(비용·외부 제외) — 되돌리기는 답하기'));
   } else {
     // 누가 판정했고 누가 남았나 — 이름으로. 그리고 총괄실이 이 요청을 들었는가.
     const hq = summaries.hq?.cast ?? {};
@@ -1429,10 +1429,10 @@ function approvalCard(r) {
     const decider = delegated(delegation) && delegation?.to === 'system' ? 'system' : 'chief';
     const need = r.grade === 'B' ? (r.small ? [decider] : [decider, 'outside']) : (grades[r.grade]?.needs ?? []);
     const same = (a, b) => a === b || (['chief', 'system'].includes(a) && ['chief', 'system'].includes(b));
-    const VERDICT_WORD = { PASS: '통과', REVISE: '다시', FAIL: '멈춤' };   // 하영 1절
+    const VERDICT_WORD = { PASS: '승인', REVISE: '반려', FAIL: '멈춤' };   // 하영 1절
     const done = r.decisions.map((x) => `${nameOf(x.by)} ${VERDICT_WORD[x.decision] ?? x.decision}`).join(' · ');
     const left = need.filter((w) => !r.decisions.some((x) => same(x.by, w))).map(nameOf).join('·');
-    const heard = told[r.id]?.requested ? '총괄실에 알렸어요' : '총괄실에 곧 알려요';
+    const heard = told[r.id]?.requested ? '총괄실 알림 완료' : '총괄실 알림 예정';
     card.appendChild(el('span', 'apr__wait', `${r.small ? `작은 것 — ${nameOf(decider)} 혼자 봐요 · ` : ''}${done ? done + ' · ' : ''}${left ? left + ' 답 기다림' : ''} · ${heard}`));
   }
   return card;
@@ -1587,14 +1587,14 @@ function renderTowerAll(grid) {
   // ① 뭐가 막혔나 — 대표가 풀 것이 아닌 막힘(팀·톰·운영·밑바닥). 강조: 그 팀 점만 색, 빨간 점 + N시간째. 대표 몫(waitOn boss)은 ③.
   if (stuck.length) {
     const sec = el('section', 'dash__card'); sec.dataset.block = 'stuck';
-    sec.appendChild(el('div', 'dash__k', `뭐가 막혔나 ${stuck.length}`));
+    sec.appendChild(el('div', 'dash__k', `이슈 ${stuck.length}`));
     for (const it of stuck) {
       const row = el('button', 'dash__row'); row.type = 'button';
       const head = el('span', 'dash__head');
       const dot = el('span', 'dot'); dot.style.background = it.team ? teamColor(it.team) : 'var(--ink-4)'; head.appendChild(dot);
-      const who = it.kind === 'infra' ? '밑바닥' : `${it.teamName}${it.name && it.kind !== 'blocked' && it.kind !== 'board' ? ' · ' + it.name : ''}`;
+      const who = it.kind === 'infra' ? '시스템' : `${it.teamName}${it.name && it.kind !== 'blocked' && it.kind !== 'board' ? ' · ' + it.name : ''}`;
       head.appendChild(el('b', null, who));
-      if (it.wait != null) { const w = el('span', 'wait'); w.appendChild(el('i', 'dot dot--bad')); w.append(forShort(it.wait)); head.appendChild(w); }
+      if (it.wait != null) { const w = el('span', 'wait'); w.appendChild(el('i', 'dot dot--bad')); w.append(forShort(it.wait).replace(/째$/, ' 경과')); head.appendChild(w); }
       row.appendChild(head);
       row.appendChild(bossLine(it.text, 'dash__sub'));
       row.addEventListener('click', () => { const tg = it.target ?? {}; if (tg.view === 'tower') setTowerTab(tg.tab ?? 'asks'); else if (tg.team) jumpTo(tg.team, tg.event ?? null); });
@@ -1607,7 +1607,7 @@ function renderTowerAll(grid) {
   // 섰다. 그건 팀 것이라 ④ 팀 칸 몫). 막대 길이 = 오늘 한 것 수(가장 많이 한 사람이 끝까지), 옆에 그 수 — 시간 띠는 배경이 꽉 차 보여 아무 말도 안 했다.
   // 나무: 여섯 줄, 넘치면 "더 보기"(오늘 안에서만)
   const sec2 = el('section', 'dash__card'); sec2.dataset.block = 'done';
-  sec2.appendChild(el('div', 'dash__k', '누가 뭘 했나 · 오늘'));
+  sec2.appendChild(el('div', 'dash__k', '최근 활동 · 오늘'));
   const byPerson = new Map();
   for (const it of today) {
     if (!it.by) continue;   // 사람이 없는 한 것(라운드 닫힘·마일스톤·부탁 닫힘) — 아래 여섯 줄엔 남는다
@@ -1636,7 +1636,7 @@ function renderTowerAll(grid) {
   }
   const all = done.items.filter((it) => it.by !== 'boss');
   const items = all.slice(0, done.more ? 60 : 6);
-  if (!items.length) sec2.appendChild(el('div', 'dash__empty', done.fetchedAt ? '오늘 끝낸 일이 아직 없어요.' : '읽는 중…'));
+  if (!items.length) sec2.appendChild(el('div', 'dash__empty', done.fetchedAt ? '완료 없음' : '로딩 중'));
   for (const it of items) {
     const row = el('button', 'dash__row'); row.type = 'button';
     const head = el('span', 'dash__head');
@@ -1660,12 +1660,12 @@ function renderTowerAll(grid) {
   if (mine.length || fromBoard.length) {
     const sec3 = el('section', 'dash__card'); sec3.dataset.block = 'mine'; sec3.dataset.alert = '1';
     // 머리는 '대표님이 보실 것'(하영 77행 · 현황 시안 tower 51 — '내 차례' 는 사전 밖, 5판 3-5-2 어긋남 ⑴) · 줄의 '물어봄' 은 '대표님께 물어봄'(3-5-3 ③ — 누가 누구를 이 보여야)
-    sec3.appendChild(el('div', 'dash__k', `대표님이 보실 것 ${mine.length + fromBoard.length}`));
+    sec3.appendChild(el('div', 'dash__k', `대표 확인 ${mine.length + fromBoard.length}`));
     for (const it of mine) {
       const row = el('button', 'dash__row'); row.type = 'button';
-      row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '결재 기다림' : it.kind === 'boss' ? '대표님께 물어봄' : '멈춤'}`));
+      row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '승인 필요' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));
       row.appendChild(bossLine(it.text, 'dash__sub'));
-      row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '읽고 답하기' : '방으로'));
+      row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '확인' : '채팅 열기'));
       // 결재는 그 자리에서 카드가 팝업으로(approval 시안 — "읽고 답하기 를 누르면"). 맨 위 띠로 스크롤하던 것을 그만둔다
       row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (it.kind === 'approval') { const r = approvals.find((a) => a.id === (tg.approval ?? String(it.id).split(':')[1])); if (r) openApprovalPop(r); else { setTowerTab('all'); document.querySelector('.approvals')?.scrollIntoView({ block: 'start' }); } } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
       sec3.appendChild(row);
@@ -1682,7 +1682,7 @@ function renderTowerAll(grid) {
 
   // ④ 팀 — 단계 N/M · 회차 · 알약. 누르면 그 자리에서 상황판 네 칸(하는 것·막힌 것·대표 차례·다음) 글자 그대로, 한 번 더 = 카드(팀 탭). 비서실은 줄이 없다.
   const tl = el('section', 'dash__card'); tl.dataset.block = 'teams';
-  tl.appendChild(el('div', 'dash__k', '팀 — 누르면 하는 것 · 막힌 것 · 대표님이 보실 것 · 다음'));   // '대표 차례' 는 순서 말 — 하영 5판 3-5-3 ①(req_123f2ebe), 422·1827 과 같은 글자
+  tl.appendChild(el('div', 'dash__k', '팀'));   // '대표 차례' 는 순서 말 — 하영 5판 3-5-3 ①(req_123f2ebe), 422·1827 과 같은 글자
   for (const t of teams.filter((x) => x.id !== 'sera')) {
     const s = summaries[t.id] ?? {};
     const office = t.kind === 'office';
@@ -1694,10 +1694,10 @@ function renderTowerAll(grid) {
     if (!office) {   // 진행 막대(numbers.md 1절) — 채움 = 끝난 단계, 옆에 N/M 하나. 회차는 글자.
       const total = s.milestonesTotal ?? 0;
       head.appendChild(progressBar(s.milestonesDone ?? 0, total, teamColor(t.id)));
-      head.appendChild(el('span', 'dash__stage', s.milestone ? `${s.milestonesDone ?? 0}/${total}${s.round ? ` · ${s.round}회차` : ''}` : '단계 없음'));
+      head.appendChild(el('span', 'dash__stage', s.milestone ? `${s.milestonesDone ?? 0}/${total}${s.round ? ` · ${s.round}회차` : ''}` : '마일스톤 없음'));
     }
     head.appendChild(pill(
-      s.needsBoss ? '대표님 답 기다림' : s.bossCall ? '대표님께 물어봄' : office ? '대표님과 톰' : s.phase === 'blocked' ? '멈춤' : running ? '일하는 중' : '쉬는 중',
+      s.needsBoss ? '답변 필요' : s.bossCall ? '답변 필요' : office ? '대표님과 톰' : s.phase === 'blocked' ? '차단됨' : running ? '진행 중' : '대기',
       s.needsBoss || s.bossCall ? 'boss' : s.phase === 'blocked' ? 'bad' : running ? 'live' : 'idle'));
     row.appendChild(head);
     if (!office && s.milestoneTitle) row.appendChild(el('span', 'dash__sub', `${s.milestone}단계 ${s.milestoneTitle}`));
@@ -1711,8 +1711,8 @@ function renderTowerAll(grid) {
     if (openTeamRows.has(t.id)) {   // 펼친 줄 — 상황판 네 칸 글자 그대로(progress.json). 없으면 그렇다고.
       const p = s.progress;
       const box = el('div', 'dash__open');
-      if (!p) box.appendChild(el('div', 'dash__empty', office ? '총괄실은 상황판이 없어요 — 승인·부탁·보고서가 일이에요.' : '아직 상황판을 안 썼어요.'));
-      else for (const [k, label] of [['doing', '하는 것'], ['blocked', '막힌 것'], ['boss', '대표님이 보실 것'], ['next', '다음']]) {
+      if (!p) box.appendChild(el('div', 'dash__empty', office ? '총괄실 — 상황판 없음(승인·요청·리포트)' : '상황판 없음'));
+      else for (const [k, label] of [['doing', '지금'], ['blocked', '이슈'], ['boss', '대표님이 보실 것'], ['next', '다음']]) {
         const lines = p[k] ?? [];
         const kv = el('div', 'dash__kv');
         kv.appendChild(el('b', null, label));
@@ -1722,7 +1722,7 @@ function renderTowerAll(grid) {
       if (p?.at) box.appendChild(el('div', 'dash__empty', `갱신 ${agoShort(p.at)}${p.by ? ' · ' + (s.cast?.[p.by]?.name ?? p.by) : ''}${p.fresh === false ? ' · 낡음' : ''}`));
       const doors = el('div', 'dash__doors');
       const card = el('button', 'dash__door', '카드'); card.type = 'button'; card.addEventListener('click', () => setTowerTab('teams'));
-      const room = el('button', 'dash__door', '방으로'); room.type = 'button'; room.addEventListener('click', goRoom(t));
+      const room = el('button', 'dash__door', '채팅 열기'); room.type = 'button'; room.addEventListener('click', goRoom(t));
       doors.append(card, room); box.appendChild(doors);
       tl.appendChild(box);
     }
@@ -1775,7 +1775,7 @@ function pcardTop(a, pillEl) {
   top.appendChild(pillEl);
   return top;
 }
-const firstLine = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, 200) || '아직 한 일 없음';
+const firstLine = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, 200) || '완료 없음';
 
 /**
  * 멈춘 이유 한 줄 — 알약(멈춤·쉬는 중·자리 비움)만으로는 "왜" 를 모른다. 일하는 중·대표님께 물어봄은 이유가 알약에 있으니 빈 문자열.
@@ -1783,14 +1783,14 @@ const firstLine = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, 20
  */
 function whyStopped(t, p) {
   const s = summaries[t.id] ?? {};
-  if (p.state === 'blocked') return BOSS_WHY[s.needsBossWhy] ?? '대표님 답을 기다려요';
-  if (p.state === 'waiting') return s.phase !== 'running' ? `지금 하는 회차가 없어요${p.alive === false ? ' · 자리에 없어요' : ''}` : '누가 부르면 답해요';
-  if (p.state === 'resting') return p.alive === null ? '부를 때만 와요 — 5분 넘게 안 불렀어요' : '자리에 없어요 — 다시 켜야 해요';
+  if (p.state === 'blocked') return BOSS_WHY[s.needsBossWhy] ?? '답변 필요';
+  if (p.state === 'waiting') return s.phase !== 'running' ? `진행 중인 회차 없음${p.alive === false ? ' · 세션 없음' : ''}` : '대기 — 멘션 시 응답';
+  if (p.state === 'resting') return p.alive === null ? '대기 — 5분 이상 멘션 없음' : '세션 없음 — 재시작 필요';
   return '';
 }
 
 /** 일 상태 → 알약 글자·색 (결정 58 ①, 계약 3절 "일 상태"). 글자는 하영 사전 — 관제탑 셋·방 둘이 같은 글자. 서버의 people[자리].state — 마을 시계는 여기 없다. */
-const WORK_PILL = { working: ['일하는 중', 'live'], bossCall: ['대표님께 물어봄', 'boss'], blocked: ['멈춤', 'bad'], waiting: ['쉬는 중', 'idle'], resting: ['자리 비움', 'idle'] };
+const WORK_PILL = { working: ['진행 중', 'live'], bossCall: ['답변 대기', 'boss'], blocked: ['차단됨', 'bad'], waiting: ['대기', 'idle'], resting: ['자리 비움', 'idle'] };
 
 /**
  * 사람 카드 문 (결정 130 ① · 화면이-답하는-질문 "카드는 탭이 아니다. 문이다") — 방에서 얼굴·이름·참여 줄을 누르면
@@ -1828,7 +1828,7 @@ function personCard(t, id, a, p) {
     card.appendChild(el('div', 'pcard__why', [why, moved(p.lastSignal)].filter(Boolean).join(' · ')));
   } else {
     // 2줄 지금 하는 일 — 마지막 발언 뒤 도구 줄이면 "app.js 고치는 중", 아니면 마지막 발언 첫 문장. 3줄 "N분 전에 움직임"(결정 31 안죽었어요).
-    const doing = p.doing ? (p.doing.tool ? toolPhrase(p.doing, p.busy) : firstLine(p.doing.text)) : '아직 한 일 없음';
+    const doing = p.doing ? (p.doing.tool ? toolPhrase(p.doing, p.busy) : firstLine(p.doing.text)) : '완료 없음';
     card.appendChild(el('div', 'pcard__doing', doing));
     card.appendChild(el('div', 'pcard__nums', moved(p.lastSignal)));
     if (why) card.appendChild(el('div', 'pcard__why', why));
@@ -1843,7 +1843,7 @@ function personCard(t, id, a, p) {
   // ◂ 대표님이 부르셨어요 → 받았나 — 이 라운드에서 대표가 이름을 부른 마지막 말(bossAsk). 답했으면 "답했어요 · N분 전", 아니면 지금 상태로: 일하는 중 = 받았어요, 답 쓰는 중 · 자리 비움 · 멈춤 = 못 와요 · 왜. 누르면 그 부름
   if (p.bossAsk) {
     const q = p.bossAsk;
-    const got = q.replied ? `답했어요 · ${ago(q.replied)}` : p.busy || p.state === 'working' ? '받았어요, 답 쓰는 중' : p.state === 'resting' || p.alive === false ? '자리 비움' : p.state === 'blocked' ? `못 와요${why ? ' · ' + why : ''}` : '받았어요';
+    const got = q.replied ? `답했어요 · ${ago(q.replied)}` : p.busy || p.state === 'working' ? '읽음, 답변 중' : p.state === 'resting' || p.alive === false ? '자리 비움' : p.state === 'blocked' ? `부재${why ? ' · ' + why : ''}` : '읽음';
     const c = el('button', 'pcard__ask'); c.type = 'button'; c.dataset.k = q.replied || p.busy || p.state === 'working' ? 'ok' : 'bad';
     c.textContent = `◂ 대표님이 부르셨어요 · ${ago(q.ts)} → ${got}`;
     c.addEventListener('click', () => jumpTo(t.id, q.id));
@@ -1864,14 +1864,14 @@ function castRow(t, id, a) {
   const engine = ENGINE_OF[a.model] ?? null;
   if (!engine) return row;
   // 엔진 알약 셋(결정 69 ①) — 지금 것이 켜져 있고, 다른 쪽을 누르면 그 자리의 세션 종류가 바뀐다(다음 턴부터). 외부감사는 claude 로 못 간다(CLAUDE.md) — codex ↔ gemini 는 된다.
-  const engines = el('span', 'pcard__engines'); engines.setAttribute('role', 'group'); engines.title = '엔진 — 누르면 바뀜, 다음 턴부터';
+  const engines = el('span', 'pcard__engines'); engines.setAttribute('role', 'group'); engines.title = '엔진(다음 턴 적용)';
   const opts = castOptions ?? {};
   const locked = id === 'outside';
   for (const name of ['claude', 'codex', 'gemini']) {
     const b = el('button', 'pcard__engine', name); b.type = 'button';
     b.setAttribute('aria-pressed', name === engine ? 'true' : 'false');
     b.disabled = name === engine || (locked && name === 'claude');
-    if (locked && name === 'claude') b.title = '외부감사는 다른 회사 모델이어야 합니다 — 바꿀 수 없음';
+    if (locked && name === 'claude') b.title = '외부 감사는 타사 모델 고정';
     else if (name !== engine) b.title = `${name} 로 바꾸기 — 다음 턴부터${name === 'gemini' ? ' (임시 외부 감사 — 파일로 주고받아 느림)' : ''}`;
     b.addEventListener('click', () => { if (!b.disabled) send({ model: MODEL_OF[name] }, { redraw: true }); });
     engines.appendChild(b);
@@ -1881,20 +1881,20 @@ function castRow(t, id, a) {
   const field = engine === 'codex' ? 'codexModel' : engine === 'gemini' ? 'geminiModel' : 'llm';
   const current = a[field] ?? (engine === 'claude' ? (teams.find((x) => x.id === t.id)?.model ?? models[0]) : models[0]);
   const modelSel = select(models, current, null);   // 값이 없으면 방 기본(state/teams.json)이 골라져 보인다 — 실제로 도는 모델
-  modelSel.title = a[field] == null ? '방 기본값 — 고르면 이 자리에 고정' : '이 자리의 모델';
-  const effortSel = select(opts.efforts ?? [], a.effort ?? '', '강도 기본');
+  modelSel.title = a[field] == null ? '방 기본값' : '모델';
+  const effortSel = select(opts.efforts ?? [], a.effort ?? '', '기본');
   effortSel.title = '추론 강도';
   const msg = el('span', 'pcard__castmsg', '');
   const send = async (patch, { redraw = false } = {}) => {
-    msg.textContent = '저장 중…'; msg.dataset.bad = '0';
+    msg.textContent = '저장 중'; msg.dataset.bad = '0';
     try {
       const r = await fetch('/api/cast', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ team: t.id, actor: id, ...patch }) }).then((x) => x.json());
       if (r.error) { msg.textContent = r.error; msg.dataset.bad = '1'; return; }
       if (summaries[t.id]?.cast?.[id]) Object.assign(summaries[t.id].cast[id], r.agent);
-      msg.textContent = Object.keys(r.to ?? {}).length ? (r.restart === 'after-turn' ? '저장됨 · 지금 턴 끝나면' : '저장됨 · 다음 턴부터') : '그대로';
+      msg.textContent = Object.keys(r.to ?? {}).length ? (r.restart === 'after-turn' ? '저장됨(이번 턴 후)' : '저장됨(다음 턴)') : '유지';
       // 엔진이 바뀌면 모델 목록도 바뀐다 — 줄을 새로 그린다(요약 방송이 오기 전에).
       if (redraw && Object.keys(r.to ?? {}).length) row.replaceWith(castRow(t, id, summaries[t.id]?.cast?.[id] ?? r.agent));
-    } catch { msg.textContent = '서버가 답하지 않습니다'; msg.dataset.bad = '1'; }
+    } catch { msg.textContent = '서버 응답 없음'; msg.dataset.bad = '1'; }
   };
   modelSel.addEventListener('change', () => { if (modelSel.value) send({ [field]: modelSel.value }); });
   effortSel.addEventListener('change', () => { if (effortSel.value) send({ effort: effortSel.value }); });
@@ -1913,7 +1913,7 @@ let castOptions = {};
 // 일지 첫 문장·문단 펼치기(옛 사람 카드 5줄)는 헨리 2판에서 빠졌다 — 일지는 마을 카드(결정 13)와 /api/actor 에 그대로.
 
 /* ── 요청 — 팀 사이 요청 블록 (결정 45 ①·49·51, 계약 6-1절). 대표가 누를 버튼은 없다(결정 46 — 방향 안의 일). ── */
-const REQ_PILL = { open: ['진행 중', 'live'], done: ['끝냄', 'idle'], acked: ['받음', 'idle'] };   // 하영 3-1 요청 탭 표
+const REQ_PILL = { open: ['진행 중', 'live'], done: ['완료', 'idle'], acked: ['읽음', 'idle'] };   // 하영 3-1 요청 탭 표
 const openThreads = new Set();   // 스레드 전체를 펼쳐 둔 요청 id
 
 function nameOfWho(who) {
@@ -1929,7 +1929,7 @@ function requestPill(r) {
   return REQ_PILL[r.status] ?? REQ_PILL.open;
 }
 
-const REQ_LINE_LABEL = { goal: '뭘 부탁했나', done: '끝냄', ack: '받음', confirm: '확인', stop: '중단' };
+const REQ_LINE_LABEL = { goal: '요청', done: '완료', ack: '읽음', confirm: '확인', stop: '중단' };
 
 function requestCard(r, rerender = renderTower) {
   const card = el('div', 'apr');
@@ -1942,10 +1942,10 @@ function requestCard(r, rerender = renderTower) {
   card.appendChild(head);
   card.appendChild(el('div', 'apr__what', r.what));
   const bits = [];
-  if (r.why) bits.push(`왜: ${r.why}`);
+  if (r.why) bits.push(`사유: ${r.why}`);
   if (r.due) bits.push(`기한 ${r.due}`);
   if (r.mode === 'milestone') bits.push('공동 프로젝트 — 단계 끝까지 열어 둠');
-  if (r.goal) bits.push(`뭘 부탁했나: ${r.goal}`);
+  if (r.goal) bits.push(`요청: ${r.goal}`);
   if (bits.length) card.appendChild(el('div', 'apr__detail', bits.join(' · ')));
 
   if (r.thread.length) {
@@ -1962,7 +1962,7 @@ function requestCard(r, rerender = renderTower) {
       th.appendChild(row);
     }
     if (r.thread.length > 3) {
-      const more = el('button', 'apr__link', showAll ? '최근 3줄만' : '전체 보기'); more.type = 'button';
+      const more = el('button', 'apr__link', showAll ? '최근 3개' : '전체 보기'); more.type = 'button';
       more.addEventListener('click', () => { if (showAll) openThreads.delete(r.id); else openThreads.add(r.id); rerender(); });
       th.appendChild(more);
     }
@@ -1977,9 +1977,9 @@ const openAsks = new Set();
 function renderTowerAsks(grid) {
   const box = el('section', 'dash__card');
   const open = requestsAll.filter((r) => r.status !== 'closed'), closed = requestsAll.filter((r) => r.status === 'closed');
-  box.appendChild(el('div', 'dash__k', requestsAll.length ? `요청 — 열림 ${open.length} · 닫힘 ${closed.length}` : '요청'));
+  box.appendChild(el('div', 'dash__k', requestsAll.length ? `요청 — 진행 ${open.length} · 완료 ${closed.length}` : '요청'));
   if (!requestsAll.length) {
-    box.appendChild(el('div', 'dash__empty', requestsLoaded ? '팀끼리 부탁한 일이 아직 없어요.' : '불러오는 중…'));
+    box.appendChild(el('div', 'dash__empty', requestsLoaded ? '요청 없음' : '로딩 중'));
   } else {
     for (const r of [...open, ...closed]) {
       const row = el('button', 'dash__row'); row.type = 'button'; row.dataset.open = openAsks.has(r.id) ? '1' : '0';
@@ -2036,24 +2036,24 @@ function renderTowerTeams(grid) {
     // 머리 — 팀 이름(0-1 확정) · 알약. 글자는 현황 ④ 팀 줄과 같은 넷(하영 사전 3-1)
     const top = el('div', 'tcard__top');
     const name = el('span', 'tcard__name', roomWord(t));
-    name.title = '이 방 열기';
+    name.title = '채팅 열기';
     name.addEventListener('click', async () => { await selectTeam(t.id); setView('room'); });
     top.appendChild(name);
     top.appendChild(pill(
-      s.needsBoss ? '대표님 답 기다림' : s.bossCall ? '대표님께 물어봄' : office ? '대표님과 톰' : s.phase === 'blocked' ? '멈춤' : running ? '일하는 중' : '쉬는 중',
+      s.needsBoss ? '답변 필요' : s.bossCall ? '답변 필요' : office ? '대표님과 톰' : s.phase === 'blocked' ? '차단됨' : running ? '진행 중' : '대기',
       s.needsBoss || s.bossCall ? 'boss' : s.phase === 'blocked' ? 'bad' : running ? 'live' : 'idle'));
     card.appendChild(top);
     // 부제 — "N단계 제목 · N회차" (+ 왜 대표 차례인가). 총괄실은 회차가 없다
     const sub = office ? '대표님과 톰. 여기서 한 말을 톰이 팀에 나눠요'
-      : [s.round && s.milestone ? `${s.milestone}단계 ${s.milestoneTitle ?? ''}`.trim() : '지금 하는 회차 없음', s.round ? `${s.round}회차` : null, s.needsBoss ? (BOSS_WHY[s.needsBossWhy] ?? '대표님 답을 기다려요') : s.bossCall ? `${agents[s.bossCall.by]?.name ?? s.bossCall.by} · ${ago(s.bossCall.ts)}` : null].filter(Boolean).join(' · ');
+      : [s.round && s.milestone ? `${s.milestone}단계 ${s.milestoneTitle ?? ''}`.trim() : '진행 중인 회차 없음', s.round ? `${s.round}회차` : null, s.needsBoss ? (BOSS_WHY[s.needsBossWhy] ?? '답변 필요') : s.bossCall ? `${agents[s.bossCall.by]?.name ?? s.bossCall.by} · ${ago(s.bossCall.ts)}` : null].filter(Boolean).join(' · ');
     card.appendChild(el('div', 'tcard__sub', sub));
 
     // 단계 N/M — 계획표 그대로(도면 2겹). 지금 단계 오른쪽에 회차 네모(채움 = 닫힌 회차 · 초록 테두리 = 지금 · 회색 테두리 = 남은 것, timebox 회차 수만큼). 누르면 계획표 카드(방 오른쪽)
     if (!office) {
       const list = s.milestones ?? [];
       const total = s.milestonesTotal ?? list.length, done = s.milestonesDone ?? list.filter((m) => m.status === 'pass').length;
-      card.appendChild(el('div', 'tcard__k', total ? `단계 ${done}/${total}` : '단계'));
-      if (s.milestones && !list.length) card.appendChild(el('div', 'tcard__quiet', '계획표 아직 없어요'));   // milestones 자체가 없으면 옛 서버(재시작 전) — 목록만 비워 둔다
+      card.appendChild(el('div', 'tcard__k', total ? `마일스톤 ${done}/${total}` : '마일스톤'));
+      if (s.milestones && !list.length) card.appendChild(el('div', 'tcard__quiet', '로드맵 없음'));   // milestones 자체가 없으면 옛 서버(재시작 전) — 목록만 비워 둔다
       const ul = el('div', 'tcard__stages');
       for (const m of list) {
         const st = m.status === 'pass' ? 'pass' : m.status === 'now' || m.n === s.milestone ? 'now' : 'wait';
@@ -2063,7 +2063,7 @@ function renderTowerTeams(grid) {
           const boxes = el('span', 'tcard__rounds');
           const n = Math.max(1, Math.ceil(Number(/(\d+(?:\.\d+)?)\s*라운드/.exec(String(m.timebox ?? ''))?.[1] ?? 1))), used = Math.min(n, s.roundsInMilestone ?? 0);
           for (let i = 0; i < Math.max(n, used + (running ? 1 : 0)); i++) { const b = el('i'); b.dataset.k = i < used ? 'done' : i === used && running ? 'now' : 'rest'; boxes.appendChild(b); }
-          boxes.title = `이 단계에 쓴 회차 ${used}${m.timebox ? ` · 계획표 ${m.timebox}` : ''}`;
+          boxes.title = `이 단계에 쓴 회차 ${used}${m.timebox ? ` · 로드맵 ${m.timebox}` : ''}`;
           row.appendChild(boxes);
         }
         row.addEventListener('click', async () => { await selectTeam(t.id); setView('room'); document.getElementById('cardRoadmap')?.scrollIntoView({ block: 'start' }); });
@@ -2073,11 +2073,11 @@ function renderTowerTeams(grid) {
     }
 
     // 이 회차 — 상황판 네 칸 글자 그대로(progress.json: 하는 것 · 막힌 것 · 대표님이 보실 것 · 다음). 현황 ④ 펼친 줄과 같은 넷. 없으면 "없어요"
-    card.appendChild(el('div', 'tcard__k', '이 회차'));
+    card.appendChild(el('div', 'tcard__k', '이번 회차'));
     const p = s.progress;
-    if (!p) card.appendChild(el('div', 'tcard__quiet', office ? '총괄실은 상황판이 없어요 — 승인·부탁·보고서가 일이에요.' : '아직 상황판을 안 썼어요.'));
+    if (!p) card.appendChild(el('div', 'tcard__quiet', office ? '총괄실 — 상황판 없음(승인·요청·리포트)' : '상황판 없음'));
     else {
-      for (const [k, label] of [['doing', '하는 것'], ['blocked', '막힌 것'], ['boss', '대표님이 보실 것'], ['next', '다음']]) {
+      for (const [k, label] of [['doing', '지금'], ['blocked', '이슈'], ['boss', '대표님이 보실 것'], ['next', '다음']]) {
         const lines = p[k] ?? [];
         const kv = el('div', 'tcard__kv'); kv.dataset.k = k;
         kv.appendChild(el('b', null, label));
@@ -2090,7 +2090,7 @@ function renderTowerTeams(grid) {
     // 다른 팀에 부탁한 일 N — 이 팀이 연 요청 블록 중 열린 것(요청 탭과 같은 목록). 누르면 요청 탭의 그 블록
     const asks = requestsAll.filter((r) => r.from?.team === t.id && r.status !== 'closed');
     if (asks.length) {
-      card.appendChild(el('div', 'tcard__k', `다른 팀에 부탁한 일 ${asks.length}`));
+      card.appendChild(el('div', 'tcard__k', `다른 팀에 요청한 일 ${asks.length}`));
       for (const r of asks) {
         const row = el('button', 'tcard__ask'); row.type = 'button';
         const toName = teams.find((x) => x.id === r.to?.team);
@@ -2105,7 +2105,7 @@ function renderTowerTeams(grid) {
     // 사람 — 그 방의 자리(대표·안내 빼고). 칩 · 이름 직책 · 지금 하는 일 · N분 전에 움직임 · 알약(사람 카드와 같은 글자). 누르면 사람 카드
     const people = Object.entries(s.people ?? {}).filter(([id]) => id !== 'boss' && agents[id] && !agents[id].from);
     if (people.length) {
-      card.appendChild(el('div', 'tcard__k', '사람'));
+      card.appendChild(el('div', 'tcard__k', '멤버'));
       for (const [id, pp] of people) {
         const a = agents[id];
         const row = el('button', 'tcard__person'); row.type = 'button'; row.dataset.actor = `${t.id}:${id}`;
@@ -2113,7 +2113,7 @@ function renderTowerTeams(grid) {
         const who = el('span', 'tcard__pwho');
         const nm = el('b', null, a.name ?? id); if (a.title) nm.appendChild(el('small', null, ` ${a.title}`)); who.appendChild(nm);
         const working = pp.state === 'working';
-        const doing = pp.doing ? (pp.doing.tool ? toolPhrase(pp.doing, pp.busy) : firstLine(pp.doing.text)) : '아직 한 일 없음';
+        const doing = pp.doing ? (pp.doing.tool ? toolPhrase(pp.doing, pp.busy) : firstLine(pp.doing.text)) : '완료 없음';
         who.appendChild(el('span', null, `${doing.slice(0, 48)}${doing.length > 48 ? '…' : ''} · ${moved(pp.lastSignal)}`));
         row.appendChild(who);
         const st = WORK_PILL[pp.state] ?? WORK_PILL.waiting;
@@ -2134,7 +2134,7 @@ function renderTowerTeams(grid) {
     box.autocomplete = 'off';
     box.dataset.team = t.id;
     box.value = draft[t.id] ?? '';
-    box.placeholder = office ? `${agents[t.owner ?? 'chief']?.name ?? '톰'}에게 말하기` : s.phase === 'blocked' ? '답을 적으면 회차가 이어져요' : running ? `${agents.guide?.name ?? '팀장'}에게 말하기` : '이번 회차에서 뭘 하나요';
+    box.placeholder = office ? `${agents[t.owner ?? 'chief']?.name ?? '톰'}에게 말하기` : s.phase === 'blocked' ? '답변 시 회차 재개' : running ? `${agents.guide?.name ?? '팀장'}에게 말하기` : '이번 회차';
     box.addEventListener('input', () => { draft[t.id] = box.value; });
 
     const fail = (m) => { err.textContent = m; err.hidden = false; };
@@ -2145,7 +2145,7 @@ function renderTowerTeams(grid) {
       err.hidden = true;
       box.value = ''; draft[t.id] = '';
       const r = await post('/api/say', { team: t.id, text });
-      if (!r.ok) { box.value = text; draft[t.id] = text; fail(r.data.error ?? '전달하지 못했습니다.'); }
+      if (!r.ok) { box.value = text; draft[t.id] = text; fail(r.data.error ?? '전송 실패'); }
     };
 
     const doRound = async () => {
@@ -2153,9 +2153,9 @@ function renderTowerTeams(grid) {
       if (running) {
         if (!confirm(`${t.name}팀 ${s.round}회차를 마무리해요.\n\n대화 기록은 그대로 남아요.`)) return;
         const r = await post('/api/round', { team: t.id, action: 'end' });
-        if (!r.ok) fail(r.data.error ?? '마무리하지 못했어요.');
-        else if (r.data.deferred) fail(`${agents.guide?.name ?? '팀장'}이 일하는 중이에요. 이 말 끝나면 마무리할게요.`);
-        else if (r.data.accepted) fail('마무리하는 중 — 일지를 받은 뒤 끝나요. 끝나면 방에 안내가 남아요.');
+        if (!r.ok) fail(r.data.error ?? '종료 실패');
+        else if (r.data.deferred) fail(`${agents.guide?.name ?? '팀장'}이 진행 중이에요. 이 말 끝나면 마무리할게요.`);
+        else if (r.data.accepted) fail('종료 중 — 일지 수집');
         return;
       }
       const topic = box.value.trim();
@@ -2170,7 +2170,7 @@ function renderTowerTeams(grid) {
       (office || running) ? doSay() : doRound();
     });
 
-    const btn = el('button', 'tcard__r', running ? '회차 마무리' : '회차 시작');
+    const btn = el('button', 'tcard__r', running ? '회차 종료' : '회차 시작');
     btn.type = 'button';
     btn.hidden = office || s.phase === 'blocked';   // 막힌 방은 대표가 말해 풀기 전엔 닫히지 않는다
     btn.addEventListener('click', doRound);
@@ -2262,24 +2262,24 @@ function loadDashboardBand(r) {
   const roundsWord = (n) => (n === 0.5 ? '반' : n);
   const openWhy = (row, text) => { const why = row.querySelector('.band__why'); if (why) { why.remove(); return; } const w = el('div', 'band__why'); w.textContent = text; row.appendChild(w); };
   const whyOf = (t, s) => {
-    if (s.status === 'gated') return `계획표에 적힌 조건 — "${s.gate}"`;
+    if (s.status === 'gated') return `로드맵 조건 — "${s.gate}"`;
     if (s.status === 'blocked') return s.blockedWhy ?? '';
     if (!s.plannedFrom) return `${stageNo(s)} ${s.title}`;   // timebox 없는 단계 — 날짜를 지어내지 않는다
     const base = `${timeWord(s.plannedFrom, now)} 시작 · 회차 평균 ${spanWord(t.roundMs)}${s.rounds != null ? ` × ${roundsWord(s.rounds)}회차` : ''} → ${timeWord(s.plannedTo, now)}`;
-    return s.late > 0 ? `${base} · 예정보다 ${spanWord(s.late)} 지났어요 — 멈춘 시간은 뺐어요` : base;
+    return s.late > 0 ? `${base} · 예정 대비 ${spanWord(s.late)} 지연 — 중단 시간 제외` : base;
   };
   for (const t of r.teams ?? []) {
     const row = el('div', 'band__row'); row.dataset.team = t.id;
     const label = el('div', 'band__team');
     label.appendChild(el('b', null, t.room ?? t.name));
     const nowStage = t.stages.find((s) => s.status === 'running' || s.status === 'blocked');
-    label.appendChild(el('span', null, nowStage ? `${nowStage.n}단계 ${shortTitle(nowStage)}` : '단계 없음'));
+    label.appendChild(el('span', null, nowStage ? `${nowStage.n}단계 ${shortTitle(nowStage)}` : '마일스톤 없음'));
     row.appendChild(label);
     const lane = el('div', 'band__lane'); lane.style.setProperty('--team', t.color ?? 'var(--ink-4)');
     lane.style.setProperty('--seg', `${seg}%`);   // 칸 선 — 눈금 수에 맞춰(폰 넷·컴퓨터 다섯 + 뒤 한 칸)
     if (!t.stages.length) {   // 빈칸 말 둘(1-2) — 계획표 파일이 없다 / 있는데 남은 단계가 없다. 대표 문이 아니다 — 총괄실 계획표는 톰이, 경영 다음 단계는 노라가 적는다(T7)
-      const g = el('button', 'band__box band__box--gated', t.hasRoadmap === false ? '계획표 아직 없어요' : '다음 단계 아직 없어요'); g.type = 'button'; g.style.left = '0'; g.style.width = '48%';
-      g.addEventListener('click', () => openWhy(row, '계획표가 적히면 여기 떠요'));
+      const g = el('button', 'band__box band__box--gated', t.hasRoadmap === false ? '로드맵 없음' : '다음 마일스톤 없음'); g.type = 'button'; g.style.left = '0'; g.style.width = '48%';
+      g.addEventListener('click', () => openWhy(row, '로드맵 등록 시 표시'));
       lane.appendChild(g);
     }
     let cursorPct = 0;
@@ -2292,12 +2292,12 @@ function loadDashboardBand(r) {
       cursorPct = left + width + 1;
       const b = el('button', `band__box band__box--${s.status}`); b.type = 'button';
       // 점선 칸 "N단계 — 대표님이 정한 뒤"(대표 문) · "N단계 — {무엇} 뒤"(다른 팀·다른 일 뒤, T4) — timebox 원문은 펼친 줄에(T5). 빨간 칸 "N단계 — {날}까지 못 끝남 (이유)"(3-5-3 ⑨). 채움 "N단계 · {날}까지"
-      const text = s.status === 'gated' ? `${stageNo(s)} — ${s.gateWhat ?? '대표님이 정한 뒤'}` : s.status === 'blocked' ? `${stageNo(s)} — ${to ? dayWord(to, now) + '까지 ' : ''}못 끝남${s.blockedWhy ? ' (' + s.blockedWhy + ')' : ''}` : `${stageNo(s)}${to ? ' · ' + dayWord(to, now) + '까지' : ''}`;
+      const text = s.status === 'gated' ? `${stageNo(s)} — ${s.gateWhat ?? '대표 결정 후'}` : s.status === 'blocked' ? `${stageNo(s)} — ${to ? dayWord(to, now) + ' 지연' : '지연'}${s.blockedWhy ? ' (' + s.blockedWhy + ')' : ''}` : `${stageNo(s)}${to ? ' · ' + dayWord(to, now) + '까지' : ''}`;
       b.textContent = text; b.title = `${s.n != null ? s.n + '단계 ' : ''}${s.title}`;
       b.style.left = `${left}%`; b.style.width = `${width}%`;
-      b.addEventListener('click', () => openWhy(row, `${whyOf(t, s)} — 계획표는 현황 팀 카드에`));
+      b.addEventListener('click', () => openWhy(row, `${whyOf(t, s)} — 로드맵은 현황 팀 카드에`));
       lane.appendChild(b);
-      if (s.late > 0) { const lt = el('span', 'band__late', `${stageNo(s)} ${spanWord(s.late)} 늦음`); lt.style.setProperty('--w', `${Math.max(3, Math.min(40, x(now + s.late)))}%`); lane.appendChild(lt); row.classList.add('band__row--late'); }
+      if (s.late > 0) { const lt = el('span', 'band__late', `${stageNo(s)} ${spanWord(s.late)} 지연`); lt.style.setProperty('--w', `${Math.max(3, Math.min(40, x(now + s.late)))}%`); lane.appendChild(lt); row.classList.add('band__row--late'); }
     }
     row.appendChild(lane);
     // 담당 점 둘(1-3, 결정 128 "누가") — 그 팀의 둘, 머리글자 · 직책 색. 서버 owners(cast 에서 다른 회사 뺀 둘, 팀장 먼저)
@@ -2310,7 +2310,7 @@ function loadDashboardBand(r) {
   // 머리 글자는 하영 사전 4절 "대표님이 여실 단계"(09-15 23:57 — 전엔 사전 밖 말 '대표 답이 있어야 열리는 단계' 였다, R26 어긋남 다섯 중 마지막).
   const bg = (r.bossGates ?? []).filter((g) => g.kind === 'stage');
   if (bg.length) {
-    gates.appendChild(el('div', 'gates__k', `대표님이 여실 단계 ${bg.length}`));
+    gates.appendChild(el('div', 'gates__k', `대표 결정 대기 ${bg.length}`));
     for (const g of bg) { const c = el('div', 'gates__card'); c.appendChild(el('b', null, teams.find((t) => t.id === g.team)?.name ?? g.team)); c.append(' ' + g.what); gates.appendChild(c); }
   }
 }
@@ -2339,7 +2339,7 @@ async function loadReport({ force = false } = {}) {
   reportFetchedAt = Date.now();
   const r = await fetch('/api/report').then((r) => r.json()).catch(() => null);
   const body = $('repBody');
-  if (!r) { body.replaceChildren(el('p', 'tcard__quiet', '보고서를 못 읽었어요 — 서버가 옛 판이면 다시 켜야 해요.')); return; }
+  if (!r) { body.replaceChildren(el('p', 'tcard__quiet', '리포트 로딩 실패 — 서버 재시작 필요')); return; }
   const mark = `${r.since}|${r.until}|${(r.done ?? []).map((t) => t.items.length).join(',')}|${(r.blocked ?? []).length}|${(r.proxy ?? []).length}|${approvals.length}|${(r.chief ?? '').length}`;
   if (reportMark === mark) return;
   reportMark = mark;
@@ -2368,12 +2368,12 @@ function renderReport(r) {
   const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
   if (mine.length || fromBoard.length) {
     const sec = el('section', 'dash__card rep__sec'); sec.dataset.block = 'mine'; sec.dataset.alert = '1';
-    sec.appendChild(el('div', 'dash__k', `오늘 정하실 것 ${mine.length + fromBoard.length}`));
+    sec.appendChild(el('div', 'dash__k', `승인 필요 ${mine.length + fromBoard.length}`));
     for (const it of mine) {
       const row = el('button', 'dash__row'); row.type = 'button';
-      row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '결재 기다림' : it.kind === 'boss' ? '대표님께 물어봄' : '멈춤'}`));
+      row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '승인 필요' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));
       row.appendChild(bossLine(it.text, 'dash__sub'));
-      row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '읽고 답하기' : '방으로'));
+      row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '확인' : '채팅 열기'));
       row.addEventListener('click', () => { const tg = it.target ?? {}; if (it.kind === 'approval') { const a = approvals.find((x) => x.id === (tg.approval ?? String(it.id).split(':')[1])); if (a) openApprovalPop(a); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
       sec.appendChild(row);
     }
@@ -2384,13 +2384,13 @@ function renderReport(r) {
   // ② 톰·제리가 대표님 대신 정했어요 — 창 안의 대리 결정(note meta.proxy). 되돌리시려면 방에 한마디(결정 85 ③)
   if ((r.proxy ?? []).length) {
     const sec = el('section', 'dash__card rep__sec'); sec.dataset.block = 'proxy';
-    sec.appendChild(el('div', 'dash__k', `${deciders(delegation)}가 대표님 대신 정했어요 — 되돌리시려면 방에 한마디`));   // 위임 중엔 나리·제리(notify.deciders)
+    sec.appendChild(el('div', 'dash__k', '대리 결정 — 되돌리기는 답하기'));   // 위임 중엔 나리·제리(notify.deciders)
     for (const p of r.proxy) {
       const row = el('button', 'dash__row'); row.type = 'button';
       row.appendChild(el('b', null, `${teamOf(p.team).name} · ${whenKo(p.ts)}`));
       // 사람 말 검사(결정 140, G4 — 안젤 사용성 표: [C]·카드 번호·결정 번호가 그대로 섰다). 머리말을 뗀 뒤 자에 안 맞으면 "아직 쉬운 말로 안 적음" + 원문 펼침
       row.appendChild(bossLine(String(p.text).replace(/^대리 결정[^—:]*[—:]\s*/, ''), 'dash__sub'));
-      row.appendChild(el('span', 'dash__go', '방으로'));
+      row.appendChild(el('span', 'dash__go', '채팅 열기'));
       row.addEventListener('click', () => jumpTo(p.team, p.id));
       sec.appendChild(row);
     }
@@ -2400,7 +2400,7 @@ function renderReport(r) {
   // ③ 막힌 것 N · 한 것은 점, 멈춤은 빨간 띠 — 팀마다 시간 띠 한 줄(창 = 띠 가로), 그 밑에 멈춘 구간 하나씩(5판 3-5-3 ⑫: '멈춘 것' 이 아니라 '막힌 것' — 막힌 것 = 일)
   const spans = r.blocked ?? [];
   const sec3 = el('section', 'dash__card rep__sec'); sec3.dataset.block = 'band';
-  sec3.appendChild(el('div', 'dash__k', `막힌 것 ${spans.length} · 한 것은 점, 멈춤은 빨간 띠`));
+  sec3.appendChild(el('div', 'dash__k', `이슈 ${spans.length} · 점 = 완료, 빨간 띠 = 중단`));
   const axis = el('div', 'rep__axis'); axis.append(el('span', null, whenKo(since)), el('span', null, whenKo(until))); sec3.appendChild(axis);
   const bands = el('div', 'bands');
   for (const t of (r.teams ?? [])) {
@@ -2413,20 +2413,20 @@ function renderReport(r) {
     bands.appendChild(line);
   }
   sec3.appendChild(bands);
-  sec3.appendChild(el('div', 'rep__legend', '점 = 낸 것 하나 · 빨간 띠 = 멈춰 있던 시간 · 색 = 팀'));
+  sec3.appendChild(el('div', 'rep__legend', '점 = 완료 1건 · 빨간 띠 = 중단 시간 · 색 = 팀'));
   // 창이 통째로(또는 거의) 쉰 시간이면 막힌 것이 아니라 쉰 것 — 한 줄로(나리 09-15: 멈춘 하루가 '네 팀이 밤새 막혔다' 로 읽혔다). 서버도 그 구간은 띠에서 잘라냈다
   const rested = pausedMs(since, until, pauses);
   if (rested > 0) {
     const msOf = (v) => (typeof v === 'number' ? v : Date.parse(v));   // boot.pauses 는 ms
     const p = pauses.find((pz) => msOf(pz.to) > since && msOf(pz.from) < until);
     const whole = rested >= (until - since) * 0.95;
-    sec3.appendChild(el('div', 'rep__rest', `${whole ? '이 창은 쉰 시간이에요' : `이 창의 ${forShort(rested).replace(/째$/, '')}은 쉰 시간이에요`} — ${p ? `${whenKo(p.from)} → ${whenKo(p.to)}${p.why ? ' · ' + String(p.why).split('(')[0].trim() : ''}` : ''}`));
+    sec3.appendChild(el('div', 'rep__rest', `${whole ? '이 구간은 중단' : `${forShort(rested).replace(/째$/, '')} 중단`} — ${p ? `${whenKo(p.from)} → ${whenKo(p.to)}${p.why ? ' · ' + String(p.why).split('(')[0].trim() : ''}` : ''}`));
   }
   for (const s of spans) {
     const row = el('button', 'dash__row rep__stuck'); row.type = 'button';
     const head = el('span', 'dash__head'); head.appendChild(el('i', 'dot dot--bad')); head.appendChild(el('b', null, `${s.teamName}${s.name ? ' · ' + s.name : ''} — ${s.text}`)); row.appendChild(head);
     const to = s.to ? Date.parse(s.to) : now;
-    row.appendChild(el('span', 'dash__sub', `${whenKo(s.from)} → ${s.to ? whenKo(s.to) : '아직'}${s.to ? ' · 지금은 풀렸어요' : ''}`));
+    row.appendChild(el('span', 'dash__sub', `${whenKo(s.from)} → ${s.to ? whenKo(s.to) : '아직'}${s.to ? ' · 현재 재개' : ''}`));
     const w = el('span', 'wait'); w.appendChild(el('i', 'dot dot--bad')); w.append(forShort(Math.max(0, to - Date.parse(s.from) - pausedMs(s.from, to, pauses))).replace(/째$/, '')); row.appendChild(w);
     row.addEventListener('click', () => jumpTo(s.team, s.ref ?? null));
     sec3.appendChild(row);
@@ -2435,7 +2435,7 @@ function renderReport(r) {
 
   // ④ 팀마다 한 것 — 누르면 세 줄(한 것 · 막힌 것 · 검토 결과). 줄 = 팀 · N단계 제목 · N회차 · 진행 막대 N/M · 한 줄 · 그림
   const sec4 = el('section', 'dash__card rep__sec'); sec4.dataset.block = 'teams';
-  sec4.appendChild(el('div', 'dash__k', '팀마다 한 것 — 누르면 세 줄'));
+  sec4.appendChild(el('div', 'dash__k', '팀별 완료'));
   for (const t of (r.teams ?? [])) {
     const items = (r.done ?? []).find((x) => x.team === t.id)?.items ?? [];
     const made = items.filter((it) => it.kind !== 'verdict' && it.kind !== 'decision');
@@ -2445,10 +2445,10 @@ function renderReport(r) {
     const head = el('span', 'dash__head');
     const d = el('span', 'dot'); d.style.background = colorOf(t.id); head.appendChild(d);
     head.appendChild(el('b', null, t.room ?? t.name));
-    head.appendChild(el('span', 'dash__stage', t.milestone ? `${t.milestone}단계 ${t.milestoneTitle ?? ''}`.slice(0, 22) + (t.round ? ` · ${t.round}회차` : '') : '단계 없음'));
+    head.appendChild(el('span', 'dash__stage', t.milestone ? `${t.milestone}단계 ${t.milestoneTitle ?? ''}`.slice(0, 22) + (t.round ? ` · ${t.round}회차` : '') : '마일스톤 없음'));
     if (!t.office && t.total) { head.appendChild(progressBar(t.done, t.total, colorOf(t.id))); head.appendChild(el('span', 'bars__n', `${t.done}/${t.total}`)); }
     row.appendChild(head);
-    row.appendChild(el('span', 'dash__sub', made.length ? made.slice(0, 2).map((it) => it.text.replace(/^(커밋|산출물) — /, '')).join(' · ') : '이 사이엔 한 일이 없어요.'));
+    row.appendChild(el('span', 'dash__sub', made.length ? made.slice(0, 2).map((it) => it.text.replace(/^(커밋|산출물) — /, '')).join(' · ') : '완료 없음'));
     if (imgs.length) { const th = el('span', 'rep__thumbs'); for (const im of imgs) { const img = el('img', 'rep__thumb'); img.src = im.url; img.alt = im.name; img.loading = 'lazy'; th.appendChild(img); } row.appendChild(th); }
     row.addEventListener('click', () => { if (openReport.has(t.id)) openReport.delete(t.id); else openReport.add(t.id); renderReport(r); });
     sec4.appendChild(row);
@@ -2456,7 +2456,7 @@ function renderReport(r) {
       const box = el('div', 'dash__open');
       const three = [
         ['한 것', made.length ? made.map((it) => it.text).join(' · ') : '없어요'],
-        ['막힌 것', spans.filter((s) => s.team === t.id).map((s) => s.text).join(' · ') || '없어요'],
+        ['이슈', spans.filter((s) => s.team === t.id).map((s) => s.text).join(' · ') || '없어요'],
         ['검토 결과', verdicts.length ? verdicts.map((it) => `${it.text.split(' — ')[0]}(${it.name ?? it.by})`).join(' · ') : '없어요'],
       ];
       for (const [k, v] of three) { const kv = el('div', 'dash__kv'); kv.appendChild(el('b', null, `${k} —`)); kv.appendChild(el('span', null, v)); box.appendChild(kv); }
@@ -2469,7 +2469,7 @@ function renderReport(r) {
   const nexts = (r.teams ?? []).map((t) => ({ t, line: (r.next?.[t.id] ?? [])[0] })).filter((x) => x.line);
   if (nexts.length) {
     const sec5 = el('section', 'dash__card rep__sec'); sec5.dataset.block = 'next';
-    sec5.appendChild(el('div', 'dash__k', '오늘 — 각 방이 먼저 할 일'));
+    sec5.appendChild(el('div', 'dash__k', '오늘 할 일'));
     for (const { t, line } of nexts) {
       const row = el('button', 'dash__row'); row.type = 'button';
       const head = el('span', 'dash__head'); const d = el('span', 'dot'); d.style.background = colorOf(t.id); head.appendChild(d); head.appendChild(el('b', null, t.guide ?? t.name)); row.appendChild(head);
@@ -2488,7 +2488,7 @@ function renderReport(r) {
       const q = el('div', 'rep__word');
       q.append(first.replace(/\*\*/g, '').slice(0, 240));
       q.appendChild(el('span', 'rep__by', ' — 톰'));
-      if (r.chiefFile) { const a = el('a', 'rep__more', '전부 읽기'); a.href = `/out/${r.chiefFile}`; a.target = '_blank'; a.rel = 'noopener'; q.appendChild(a); }
+      if (r.chiefFile) { const a = el('a', 'rep__more', '전체'); a.href = `/out/${r.chiefFile}`; a.target = '_blank'; a.rel = 'noopener'; q.appendChild(a); }
       body.appendChild(q);
     }
   }
@@ -2509,7 +2509,7 @@ async function loadAnalysis() {
   if (!r || r.error) return;
   renderAnalysis(r);
 }
-const nthWord = (n) => { const w = ['', '첫', '두', '세', '네', '다섯', '여섯', '일곱', '여덟', '아홉', '열'][n]; return w ? `${w} 번째` : `${n}번째`; };   // 열까지는 말로(시안 "세 번째"), 그 뒤는 "18번째"
+const nthWord = (n) => { const w = ['', '첫', '두', '세', '네', '다섯', '여섯', '일곱', '여덟', '아홉', '열'][n]; return w ? `${w} 회째` : `${n}회째`; };   // 열까지는 말로(시안 "세 번째"), 그 뒤는 "18번째"
 /** 회차 네모를 같은 자리에 겹친다(numbers ③ · 시안 ③) — 세 번째부터 빨강. 네모 수 = 값(나리 R29: 열둘에서 자르니 18·13·11 계단이 같은 높이였다) — 마흔 넘으면 마지막에 … */
 function stackBoxes(n) {
   const shown = Math.min(n, 40);
@@ -2544,11 +2544,11 @@ function renderAnalysis(r) {
   const nameOf = (id) => { const t = teamOf(id); return t ? roomWord(t) : id; };
 
   // ① 어디서 자꾸 막히나 — 돌려보낸 결재: {팀} a건 중 b(다섯 팀 다, 같은 순서). 팀마다 같은 자(1건 = 같은 길이) — 옅은 띠 = 올린 결재, 짙은 띠 = 돌려보낸 것, 튀는 팀만 빨강(numbers ⑥)
-  const c1 = anCard('어디서 자꾸 막히나');
+  const c1 = anCard('반복 이슈');
   const stuck = r.stuck ?? [];
   const maxTotal = Math.max(1, ...stuck.map((s) => s.total));
   const sent = el('div', 'an__sentence');
-  sent.append('돌려보낸 결재 — ');
+  sent.append('반려 — ');
   stuck.forEach((s, i) => { const t = el('span', null, `${nameOf(s.team)} ${s.total}건 중 ${s.count}`); if (s.worst) t.dataset.k = 'bad'; sent.appendChild(t); if (i < stuck.length - 1) sent.append(' · '); });
   c1.appendChild(sent);
   for (const s of stuck) {
@@ -2564,39 +2564,39 @@ function renderAnalysis(r) {
   body.appendChild(c1);
 
   // ② 무엇이 느려졌나 — 회차 길이: 지난 회차 → 이번 회차. 제일 나빠진 팀(빨강)과 제일 좋아진 팀(초록) — 시안은 둘. 지난 = 회색, 이번 = 위·아래 색, 같은 자
-  const c2 = anCard('무엇이 느려졌나');
+  const c2 = anCard('지연');
   const slowed = r.slowed ?? [];
   const picks = [];
   const worse = slowed.find((s) => s.dir === 'bad'), better = [...slowed].reverse().find((s) => s.dir === 'good');
   if (worse) picks.push(worse); if (better && better !== worse) picks.push(better);
   if (!picks.length && slowed[0]) picks.push(slowed[0]);
-  if (!picks.length) c2.appendChild(el('div', 'panel__note', '견줄 회차가 아직 없어요 — 회차 둘이 끝나면 떠요'));
+  if (!picks.length) c2.appendChild(el('div', 'panel__note', '비교 대상 없음 — 회차 2개 필요'));
   const maxMs = Math.max(1, ...picks.flatMap((s) => [s.prev, s.cur]));
   for (const s of picks) {
     const box = el('span', 'an__pair');
-    const text = el('span', 'an__sentence', `${nameOf(s.team)} 회차 길이 — 지난 회차 ${spanWord(s.prev)} → 이번 회차 ${spanWord(s.cur)}`); text.dataset.k = s.dir; box.appendChild(text);
+    const text = el('span', 'an__sentence', `${nameOf(s.team)} 회차 길이 — 지난 ${spanWord(s.prev)} → 이번 ${spanWord(s.cur)}`); text.dataset.k = s.dir; box.appendChild(text);
     for (const [label, ms, k] of [['지난', s.prev, 'same'], ['이번', s.cur, s.dir]]) {
       const l = el('span', 'an__bar'); l.appendChild(el('span', 'an__m', label));
       const bar = el('i'); bar.style.width = `${Math.max(2, Math.round((ms / maxMs) * 100))}%`; bar.dataset.k = k; l.appendChild(bar); box.appendChild(l);
     }
-    if (s.pausedMs > 0) box.appendChild(el('span', 'an__note', `멈춘 ${spanWord(s.pausedMs)}은 뺐어요`));
+    if (s.pausedMs > 0) box.appendChild(el('span', 'an__note', `중단 ${spanWord(s.pausedMs)} 제외`));
     const why = [el('span', 'an__line', `${s.prevRound}회차 → ${s.curRound}회차 · 이번 회차 ${timeWord(s.curStartedAt, now)} 시작`)];
     c2.appendChild(anRow(`slowed:${s.team}`, box, why));
   }
   body.appendChild(c2);
 
   // ③ 같은 일이 몇 번째인가 — 같은 카드를 다시 올린 것 · 같은 단계를 여러 회차 돈 것. 회차 네모를 같은 자리에 겹침 — 세 번째부터 빨강(반박 세 번 = FAIL 과 같은 자). 많은 것 셋
-  const c3 = anCard('같은 일이 몇 번째인가');
+  const c3 = anCard('반복 횟수');
   const repeats = (r.repeats ?? []).slice(0, 3);
-  if (!repeats.length) c3.appendChild(el('div', 'panel__note', '같은 자리를 두 번 간 일이 없어요'));
+  if (!repeats.length) c3.appendChild(el('div', 'panel__note', '반복 없음'));
   for (const p of repeats) {
     const box = el('span', 'an__rep');
     box.appendChild(stackBoxes(p.nth));
     // 회차가 이어지면 "13회차부터 20회차", 사이가 비면 "2회차부터 20회차 사이 18회차에 걸쳐"(나리 R29 — 개발 1단계는 9회차가 2단계였다, 이어진 것처럼 읽히면 열아홉으로 센다)
     const first = p.at[0], last = p.at[p.at.length - 1];
     const contiguous = p.kind === 'round' && last - first + 1 === p.at.length;
-    const where = p.kind === 'card' ? p.at.map((ts) => clockWord(ts)).join(' · ') : contiguous ? `${first}회차부터 ${last}회차` : `${first}회차부터 ${last}회차 사이 ${p.at.length}회차에 걸쳐`;
-    const text = el('span', 'an__sentence', `${nameOf(p.team)} ${p.what} — ${where}, 같은 자리에서 ${nthWord(p.nth)}${p.passed ? '에 통과' : ''}`);
+    const where = p.kind === 'card' ? p.at.map((ts) => clockWord(ts)).join(' · ') : contiguous ? `${first}~${last}회차` : `${first}회차부터 ${last}회차 사이 ${p.at.length}회차에 걸쳐`;
+    const text = el('span', 'an__sentence', `${nameOf(p.team)} ${p.what} — ${where}, ${nthWord(p.nth)}${p.passed ? ' 승인' : ''}`);
     if (p.nth >= 3) text.dataset.k = 'bad';
     box.appendChild(text);
     const why = p.kind === 'card' ? p.ids.map((id, i) => cardLine(p.team, id, p.what, p.at[i])) : [el('span', 'an__line', `${p.at.map((n) => `${n}회차`).join(' · ')}`)];
