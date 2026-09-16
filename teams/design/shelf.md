@@ -4,6 +4,13 @@
 `node tools/library.mjs find <낱말>` — 막히면 `grep -n '^## ' <파일>` 로 절 제목부터.
 글 유진(경영 A1, 09-16 10:xx) — 헨리가 맞다고 해야 정본. 근거는 09-15 00:00Z 이후 디자인 방 Read 기록.
 
+## 명령 (지침 "명령은 책장에" — 옛 지침 31행에서 옮김, 결정 189)
+
+- 상황판: `node bus/progress.mjs --team design --doing "…" --blocked "…" --boss "…" --next "…"` (준 항목만 바뀜, `--clear <항목>`) — 턴 끝·회차 닫기 전.
+- 결재: `node bus/approve.mjs --team design --request B|C "무엇" --detail "…"` (작은 B 는 `--small`, 다른 팀에 부탁은 `--to <팀>`) · 요청 블록 `node bus/request.mjs --say|--done|--ack <id> "…"`.
+- 회차: `node bus/round.mjs verdict --target guide "…"` (판정 대상은 직접 적는다) · 닫기 `node bus/round.mjs end --team design "…"` — `-v` 는 나리가 말할 때만.
+- 사진: `node tools/screen-shot.mjs <out.png> design/<room|tower|dashboard|report|analysis> 412 915` — `out/shots/` 는 저장소 밖.
+
 ## 읽을 것 (경로만 먼저 보고, 필요한 절만)
 
 - `teams/design/out/ui-spec.md` (234줄 · 43KB · 절 14) — 화면 시안 규격 정본. **하루에 8번 읽힌 파일** — 화면 이름(현황·앞으로·보고서·카드) 절만.
