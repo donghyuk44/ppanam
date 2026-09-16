@@ -977,6 +977,7 @@ function connect() {
     }
     if (msg.kind === 'events') {
       World.onEvents(msg.team, msg.events);          // 마을은 모든 방을 한 화면에 본다
+      dropDecided(msg.events);                       // 끝난 결재는 그 순간 대기 목록에서(결재 카드 ①) — 어느 방 사건이든
       if (msg.team === active) {
         append(msg.events);
       } else {
@@ -1563,6 +1564,14 @@ function approvalHead(r) {
   return `${who} · ${t?.name ?? r.team} · 승인 필요 · ${ago(r.ts)}`;
 }
 let theirsOpen = false;   // 띠의 "톰·제리가 보는 중 N건" 줄을 폈나 — 새로 그릴 때도 유지, 그 카드가 다 빠지면 다시 접힘
+/** 결재 카드 ① — 끝난 결재는 판정 사건이 오는 순간 화면에서 지운다(나리·톰). 서버가 요청한 방에 남기는 note 의 meta.status(passed·revised, 계약 6절 625행)를 보고
+ *  대기 목록에서 바로 빼고 다시 그린다. 전엔 summaries 의 대기 건수 합이 움직여야 목록을 다시 받아서, 하나 끝나고 하나 새로 오면 끝난 카드가 그대로 남았다. */
+function dropDecided(events) {
+  const gone = new Set(events.filter((e) => e.type === 'note' && e.meta?.approval && e.meta?.status && e.meta.status !== 'pending').map((e) => e.meta.approval));
+  if (!gone.size || !approvals.some((r) => gone.has(r.id))) return;
+  approvals = approvals.filter((r) => !gone.has(r.id));
+  renderApprovals(); renderBossBadge(); if (view === 'tower') renderTower();
+}
 function renderApprovals() {
   const box = $('approvals');
   box.replaceChildren();
