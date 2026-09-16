@@ -13,7 +13,8 @@ const port = args.includes('--port') ? args[args.indexOf('--port') + 1] : '4321'
 const all = args.includes('--all');
 // 자는 server/public/bosswords.js 하나 — 화면(app.js)이 같은 것으로 "아직 쉬운 말로 안 적음" 을 정한다(R32). 여기서 다시 적지 않는다.
 export { JARGON, isBossWord } from '../server/public/bosswords.js';
-import { isBossWord, MAX_LEN } from '../server/public/bosswords.js';
+import { isBossWord, MAX_LEN, doingWord, gateLine } from '../server/public/bosswords.js';
+import { toolPhrase } from '../server/public/toollabel.js';
 import { peopleOf, readLog, readCast, timelineOf } from '../bus/bus.mjs';
 const rows = [];
 // --file <md>: 표가 있는 파일의 "규칙대로" 칸(없으면 마지막 글 칸)만 잰다 — 하영 본보기(boss-lines.md)를 화면에 올리기 전에 재는 용도.
@@ -35,17 +36,24 @@ if (!args.includes('--file')) for (const t of ['hq', 'dev', 'design', 'marketing
   let p; try { p = JSON.parse(fs.readFileSync(path.join(ROOT, 'teams', t, 'progress.json'), 'utf8')); } catch { continue; }
   for (const k of ['blocked', 'boss']) for (const s of [].concat(p[k] ?? []).filter(Boolean)) rows.push({ where: `현황 ${t} ${k}`, text: String(s) });
 }
-// 멤버 카드 "마지막 말" — peopleOf(bus.mjs) 의 doing 이 굵은 글 표도 API 호출도 아니라 조립되는 값이라 위 두 자리로는 못 잡았다.
-// 도구 줄에서 온 것(meta.tool 이 없는 Bash 등)이면 화면이 원문을 그대로 새울 수 있다(대표 09-16 지적 ①) — 여기서 그 값을 그대로 잰다.
+// 멤버 카드 "마지막 말" — peopleOf(bus.mjs) 의 doing 은 원문 그대로가 아니라 화면이 doingWord() 로 조립한 값이
+// 실제로 뜬다(9e671ef, 테라 지적: 자가 원문을 재서 화면엔 안 서는 줄 9개를 헛잡았다). 화면과 같은 함수로 먼저 조립한 뒤 잰다.
+const nameOf = (t, seat) => { try { return readCast(t).agents?.[seat]?.name ?? seat; } catch { return seat; } };
 if (!args.includes('--file')) for (const t of ['hq', 'dev', 'design', 'marketing', 'finance']) {
   let log, cast; try { log = readLog(t); cast = readCast(t).agents ?? {}; } catch { continue; }
   const people = peopleOf(log, cast, {});
-  for (const [actor, p] of Object.entries(people)) if (p.doing?.text) rows.push({ where: `멤버카드 ${t} ${actor} 마지막말`, text: String(p.doing.text) });
+  for (const [actor, p] of Object.entries(people)) {
+    const text = doingWord(p.doing, { live: p.busy, toolPhrase });
+    if (text) rows.push({ where: `멤버카드 ${t} ${actor} 마지막말`, text });
+  }
 }
-// 작업 보드 병목 줄 — timelineOf(bus.mjs) 의 bottleneck 은 work.json 에 나리·톰이 손으로 적어 하네스 말이 섞이기 쉽다(대표 09-16 지적 ⑤).
+// 작업 보드 병목 줄 — gateLine() 이 work.json 의 "server(솔라)" 를 "솔라 손 뒤에 N건 — … 기다림" 으로 바꿔 낸다(9e671ef, 지적 ⑤). 화면과 같은 함수로 조립한 뒤 잰다.
 if (!args.includes('--file')) {
   let tl; try { tl = timelineOf(); } catch { tl = null; }
-  for (const b of tl?.topBlockers ?? []) if (b?.bottleneck) rows.push({ where: '작업보드 병목', text: String(b.bottleneck) });
+  for (const b of tl?.topBlockers ?? []) {
+    const who = (b.waiting ?? []).map((x) => nameOf(x.team, x.seat)).filter((v, i, a) => a.indexOf(v) === i).join('·');
+    rows.push({ where: '작업보드 병목', text: gateLine(b.bottleneck, b.count, who) });
+  }
 }
 const get = async (u) => { try { return await (await fetch(`http://localhost:${port}${u}`)).json(); } catch { return null; } };
 const apr = args.includes('--file') ? null : await get('/api/approvals');
