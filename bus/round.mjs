@@ -1064,14 +1064,19 @@ switch (cmd) {
         const { isForeign, engineName, GEMINI_MODELS, geminiFallbackOf } = await import('./bus.mjs');
         const gErrs = [castChangeError('outside', ag.outside, { model: 'gemini' }), castChangeError('outside', ag.outside, { geminiModel: GEMINI_MODELS[1] }), castChangeError('outside', ag.outside, { geminiModel: 'gemini-9' })];
         const gsw = updateCastAgent(T, 'outside', { model: 'gemini', geminiModel: GEMINI_MODELS[0] });
-        // geminiFallback(503 갈아탈 모델, 나리 15:5x) — 목록 안만 통과, 없으면 null(갈아탈 데 없음). 실측 안 된
-        // 값(예: 3.8-flash)은 agy 확인 전엔 안 넣는다 — GEMINI_MODELS 안(3.1-pro)만 실제 배선.
-        const gfErrs = [castChangeError('outside', ag.outside, { geminiFallback: GEMINI_MODELS[1] }), castChangeError('outside', ag.outside, { geminiFallback: 'gemini-3.8-flash' })];
+        // geminiFallback(503 갈아탈 모델, 나리 15:5x) — 목록 안만 통과, 없으면 null(갈아탈 데 없음). 목록은
+        // 나리가 agy models 로 실측한 넷(15:53) — 그 밖(예: gemini-9)만 거부.
+        const gfErrs = [castChangeError('outside', ag.outside, { geminiFallback: GEMINI_MODELS[1] }), castChangeError('outside', ag.outside, { geminiFallback: 'gemini-9' })];
         const gfWant = gfErrs[0] === null && gfErrs[1]?.includes('gemini 대체 모델') && geminiFallbackOf({ geminiFallback: GEMINI_MODELS[1] }) === GEMINI_MODELS[1] && geminiFallbackOf({}) === null;
+        // 503 사다리(나리 15:5x) — flash 는 한 단씩(3.6→3.7→3.8, 3.8 은 끝이라 null) · pro 는 flash 가 아니니 null · 아닌 모델도 null.
+        const { geminiFlashUpgradeOf, isGeminiOverload } = await import('./bus.mjs');
+        const upWant = geminiFlashUpgradeOf('gemini-3.6-flash') === 'gemini-3.7-flash' && geminiFlashUpgradeOf('gemini-3.7-flash') === 'gemini-3.8-flash'
+          && geminiFlashUpgradeOf('gemini-3.8-flash') === null && geminiFlashUpgradeOf('gemini-3.1-pro') === null && geminiFlashUpgradeOf('gemini-9') === null
+          && isGeminiOverload(new Error('상주 gemini 503 — UNAVAILABLE')) && isGeminiOverload(new Error('503')) && !isGeminiOverload(new Error('시간 초과'));
         const gWant = gErrs[0] === null && gErrs[1] === null && gErrs[2]?.includes('gemini 모델') && readCast(T).agents.outside.model === 'gemini'
           && castChangeText('레오', gsw.to) === `대표가 레오를 gemini·${GEMINI_MODELS[0]} 로 바꿨습니다 — 다음 턴부터.`
           && isForeign('gpt') && isForeign('gemini') && !isForeign('claude') && !isForeign(null) && engineName('gemini') === 'gemini' && engineName('gpt') === 'codex'
-          && gfWant;
+          && gfWant && upWant;
         updateCastAgent(T, 'outside', { model: 'gpt' });
         // 폴백(결정 116 ②) — 자리에 없으면 나머지 다른 회사 엔진, 'none' 은 대표께 올림(null), 클로드 자리는 없음, 목록 밖은 거부.
         const { fallbackOf } = await import('./bus.mjs');
@@ -1099,7 +1104,7 @@ switch (cmd) {
           && !mp.permissions.deny.includes('unsandboxed(*)') && ['command(node tools/screen-shot.mjs)', 'command(node tools/library.mjs)', 'command(node --test)', 'command(jq)'].every((x) => mp.permissions.allow.includes(x));   // 나리 실측 09-16 — deny unsandboxed(*) 가 모든 명령을 막았다
         out.push(['agy 권한 합치기(읽기만)', mpWant ? '✓ 있던 것 유지 · 중복 없음 · write_file(*) deny · unsandboxed(*) 는 뺌 · 사진·책장·--test·jq 허용' : '✗ ' + JSON.stringify(mp)]);
         out.push(['Antigravity CLI(agy) 인자·봉투', agyWant ? '✓ -p·json·모델·상한·effort·--conversation · 승인 건너뛰기 없음 · 봉투 response/conversation_id · ERROR·비JSON throw' : '✗ ' + JSON.stringify({ aa, ab, pa, pErr, pBad })]);
-        out.push(['gemini 임시 외부 감사(09-14)', gWant ? '✓ outside→gemini 통과 · geminiModel 목록 · note gemini · isForeign 셋 · geminiFallback 목록 안만(15:5x)' : '✗ ' + JSON.stringify({ gErrs, gfErrs, to: gsw.to })]);
+        out.push(['gemini 임시 외부 감사(09-14)', gWant ? '✓ outside→gemini 통과 · geminiModel 목록 · note gemini · isForeign 셋 · geminiFallback 목록 안만(15:5x) · flash 사다리 한 단씩·503 감지(15:5x 배선)' : '✗ ' + JSON.stringify({ gErrs, gfErrs, to: gsw.to, upWant })]);
         const txt = castChangeText('테라', up.to), txt2 = castChangeText('안젤', { effort: 'low' });
         const ca = codexArgs({ model: 'gpt-5.1', effort: 'high', resume: 'sid' }), cb = codexArgs({ model: 'gpt-5.1', outPath: '/tmp/o' });
         const cWant = ca.join(' ') === 'exec resume sid --skip-git-repo-check -c model=gpt-5.1 -c sandbox_mode=read-only -c model_reasoning_effort=high -'

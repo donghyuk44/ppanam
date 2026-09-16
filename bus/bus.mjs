@@ -994,7 +994,8 @@ export const CODEX_MODELS_SYSTEM = [...CODEX_MODELS];
 export const claudeModelsFor = (actorId) => (actorId === 'system' ? CLAUDE_MODELS_SYSTEM : CLAUDE_MODELS);
 export const codexModelsFor = (actorId) => (actorId === 'system' ? CODEX_MODELS_SYSTEM : CODEX_MODELS);
 // Gemini 는 임시 외부 감사(대표 결정, 09-14 — codex 계정 한도 엿새). 명령줄이 없어 파일로 주고받는다(outside.mjs runGemini · 창은 하네스가 몬다).
-export const GEMINI_MODELS = ['gemini-3.6-flash', 'gemini-3.1-pro'];
+// 값은 나리가 agy models 로 실측(15:53): 3.8-flash·3.7-flash·3.6-flash 는 high·medium·low, 3.1-pro 는 high·low 만.
+export const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.1-pro'];
 export const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
 export const ENGINES = ['claude', 'gpt', 'gemini'];
 export const CAST_FIELDS = ['model', 'llm', 'codexModel', 'geminiModel', 'geminiFallback', 'effort', 'fallback', 'suspended'];
@@ -1022,9 +1023,18 @@ export const engineName = (model) => (model === 'gpt' ? 'codex' : model === 'gem
 /** 이 자리의 codex 모델 — 자리별 값이 먼저, 없으면 환경(전 자리 공통, 옛 길), 그것도 없으면 목록 첫 것. */
 export const codexModelOf = (agent) => agent?.codexModel ?? process.env.PPANAM_CODEX_MODEL ?? CODEX_MODELS[0];
 export const geminiModelOf = (agent) => agent?.geminiModel ?? GEMINI_MODELS[0];
-/** 기본 gemini 모델이 서버 용량 부족(503 UNAVAILABLE)이면 갈아탈 모델 — 자리에 없으면 null(재시도만, 갈아탈 데 없음).
+/** 기본 gemini 모델이 서버 용량 부족(503 UNAVAILABLE)이면 갈아탈 모델(마지막 단, 강도는 low) — 자리에 없으면 null(재시도만, 갈아탈 데 없음).
  * 값은 실측된 것만(agy models 로 확인 뒤 배선, 나리 15:5x) — GEMINI_MODELS 밖은 castChangeError 가 막는다. */
 export const geminiFallbackOf = (agent) => agent?.geminiFallback ?? null;
+/** flash 안에서 한 단 올리기(같은 강도) — 503 때 첫 대체, 나리 15:5x "3.6-flash 503 → 3.7-flash 같은 강도".
+ * 다음 tier 가 없으면(이미 최고거나 flash 가 아니면) null — outside.mjs 가 그러면 바로 geminiFallbackOf 로 넘어간다. */
+const GEMINI_FLASH_CHAIN = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.8-flash'];
+export const geminiFlashUpgradeOf = (model) => {
+  const i = GEMINI_FLASH_CHAIN.indexOf(model);
+  return i === -1 || i === GEMINI_FLASH_CHAIN.length - 1 ? null : GEMINI_FLASH_CHAIN[i + 1];
+};
+/** 503(UNAVAILABLE) 인가 — gemini 쪽 재시도가 "같은 모델 한 번 더"가 아니라 "다른 모델로 갈아타기"를 골라야 하는 신호. */
+export const isGeminiOverload = (e) => /\b503\b|UNAVAILABLE/i.test(String(e?.message ?? e ?? ''));
 /**
  * codex CLI 인자 — 순수, bus/outside.mjs 가 쓰고 round.mjs check 가 돌려본다.
  * 샌드박스는 읽기 전용으로 못 박는다 — 기본값에 맡겼더니 codex 0.154 가 워크트리에 시험 디렉터리와 수정을 남겼다(2026-09-12).

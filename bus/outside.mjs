@@ -28,6 +28,7 @@ import {
   ROOT, emit, recordVerdict, verdictTargetActor, readContext, readTail, readLog, readCast, readState, appendJournal,
   defaultTeam, teamExists, isOffice, VERDICTS, decideApproval, journalPrompt, verdictInstruction, headSha, codexModelOf, codexArgs,
   markOutsideRunning, clearOutsideRunning, outsideCooldown, setOutsideCooldown, parseUsageLimit, geminiModelOf, isForeign, fallbackOf, engineName, agyArgs, parseAgy, withRetry,
+  geminiFallbackOf, geminiFlashUpgradeOf, isGeminiOverload,
 } from './bus.mjs';
 // 인격 조립은 클로드 자리와 같은 함수 하나로 — 인격 + 확정 조항 + 일지 + 라운드 브리프 (session.mjs 의 setInterval 은 unref 라 CLI 가 안 붙든다).
 import { assemblePrompt, personaOf as seatPersonaOf } from '../server/session.mjs';
@@ -409,7 +410,8 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
       return EXIT_SKIPPED;
     }
   }
-  const ENGINE = engineLabel(team, KIND);   // 이 호출이 쓰는 엔진 — meta.engine 에 그대로 남는다 (자리별 모델, 결정 69 · 답한 것을 적는다, 결정 78)
+  let ENGINE = engineLabel(team, KIND);   // 이 호출이 쓰는 엔진 — meta.engine 에 그대로 남는다 (자리별 모델, 결정 69 · 답한 것을 적는다, 결정 78)
+  // gemini 503(UNAVAILABLE) 이면 갈아탄 모델로 답이 오니, 그 경우 아래서 다시 쓴다 — 처음 값은 기본(1단) 가정.
   if (!dry && KIND === 'gpt' && !await hasCodex()) {
     emit(team, {
       actor: ACTOR, type: 'note',
@@ -490,22 +492,33 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
   markOutsideRunning(team, ACTOR);
   const clear = () => clearOutsideRunning(team, ACTOR);
   process.once('exit', clear);
+  // gemini 503(UNAVAILABLE) 사다리(나리 15:5x 실측 · 유진 초안) — 기본 모델 → flash 한 단 올림(같은 강도) → geminiFallback(강도 low).
+  // 자리에 그 단이 없으면(flash 가 이미 최고이거나 geminiFallback 미설정) 건너뛴다. 503 이 아닌 실패는 그대로 같은 모델로 한 번 더 — 갈아타는 건 과부하일 때만.
+  const geminiStages = KIND !== 'gemini' ? null : (() => {
+    const primary = geminiModelFor(team), effort = effortFor(team), up = geminiFlashUpgradeOf(primary), fb = geminiFallbackOf(seatOf(team));
+    return [{ model: primary, effort }, ...(up ? [{ model: up, effort }] : []), ...(fb ? [{ model: fb, effort: 'low' }] : [])];
+  })();
+  let stage = 0;
   const call = () => (KIND === 'gemini'
-    ? runGemini(input, { resume: prior, model: geminiModelFor(team), effort: effortFor(team), team })
+    ? runGemini(input, { resume: prior, model: geminiStages[stage].model, effort: geminiStages[stage].effort, team })
     : runCodex(input, { resume: prior, model: codexModelFor(team), effort: effortFor(team) }));
   // 8단계 ① — 엔진이 죽어도(강제 종료·exit≠0·시간 초과) **한 번은 다시 부른다**(bus.withRetry). 전엔 note 한 줄 남기고 1 로 나가 차례가 사라졌다.
   // 계정 한도는 재시도 대상이 아니다(fatal → 쿨다운으로). 이어붙이던 codex 세션이 깨진 것일 수 있어 두 번째는 세션을 버리고 새로 조립해 부른다.
-  // 두 번째도 실패하면 note 를 남기고 1 로 나간다 — 사회자(conductor)가 그 차례를 큐에 남겨 뒤에 다시 준다.
+  // 마지막까지 실패하면 note 를 남기고 1 로 나간다 — 사회자(conductor)가 그 차례를 큐에 남겨 뒤에 다시 준다.
   const why1 = (e) => String(e.message).split('\n')[0].slice(0, 200);
+  const tries = geminiStages ? Math.max(OUTSIDE_TRIES, geminiStages.length) : OUTSIDE_TRIES;
   try {
     res = await withRetry(call, {
-      tries: OUTSIDE_TRIES,
+      tries,
       fatal: (e) => KIND === 'gpt' && !!parseUsageLimit(e.message),
       onRetry: (e, attempt) => {
         // 이어붙이기가 깨졌으면 세션을 버리고 새로 연다. (codex 만 — gemini 의 sessionId 는 하네스 창의 대화라 답이 늦은 것뿐이다)
         if (prior && KIND === 'gpt') { forget(team); prior = null; input = buildInput(false); }
-        emit(team, { actor: ACTOR, type: 'note', text: `${eul(name)} 부르지 못했습니다 — ${why1(e)}. 한 번 더 부릅니다 (${attempt}/${OUTSIDE_TRIES}).`, meta: { retry: { actor: ACTOR, attempt, of: OUTSIDE_TRIES, why: why1(e) } } });
-        console.error(`실패(${attempt}/${OUTSIDE_TRIES}) — 다시: ${why1(e)}`);
+        // gemini 과부하(503) 면 사다리를 한 단 올린다 — 끝이면 마지막 단에서 그대로 한 번 더.
+        if (geminiStages && isGeminiOverload(e) && stage < geminiStages.length - 1) stage++;
+        const nowLabel = geminiStages ? ` · ${geminiStages[stage].model}` : '';
+        emit(team, { actor: ACTOR, type: 'note', text: `${eul(name)} 부르지 못했습니다 — ${why1(e)}. 한 번 더 부릅니다${nowLabel} (${attempt}/${tries}).`, meta: { retry: { actor: ACTOR, attempt, of: tries, why: why1(e), ...(geminiStages ? { model: geminiStages[stage].model } : {}) } } });
+        console.error(`실패(${attempt}/${tries}) — 다시${nowLabel}: ${why1(e)}`);
       },
     });
   } catch (e) {
@@ -519,11 +532,14 @@ async function ask(team, question, { talk = false, lull = false, turn = null, te
       return 1;
     }
     if (prior && KIND === 'gpt') forget(team);
-    emit(team, { actor: ACTOR, type: 'note', text: `${eul(name)} ${e.attempts ?? OUTSIDE_TRIES}번 불러도 답이 없습니다 — ${why1(e)}. 이 차례는 못 냈습니다.`, meta: { retry: { actor: ACTOR, attempt: e.attempts ?? OUTSIDE_TRIES, of: OUTSIDE_TRIES, why: why1(e), gaveUp: true } } });
+    // gemini 사다리를 다 써도 503 이면 둘 다 죽은 것과 같은 길 — 대표께 올린다(유진 초안 "다섯 다" 줄).
+    const laddered = geminiStages && geminiStages.length > 1 && isGeminiOverload(e);
+    emit(team, { actor: ACTOR, type: 'note', text: `${eul(name)} ${e.attempts ?? tries}번 불러도 답이 없습니다 — ${why1(e)}.${laddered ? ` gemini 대체 모델(${geminiStages.map((s) => s.model).join('→')})도 다 과부하입니다 — 대표님께 올립니다.` : ''} 이 차례는 못 냈습니다.`, meta: { retry: { actor: ACTOR, attempt: e.attempts ?? tries, of: tries, why: why1(e), gaveUp: true } } });
     console.error('실패: ' + e.message);
     return 1;
   }
   clear();
+  if (geminiStages && stage > 0) ENGINE = `gemini · ${geminiStages[stage].model}`;   // 답한 것을 적는다(결정 78) — 갈아탔으면 최종 모델로.
 
   if (!prior) emit(team, { round, actor: 'system', type: 'enter', text: `${name} 님이 들어왔습니다` });
 
