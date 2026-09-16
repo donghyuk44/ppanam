@@ -601,9 +601,14 @@ export function doneCheckOf(team, seat, work) {
   const items = work?.items ?? [];
   const item = items.find((it) => it.team === team && it.seat === seat && (it.status === '진행' || it.status === '감사 대기')) ?? null;
   if (!item?.doneCheck) return { ok: true, item };
+  // doneCheck 는 work.json 에 자유로이 적히는 경로다 — 경계 없이 join 만 하면 "../../etc/passwd" 같은
+  // ..로 저장소 밖도 완료 조건이 됐다(2판 코드 점검 #10). 저장소 밖이면 그 자체를 이유로 돌려준다 —
+  // 오타든 뭐든 아무리 기다려도 파일이 안 생기니, 호출부(checkStalls ㉤)가 이건 조용히 안 기다리고 알린다.
+  const abs = path.resolve(REPO, item.doneCheck);
+  if (abs !== REPO && !abs.startsWith(REPO + path.sep)) return { ok: false, item, reason: `저장소 밖 경로 — ${item.doneCheck}` };
   let bytes = 0;
-  try { bytes = fs.statSync(path.join(REPO, item.doneCheck)).size; } catch { bytes = 0; }
-  return { ok: bytes > 0, item };
+  try { bytes = fs.statSync(abs).size; } catch { bytes = 0; }
+  return { ok: bytes > 0, item, reason: bytes > 0 ? null : '파일 없음(아직 안 썼거나 경로가 틀림) — 아직 조용히 기다림' };
 }
 /** 순수 — 로드맵 마일스톤이 있고 전부 pass 인가. round.mjs check 가 돌려본다. */
 export function roadmapAllPass(roadmap) {
@@ -683,6 +688,14 @@ export function checkStalls(now = Date.now()) {
               note(team, `판정이 끝난 지 ${Math.round(CLOSE_REMINDER_MS / 60_000)}분이 지났는데 회차가 안 닫혔습니다 — ${nameOf(team, owner)}, 닫으세요.`);
               enqueue(team, owner, 'close');
               rows.push([team, state.round, minAgo(now, passedAt), `판정 완료 뒤 안 닫힘 — ${nameOf(team, owner)}에게 닫으라 알림`]);
+            }
+          } else if (dc.reason?.startsWith('저장소 밖')) {
+            // 저장소 밖 경로는 아무리 기다려도 안 생긴다 — 조용히 기다리지 않고 한 번은 알린다(2판 #10).
+            const tag = `bad-path:${dc.item?.id}`;
+            if (s.closeReminded !== tag) {
+              s.closeReminded = tag;
+              note(team, `완료 조건 경로가 저장소 밖입니다 — ${dc.item?.doneCheck} (work.json ${dc.item?.id}). 고쳐야 회차가 닫힙니다.`);
+              rows.push([team, state.round, minAgo(now, passedAt), `완료 조건 경로가 저장소 밖 — work.json 고쳐야 함`]);
             }
           } else {
             // 완료 조건이 아직이면 조용히 기다린다 — 재촉하지 않는다. 다음 틱에 파일이 생기면 그때 부른다.

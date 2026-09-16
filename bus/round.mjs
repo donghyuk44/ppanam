@@ -707,10 +707,14 @@ switch (cmd) {
           { id: 'w1', team: T, seat: 'guide', status: '진행', doneCheck: 'CLAUDE.md' },      // 있고 안 빔 → 통과
           { id: 'w2', team: T, seat: 'ops', status: '진행', doneCheck: '없는파일-xyz.md' },   // 없음 → 대기
           { id: 'w3', team: T, seat: 'review', status: '진행' },                              // doneCheck 없음 → 통과
+          { id: 'w4', team: T, seat: 'chief', status: '진행', doneCheck: '../../../../etc/passwd' },   // 저장소 밖(2판 #10)
         ] };
         const dc1 = doneCheckOf(T, 'guide', work2), dc2 = doneCheckOf(T, 'ops', work2), dc3 = doneCheckOf(T, 'review', work2), dc4 = doneCheckOf(T, '없는자리', work2);
+        const dc5 = doneCheckOf(T, 'chief', work2);   // ..로 저장소 밖을 가리키면 통과가 아니라 이유 있는 거부
         out.push(['완료 조건(D1) — doneCheckOf', dc1.ok === true && dc2.ok === false && dc3.ok === true && dc4.ok === true && dc4.item === null
-          ? '✓ 파일 있으면 통과 · 없으면 대기 · doneCheck 없으면 통과 · 걸린 항목 없어도 통과(item null)' : '✗ ' + JSON.stringify({ dc1, dc2, dc3, dc4 })]);
+          && dc5.ok === false && dc5.reason?.startsWith('저장소 밖')
+          ? '✓ 파일 있으면 통과 · 없으면 대기 · doneCheck 없으면 통과 · 걸린 항목 없어도 통과(item null) · ..로 저장소 밖은 이유 있는 거부(2판 #10)'
+          : '✗ ' + JSON.stringify({ dc1, dc2, dc3, dc4, dc5 })]);
       }
       // 라운드 한 줄(roundLineOf, 2판 #11) — briefOf(세션이 뜰 때)와 giveTurn(턴마다)이 같은 함수를 쓴다,
       // T2 뒤로 세션이 한 단계 안 여러 회차를 사는 동안 옛 번호를 붙들지 않게.
