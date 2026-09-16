@@ -1816,6 +1816,8 @@ export function timelineOf() {
  * dea1182), 실무 아닌 다른 자리(ops 등, 결정 125 서로 감사)가 평가받아도 항상 guide 로 찍힌다 — 그 자리의
  * work.json 자동 진행(advanceWorkOnPass)이 엉뚱한 항목을 건드리는 원인. 이 함수는 그 자유 글에서 이름이
  * 실제로 언급된 자리를 찾아 돌려준다(순서: 제일 먼저 나온 이름) — 없으면 'guide'(예전 기본값 그대로).
+ * 알려진 한계(code-review 지적, 범위 밖으로 남김): 이름을 낱말 경계 없이 부분 문자열로 찾는다 — 지금
+ * 이름들이 전부 뚜렷해 실사용 위험은 낮지만, 다른 이름이 어떤 낱말 안에 그대로 들어 있으면 잘못 짚을 수 있다.
  */
 export function verdictTargetActor(team, flowTargetText) {
   const cast = readCast(team).agents ?? {};
