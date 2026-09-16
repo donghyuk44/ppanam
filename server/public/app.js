@@ -777,8 +777,8 @@ function append(events) {
 }
 
 /**
- * 멘션 칩에 "받았나"(C13 — 불린 사람은 받았어요 표시). 화면에 있는 것만 본다: 그 칩 뒤에 불린 사람의 말풍선이 있으면 "답함",
- * 없고 그 사람이 일하는 중이면 "읽음, 답변 중", 아니면 "대기". 대표 부름은 사람 카드의 bossAsk(서버 셈)가 따로 있다 — 여기는 칩 옆 작은 글자 하나.
+ * 멘션 칩의 읽음 표시(C13). 화면에 있는 것만 본다: 그 칩 뒤에 불린 사람의 말풍선이 있거나 그 사람이 일하는 중이면 "@테라 · 읽음",
+ * 아니면 이름만 "@테라". 대표 부름은 사람 카드의 bossAsk(서버 셈)가 따로 있다 — 여기는 칩 옆 작은 글자 하나.
  */
 function markMentions() {
   const rows = [...stream.querySelectorAll('.row[data-actor]')];
@@ -786,13 +786,13 @@ function markMentions() {
     const who = chip.dataset.mention;
     const myRow = chip.closest('.row');
     const answered = rows.some((r) => r.dataset.actor === who && r !== myRow && (myRow.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_FOLLOWING));
-    // 글자는 사전 3-2-1 "받았어요" 하나(대표 C13 글자 그대로) — 뒤에 답이 있거나 일하는 중이면 받은 것, 아니면 글자 없음(지어내지 않는다)
+    // 글자는 사전 3-2-1 "읽음" 하나(카카오톡·라인·슬랙 읽음 표시, 하영 결정 181 ②) — "받았어요" 는 우리가 지은 말이라 뺐다(대표 16:35 "뭔 소린지 이해가 안됨"). 안 읽었으면 글자 없음.
     const got = answered || stateOf(who) === 'busy';
     chip.dataset.got = answered ? 'ok' : got ? 'busy' : 'wait';
-    chip.title = `${cast.agents?.[who]?.name ?? who}${got ? ' · 받았어요' : ''}`;
+    chip.title = `${cast.agents?.[who]?.name ?? who}${got ? ' · 읽음' : ''}`;
     let s = chip.querySelector('.mention__got');
     if (!s) { s = el('span', 'mention__got'); chip.appendChild(s); }
-    s.textContent = got ? '받았어요' : '';
+    s.textContent = got ? '· 읽음' : '';
   }
 }
 
