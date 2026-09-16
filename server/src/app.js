@@ -61,7 +61,8 @@ function callsBoss(text) {
 }
 
 /** 이 방 사람들 — 대표와, 옮겨온 말 때문에 빌려 온 총괄(from) 은 뺀다. 나리(system)는 세션이 있는 방(N1 — 총괄실, cast model 있음)에서만 사람이고, 다른 방의 system 은 로밍 자리라 뺀다(대표 12:2x "대시보드에 멤버쪽 나리가 없다", 톰 배분). 헤더 둘째 줄·상태 칩이 같은 명단을 쓴다. */
-const roomAgents = () => Object.entries(cast.agents ?? {}).filter(([id, a]) => id !== 'boss' && !a.from && (id !== 'system' || a.model));
+// 비서실(sera)만 나리(system)를 세션(model) 없이도 세운다 — 머리에 세라·나리 둘(사용성-0916 표 7, 34회차). 다른 방의 안내 자리는 세션 있을 때만.
+const roomAgents = () => Object.entries(cast.agents ?? {}).filter(([id, a]) => id !== 'boss' && !a.from && (id !== 'system' || a.model || active === 'sera'));
 
 /**
  * 자리의 살아 있음. 세션이 있나(듣는 중), 일하는 중인가, 지금 차례가 잡혀 있나.
@@ -74,7 +75,8 @@ function stateOf(id) {
   const a = cast.agents?.[id];
   // 다른 회사 엔진 자리(결정 77) — 세션이 없어 부를 때만 온다. 안 부른 동안은 '오프라인' 이 아니라 '대기'(사전 3-1 "부를 때만 와요") — 방 머리 "레오 오프라인" 을 대표가 "안 열렸다" 로 읽으셨다(09-16 17:1x).
   if (a?.model === 'gpt' || a?.model === 'gemini') return c.outsideBusy ? 'busy' : (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'idle';
-  const s = summary.sessions?.[id];
+  // 비서실의 나리(system)는 세션이 총괄실에 산다(노랑 손) — 그 방 cast 엔 model 이 없어 늘 '오프라인' 이 됐다. hq 세션으로 본다(사용성-0916 표 7).
+  const s = id === 'system' && active === 'sera' ? (summaries.hq?.sessions?.system ?? summary.sessions?.[id]) : summary.sessions?.[id];
   if (!s || !s.alive) return (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'off';
   if (s.busy) return 'busy';
   return (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'idle';
@@ -202,6 +204,7 @@ function svg(d, size = 9, width = 3) {
 function renderRail() {
   const nav = $('teams');
   nav.replaceChildren();
+  loadThreeLines(() => renderRail());   // 팀별 세 줄 정본이 오면(바뀌면) 한 번 더 — 60초 캐시라 매번 안 받는다
 
   for (const t of teams) {
     const s = summaries[t.id] ?? {};
@@ -217,10 +220,11 @@ function renderRail() {
 
     const body = el('span', 'team__body');
     body.appendChild(el('span', 'team__name', t.name));
-    const sub = s.round
-      ? `${s.round}회차${s.milestonesTotal ? ` · ${s.milestone}단계` : ''}`
-      : s.logCount ? '대기' : '시작 전';
-    body.appendChild(el('span', 'team__sub', sub));
+    // 왼쪽 팀 줄 — "31회차 · 9단계" 는 대표님께 뜻이 없다(사용성-0916 표 4, 34회차): 지금 하는 일 한 줄(사람 말) — 팀별 세 줄 정본의 '지금', 없으면 상황판 하는 것 첫 줄, 둘 다 자에 안 맞으면 상태 말 하나
+    const nowLine = [three.byTeam[t.id]?.now, s.progress?.doing?.[0]].map((v) => String(v ?? '').trim()).find((v) => bossOk(v));
+    const sub = nowLine ?? (s.phase === 'running' ? '진행 중' : s.logCount ? '대기' : '시작 전');
+    const subEl = el('span', 'team__sub', sub); subEl.title = sub;
+    body.appendChild(subEl);
     b.appendChild(body);
 
     const badge = el('span', 'team__badge');
@@ -292,7 +296,8 @@ const KIND_LABEL = { boss: '정하실 것', approval: '결재', blocked: '차단
 function renderBellMenu() {
   const m = $('bellMenu');
   m.replaceChildren();
-  const { items } = notifications();
+  // 목록은 대표님 몫만(사용성-0916 표 6, 34회차) — 정하실 것·결재·막힘(mine) + "톰·제리가 보는 중 N건" 한 줄(U3). 보고(오늘 대표를 부른 말 전부)는 뺐다 — 실측 R34: 마흔 줄 넘게 서서 종을 열어도 읽을 수 없었다. 보고는 방에 있다.
+  const items = notifications().items.filter((it) => it.mine || it.id === 'approval:theirs');
   // 머리 — "알림" + 설정(자리만) + 모두 읽음
   const head = el('div', 'nt__head');
   head.appendChild(el('b', null, '알림'));
@@ -1793,6 +1798,28 @@ function loadUsage(rerender = null) {
  * 60초 캐시. 앞으로 상황판에 같은 칸 셋(--now --next --after)이 생기면 거기서(솔라) — 이 1판은 손으로 쓴 파일.
  */
 const three = { byTeam: {}, fetchedAt: 0 };
+/** 앞으로 첫 층 — 대표님이 시킨 일 다섯(리뉴얼·프로필·마을·리포트·세라 앱) 한 줄씩(사용성-0916 표 8 · 하영 ahead-five.md 2판 — 값은 사람이 쓴다, 맡은 실무가 회차 닫을 때). 첫 표(| # | 일 | … 한 줄 | 자 |)의 굵은 글만, 자에 맞는 줄만. */
+const ahead = { lines: [], fetchedAt: 0 };
+function loadAheadFive(rerender = null) {
+  if (Date.now() - ahead.fetchedAt < 60_000) return;
+  ahead.fetchedAt = Date.now();
+  fetch('/out/marketing/ahead-five.md').then((r) => (r.ok ? r.text() : '')).then((md) => {
+    const next = [];
+    let inTable = false, col = -1;
+    for (const line of md.split('\n')) {
+      if (!line.trim().startsWith('|')) { if (inTable) break; continue; }
+      const c = line.split('|').slice(1, -1).map((s) => s.trim());
+      if (c[0] === '#') { col = c.findIndex((h) => /한 줄/.test(h)); inTable = col > 0; continue; }
+      if (!inTable || /^-+$/.test(c[0])) continue;
+      const raw = c[col] ?? '';
+      const text = (raw.match(/\*\*(.+?)\*\*/)?.[1] ?? raw).trim();
+      if (bossOk(text)) next.push({ job: c[1] ?? '', text });
+    }
+    const changed = JSON.stringify(next) !== JSON.stringify(ahead.lines);
+    ahead.lines = next;
+    if (changed && rerender) rerender();
+  }).catch(() => {});
+}
 function loadThreeLines(rerender = null) {
   if (Date.now() - three.fetchedAt < 60_000) return;
   three.fetchedAt = Date.now();
@@ -2534,6 +2561,15 @@ const seoulDayStart = (ms) => Math.floor((ms + 9 * 3600_000) / DAY) * DAY - 9 * 
 function loadDashboardBand(r) {
   const band = $('dashBand'), gates = $('dashGates');
   band.replaceChildren(); gates.replaceChildren();
+  // 첫 층 — 대표님이 시킨 일 다섯, 한 줄씩(사용성-0916 표 8, 하영 ahead-five.md 2판). 팀 띠는 그 밑 둘째 층. 줄이 하나도 없으면 층을 안 그린다.
+  loadAheadFive(() => loadDashboard());
+  document.getElementById('dashAhead')?.remove();
+  if (ahead.lines.length) {
+    const first = el('section', 'dash__card'); first.id = 'dashAhead'; first.dataset.block = 'ahead';
+    first.appendChild(el('div', 'dash__k', '대표님이 시킨 일'));
+    for (const a of ahead.lines) first.appendChild(el('div', 'card__text', a.text));
+    band.parentElement.insertBefore(first, band);
+  }
   const wide = window.innerWidth >= 1180;
   const BOX_W = wide ? 14 : 18;   // 칸 폭(%) — 시간이 아니라 순서. 넘치면 오른쪽 끝에 붙는다(아래).
   // 글자는 하영 화면 글 틀 1판(teams/marketing/out/screen-text-frames.md 1-2 · 1-4 · 6절)에서 날·시·분·늦음 줄만 뺀 것(결정 188).

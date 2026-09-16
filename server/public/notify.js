@@ -3,6 +3,7 @@
 // 부팅·방송으로 이미 온 팀 요약(bossCall·needsBoss·people·bossNotes)과 승인 대기 목록에서 만든다. 계약은 docs/event-schema.md 3절 "알림 패널".
 
 import { findOutPaths } from './outlink.js';
+import { bossOk } from './bosswords.js';   // 종 목록 글도 결정 140 자를 지난다(사용성-0916 표 6, 34회차)
 
 /** 종류 순서 — 대표 차례(빨강) → 승인 대기 → 막힘 → 보고. */
 export const KIND_ORDER = ['boss', 'approval', 'blocked', 'report'];
@@ -15,7 +16,8 @@ const oneLine = (s, n) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n
 const firstImage = (text, team) => findOutPaths(text, team).find((f) => f.kind === 'image')?.url ?? null;
 
 /** 위임(state/delegation.json, 결정 136)이 지금 살아 있나 — bus.delegationActive 와 같은 식(브라우저 파일). until 이 지나면 파일이 있어도 아니다. */
-export const delegated = (d, now = Date.now()) => !!d && Number.isFinite(Date.parse(d.until ?? '')) && now < Date.parse(d.until);
+// until 이 없으면 끝 시각 없는 위임(결정 188 — "내가 멈추라고 하기 전까지는 나리 대리 승인 유지"). 있으면 그때까지(옛 12시간 창·안전핀).
+export const delegated = (d, now = Date.now()) => !!d?.to && (d.until == null || (Number.isFinite(Date.parse(d.until)) && now < Date.parse(d.until)));
 /** 결재를 보는 둘의 이름 — 평소 톰·제리, 위임 중(to:'system', 대표 09-16 "대리 판단은 나리")엔 나리·제리. 띠·패널·팝업이 같은 말을 쓴다. */
 export const deciders = (d, now = Date.now()) => (delegated(d, now) && d.to === 'system' ? '나리·제리' : '톰·제리');
 
@@ -42,7 +44,7 @@ export function notificationsOf({ teams = [], summaries = {}, approvals = [] } =
     if (s.bossCall) {
       const quote = s.people?.[s.bossCall.by]?.bossCall?.text ?? '';
       items.push({ id: `boss:${s.bossCall.id}`, kind: 'boss', team: t.id, by: s.bossCall.by, name: nameOf(t.id, s.bossCall.by), mine: !dg || !!s.bossCall.forbidden,
-        text: oneLine(quote, 80) || `${nameOf(t.id, s.bossCall.by)} 불렀습니다`, ts: s.bossCall.ts, thumb: firstImage(quote, t.id),
+        text: (bossOk(oneLine(quote, 80)) ? oneLine(quote, 80) : '') || `${nameOf(t.id, s.bossCall.by)} 불렀습니다`, ts: s.bossCall.ts, thumb: firstImage(quote, t.id),   // 인용이 자에 안 맞으면 "누가 불렀습니다" 만(표 6)
         target: { view: 'room', team: t.id, event: s.bossCall.id } });
     }
     // 막힘 — 상태라 이벤트 id 가 없다. 팀당 하나, 시각은 마지막 발언. 위임 중엔 톰·제리가 푼다(FAIL 풀기 10분 규칙).
@@ -66,9 +68,11 @@ export function notificationsOf({ teams = [], summaries = {}, approvals = [] } =
     if (r.grade !== 'C' && r.grade !== 'B') continue;
     const mine = r.grade === 'C' && (!dg || r.proxyable === false);
     if (!mine) { theirs.push(r); continue; }
-    const until = r.proxyable === false ? ' · 대표님만' : ' · 10분 안';   // 대리 못 하는 돈·바깥은 대표만, 나머지는 10분 지나면 톰·제리(결정 85)
+    const until = r.proxyable === false ? ' · 대표님만' : '';   // 대리 못 하는 돈·바깥은 대표만. '10분 안' 은 뺐다(결정 188 — 시간 약속은 없다)
+    // 무엇 — --boss 한 줄이 자에 맞으면 그것, 아니면 원문을 재고, 둘 다 아니면 '{팀} 결재'(카드 제목과 같은 규칙, opus ④)
+    const what = [r.boss, oneLine(r.what, 100)].map((v) => String(v ?? '').trim()).find((v) => v && bossOk(v)) ?? `${byTeam.get(r.team)?.name ?? r.team} 결재`;
     items.push({ id: `approval:${r.id}`, kind: 'approval', team: r.team, by: r.by, name: nameOf(r.team, r.by), mine: true,
-      text: `${oneLine(r.what, 100)}${until}`, ts: r.ts, thumb: firstImage(r.what, r.team), target: { view: 'tower', team: r.team, approval: r.id } });
+      text: `${what}${until}`, ts: r.ts, thumb: firstImage(r.what, r.team), target: { view: 'tower', team: r.team, approval: r.id } });
   }
   if (theirs.length) {
     const office = byTeam.has('hq') ? 'hq' : theirs[0].team;   // 보는 사람은 총괄실
