@@ -161,7 +161,9 @@ const line = (s) => { const v = String(s ?? '').trim(); return v && bossOk(v) ? 
  */
 export function buildMorning(day, { now = Date.now(), since = null } = {}) {
   const inWin = (ts) => { if (since == null) return true; const t = typeof ts === 'number' ? ts : Date.parse(ts ?? ''); return Number.isFinite(t) && t >= since; };
-  const teams = rooms();
+  // rooms() 는 총괄실(hq)을 뺀다(자정 마감이 따로 총괄 장을 낸다) — 아침 한 장은 총괄도 다섯 팀과 같은 줄이 필요해서
+  // (유진 실측 — 총괄 줄이 절대 안 남았다) 비서실(speakers 방)만 뺀 목록을 따로 쓴다.
+  const teams = listTeams().filter((t) => !roomRules(t.id).speakers);
   const delegating = !!readDelegation(now);   // 위임 중이면 C 카드 줄은 안 낸다(유진 틀 2절 표 4행) — 톰·제리가 대리한다
   const skipped = [];
 
@@ -183,7 +185,8 @@ export function buildMorning(day, { now = Date.now(), since = null } = {}) {
   }).filter(Boolean));
 
   const bossLines = teams.flatMap((t) => {
-    const board = (readProgress(t.id)?.boss ?? []).map((b) => { const ok = line(b); if (!ok) skipped.push({ team: t.id, text: b }); return ok ? `- ${t.name} · ${ok}` : null; }).filter(Boolean);
+    // 상황판(progress.json boss[])은 그대로(유진 daily-template.md 2절 "상황판은 그대로") — 카드만 {팀} · {--boss} 로 묶는다.
+    const board = (readProgress(t.id)?.boss ?? []).map((b) => { const ok = line(b); if (!ok) skipped.push({ team: t.id, text: b }); return ok ? `- ${ok}` : null; }).filter(Boolean);
     const cards = delegating ? [] : listApprovals({ team: t.id, status: 'pending' }).filter((r) => r.grade === 'C').map((r) => {
       const title = bossOk(r.boss) ? r.boss : r.what;
       const ok = line(title);
@@ -192,8 +195,9 @@ export function buildMorning(day, { now = Date.now(), since = null } = {}) {
     return [...cards, ...board];
   });
 
-  // 대표님 대신 정한 것 — proxy-decisions.md 에서 이 창 안 줄만. 원문은 결정 번호·카드 id 를 담아 자를 못 넘는다(성격상 늘 그렇다) —
-  // 지어 쓰지 않고 누가 정했는지만 밝히고 NOT_YET 으로 낸다(유진 틀 규칙 "그 줄은 빼고 …", 여기선 사람 표시는 남긴다).
+  // 대표님 대신 정한 것 — proxy-decisions.md 에서 이 창 안 줄만. 줄 꼴은 "- 날짜 시각 · 종류 · 팀 · 내용 — 꼬리" —
+  // 마지막 · 뒤부터 첫 — 앞까지를 내용으로 뽑아 자를 먹인다(유진 daily-template.md 2절 "{정한 사람} · {what 의
+  // 사람 말 한 줄}"). 꼴이 안 맞거나(옛 줄·손으로 쓴 줄) 결정 번호·파일 이름이 섞여 자를 못 넘으면 NOT_YET.
   let proxyMd = ''; try { proxyMd = fs.readFileSync(path.join(paths('hq').out, 'proxy-decisions.md'), 'utf8'); } catch { /* 없던 세계 */ }
   const proxyLines = proxyMd.split('\n').filter((l) => l.startsWith('- ')).flatMap((l) => {
     const m = l.match(/^- (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})/);
@@ -201,10 +205,16 @@ export function buildMorning(day, { now = Date.now(), since = null } = {}) {
     const t = Date.parse(`${m[1]}T${m[2]}:00+09:00`);
     if (!Number.isFinite(t) || !inWin(t)) return [];
     const who = (l.match(/(나리|톰|제리)\s*(?:대리|위임)/g) ?? []).at(-1)?.match(/나리|톰|제리/)?.[0] ?? '나리';
-    return [`- ${who} · ${NOT_YET}`];
+    const parts = l.split(' — ')[0].split(' · ');
+    const raw = parts.length > 3 ? parts.slice(3).join(' · ').trim() : null;
+    const ok = raw ? line(raw) : null;
+    if (raw && !ok) skipped.push({ team: 'hq', text: raw });
+    return [`- ${who} · ${ok ?? NOT_YET}`];
   });
 
-  const wd = WEEKDAY[new Date(`${day}T00:00:00+09:00`).getUTCDay()];
+  // day 는 이미 우리 시각 날짜 문자열이라 그대로 UTC 로 읽는다 — +09:00 을 또 붙이면 자정 근처(00~09시)에 그 인스턴트가
+  // 전날 UTC 로 넘어가 getUTCDay() 가 하루 전 요일을 냈다(예: 수요일이 화요일로, 유진 실측).
+  const wd = WEEKDAY[new Date(`${day}T00:00:00Z`).getUTCDay()];
   // 결정 188 뒤로 06:30 기준이 아니다 — 만든 그때가 기준(유진 daily-template.md 1절 "시각은 만든 그때").
   const md = [
     `# 아침 한 장 — ${day}`,
