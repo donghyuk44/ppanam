@@ -2069,8 +2069,10 @@ function whyStopped(t, p) {
   const s = summaries[t.id] ?? {};
   if (p.state === 'blocked') return BOSS_WHY[s.needsBossWhy] ?? '답변 필요';
   // 세션이 안 떠 있는 것(alive false)은 '재시작 필요' 가 아니다 — 서버가 켜진 직후엔 다 그렇고 첫 차례에 다시 뜬다(T2·sessions.json). 대표가 켠 직후 '다 죽었다' 로 읽으셨다(나리 12:3x, 새는 것 ⑥).
-  if (p.state === 'waiting') return s.phase !== 'running' ? '진행 중인 회차 없음' : '대기 — 멘션 시 응답';
-  if (p.state === 'resting') return p.alive === null ? '대기 — 5분 이상 멘션 없음' : '대기 — 부르면 와요';   // 사전 0-3 폴드7 QA 표: 다시 뜸 → 부르면 와요
+  // 글자는 사전 3-1 "왜 멈췄나" 표(266~274행)·517행 ⑥ 그대로 — "대기 — 멘션 시 응답"·"5분 이상 멘션 없음" 은 113행이 하네스 말로 짚은 것(대표 16:35 ③ 한국어 50점).
+  if (p.state === 'waiting') return s.phase !== 'running' ? '지금 하는 회차가 없어요' : '누가 부르면 답해요';
+  // 사전 "자리에 없어요 — 다시 켜야 해요" 는 안 쓴다 — 위 줄(새는 것 ⑥) 그대로, 꺼진 세션도 부르면 다시 뜬다.
+  if (p.state === 'resting') return p.alive === null ? '부를 때만 와요 — 5분 넘게 안 불렀어요' : '부르면 와요';
   return '';
 }
 
