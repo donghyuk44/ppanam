@@ -320,7 +320,7 @@ body {
 .outf__fold { margin-top: 4px; font-size: 12px; }
 .outf__fold summary { cursor: pointer; color: var(--ink-3); }
 .outf__fold pre { margin: 6px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; background: var(--sunk); padding: 8px; border-radius: 6px; }
-.row.me .bub { background: #EEF3F9; border-color: var(--me); color: var(--ink); border-radius: 14px 3px 14px 14px; }
+.row.me .bub { background: #EEF3F9; border-color: var(--me); color: #1B2430; border-radius: 14px 3px 14px 14px; }
 .row.me.cont .bub { border-radius: 14px; }
 
 .tool {
