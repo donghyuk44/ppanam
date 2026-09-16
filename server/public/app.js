@@ -112,7 +112,7 @@ function bubble(text, team = active) {
     const hitId = Object.keys(cast.agents ?? {}).find((id) => cast.agents[id]?.name === mm.name);
     const hit = hitId ? cast.agents[hitId] : null;
     // 불린 이름은 박스(칩) — 대표 09-16 11:0x "이런 박스 안에 이름 넣는 거 괜찮다. 이름 멘션할 때 잘 안 보이더라고"(C13). 받았나는 markMentions 가 뒤에 채운다(data-mention).
-    if (hit) { mentionHtml = `<span class="mention chip" data-mention="${escapeHtml(hitId)}" style="--c:${hit.color ?? FALLBACK.color}">@${escapeHtml(mm.name)}</span>${mm.sep === ',' ? '' : escapeHtml(mm.sep)}`; body = body.slice(mm.full.length); }
+    if (hit) { mentionHtml = `<span class="mention mchip" data-mention="${escapeHtml(hitId)}" style="--c:${hit.color ?? FALLBACK.color}">@${escapeHtml(mm.name)}</span>${mm.sep === ',' ? '' : escapeHtml(mm.sep)}`; body = body.slice(mm.full.length); }
   }
   let html = escapeHtml(body)
     .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
