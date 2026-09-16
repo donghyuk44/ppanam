@@ -80,6 +80,7 @@ body {
   grid-template-columns: 224px minmax(0, 1fr) 304px;
   grid-template-rows: auto minmax(0, 1fr);   /* 첫 줄은 대표 차례(승인 대기) — 없으면 0 */
   height: 100dvh;
+  max-width: 100vw; overflow-x: hidden;   /* 폰에서 순간 넓어지는 것(끊김 직후 412→469 실측, C14)이 뷰포트를 밀어 글자가 작아지지 않게 — 가로는 안쪽 띠(rail__list)만 스크롤 */
 }
 .app > .approvals { grid-column: 1 / -1; grid-row: 1; }
 /* 나머지는 둘째 줄에 — 승인 블록이 숨겨져(display:none) 첫 줄이 비어도 자동 배치가 거기로 올라가지 않게.
