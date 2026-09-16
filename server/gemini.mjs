@@ -99,9 +99,9 @@ export function ask({ team, actor, prompt, model, effort = null, resume = null, 
   return new Promise((resolve, reject) => { s.queue.push({ prompt, resolve, reject, onDelta }); next(s); });
 }
 
-/** 상태 — 관제탑·상황판이 본다. */
+/** 상태 — 관제탑·상황판이 본다. stderr 꼬리(ANSI 뗌)는 busy 가 오래 걸릴 때 도구 거부인지 갈라보는 용도(나리 13:0x, 레오 판정 막힘). */
 export function status() {
-  return [...pool.entries()].map(([key, s]) => ({ key, model: s.model, effort: s.effort, conversationId: s.conversationId, busy: !!s.pending, queued: s.queue.length, turns: s.turns, since: new Date(s.since).toISOString(), pid: s.child.pid }));
+  return [...pool.entries()].map(([key, s]) => ({ key, model: s.model, effort: s.effort, conversationId: s.conversationId, busy: !!s.pending, queued: s.queue.length, turns: s.turns, since: new Date(s.since).toISOString(), pid: s.child.pid, stderrTail: s.stderr ? s.stderr.replace(/\x1b\[[0-9;]*m/g, '').trim().slice(-500) : null }));
 }
 
 /**
