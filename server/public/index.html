@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/card.css">   <!-- 팀 상황·판정·결재 카드 부품(card.js) 임시 모양 — 토큰은 클레멘타인 C4 뒤 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css">
   <link rel="stylesheet" href="/world/world.css">
   <!-- 마을 3D (M5) — three 는 jsDelivr(결정 39)에서, 판은 고정. world/draw3d.js 만 쓰고 world.js 가 늦게 불러서 CDN 이 죽어도 작전실은 산다. -->
@@ -85,6 +86,9 @@
       <span class="rprog" id="rprog"></span>
       <button class="rbtn" id="roundBtn" type="button">회차 시작</button>
     </div>
+
+    <!-- 팀 상황 카드 한 장 — 채팅 맨 위 고정(카드-체계-0916 1절 ③, C7). 재료는 /api/card/<팀>, 부품은 card.js. 총괄실·비서실은 없음 -->
+    <div class="roomcard" id="roomCard" hidden></div>
 
     <form class="roundopen" id="roundOpen" hidden>
       <input class="roundopen__in" id="roundTopic" type="text" autocomplete="off"

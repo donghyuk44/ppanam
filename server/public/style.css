@@ -189,6 +189,10 @@ body {
   padding: 8px 18px; background: var(--panel-2);
   border-bottom: 1px solid var(--line); font-size: 12.5px;
 }
+/* 채팅 맨 위 팀 상황 카드(C7, card.js) — 회차 줄 밑에 한 장, 폰에서 반 화면 안(card.css 가 안을 맡는다). 비서실 말풍선 밑 카드도 같은 부품 */
+.roomcard { padding: 8px 18px 0; background: var(--panel-2); border-bottom: 1px solid var(--line); }
+.roomcard .card[data-card] { margin-bottom: 8px; }
+.bub__cards { display: grid; gap: 8px; margin-top: 6px; max-width: 420px; }
 .rnum {
   flex: none; font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 11px;
   background: var(--seal); color: var(--seal-ink); padding: 2px 7px; border-radius: 4px; letter-spacing: .04em;

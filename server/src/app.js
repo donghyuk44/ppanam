@@ -13,6 +13,7 @@ import { notificationsOf, blockedOf, pausedMs, delegated, deciders } from '/noti
 import { dayWord, timeWord, clockWord, spanWord } from '/when.js';
 import { parseMention } from '/mention.js';
 import { bossOk, NOT_YET } from '/bosswords.js';
+import { teamCard } from '/card.js';   // 팀 상황 카드 부품 하나(C6) — 채팅 맨 위·대시보드·비서실 세 곳이 같은 것을 그린다(카드-체계-0916 1절, C7)
 
 const $ = (id) => document.getElementById(id);
 const app = $('app'), feed = $('feed'), stream = $('stream');
@@ -35,6 +36,7 @@ let pauses = [];              // 멈춘 구간(state/pauses.json, boot.pauses) �
 let delegation = null;        // 위임(state/delegation.json, boot.delegation, 결정 136) — 종 배지가 위임 중엔 돈·바깥만 센다(나리 결정 ②)
 let done = { since: null, items: [], fetchedAt: 0, more: false };   // 누가 뭘 했나(/api/done) — 관제탑 ②. more = "더 보기" 펼침(오늘 안에서만 — 어제는 보고서)
 let work = { data: null, fetchedAt: 0 };   // 작업 보드(/api/work = bus.timelineOf, state/work.json) — 대시보드 맨 위 보드 블록(카드-체계 1-1) · 타임라인 탭. 404 면 블록이 안 뜬다
+const cards = { byTeam: {}, fetchedAt: {} };   // 팀 상황 카드 재료(/api/card/<팀>, 솔라 C5 — card.js 머리 JSDoc 모양). 30초 캐시. 채팅 맨 위·대시보드·비서실이 같은 재료
 let openTeamRows = new Set();  // 관제탑 ④ 팀 줄 — 펼쳐 둔 팀(상황판 네 칸)
 let requestsAll = [];         // 요청 블록 접은 목록 (6-1절) — 관제탑 요청 탭·전체 탭 타일
 let requestsLoaded = false;
@@ -648,6 +650,13 @@ function draw(e) {
       // 대표를 불렀다 — 멘션 표시 (결정 19-2).
       if (called) stack.appendChild(el('div', 'callmark', '@대표 멘션'));
       stack.appendChild(bubble(e.text));
+      // 비서실 카드(카드-체계 1절 "① 비서실 — 세라가 다섯 팀 카드를 올린다"): 말에 meta.cards:[팀…] 이 실리면 그 팀 카드를 말풍선 밑에 같은 부품으로(계약 3절 message).
+      if (Array.isArray(e.meta?.cards) && e.meta.cards.length) {
+        const wrap = el('div', 'bub__cards'); wrap.dataset.event = e.id;
+        const draw = () => { wrap.replaceChildren(); for (const tid of e.meta.cards.slice(0, 6)) { const n = teamCardNode(tid, draw); if (n) wrap.appendChild(n); } };
+        draw();
+        stack.appendChild(wrap);
+      }
       row.appendChild(stack);
       return row;
     }
@@ -760,6 +769,7 @@ async function selectTeam(id) {
   $('loadMore').hidden = !hasMore;
   paint(r.events);
   renderRail(); renderHead(); renderSide();
+  cards.fetchedAt[active] = 0; renderRoomCard();   // 방을 바꾸면 그 팀 카드를 새로(C7 — 채팅 맨 위 한 장)
   app.dataset.side = '0';
   $('scrim').hidden = true;
 }
@@ -842,6 +852,7 @@ function connect() {
       summary = summaries[active] ?? summary;
       World.onSummaries(summaries);
       renderRail(); renderHead(); renderSide();
+      cards.fetchedAt[active] = 0; renderRoomCard();   // 요약이 바뀌면(상황판 갱신·결재·회차) 채팅 맨 위 카드도
       // 승인 대기 블록은 모든 탭 맨 위에 있다. 대기 건수가 움직였을 때만 목록을 다시 받는다 — 250ms 마다 받을 이유가 없다.
       const pend = Object.values(summaries).reduce((n, s) => n + (s.approvals?.pending ?? 0), 0);
       if (pend !== pendingMark) {
@@ -1513,6 +1524,40 @@ function loadWork() {
   work.fetchedAt = Date.now();
   fetch('/api/work').then((r) => (r.ok ? r.json() : null)).then((r) => { const had = !!work.data; work.data = r?.streams ? r : null; if ((had || work.data) && view === 'tower' && towerTab === 'all') renderTower(); }).catch(() => {});
 }
+/* ── 팀 상황 카드(카드-체계-0916 1절 · C7) — 부품은 card.js teamCard, 재료는 /api/card/<팀>. 세 곳이 같은 것: 채팅 맨 위(그 팀 하나) · 대시보드 ④(다섯) · 비서실 말풍선(meta.cards). ── */
+
+/** 카드 재료 하나 — 30초 캐시. 받으면 rerender 를 부른다(있을 때만). 404·오류면 그 팀은 null 로 두고 안 그린다. */
+function loadCard(team, rerender = null) {
+  const at = cards.fetchedAt[team] ?? 0;
+  if (Date.now() - at < 30_000) return;
+  cards.fetchedAt[team] = Date.now();
+  fetch(`/api/card/${encodeURIComponent(team)}`).then((r) => (r.ok ? r.json() : null)).then((d) => { cards.byTeam[team] = d && d.team ? d : null; if (rerender) rerender(); }).catch(() => {});
+}
+/** 카드 노드 — 재료가 아직 없으면 null. 문 셋: 파일 → 새 창, 자세히 → 그 팀 채팅, 결재 단추 → 기존 결재 팝업(사유 칸·대리 안내가 거기 있다 — 결정 길은 하나). */
+function teamCardNode(team, rerender = null) {
+  loadCard(team, rerender);
+  const d = cards.byTeam[team];
+  if (!d) return null;
+  return teamCard(d, {
+    onOpen: async (file) => {
+      if (file) { window.open(`/out/${encodeURIComponent(team)}/${String(file).replace(/^out\//, '').split('/').map(encodeURIComponent).join('/')}`, '_blank', 'noopener'); return; }
+      if (team !== active) await selectTeam(team);
+      setView('room');
+    },
+    onDecide: (id) => { const r = approvals.find((a) => a.id === id); if (r) openApprovalPop(r); else setView('tower'); },
+  });
+}
+/** 채팅 맨 위 — 그 팀 카드 하나가 고정(카드-체계 1절 "어디에 뜨나 ③", 옛 '지금 하는 회차' 줄 자리). 총괄실·비서실은 상황판이 없어 안 그린다. */
+function renderRoomCard() {
+  const box = $('roomCard');
+  if (!box) return;
+  const t = teams.find((x) => x.id === active);
+  if (!t || t.kind === 'office' || t.id === 'sera') { box.hidden = true; box.replaceChildren(); return; }
+  const node = teamCardNode(active, () => { if (view === 'room') renderRoomCard(); });
+  box.replaceChildren();
+  if (node) { box.appendChild(node); box.hidden = false; } else box.hidden = true;
+}
+
 /**
  * 대시보드 맨 위 작업 보드 한 블록(카드-체계-0916 1-1, 대표 08:2x "간트 시스템 만든 거 그것도 대시보드에서 보여야 해"). state/work.json 그대로(bus.timelineOf) —
  * 줄기마다 한 줄: 진행 N · 감사 대기 N · 통과 N · 막힘(있으면 빨강) · 시작 가능 N. 밑에 "누가 누구를 기다리나" 한두 줄(topBlockers). 누르면 타임라인 탭. 비어 있는 줄기는 안 그린다.
@@ -1684,6 +1729,9 @@ function renderTowerAll(grid) {
   const tl = el('section', 'dash__card'); tl.dataset.block = 'teams';
   tl.appendChild(el('div', 'dash__k', '팀'));   // '대표 차례' 는 순서 말 — 하영 5판 3-5-3 ①(req_123f2ebe), 422·1827 과 같은 글자
   for (const t of teams.filter((x) => x.id !== 'sera')) {
+    // 팀 상황 카드(C7 — 카드-체계 1절 "② 첫 화면 탭 — 같은 카드 다섯이 세로로"). 재료(/api/card)가 오면 카드, 아직이면(서버 옛 판·404) 아래 옛 줄 그대로.
+    const cardNode = teamCardNode(t.id, () => { if (view === 'tower' && towerTab === 'all') renderTower(); });
+    if (cardNode) { tl.appendChild(cardNode); continue; }
     const s = summaries[t.id] ?? {};
     const office = t.kind === 'office';
     const running = office || s.phase === 'running' || s.phase === 'blocked';
