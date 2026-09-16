@@ -530,6 +530,20 @@ const stallState = (team) => (room(team).stall ??= { roadmap: null, silent: null
 export function workSeatsOf(team, work) {
   return [...new Set((work?.items ?? []).filter((it) => it.team === team && it.status === '진행').map((it) => it.seat))];
 }
+/**
+ * 완료 조건(D1, 대표 승인 09:5x 151 — 닫힘 조건은 감사 통과 + 완료 조건 둘뿐). 그 자리(team+seat)가 걸린
+ * "진행"·"감사 대기" 항목을 찾아 doneCheck 를 본다 — 저장소 기준 상대 경로 한 줄(예: "안젤 검수 파일 있음"의
+ * 실제 값 "teams/design/out/usability-0916.md"). 그 파일이 있고 0바이트가 아니면 통과. 아직 아무도 doneCheck
+ * 를 안 적었으면(필드 없음) 감사 통과만으로 충분하다 — 예전 동작 그대로, 억지로 조건을 만들지 않는다.
+ */
+export function doneCheckOf(team, seat, work) {
+  const items = work?.items ?? [];
+  const item = items.find((it) => it.team === team && it.seat === seat && (it.status === '진행' || it.status === '감사 대기')) ?? null;
+  if (!item?.doneCheck) return { ok: true, item };
+  let bytes = 0;
+  try { bytes = fs.statSync(path.join(REPO, item.doneCheck)).size; } catch { bytes = 0; }
+  return { ok: bytes > 0, item };
+}
 /** 순수 — 로드맵 마일스톤이 있고 전부 pass 인가. round.mjs check 가 돌려본다. */
 export function roadmapAllPass(roadmap) {
   const ms = roadmap?.milestones ?? [];
@@ -588,10 +602,11 @@ export function checkStalls(now = Date.now()) {
       s.silent = null;
     }
 
-    // ㉤(신설, 독립검수 실측) — 판정이 다 났는데 회차를 닫는 눈이 없었다. 이 회차 안에 "판정 완료" note
-    // (verdictFlow: 'pass')가 있고 그 뒤로 round_end 가 아직 없이 CLOSE_REMINDER_MS 를 넘겼으면 실무에게
-    // 한 번만 닫으라고 청한다. 판정 흐름이 다시 돌거나(새 verdictFlow note) 닫히면 다음 틱에 조건이 풀려
-    // s.closeReminded 가 비워진다 — 회차 번호로 표시해 라운드가 바뀌면 자동으로 다시 걸릴 수 있게 한다.
+    // ㉤(독립검수 실측 + D1, 대표 승인 09:5x 151) — 판정이 다 났는데 회차를 닫는 눈이 없었다. 닫힘 조건은
+    // 둘뿐이라고 정했다: 감사 통과(이 회차의 "판정 완료" note) + 완료 조건 통과(그 일에 걸린 work.json 항목의
+    // doneCheck — 파일 경로 한 줄, 예: "안젤 검수 파일 있음"이면 그 파일이 실제로 있나). 둘 다 됐을 때만,
+    // 한 번만 부른다 — 참고-비교-0916.md 6절 1번("닫는 조건이 둘이 되면 더 안 닫힌다"는 지적을 하나로 합쳐 풀었다).
+    // 항목에 doneCheck 가 없으면(아직 아무도 안 적었으면) 감사 통과만으로 충분하다 — 예전 동작 그대로.
     if (state.phase === 'running') {
       const roundLog = readLog(team).filter((e) => e.round === state.round);
       const closed = roundLog.some((e) => e.type === 'round_end');
@@ -599,11 +614,18 @@ export function checkStalls(now = Date.now()) {
       if (!closed && lastPass) {
         const passedAt = new Date(lastPass.ts).getTime();
         if (now - passedAt >= CLOSE_REMINDER_MS) {
-          if (s.closeReminded !== `${state.round}:${lastPass.id}`) {
-            s.closeReminded = `${state.round}:${lastPass.id}`;
-            note(team, `판정이 끝난 지 ${Math.round(CLOSE_REMINDER_MS / 60_000)}분이 지났는데 회차가 안 닫혔습니다 — ${nameOf(team, owner)}, 닫으세요.`);
-            enqueue(team, owner, 'close');
-            rows.push([team, state.round, minAgo(now, passedAt), `판정 완료 뒤 안 닫힘 — ${nameOf(team, owner)}에게 닫으라 알림`]);
+          let work; try { work = readWork(); } catch { work = null; }
+          const dc = doneCheckOf(team, owner, work);
+          if (dc.ok) {
+            if (s.closeReminded !== `${state.round}:${lastPass.id}`) {
+              s.closeReminded = `${state.round}:${lastPass.id}`;
+              note(team, `판정이 끝난 지 ${Math.round(CLOSE_REMINDER_MS / 60_000)}분이 지났는데 회차가 안 닫혔습니다 — ${nameOf(team, owner)}, 닫으세요.`);
+              enqueue(team, owner, 'close');
+              rows.push([team, state.round, minAgo(now, passedAt), `판정 완료 뒤 안 닫힘 — ${nameOf(team, owner)}에게 닫으라 알림`]);
+            }
+          } else {
+            // 완료 조건이 아직이면 조용히 기다린다 — 재촉하지 않는다. 다음 틱에 파일이 생기면 그때 부른다.
+            s.closeReminded = null;
           }
         }
       } else {

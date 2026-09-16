@@ -688,6 +688,19 @@ switch (cmd) {
         const seats = workSeatsOf(T, work);
         out.push(['work.json "진행" 자리 뽑기(㉢, 독립검수)', seats.join(',') === 'ops' ? '✓ 진행만 · 중복 제거 · 다른 팀 제외' : '✗ ' + JSON.stringify(seats)]);
       }
+      // 완료 조건(D1, 대표 승인 09:5x 151) — doneCheckOf(team, seat, work) 순수: doneCheck 파일이 있고 0바이트
+      // 아니면 통과, doneCheck 가 아예 없으면(아무도 안 적음) 그것도 통과(예전처럼 감사 통과만으로 충분).
+      {
+        const { doneCheckOf } = await import('../server/conductor.mjs');
+        const work2 = { items: [
+          { id: 'w1', team: T, seat: 'guide', status: '진행', doneCheck: 'CLAUDE.md' },      // 있고 안 빔 → 통과
+          { id: 'w2', team: T, seat: 'ops', status: '진행', doneCheck: '없는파일-xyz.md' },   // 없음 → 대기
+          { id: 'w3', team: T, seat: 'review', status: '진행' },                              // doneCheck 없음 → 통과
+        ] };
+        const dc1 = doneCheckOf(T, 'guide', work2), dc2 = doneCheckOf(T, 'ops', work2), dc3 = doneCheckOf(T, 'review', work2), dc4 = doneCheckOf(T, '없는자리', work2);
+        out.push(['완료 조건(D1) — doneCheckOf', dc1.ok === true && dc2.ok === false && dc3.ok === true && dc4.ok === true && dc4.item === null
+          ? '✓ 파일 있으면 통과 · 없으면 대기 · doneCheck 없으면 통과 · 걸린 항목 없어도 통과(item null)' : '✗ ' + JSON.stringify({ dc1, dc2, dc3, dc4 })]);
+      }
       // 닫히는 중 쌓인 차례는 다음 라운드로 (결정 25) — 호명·제3자만 넘기고 판정·침묵·점심은 버린다. 순수 함수 pickCarry.
       const { pickCarry, staleCalls, mergeCarry } = await import('../server/conductor.mjs');
       const carried = pickCarry(new Map([['review', { kind: 'called' }], ['outside', { kind: 'verdict' }], ['ops', { kind: 'lull' }], ['guide', { kind: 'third' }], ['chief', { kind: 'lunch' }]]));
