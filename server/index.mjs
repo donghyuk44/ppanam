@@ -424,7 +424,9 @@ const server = http.createServer((req, res) => {
   if (cardMatch) {
     const t = decodeURIComponent(cardMatch[1]);
     if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
-    const line = (s) => { const v = String(s ?? '').trim(); return v ? (bossOk(v) ? v : NOT_YET) : null; };
+    // NOT_YET 문구를 값으로 주면 done·blocked 의 filter(Boolean) 이 안 걸러 "요약 없음" 이 진짜 줄처럼 섰다
+    // (테라 실측 — 마케팅 카드 승인 대기). 여긴 null 로 줘서 화면이 그 칸을 그냥 안 그리게 한다.
+    const line = (s) => { const v = String(s ?? '').trim(); return v && bossOk(v) ? v : null; };
 
     const p = readProgress(t);
     const who = p?.by ?? null;
