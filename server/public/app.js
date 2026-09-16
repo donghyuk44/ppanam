@@ -97,6 +97,23 @@ const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
  * 보여주면 읽히지 않는다(** 와 | 가 그대로 떴다). 굵게·인라인 코드·줄바꿈만 살리고, 표와 코드블록은
  * 접어 둔다 — 방은 채팅이지 문서가 아니다. 먼저 이스케이프한 뒤 기호를 바꾸므로 HTML 이 새지 않는다.
  */
+/**
+ * 접힌 말풍선 — "개발 방에 답함 · 펼치기" 한 줄, 누르면 원문 말풍선(C15 인용 꼴의 부품, 카카오톡 답장은 모양만 참고). 로밍 답(meta.roam)과 인용(meta.quote) 둘 다 이걸 쓴다.
+ * 접힌 줄에 방 이름표 — 그 방 채팅으로 건너뛰는 문(jump 가 있으면).
+ */
+function foldBubble(label, inner, jump = null) {
+  const d = el('details', 'bub bub--fold');
+  const s = el('summary', 'bub__sum');
+  s.appendChild(el('span', 'bub__foldk', label));
+  s.appendChild(el('span', 'bub__foldgo', '펼치기'));
+  d.appendChild(s);
+  const body = el('div', 'bub__folded'); body.appendChild(inner);
+  if (jump?.team) { const go = el('button', 'bub__jump', `${teams.find((t) => t.id === jump.team)?.room ?? jump.team} 열기`); go.type = 'button'; go.addEventListener('click', () => jumpTo(jump.team, jump.event ?? null)); body.appendChild(go); }
+  d.appendChild(body);
+  d.addEventListener('toggle', () => { s.querySelector('.bub__foldgo').textContent = d.open ? '접기' : '펼치기'; });
+  return d;
+}
+
 function bubble(text, team = active) {
   const n = el('div', 'bub');
   const src = String(text ?? '');
@@ -649,7 +666,11 @@ function draw(e) {
       }
       // 대표를 불렀다 — 멘션 표시 (결정 19-2).
       if (called) stack.appendChild(el('div', 'callmark', '@대표 멘션'));
-      stack.appendChild(bubble(e.text));
+      // 다른 방에 한 답(meta.roam:'dev' — 나리·세라 로밍, callHomeElsewhere 가 원본을 집 방에 남긴다)은 집 방 화면에서 접는다: "개발 방에 답함 · 펼치기"(대표 12:59 총괄실 "왜 테라 솔라한테 한 말이 여기서 보여?").
+      // C15 인용(meta.quote)도 같은 부품(foldBubble) — 방·사람·시각 한 줄 + 펼치면 원문.
+      const roam = e.meta?.roam && e.meta.roam !== active ? teams.find((t) => t.id === e.meta.roam) : null;
+      if (roam) stack.appendChild(foldBubble(`${roam.room ?? roam.name}에 답함`, bubble(e.text, roam.id), { team: roam.id, event: e.id }));
+      else stack.appendChild(bubble(e.text));
       // 비서실 카드(카드-체계 1절 "① 비서실 — 세라가 다섯 팀 카드를 올린다"): 말에 meta.cards:[팀…] 이 실리면 그 팀 카드를 말풍선 밑에 같은 부품으로(계약 3절 message).
       if (Array.isArray(e.meta?.cards) && e.meta.cards.length) {
         const wrap = el('div', 'bub__cards'); wrap.dataset.event = e.id;

@@ -295,6 +295,15 @@ body {
   white-space: pre-wrap; word-break: break-word;
 }
 .row.cont .bub { border-radius: 14px; }
+/* 접힌 말풍선(다른 방에 한 답 · C15 인용) — "개발 방에 답함 · 펼치기" 한 줄, 펼치면 원문 말풍선이 안에 */
+.bub.bub--fold { padding: 0; background: var(--sunk); border-style: dashed; white-space: normal; }
+.bub__sum { display: flex; align-items: center; gap: 8px; padding: 6px 12px; cursor: pointer; font-size: 12px; color: var(--ink-3); list-style: none; }
+.bub__sum::-webkit-details-marker { display: none; }
+.bub__foldk { font-weight: 500; color: var(--ink-2); }
+.bub__foldgo { margin-left: auto; font-size: 11px; color: var(--ink-4); }
+.bub__folded { padding: 0 8px 8px; }
+.bub__folded .bub { border-style: solid; }
+.bub__jump { margin-top: 6px; font: inherit; font-size: 11.5px; color: var(--ink-3); background: none; border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; cursor: pointer; }
 .bub b { font-weight: 600; }
 .bub code { font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: var(--sunk); padding: 0 4px; border-radius: 3px; }
 .bub__fold { margin-top: 6px; font-size: 12px; }
