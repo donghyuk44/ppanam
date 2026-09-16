@@ -61,6 +61,19 @@ function callsBoss(text) {
 }
 
 /** 이 방 사람들 — 대표와, 옮겨온 말 때문에 빌려 온 총괄(from) 은 뺀다. 나리(system)는 세션이 있는 방(N1 — 총괄실, cast model 있음)에서만 사람이고, 다른 방의 system 은 로밍 자리라 뺀다(대표 12:2x "대시보드에 멤버쪽 나리가 없다", 톰 배분). 헤더 둘째 줄·상태 칩이 같은 명단을 쓴다. */
+/* 얼굴 열일곱(결정 131 · 헨리 req_99dbd1fe, C7) — teams/design/out/faces/<팀>-<자리>.png(대표 boss.png · 나리 hq-system.png), 서버가 /out/design/faces/ 로 내준다.
+ * 이름표(.av 32×32)·칩(.chip)·사람 카드 머리에 <img> 를 얹고 머리글자는 밑에 남긴다 — 그림이 없거나 못 읽으면 img 가 빠져 머리글자만 보인다(헨리 ①). 크기·둥글기는 CSS(.chip img, 클레멘타인 d61339a). */
+const FACE_DIR = '/out/design/faces/';
+const faceFile = (team, id) => (id === 'boss' ? 'boss.png' : id === 'system' ? 'hq-system.png' : `${team === 'sera' ? 'hq' : team}-${id}.png`);
+function withFace(node, team, id) {
+  if (!team || !id) return node;
+  const img = document.createElement('img');
+  img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
+  img.addEventListener('error', () => img.remove());
+  img.src = FACE_DIR + faceFile(team, id);
+  node.appendChild(img);
+  return node;
+}
 // 비서실(sera)만 나리(system)를 세션(model) 없이도 세운다 — 머리에 세라·나리 둘(사용성-0916 표 7, 34회차). 다른 방의 안내 자리는 세션 있을 때만.
 const roomAgents = () => Object.entries(cast.agents ?? {}).filter(([id, a]) => id !== 'boss' && !a.from && (id !== 'system' || a.model || active === 'sera'));
 
@@ -319,6 +332,7 @@ function renderBellMenu() {
     // ① 누가 — 팀 색 아바타 + 이름. 자리가 없는 항목(막힘)은 방 아이콘.
     const a = it.by ? summaries[it.team]?.cast?.[it.by] : null;
     const av = el('span', 'nt__av', a?.initial ?? (it.teamName ?? '?').slice(0, 1));
+    if (it.by) withFace(av, it.team, it.by);
     av.style.background = a?.color ?? 'var(--ink-4)';
     row.appendChild(av);
     const body = el('span', 'nt__body');
@@ -412,7 +426,7 @@ function renderHead() {
   const crew = $('crew');
   crew.replaceChildren();
   for (const [id, a] of roomAgents()) {
-    const c = el('div', 'chip', a.initial ?? '?');
+    const c = withFace(el('div', 'chip', a.initial ?? '?'), a.from ?? active, id);
     c.style.background = a.color ?? FALLBACK.color;
     const st = stateOf(id);
     c.dataset.state = st;
@@ -582,7 +596,7 @@ function renderSide() {
     // 나리(system)도 참여에 든다 — 결정 129 로 사람. N1 뒤 총괄실 나리는 세션이 있어(cast model) 상태 점을 그리고, 다른 방의 system(로밍, model 없음)은 대표처럼 직책만 (대표 "프로필이 없네 나리", 비서실 09-14).
     const person = id === 'boss' || (id === 'system' && !a.model);
     const row = el('div', 'who__row');
-    const av = el('div', 'chip', a.initial ?? '?');
+    const av = withFace(el('div', 'chip', a.initial ?? '?'), a.from ?? active, id);
     av.style.background = a.color ?? FALLBACK.color;
     if (!person) av.dataset.state = stateOf(id);
     row.appendChild(av);
@@ -656,7 +670,7 @@ function draw(e) {
       row.dataset.actor = e.actor;   // 멘션 "받았나"(markMentions) — 뒤에 이 사람 말이 있으면 답한 것
       // C16(대표 09-16 11:0x "서버 나리는 노랑, 너는 파랑 박스 안에 이름") — 나리(system) 말은 어느 손인지 meta.hand 로: 'server'(총괄실 세션) 노랑 · 'cli'(say.mjs --as system) 파랑. 서버가 아직 안 찍으면 색 없음
       if (e.actor === 'system' && e.meta?.hand) row.dataset.hand = e.meta.hand;
-      const av = el('div', 'av', a.initial ?? '?');
+      const av = withFace(el('div', 'av', a.initial ?? '?'), e.meta?.from ?? active, e.actor);   // 이름표 32×32 r9 — 200px 얼굴을 cover 로(헨리 ①)
       av.style.background = a.color ?? FALLBACK.color;
       // 얼굴·이름은 문이다(결정 130 ① · 화면이-답하는-질문 "카드는 문") — 누르면 관제탑 사람 카드가 그 자리에 뜬다. 대표·system 은 카드가 없다(마을과 같다).
       // 나리(system 자리)도 문이 있다 — 결정 129 로 사람이 됐다. 세션이 없어 상태·일지는 비고 이름·직책만(나리 R25 "사람인데 문이 없는 자리").
@@ -2048,7 +2062,7 @@ function renderTowerPeople(grid) {
   // 볼 이유가 없다 — 뺐다. 남는 건 ①③ 의 답, 승인 대기 · 차례인 방. (people.boss 의 지시·결정 수는 계약에 남고 화면만 안 쓴다.)
   const bossCast = summaries[teams[0]?.id]?.cast?.boss ?? { name: '함동혁(댄)', initial: '댄', color: '#8a7320', title: '대표', does: '사람' };
   const bc = el('div', 'pcard'); bc.dataset.boss = '1';
-  bc.appendChild(pcardTop(bossCast, el('span')));
+  bc.appendChild(pcardTop(bossCast, el('span'), { team: 'hq', id: 'boss' }));
   const { rooms } = bossTurns();
   bc.appendChild(el('div', 'pcard__doing', `결재 ${approvals.length} · 답 기다리는 방 ${rooms.length ? rooms.map((t) => t.name).join('·') : '없음'}`));
   grid.appendChild(bc);
@@ -2087,9 +2101,10 @@ function renderTowerPeople(grid) {
 }
 
 /** 카드 1줄 — 칩 26px + 이름 · 자리 + 오른쪽 알약. */
-function pcardTop(a, pillEl) {
+function pcardTop(a, pillEl, face = null) {
   const top = el('div', 'pcard__top');
   const chip = el('div', 'chip pcard__chip', a.initial ?? '?'); chip.style.background = a.color ?? FALLBACK.color;
+  if (face) withFace(chip, face.team, face.id);   // 사람 카드 얼굴 칸(헨리 ② — 띠·지름은 CSS 몫)
   top.appendChild(chip);
   const who = el('div', 'pcard__who');
   who.appendChild(el('b', null, a.name ?? '?'));
@@ -2147,7 +2162,7 @@ function personCard(t, id, a, p) {
   if (id === 'system' && a?.model) card.dataset.hand = 'server';   // 서버 나리 — 이름 박스 노랑(C16, 대표 12:13 "카드 색은 C16 대로")
   const st = WORK_PILL[p.state] ?? WORK_PILL.waiting;
   if (p.bossCall) card.dataset.alert = '1';
-  card.appendChild(pcardTop(a, pill(st[0], st[1])));
+  card.appendChild(pcardTop(a, pill(st[0], st[1]), { team: a?.from ?? t.id, id }));
   const why = whyStopped(t, p);   // "왜 멈췄나" — 하영 사전 3-1 그대로(대표 "왜 모두 멈춰있니? 대답해봐")
   const idle = p.state === 'waiting' || p.state === 'resting';
   if (idle) {
@@ -2440,7 +2455,7 @@ function renderTowerTeams(grid) {
       for (const [id, pp] of people) {
         const a = agents[id];
         const row = el('button', 'tcard__person'); row.type = 'button'; row.dataset.actor = `${t.id}:${id}`;
-        const chip = el('span', 'chip', a.initial ?? '?'); chip.style.background = a.color ?? FALLBACK.color; row.appendChild(chip);
+        const chip = withFace(el('span', 'chip', a.initial ?? '?'), a.from ?? t.id, id); chip.style.background = a.color ?? FALLBACK.color; row.appendChild(chip);   // 빌려 온 자리(a.from)는 집 팀 파일(code-review)
         const who = el('span', 'tcard__pwho');
         const nm = el('b', null, a.name ?? id); if (a.title) nm.appendChild(el('small', null, ` ${a.title}`)); who.appendChild(nm);
         const working = pp.state === 'working';
