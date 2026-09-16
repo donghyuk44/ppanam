@@ -641,6 +641,7 @@ function draw(e) {
 
     default: {
       const me = e.actor === 'boss';
+      if (me && /올렸습니다: in\//.test(e.text ?? '')) lastUpload = { key: '' };   // 올린 파일이 방에 떴다 — 같은 파일 다시 올리기 막음을 푼다(결정 188: 60초가 아니라 '떴으면')
       const called = !me && e.actor !== 'system' && callsBoss(e.text);
       const cont = lastActor === e.actor && !called;
       lastActor = e.actor;
@@ -1142,8 +1143,8 @@ $('composerNl').addEventListener('click', () => {
 // 문서도 된다(C17 둘째, 대표 09-16 11:10 "pdf 같은 문서 첨부도 되야겠다") — pdf·md·txt·csv·docx·xlsx·pptx. 서버가 teams/<팀>/in/ 에 두고 "파일을 올렸습니다: in/…" 로 말하면 화면은 파일 카드(outFileNode). 서버 쪽 형식 허용은 솔라(/api/upload UPLOAD_MIME).
 const UPLOAD_OK = /^(image\/(png|jpe?g|gif|webp)|application\/pdf|text\/(plain|markdown|csv)|application\/(vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)))$/;
 const uploadKind = (f) => /^image\//.test(f.type) ? '그림' : '파일';
-let uploading = false, lastUpload = { key: '', at: 0 };   // 같은 그림이 잇달아 세 번(대표 폰 14:11 — 올린 뒤 바로 안 보여 다시 누름, 나리): 올리는 중엔 막고, 같은 이름·크기는 60초 안에 하나만
-async function uploadImage(f) {
+let uploading = false, lastUpload = { key: '' };   // 같은 그림이 잇달아 세 번(대표 폰 14:11 — 올린 뒤 바로 안 보여 다시 누름, 나리): 올리는 중엔 막고, 같은 이름·크기는 **방에 뜰 때까지** 하나만(결정 188 — 60초가 아니라 '떴으면'). 뜨면 말풍선 그리는 쪽이 푼다.
+async function uploadImage(f, { force = false } = {}) {
   if (!f || !active) return;
   // 브라우저가 type 을 비워 주는 것(md·txt·csv·docx·xlsx·pptx 가 OS 에 따라 그렇다)은 확장자로 채운다 — code-review 지적: 고르기 목록엔 있는데 여기서 거절되던 것
   const EXT_MIME = { md: 'text/markdown', txt: 'text/plain', csv: 'text/csv', pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' };
@@ -1151,7 +1152,14 @@ async function uploadImage(f) {
   if (!UPLOAD_OK.test(mime)) return say('그림(png·jpg·gif·webp)이나 문서(pdf·md·txt·csv·docx·xlsx·pptx)만');
   if (uploading) return say('올리는 중이에요 — 잠시만요', 0);
   const key = `${f.name ?? ''}|${f.size ?? 0}|${mime}`;
-  if (key === lastUpload.key && Date.now() - lastUpload.at < 60_000) return say('방금 올린 파일이에요 — 곧 방에 떠요');
+  if (key === lastUpload.key && !force) {   // 아직 방에 안 뜬 같은 파일 — 막되 길은 남긴다(대표가 일부러 두 번 올릴 수도 있다)
+    const box = $('composerMsg'); clearTimeout(msgTimer); box.replaceChildren();
+    box.append('방금 올린 파일이에요 — 곧 방에 떠요 · ');
+    const b = el('button', 'composer__retry', '그래도 올리기'); b.type = 'button';
+    b.addEventListener('click', () => uploadImage(f, { force: true }));
+    box.appendChild(b); box.hidden = false;
+    return;
+  }
   uploading = true;
   const box = $('composerMsg');
   const pv = el('div', 'composer__pv');
@@ -1167,10 +1175,10 @@ async function uploadImage(f) {
   }).catch(() => null);
   const done = () => { uploading = false; if (pv.dataset.url) URL.revokeObjectURL(pv.dataset.url); };
   if (!data) { done(); return say(`${uploadKind(f)} 로딩 실패`); }
+  lastUpload = { key };   // 보내기 **전에** 건다 — 방 말풍선이 응답보다 먼저 와서 풀리는 수가 있다(code-review): 뒤에 걸면 다시 잠긴다
   const r = await post('/api/upload', { team: active, mime, name: f.name || null, data }).catch(() => null);   // name — 서버가 원래 파일 이름을 카드에 쓸 수 있게(지금은 안 봐도 됨)
   done();
-  if (!r?.ok) return say(r?.data?.error ?? `${uploadKind(f)} 업로드 실패`);
-  lastUpload = { key, at: Date.now() };
+  if (!r?.ok) { lastUpload = { key: '' }; return say(r?.data?.error ?? `${uploadKind(f)} 업로드 실패`); }
   say('업로드 완료 — 곧 방에 떠요');
 }
 $('uploadBtn').addEventListener('click', () => $('uploadFile').click());
@@ -2515,52 +2523,26 @@ function mdToDom(text) {
   return box;
 }
 
-/* ── 앞날 띠 (헨리 시안 1판 dashboard.svg · 결정 128) — 줄 = 팀, 가로 = 앞으로의 시간, 칸 = 단계.
- * 시간 눈금은 폰 넷(오늘·내일·모레·이번 주)·컴퓨터 다섯(+다음 주). 지금 선이 왼쪽 끝 — 지난 것은 없다.
- * 자리(px)는 시각 → 띠 폭의 비율. 창은 지금부터 HORIZON 까지, 그 뒤는 오른쪽 끝에 붙는다("이번 주" 눈금 뒤). 늦은 것은 빨간 띠가 지금 선에서 오른쪽으로 자란다.
- * 세는 숫자 없음 — 단계 번호·날짜·늦은 시간만(헨리). 누르면 왜(펼친 줄) → 한 번 더 = 계획표 카드(관제탑 팀 카드의 계획표와 같은 부품은 다음 손).
+/* ── 앞날 띠 (헨리 시안 1판 dashboard.svg · 결정 128) — 줄 = 팀, 칸 = 단계, 왼쪽부터 지금 단계 → 다음.
+ * 결정 188(대표 09-16 17:0x "모든 시간 관련된거 다 폐기해"): 시간 눈금(오늘·내일·모레·이번 주)·"{날}까지"·"예정 대비 N분 지연"·"회차 평균 90분 × N회차 → 내일" 은
+ * 우리가 timebox 로 지어낸 앞날이라 뺐다. 남는 건 사실뿐 — 단계 번호·제목·상태(진행·막힘·대표 결정 후)·담당 점. 칸은 순서대로 같은 폭.
+ * 서버(bus.timelineOf) 의 plannedFrom/To·late 는 화면이 안 읽는다 — 걷는 건 솔라 몫. 누르면 왜(펼친 줄).
  */
 const DAY = 86_400_000;
-const seoulDayStart = (ms) => Math.floor((ms + 9 * 3600_000) / DAY) * DAY - 9 * 3600_000;   // 계약의 dayStartSeoul 과 같은 식 — 눈금 "내일" 은 우리 시각 자정
-function bandTicks(now, wide) {
-  const d0 = seoulDayStart(now);
-  const ticks = [{ at: now, label: '오늘' }, { at: d0 + DAY, label: '내일' }, { at: d0 + 2 * DAY, label: '모레' }, { at: d0 + 7 * DAY, label: '이번 주' }];
-  if (wide) ticks.push({ at: d0 + 14 * DAY, label: '다음 주' });
-  return ticks;
-}
+const seoulDayStart = (ms) => Math.floor((ms + 9 * 3600_000) / DAY) * DAY - 9 * 3600_000;   // 계약의 dayStartSeoul 과 같은 식 — 리포트의 '오늘·어제' 날 이름(사실)에만 쓴다
 function loadDashboardBand(r) {
   const band = $('dashBand'), gates = $('dashGates');
   band.replaceChildren(); gates.replaceChildren();
-  const now = Date.parse(r.now ?? '') || Date.now();
   const wide = window.innerWidth >= 1180;
-  const ticks = bandTicks(now, wide);
-  const end = ticks[ticks.length - 1].at + (wide ? 3 * DAY : DAY);   // 마지막 눈금 뒤 여유 — 그 너머는 끝에 붙는다
-  // 자는 시간이 아니라 칸이다(헨리 시안: 오늘·내일·모레·이번 주가 같은 폭) — 시간 그대로 펴면 밤 9시엔 '오늘' 이 2%로 눌려 눈금이 겹치고 오늘 단계 칸이 실처럼 됐다(412 실측 09-15).
-  // 눈금 사이를 같은 폭으로 두고 그 안에서만 시간 비례. 마지막 눈금 뒤는 한 칸.
-  const bounds = [...ticks.map((t) => t.at), end];
-  const seg = 100 / (bounds.length - 1);
-  const x = (t) => {
-    if (t <= bounds[0]) return 0;
-    for (let i = 0; i < bounds.length - 1; i++) if (t < bounds[i + 1]) return i * seg + seg * ((t - bounds[i]) / Math.max(1, bounds[i + 1] - bounds[i]));
-    return 100;
-  };
-  // 눈금 머리
-  const head = el('div', 'band__head');
-  head.appendChild(el('span', 'band__corner', ''));
-  const scale = el('div', 'band__scale');
-  for (const t of ticks) { const s = el('span', 'band__tick', t.label); s.style.left = `${x(t.at)}%`; scale.appendChild(s); }
-  head.appendChild(scale); head.appendChild(el('span', 'band__corner', '')); band.appendChild(head);   // 셋째 칸 = 담당 점 자리
-  // 글자는 하영 화면 글 틀 1판(teams/marketing/out/screen-text-frames.md 1-2 · 1-4 · 6절) — 칸에는 {날}까지만, 시·분은 펼친 줄에서("{때 h:mm}" — when.js). 늦음은 "N단계 N분 늦음", 멈춘 시간은 뺀 것(T9·T5)
+  const BOX_W = wide ? 14 : 18;   // 칸 폭(%) — 시간이 아니라 순서. 넘치면 오른쪽 끝에 붙는다(아래).
+  // 글자는 하영 화면 글 틀 1판(teams/marketing/out/screen-text-frames.md 1-2 · 1-4 · 6절)에서 날·시·분·늦음 줄만 뺀 것(결정 188).
   const stageNo = (s) => (s.n != null ? `${s.n}단계` : s.title);
   const shortTitle = (s) => String(s.title ?? '').split(/\s*(?:—|∥|\()\s*/)[0].trim();   // 폰 폭 — 첫 구분 기호 앞까지(1-1)
-  const roundsWord = (n) => (n === 0.5 ? '반' : n);
   const openWhy = (row, text) => { const why = row.querySelector('.band__why'); if (why) { why.remove(); return; } const w = el('div', 'band__why'); w.textContent = text; row.appendChild(w); };
   const whyOf = (t, s) => {
     if (s.status === 'gated') return `로드맵 조건 — "${s.gate}"`;
     if (s.status === 'blocked') return s.blockedWhy ?? '';
-    if (!s.plannedFrom) return `${stageNo(s)} ${s.title}`;   // timebox 없는 단계 — 날짜를 지어내지 않는다
-    const base = `${timeWord(s.plannedFrom, now)} 시작 · 회차 평균 ${spanWord(t.roundMs)}${s.rounds != null ? ` × ${roundsWord(s.rounds)}회차` : ''} → ${timeWord(s.plannedTo, now)}`;
-    return s.late >= 60_000 ? `${base} · 예정 대비 ${spanWord(s.late)} 지연 — 중단 시간 제외` : base;   // 1분 미만은 지연 아님(폴드 QA #15)
+    return `${stageNo(s)} ${s.title}`;   // 날짜를 지어내지 않는다(결정 188)
   };
   for (const t of r.teams ?? []) {
     const row = el('div', 'band__row'); row.dataset.team = t.id;
@@ -2570,29 +2552,26 @@ function loadDashboardBand(r) {
     label.appendChild(el('span', null, nowStage ? `${nowStage.n}단계 ${shortTitle(nowStage)}` : '단계 없음'));   // 사전 1절 125행 — 단계(마일스톤은 0-3 후보로만, 폴드 QA #14)
     row.appendChild(label);
     const lane = el('div', 'band__lane'); lane.style.setProperty('--team', t.color ?? 'var(--ink-4)');
-    lane.style.setProperty('--seg', `${seg}%`);   // 칸 선 — 눈금 수에 맞춰(폰 넷·컴퓨터 다섯 + 뒤 한 칸)
+    lane.style.setProperty('--seg', '100%');   // 칸 선 없음 — 눈금이 없다(결정 188)
     if (!t.stages.length) {   // 빈칸 말 둘(1-2) — 계획표 파일이 없다 / 있는데 남은 단계가 없다. 대표 문이 아니다 — 총괄실 계획표는 톰이, 경영 다음 단계는 노라가 적는다(T7)
       const g = el('button', 'band__box band__box--gated', t.hasRoadmap === false ? '로드맵 없음' : '다음 단계 없음'); g.type = 'button'; g.style.left = '0'; g.style.width = '48%';
       g.addEventListener('click', () => openWhy(row, '로드맵 등록 시 표시'));
       lane.appendChild(g);
     }
     let cursorPct = 0;
+    const boxW = Math.max(BOX_W, Math.min(wide ? 24 : 32, Math.floor(96 / Math.max(1, t.stages.length)) - 1));   // 단계가 적으면 넓게 — 글자가 잘리지 않게
     for (const s of t.stages) {
-      const from = s.plannedFrom ? Math.max(now, Date.parse(s.plannedFrom)) : null;
-      const to = s.plannedTo ? Date.parse(s.plannedTo) : null;
-      let left = from != null ? x(from) : cursorPct, width = to != null ? Math.max(x(to) - left, 6) : 18;
+      let left = cursorPct, width = boxW;   // 순서대로 같은 폭 — 시각으로 자리를 정하지 않는다(결정 188)
       if (left + width > 100) width = 100 - left;
       if (width < 6) { left = Math.max(0, 100 - 6); width = 6; }
       cursorPct = left + width + 1;
       const b = el('button', `band__box band__box--${s.status}`); b.type = 'button';
-      // 점선 칸 "N단계 — 대표님이 정한 뒤"(대표 문) · "N단계 — {무엇} 뒤"(다른 팀·다른 일 뒤, T4) — timebox 원문은 펼친 줄에(T5). 빨간 칸 "N단계 — {날}까지 못 끝남 (이유)"(3-5-3 ⑨). 채움 "N단계 · {날}까지"
-      const text = s.status === 'gated' ? `${stageNo(s)} — ${s.gateWhat ?? '대표 결정 후'}` : s.status === 'blocked' ? `${stageNo(s)} — ${to ? dayWord(to, now) + ' 지연' : '지연'}${s.blockedWhy ? ' (' + s.blockedWhy + ')' : ''}` : `${stageNo(s)}${to ? ' · ' + dayWord(to, now) + '까지' : ''}`;
+      // 점선 칸 "N단계 — 대표님이 정한 뒤"(대표 문) · "N단계 — {무엇} 뒤"(다른 팀·다른 일 뒤, T4). 빨간 칸 "N단계 — 막힘 (이유)". 채움 "N단계". 날·지연은 없다(결정 188)
+      const text = s.status === 'gated' ? `${stageNo(s)} — ${s.gateWhat ?? '대표 결정 후'}` : s.status === 'blocked' ? `${stageNo(s)} — 막힘${s.blockedWhy ? ' (' + s.blockedWhy + ')' : ''}` : stageNo(s);
       b.textContent = text; b.title = `${s.n != null ? s.n + '단계 ' : ''}${s.title}`;
       b.style.left = `${left}%`; b.style.width = `${width}%`;
       b.addEventListener('click', () => openWhy(row, `${whyOf(t, s)} — 로드맵은 현황 팀 카드에`));
       lane.appendChild(b);
-      // 1분 미만은 지연이 아니다 — "0분 지연" 빨간 글자(폴드 QA #15)
-      if (s.late >= 60_000) { const lt = el('span', 'band__late', `${stageNo(s)} ${spanWord(s.late)} 지연`); lt.style.setProperty('--w', `${Math.max(3, Math.min(40, x(now + s.late)))}%`); lane.appendChild(lt); row.classList.add('band__row--late'); }
     }
     row.appendChild(lane);
     // 담당 점 둘(1-3, 결정 128 "누가") — 그 팀의 둘, 머리글자 · 직책 색. 서버 owners(cast 에서 다른 회사 뺀 둘, 팀장 먼저)
