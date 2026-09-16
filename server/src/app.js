@@ -61,8 +61,8 @@ function callsBoss(text) {
   return new RegExp(`(^|\\n\\s*\\n)\\s*(${names.join('|')})\\s*(씨|님)?\\s*[,，、:·]`).test(s);
 }
 
-/** 이 방 사람들 — 대표·시스템과, 옮겨온 말 때문에 빌려 온 총괄(from) 은 뺀다. 헤더 둘째 줄·상태 칩이 같은 명단을 쓴다. */
-const roomAgents = () => Object.entries(cast.agents ?? {}).filter(([id, a]) => id !== 'boss' && id !== 'system' && !a.from);
+/** 이 방 사람들 — 대표와, 옮겨온 말 때문에 빌려 온 총괄(from) 은 뺀다. 나리(system)는 세션이 있는 방(N1 — 총괄실, cast model 있음)에서만 사람이고, 다른 방의 system 은 로밍 자리라 뺀다(대표 12:2x "대시보드에 멤버쪽 나리가 없다", 톰 배분). 헤더 둘째 줄·상태 칩이 같은 명단을 쓴다. */
+const roomAgents = () => Object.entries(cast.agents ?? {}).filter(([id, a]) => id !== 'boss' && !a.from && (id !== 'system' || a.model));
 
 /**
  * 자리의 살아 있음. 세션이 있나(듣는 중), 일하는 중인가, 지금 차례가 잡혀 있나.
@@ -555,8 +555,8 @@ function renderSide() {
   c.appendChild(el('div', 'card__k', '참여'));
   for (const [id, a] of Object.entries(cast.agents ?? {})) {
     if (a.from) continue;   // 빌려 온 총괄은 이 방 참여자가 아니다
-    // 나리(system)도 참여에 든다 — 결정 129 로 사람. 세션이 없으니 대표처럼 상태 점·'자는 중' 없이 직책만 (대표 "프로필이 없네 나리", 비서실 09-14).
-    const person = id === 'boss' || id === 'system';
+    // 나리(system)도 참여에 든다 — 결정 129 로 사람. N1 뒤 총괄실 나리는 세션이 있어(cast model) 상태 점을 그리고, 다른 방의 system(로밍, model 없음)은 대표처럼 직책만 (대표 "프로필이 없네 나리", 비서실 09-14).
+    const person = id === 'boss' || (id === 'system' && !a.model);
     const row = el('div', 'who__row');
     const av = el('div', 'chip', a.initial ?? '?');
     av.style.background = a.color ?? FALLBACK.color;
