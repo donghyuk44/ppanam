@@ -163,7 +163,10 @@ switch (cmd) {
         process.exit(2);
       }
     }
-    const r = await viaServer({ team, target: phrase, targetSeat: o.target }, '/api/verdict');
+    // requester(청한 자리) — --target 이 없으면 서버가 이걸 기본 대상으로 쓴다(나리 15:3x, 헨리가
+    // 청했는데 글 속 다른 이름을 잡아 엉뚱하게 찍히던 것). 세션 환경의 PPANAM_ACTOR — 셸에서 맨 명령으로
+    // 치면 없어 예전처럼 이름 찾기로 떨어진다.
+    const r = await viaServer({ team, target: phrase, targetSeat: o.target, requester: process.env.PPANAM_ACTOR ?? null }, '/api/verdict');
     if (!r) { console.error('오류: 판정 흐름은 서버가 돌립니다. 서버(npm start)가 떠 있어야 합니다.'); process.exit(1); }
     console.log(`[${team}] 판정 시작 — ${r.flow.target}. 결과는 판정 카드로 방에 남고 너에게 들립니다. 기다리는 동안 (패스).`);
     break;
@@ -840,9 +843,16 @@ switch (cmd) {
         // 에서 레오(outside)가 먼저 나온다고 outside 가 대상이 되면 안 된다. review(안젤)도 같은 선.
         const vt5 = verdictTargetActor(T, '레오, 솔라 서버 것 봐줘');
         const vt6 = verdictTargetActor(T, '안젤, 이번 라운드 산출물 봐줘');
+        // 청한 자리 본인이 기본(나리 15:3x — 헨리가 청했는데 글 속 "클레멘타인" 이름을 잡아 엉뚱하게
+        // ops 로 찍혔다) — requester 가 감사가 아니면 이름 찾기 없이 그 자리. 감사가 청했을 때만(남을
+        // 대신 청하는 경우) 이름 찾기로 넘어간다.
+        const vt7 = verdictTargetActor(T, '솔라가 만든 것 봐줘', 'guide');       // guide(감사 아님)가 청함 — 글 속 이름 안 보고 청한 자리 본인(guide)
+        const vt8 = verdictTargetActor(T, '솔라가 만든 것 봐줘', 'outside');     // outside(감사)가 청함 — 남을 대신 청한 것 — 이름 찾기로 ops
+        const vt9 = verdictTargetActor(T, '이번 라운드 산출물', 'ops');          // 이름 없고 솔라(ops)가 청함 — 예전 기본값(guide)이 아니라 청한 자리 본인
         out.push(['판정 대상 자리 찾기(target 고정 버그)', vt1 === 'ops' && vt2 === 'guide' && vt3 === 'ops' && vt4 === 'guide' && vt5 === 'ops' && vt6 === 'guide'
-          ? '✓ 이름 있으면 그 자리 · 없으면 guide · 글 순서로 먼저 나온 이름 · boss·system 은 후보 아님 · 감사역(outside·review) 도 후보 아님(2판 #1)'
-          : '✗ ' + JSON.stringify({ vt1, vt2, vt3, vt4, vt5, vt6 })]);
+          && vt7 === 'guide' && vt8 === 'ops' && vt9 === 'ops'
+          ? '✓ 이름 있으면 그 자리 · 없으면 guide · 글 순서로 먼저 나온 이름 · boss·system 은 후보 아님 · 감사역(outside·review) 도 후보 아님(2판 #1) · 청한 자리 본인이 기본, 감사가 청했을 때만 이름 찾기(나리 15:3x)'
+          : '✗ ' + JSON.stringify({ vt1, vt2, vt3, vt4, vt5, vt6, vt7, vt8, vt9 })]);
         // 대상 없는 판정 요청 0건(세라 조건, apr_132205cc) — withVerdictTarget 이 target 글 **앞**에
         // '대상: <자리> · ' 를 박고, verdictTargetActor 는 그 표시를 이름 찾기보다 먼저 읽는다 — 왕복해도
         // 같은 자리, 표시 자체가 늘 있다. matched:false 는 아무 이름도 못 찾아 guide 로 기본값이 갔다는 뜻

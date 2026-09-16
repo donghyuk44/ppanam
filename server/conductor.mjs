@@ -478,7 +478,7 @@ function dispatch(team) {
  * REVISE 가 나오면 흐름은 끝나고 실무가 호명 차례를 받는다(판정 카드는 어차피 그가 듣는다). FAIL 이면 방이 막힌다.
  * 둘 다 PASS 면 note — 라운드를 PASS 로 닫는 것은 실무나 대표가 한다(자동으로 닫지 않는다).
  */
-export function startVerdict(team, target, targetSeat = null) {
+export function startVerdict(team, target, targetSeat = null, requester = null) {
   const r = room(team);
   const state = readState(team);
   if (isOffice(team)) throw new Error('총괄실에는 판정이 없습니다.');
@@ -499,8 +499,10 @@ export function startVerdict(team, target, targetSeat = null) {
   // 감사역(giveTurn)도 codex·gemini 감사역(bus/outside.mjs)도 같은 이 글을 받으니 어느 길이든 같은 값이다.
   // targetSeat 는 청하는 쪽이 직접 적은 것(--target, /api/verdict) — 자유 글 짐작보다 우선한다(테라
   // code-review 지적 ①: "테라 화면 + 솔라 서버" 처럼 둘을 한 번에 청하면 짐작은 하나로 뭉개진다).
+  // requester(청한 자리)는 그다음 — 명시가 없으면 청한 자리 본인이 기본, 감사가 청했을 때만 이름 찾기
+  // (나리 15:3x — 헨리가 청했는데 글 속 "클레멘타인" 이름을 잡아 엉뚱하게 ops 로 찍혔다).
   const targetText = String(target ?? '').trim() || '이번 라운드 산출물';
-  const vt = withVerdictTarget(team, targetText, targetSeat);
+  const vt = withVerdictTarget(team, targetText, targetSeat, requester);
   r.flow = { target: vt.text, steps, i: 0, asked: 0, skipped: outsideWhy && out ? ['outside'] : [], reason: outsideWhy };
   // meta.target — 판정 대상 글 그대로. 닫을 때 bus.artifactsOf 가 여기서 out/ 경로를 읽어 산출물이 비었는지 본다(8단계).
   emit(team, { actor: 'system', type: 'note', text: `판정 시작 — ${r.flow.target}. ${steps.map((s) => nameOf(team, s)).join(' → ')} 순서.`, meta: { verdictFlow: 'start', steps, skipped: r.flow.skipped, reason: outsideWhy, target: r.flow.target } });
@@ -564,7 +566,7 @@ export function autoVerdicts(now = Date.now()) {
     const min = Math.round((now - a.at) / 60_000);
     emit(team, { actor: 'system', type: 'note', text: `${ga(nameOf(team, a.by))} ${min}분 전에 ${eul(nameOf(team, 'outside'))} 판정으로 불렀는데 판정 카드가 없어 서버가 판정 흐름을 돌립니다.`, meta: { verdictFlow: 'auto', askedBy: a.by, askedAt: new Date(a.at).toISOString(), waitedMs: now - a.at } });
     try {
-      startVerdict(team, a.text);
+      startVerdict(team, a.text, null, a.by);
     } catch (e) {
       note(team, `말로 부른 판정을 흐름으로 돌리지 못했습니다 — ${String(e.message).slice(0, 120)}`);
     }

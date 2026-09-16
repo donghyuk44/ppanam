@@ -1926,17 +1926,20 @@ export function timelineOf() {
 const isVerdictCandidate = (cast, id) => id !== 'boss' && id !== 'system' && !JUDGES.has(id) && cast[id];
 
 /**
- * 이름 찾기 — 명시된 표시(`대상: <자리>`)가 있으면 그대로, 없으면 자유 글에서 제일 먼저 나온 이름의 자리.
- * matched:false 는 "아무 이름도 못 찾아 guide 로 떨어졌다" — guide 가 실제로 불려서 나온 값이 아니다,
- * withVerdictTarget 이 이 구분으로 조용한 기본값(테라 code-review 지적 ③)을 방에 note 로 남긴다.
- * 감사 자리(JUDGES)는 후보에서 뺀다 — "레오, 솔라 서버 것 봐줘"에서 레오가 먼저 나온다고 대상이 되면
- * 안 된다(2판 코드 점검 #1). 순수 — round.mjs check 가 돌려본다.
+ * 대상을 정하는 순서 — ① 명시된 표시(`대상: <자리>`) ② 청한 자리 본인(requester, 감사가 아닐 때만) —
+ * 만든 사람이 자기 걸 청하는 게 보통이다(나리 15:3x — 헨리가 청했는데 글 속 "클레멘타인" 이름을 잡아
+ * 엉뚱하게 ops 로 찍혔다) ③ 자유 글에서 제일 먼저 나온 이름의 자리(청한 자리가 감사— 남을 대신 청하는
+ * 경우만 이름 찾기). matched:false 는 "아무 이름도 못 찾아 guide 로 떨어졌다" — guide 가 실제로 불려서
+ * 나온 값이 아니다, withVerdictTarget 이 이 구분으로 조용한 기본값(테라 code-review 지적 ③)을 방에
+ * note 로 남긴다. 감사 자리(JUDGES)는 이름 찾기 후보에서 뺀다 — "레오, 솔라 서버 것 봐줘"에서 레오가
+ * 먼저 나온다고 대상이 되면 안 된다(2판 코드 점검 #1). 순수 — round.mjs check 가 돌려본다.
  */
-export function resolveVerdictTarget(team, flowTargetText) {
+export function resolveVerdictTarget(team, flowTargetText, requester = null) {
   const cast = readCast(team).agents ?? {};
   const text = String(flowTargetText ?? '');
   const marked = /(?:^|[\s·])대상:\s*([a-z]+)/.exec(text)?.[1];
   if (marked && isVerdictCandidate(cast, marked)) return { seat: marked, matched: true };
+  if (requester && isVerdictCandidate(cast, requester) && !JUDGES.has(requester)) return { seat: requester, matched: true };
   let best = null, bestAt = Infinity;
   for (const [id, a] of Object.entries(cast)) {
     if (!isVerdictCandidate(cast, id) || !a?.name) continue;
@@ -1953,8 +1956,8 @@ export function resolveVerdictTarget(team, flowTargetText) {
  * work.json 자동 진행(advanceWorkOnPass)이 엉뚱한 항목을 건드리는 원인. resolveVerdictTarget 의 seat 만 돌려준다
  * (알려진 한계, code-review 지적, 범위 밖으로 남김: 이름 찾기는 낱말 경계 없이 부분 문자열로 찾는다).
  */
-export function verdictTargetActor(team, flowTargetText) {
-  return resolveVerdictTarget(team, flowTargetText).seat;
+export function verdictTargetActor(team, flowTargetText, requester = null) {
+  return resolveVerdictTarget(team, flowTargetText, requester).seat;
 }
 
 /**
@@ -1964,14 +1967,15 @@ export function verdictTargetActor(team, flowTargetText) {
  * 글이 길 때(테라 32회차 요청, 300자+) 잘려 나가 표시가 사라진다. 앞에 두면 자르기가 뒤를 먹어도 표시는 산다.
  * explicitSeat(테라 지적 ①) — 청하는 쪽이 자리를 직접 적은 것(`--target`, `/api/verdict` 의 targetSeat)이면
  * 이름 찾기보다 우선한다 — 자유 글 짐작은 "테라 화면 + 솔라 서버"처럼 둘을 한 번에 청하면 하나로 뭉개진다.
+ * requester — 그다음 우선순위, resolveVerdictTarget 이 본다(청한 자리 본인이 기본, 감사면 이름 찾기).
  * verdictTargetActor 가 이 표시를 최우선으로 읽으므로, 여기서 정한 자리와 나중에 recordVerdict 가 기록하는
  * 자리가 어긋나지 않는다 — 같은 글, 같은 함수.
  * @returns { text, seat, matched } — matched:false 면 아무도 안 불려 guide 로 기본값이 갔다는 뜻(호출부가 note 로 남긴다).
  */
-export function withVerdictTarget(team, target, explicitSeat = null) {
+export function withVerdictTarget(team, target, explicitSeat = null, requester = null) {
   const cast = readCast(team).agents ?? {};
   if (explicitSeat && isVerdictCandidate(cast, explicitSeat)) return { text: `대상: ${explicitSeat} · ${target}`, seat: explicitSeat, matched: true };
-  const { seat, matched } = resolveVerdictTarget(team, target);
+  const { seat, matched } = resolveVerdictTarget(team, target, requester);
   return { text: `대상: ${seat} · ${target}`, seat, matched };
 }
 

@@ -650,9 +650,9 @@ const server = http.createServer((req, res) => {
 
   // 판정. 내부감사 → 외부감사 순서로 판정 차례를 준다. 실무가 /verdict 로, 대표가 화면에서 부른다.
   if (url.pathname === '/api/verdict' && req.method === 'POST') {
-    readBody(req, res, ({ team: t, target, targetSeat }) => {
+    readBody(req, res, ({ team: t, target, targetSeat, requester }) => {
       if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
-      try { return json(res, 200, { ok: true, flow: startVerdict(t, target, targetSeat ?? null) }); }
+      try { return json(res, 200, { ok: true, flow: startVerdict(t, target, targetSeat ?? null, requester ?? null) }); }
       catch (e) { return json(res, 400, { error: e.message }); }
     });
     return;
