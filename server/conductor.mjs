@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, verdictTargetActor, withVerdictTarget, roundLineOf, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed, readRoadmap, listApprovals, readWork, delegateOverdueCards, readDelegation } from '../bus/bus.mjs';
+import { addressee, addressees, readCast, readState, isOffice, emit, readLog, readTail, quiet, verdictInstruction, verdictTargetActor, withVerdictTarget, roundLineOf, listTeams, isForeign, allowIdleChat, CAPS, takeLull, lullUsed, readRoadmap, listApprovals, readWork, delegateOverdueCards, readDelegation, roundWaitActive } from '../bus/bus.mjs';
 import * as session from './session.mjs';
 import { ga, eul } from './public/toollabel.js';
 
@@ -650,7 +650,9 @@ export function checkStalls(now = Date.now()) {
     // 노라(경영 ops)가 71분 조용했는데 안 걸림. owner + work.json 몫이 걸린 자리를 같이 부른다.
     // 위임 자리(결정 154, D4)는 뺀다 — 일반 침묵 20분과 위임 판정 40분은 다른 시계라, 같이 넣으면
     // 판정을 기다리는 중인데 "지금 뭐 하나" 로 또 부르게 된다(㉥ 이 그 시계를 따로 잰다).
-    if (state.phase === 'running') {
+    // 기다림(O1, 톰 지적 09-16)도 뺀다 — "내일 06:30 첫 실물까지 답만" 처럼 회차가 스스로 기다림을 적었으면
+    // (node bus/round.mjs wait) until 까지는 조용한 게 정상이라 20분 부름이 헛돈다.
+    if (state.phase === 'running' && !roundWaitActive(state, now)) {
       const log = readLog(team).filter((e) => e.round === state.round && (e.type === 'message' || e.type === 'verdict'));
       const lastTs = log.length ? new Date(log[log.length - 1].ts).getTime() : (state.startedAt ? new Date(state.startedAt).getTime() : now);
       if (now - lastTs >= ROUND_SILENT_MS) {

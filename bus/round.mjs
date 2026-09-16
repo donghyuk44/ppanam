@@ -4,6 +4,8 @@
 //   node bus/round.mjs start --topic "가드" -m 1      # 주제는 게이트 이름
 //   node bus/round.mjs start -m 9 --auditor ops      # 이 회차의 안 걸음 감사 자리(결정 125)
 //   node bus/round.mjs auditor ops                   # 열린 회차 중에 정하거나 바꾼다
+//   node bus/round.mjs wait "사유" --until 2026-09-17T06:30:00+09:00   # 그때까지 침묵 20분 부름을 건너뜀 (O1)
+//   node bus/round.mjs wait --clear                  # 기다림을 미리 거둠
 //   node bus/round.mjs status                        # 전체 팀 한눈에
 //   node bus/round.mjs end -v PASS --summary "1안 확정"
 //   node bus/round.mjs end --next --summary "로드맵 교체" [-m 1 --topic "…"]   # 닫고 그 자리에서 다음 라운드를 연다 (결정 25)
@@ -19,7 +21,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
-  startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound, setAuditor,
+  startRound, endRound, readState, readTail, readContext, listRounds, recordVerdict, resumeRound, setAuditor, setRoundWait, clearRoundWait,
   listTeams, defaultTeam, teamExists, teamSummary, MAX_ATTEMPTS, emit, paths, readRoadmap, protectedBranch, pushAction,
   addressees, callsBoss, asksBoss, bossParagraph, bossCallOf, bossNotesOf, doneOf, blockedSpansOf, dayStartSeoul, readLog, listApprovals, voidApproval, approvalPreview, approvalArtifacts, outFile, ROOT, collectJournals, appendJournal, peopleOf, readCast, workStateOf, pushGateError,
   castChangeError, updateCastAgent, castChangeText, codexArgs, quiet as quietText, markOutsideRunning, clearOutsideRunning, outsideRunning,
@@ -29,7 +31,7 @@ import {
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
-const o = { team: null, milestone: null, verdict: null, limit: 20, topic: null, summary: null, next: false, auditor: null, target: null };
+const o = { team: null, milestone: null, verdict: null, limit: 20, topic: null, summary: null, next: false, auditor: null, target: null, until: null, clear: false };
 const words = [];
 
 for (let i = 1; i < argv.length; i++) {
@@ -43,6 +45,8 @@ for (let i = 1; i < argv.length; i++) {
   else if (a === '--next') o.next = true;
   else if (a === '--auditor') o.auditor = argv[++i];   // 이 회차의 안 걸음 감사 자리(결정 125) — start · end --next 에
   else if (a === '--target') o.target = argv[++i];   // verdict 의 판정 대상 자리 — 청하는 쪽이 직접 적는다(테라 code-review 지적 ①), 안 주면 글에서 이름 짐작
+  else if (a === '--until') o.until = argv[++i];   // wait 가 언제까지인지(O1) — Date.parse 되는 시각
+  else if (a === '--clear') o.clear = true;   // wait 를 미리 거둠
   else words.push(a);
 }
 
@@ -109,6 +113,17 @@ switch (cmd) {
     // 열린 회차의 감사 자리를 정한다(결정 125) — node bus/round.mjs auditor ops. 방에 note 가 남는다.
     try {
       const n = setAuditor(team, phrase ?? o.auditor);
+      console.log(`[${team}] R${n.round} ${n.text}`);
+    } catch (e) {
+      console.error('오류: ' + e.message);
+      process.exit(1);
+    }
+    break;
+  }
+  case 'wait': {
+    // 열린 회차가 무엇을 언제까지 기다리는지 적는다(O1) — 그때까지 침묵 20분 부름(checkStalls ㉢)을 건너뛴다.
+    try {
+      const n = o.clear ? clearRoundWait(team) : setRoundWait(team, { why: phrase, until: o.until });
       console.log(`[${team}] R${n.round} ${n.text}`);
     } catch (e) {
       console.error('오류: ' + e.message);
@@ -1327,6 +1342,36 @@ switch (cmd) {
         const want = edWant && seatsWant && badSeat?.includes('outside') && badName?.includes('명단') && noSeat === '✓ 거부' && stAud && unseen === '✓ 거부'
           && selfWhy?.includes('만든 사람') && closed3 === true && shared?.includes('같은 파일') && shared.includes('bus/z.mjs') && early?.includes('만든 사람');
         out.push(['감사 자리 · 서로 감사(결정 125)', want ? '✓ editsOf(접두 뗌·Read 안 셈) · verdictSeats · outside/명단 밖 거부 · 안 정하면 카드 거부 · auditor ops → 카드 ✓ · 자기 파일은 남이 봐야(먼저 외부 문) · 레오 PASS → 닫힘·auditor 비움 · 같은 파일 거부 · 고치기 전 PASS 는 안 본 것' : '✗ ' + JSON.stringify({ edWant, seatsWant, badSeat, badName, noSeat, stAud, unseen, selfWhy, closed3, shared, early })]);
+      }
+      // 회차 기다림(O1, 톰 지적 09-16) — "내일 06:30 첫 실물까지 답만" 처럼 회차가 스스로 적으면 그때까지
+      // checkStalls ㉢(침묵 20분)이 안 부른다. roundWaitActive 는 순수, setRoundWait·clearRoundWait 는 상태에 남긴다.
+      {
+        const { roundWaitActive } = await import('./bus.mjs');
+        const now2 = Date.now();
+        const rwWant = roundWaitActive({ wait: { why: 'x', until: new Date(now2 + 3600_000).toISOString() } }, now2)?.why === 'x'
+          && roundWaitActive({ wait: { why: 'x', until: new Date(now2 - 1000).toISOString() } }, now2) === null
+          && roundWaitActive({ wait: null }, now2) === null && roundWaitActive({}, now2) === null;
+        out.push(['회차 기다림 — 순수(roundWaitActive)', rwWant ? '✓ until 이 미래면 그대로 · 지났거나 없으면 null' : '✗']);
+        if (readState(T).phase !== 'idle') endRound(T, { summary: '기다림 시험 전 정리' });
+        const noRound = refuses(() => setRoundWait(T, { why: '사유', until: new Date(now2 + 3600_000).toISOString() }), '진행 중인 라운드가 없습니다');
+        startRound(T, { milestone: 2, topic: '기다림 시험' });
+        const noWhy = refuses(() => setRoundWait(T, { why: '  ', until: new Date(now2 + 3600_000).toISOString() }), '적으세요');
+        const badUntil = refuses(() => setRoundWait(T, { why: '사유', until: '내일쯤' }), '시각이 아닙니다');
+        const pastUntil = refuses(() => setRoundWait(T, { why: '사유', until: new Date(now2 - 1000).toISOString() }), '이미 지났습니다');
+        const set2 = setRoundWait(T, { why: '내일 06:30 첫 실물까지 답만', until: new Date(now2 + 3600_000).toISOString() });
+        const setOk = readState(T).wait?.why === '내일 06:30 첫 실물까지 답만' && set2.meta?.wait?.why === '내일 06:30 첫 실물까지 답만' && roundWaitActive(readState(T), now2) !== null;
+        const clear2 = clearRoundWait(T);
+        const clearOk = readState(T).wait === null && clear2.meta?.wait === null;
+        const noWait = refuses(() => clearRoundWait(T), '걸린 기다림이 없습니다');
+        // 회차가 새로 열리거나 닫히면 지난 회차의 기다림을 안 물려받는다(auditor 와 같은 선).
+        setRoundWait(T, { why: '또 사유', until: new Date(now2 + 3600_000).toISOString() });
+        const clearedByEnd = (() => { endRound(T, { summary: '기다림 정리' }); return readState(T).wait === null; })();
+        setMilestoneStatus(T, 2, 'wait');
+        if (readState(T).phase !== 'idle') endRound(T, { summary: '기다림 시험 뒷정리' });
+        const wWant = noRound === '✓ 거부' && noWhy === '✓ 거부' && badUntil === '✓ 거부' && pastUntil === '✓ 거부' && setOk && clearOk && noWait === '✓ 거부' && clearedByEnd;
+        out.push(['회차 기다림(O1) — checkStalls ㉢ 건너뜀', wWant
+          ? '✓ 회차 없으면 거부 · 빈 사유·이상한 시각·지난 시각 거부 · 정하면 state.wait+note · 거두면 비움 · 없는데 거두면 거부 · 회차 닫히면 비움'
+          : '✗ ' + JSON.stringify({ noRound, noWhy, badUntil, pastUntil, setOk, clearOk, noWait, clearedByEnd })]);
       }
       // 계획표 다 끝난 뒤 연 "다음 계획표 대기" 회차를 또 PASS 로 닫아도 "N 통과"가 두 번 안 뜬다(2판 #9) —
       // setMilestoneStatus 가 이미 pass 인 마일스톤에도 true 를 돌려줘 endRound 가 milestonePassed 를 또

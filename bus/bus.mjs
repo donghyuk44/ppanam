@@ -868,6 +868,7 @@ const BLANK_STATE = {
   round: 0, milestone: 0, phase: 'idle', topic: null,
   attempt: 0, attempts: {}, startedAt: null, endedAt: null,
   auditor: null,   // 이 회차의 안 걸음 감사 자리(결정 125) — 닫히면 비운다
+  wait: null,   // 이 회차가 기다리는 것 { why, until } (O1, 톰 지적 09-16) — checkStalls ㉢ 이 그때까지 20분 부름을 건너뛴다
 };
 
 export function readState(team) {
@@ -906,18 +907,20 @@ export function deriveState(team) {
   }
   let phase = 'running';
   let auditor = e.meta?.auditor ?? null;   // 감사 자리(결정 125) — round_start 에, 회차 중 바꾸면 note meta.auditor
+  let wait = null;   // 이 회차가 기다리는 것(O1) — note meta.wait 로 정하거나(null 이면 비움) 바뀐다
   for (let j = i + 1; j < log.length; j++) {
     const x = log[j];
     if (x.type === 'verdict' && !x.meta?.stale && x.meta?.verdict === 'FAIL') phase = 'blocked';
     // 대표가 말해서 풀렸다 (resumeRound 가 남기는 note)
     if (x.type === 'note' && x.meta?.resumed) phase = 'running';
     if (x.type === 'note' && x.meta?.auditor !== undefined) auditor = x.meta.auditor;
+    if (x.type === 'note' && x.meta?.wait !== undefined) wait = x.meta.wait;
   }
   const milestone = e.milestone ?? 0;
   return {
     ...BLANK_STATE,
     round: e.round ?? 0, milestone, phase,
-    topic: e.meta?.topic ?? null, attempt: attempts[milestone] ?? 0, attempts, startedAt: e.ts, endedAt: null, auditor,
+    topic: e.meta?.topic ?? null, attempt: attempts[milestone] ?? 0, attempts, startedAt: e.ts, endedAt: null, auditor, wait,
   };
 }
 
@@ -1446,6 +1449,39 @@ export function setAuditor(team, actor) {
   return emit(team, { type: 'note', actor: 'system', text: `감사 자리 — 이 회차는 ${ga(name)} 봅니다 (결정 125). 자기가 고친 파일은 못 봅니다.`, meta: { auditor: actor } });
 }
 
+/** 이 회차가 지금 무언가를 기다리는 중인가 — 기다리면 { why, until }, 아니면(안 정했거나 until 이 지났으면) null. 순수. */
+export function roundWaitActive(state, now = Date.now()) {
+  const w = state?.wait;
+  if (!w?.until) return null;
+  const until = Date.parse(w.until);
+  return Number.isFinite(until) && until > now ? w : null;
+}
+/**
+ * 열린 회차에 "무엇을 언제까지 기다리는지"를 적는다(O1, 톰 지적 09-16 — 경영 R8 처럼 "내일 06:30 첫 실물까지
+ * 답만"인 회차가 침묵 20분(㉢)에 걸려 헛불렀다). checkStalls 가 until 까지 그 부름을 건너뛴다. 회차가 새로
+ * 열리거나 끝나면 자동으로 비워진다(startRound·endRound 가 새 이벤트를 남기므로 deriveState 재생이 안 물려받는다).
+ */
+export function setRoundWait(team, { why, until }) {
+  const state = readState(team);
+  if (!state.round || state.phase === 'idle') throw new Error('진행 중인 라운드가 없습니다 — 기다림은 회차의 것입니다.');
+  const w = String(why ?? '').trim();
+  if (!w) throw new Error('무엇을 기다리는지 적으세요 — node bus/round.mjs wait "사유" --until <시각>.');
+  const ts = Date.parse(until);
+  if (!Number.isFinite(ts)) throw new Error(`--until 이 시각이 아닙니다: ${until}`);
+  if (ts <= Date.now()) throw new Error('--until 이 이미 지났습니다 — 기다림이 아니라 지금 부를 일입니다.');
+  const untilIso = new Date(ts).toISOString();
+  writeState(team, { wait: { why: w, until: untilIso } });
+  const when = new Date(ts).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return emit(team, { type: 'note', actor: 'system', text: `기다림 — ${when} 까지 "${w}" 뿐입니다. 그때까지 침묵 20분 부름을 건너뜁니다.`, meta: { wait: { why: w, until: untilIso } } });
+}
+/** 기다림을 미리 거둔다 — 답이 예정보다 일찍 왔을 때. */
+export function clearRoundWait(team) {
+  const state = readState(team);
+  if (!state.wait) throw new Error('지금 걸린 기다림이 없습니다.');
+  writeState(team, { wait: null });
+  return emit(team, { type: 'note', actor: 'system', text: '기다림을 거뒀습니다 — 침묵 20분 부름이 다시 돕니다.', meta: { wait: null } });
+}
+
 export function startRound(team, { topic = null, milestone = null, auditor = null } = {}) {
   const prev = readState(team);
   // 열린 라운드 위에 또 열면 앞 라운드는 round_end 도 rounds.jsonl 색인도 없이 사라진다.
@@ -1478,6 +1514,7 @@ export function startRound(team, { topic = null, milestone = null, auditor = nul
     startedAt: new Date().toISOString(),
     endedAt: null,
     auditor: auditor ?? null,   // 회차의 것 — 지난 회차 것을 물려받지 않는다
+    wait: null,   // 기다림(O1)도 회차의 것 — 새로 열면 비운다
   });
   emit(team, {
     type: 'round_start',
@@ -1746,7 +1783,7 @@ export function endRound(team, { verdict = null, summary = null, next = null } =
     } catch { /* 파일이 없으면 열린 세션도 없다 */ }
   }
 
-  writeState(team, { phase: 'idle', endedAt: new Date().toISOString(), auditor: null });
+  writeState(team, { phase: 'idle', endedAt: new Date().toISOString(), auditor: null, wait: null });
 
   // 같은 단계면 다음 회차를 자동으로 열어 차례가 끊기지 않게 한다(나리 실측 09-16 — 세 방이 45~95분씩 서서 손으로 다섯 번 열었다).
   // next 가 있으면(--next, 결정 25) 부른 쪽이 바로 이어 연다 — 여기서 먼저 열면 그쪽 startRound 가 "이미 열려 있다" 로 던진다.
