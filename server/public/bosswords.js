@@ -5,7 +5,8 @@
 
 export const MAX_LEN = 60;
 export const NOT_YET = '요약 없음';
-export const JARGON = /apr_|evt_|req_|\.(md|mjs|json|svg|png|css|js)\b|결정 ?\d|\d+회차|\d+단계|\bM\d\b|\bR\d+\b|\bPASS\b|\bREVISE\b|\bFAIL\b|\b[0-9a-f]{7}\b|\bstatus\b|roadmap|progress|commit|\/out\/|--\w|settings|\.gitignore|build:public|재시작 카드/;
+// 파일은 **경로**(슬래시가 앞에 있는 것)만 하네스 말이다 — 슬래시 없는 이름 하나("app.js 고치는 중")는 하영 사전 215줄이 이미 사람 말로 적었고 나리가 대리로 봐줬다(R32).
+export const JARGON = /apr_|evt_|req_|\/\S*\.(md|mjs|json|svg|png|css|js)\b|결정 ?\d|\d+회차|\d+단계|\bM\d\b|\bR\d+\b|\bPASS\b|\bREVISE\b|\bFAIL\b|\b[0-9a-f]{7}\b|\bstatus\b|roadmap|progress|commit|\/out\/|--\w|settings|\.gitignore|build:public|재시작 카드/;
 
 /** 하네스 낱말이 없는가 (길이는 안 본다 — 자 --all 이 낱말과 길이를 따로 찍는다). */
 export const isBossWord = (s) => !JARGON.test(String(s ?? ''));
