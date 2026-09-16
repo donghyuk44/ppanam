@@ -482,8 +482,8 @@
    "seat": "review",
    "after": [],
    "bottleneck": "",
-   "status": "진행",
-   "note": "점검 3-2 ALTER ②④. 유진 감사 → 빅터 판정. 코드는 솔라"
+   "status": "통과",
+   "note": "통과 — 경영 R6 닫힘 10:49(round_end evt_2925ff6b4d), 빅터 PASS(evt_fa3c8e7ea7, sha 0497900). 글은 teams/finance/out/report/폴백-부분성공.md. 나리 11:5x 보드 낡음 고침(노라 지적). 코드(cast fallback 값)는 솔라 몫 | 점검 3-2 ALTER ②④"
   },
   {
    "id": "A3",
@@ -501,13 +501,14 @@
   {
    "id": "D1",
    "stream": "운영",
-   "what": "완료 조건 — work.json 항목마다 done_check 한 줄, 서버가 돌려 감사 통과+완료 조건 통과일 때만 닫으라 부름",
+   "what": "완료 조건 — 자리마다 doneCheck 있으면 그 파일 있어야 닫으라 부름 → 확인: node bus/round.mjs check (완료 조건 D1 줄)",
    "team": "dev",
    "seat": "ops",
    "after": [],
    "bottleneck": "",
-   "status": "진행",
-   "note": "대표 승인 10:0x ①②. 닫힘 조건은 둘뿐"
+   "status": "감사 대기",
+   "doneCheck": "server/conductor.mjs",
+   "note": "대표 승인 10:0x ①②. 닫힘 조건은 둘뿐 — 코드 40b9e99, 자 시험 통과. 끝 — D1"
   },
   {
    "id": "D2",
