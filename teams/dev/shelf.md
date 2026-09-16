@@ -24,6 +24,14 @@ grep 으로 직접 찾는다" 로 대신한다.
 — `tools/library.mjs` 8번째 줄 `EXTS`). `event-schema.md`만 `find`로 절을 찾을 수 있다. 전문을 통째로
 Read 하면 그 자체로 프롬프트 예산을 다 쓴다.
 
+## 명령 (지침 "명령은 책장에" — 결정 189 로 지침에서 옮겨 온 셋, 옛 글 archive/0916/dev/guide.md 31행)
+
+- 결재 카드 — `node bus/approve.mjs --team dev --request B|C "무엇" --detail "…"` (`--small` 작은 B · `--to <팀>:<자리>` 다른 팀에 부탁 · `--restart` · `--push`)
+- 요청 블록 답·닫기 — `node bus/request.mjs --say|--done|--ack <id> "…"`
+- 상황판 — `node bus/progress.mjs --team dev --doing "…" --blocked "…" --boss "…" --next "…"` (준 항목만 바뀜, `--clear <항목>`). 턴 끝마다·회차 닫기 전에.
+- 판정 부르기 — `node bus/round.mjs verdict --team dev --target <자리> "…"` · 회차 닫기 `node bus/round.mjs end --team dev --summary "…"`(단계가 남았으면 `-v PASS` 없이) · 회귀 시험 `node bus/round.mjs check`
+- 화면 — `node tools/build-public.mjs`(app.js 고친 뒤 꼭) · 사진 `node tools/screen-shot.mjs <out.png> <팀>/<화면> <W> <H> [탭] [포트] [준비 JS]` · 자 `node tools/boss-words-check.mjs`
+
 ## 안 읽어도 되는 것 (책장 밖)
 
 - `teams/marketing/out/world-bible/**` — 마케팅 팀의 세계관·인물 바이블. 개발 세션이 코드를 고치는 데
