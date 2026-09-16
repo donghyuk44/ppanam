@@ -128,13 +128,20 @@ PASS 또는 REVISE 한 단어
 /**
  * PASS 카드의 모양 검사(점검-0916 3-9, R31 ⑦) — 정형문("빠진 것 0건 · 더해진 것 0건 …")이거나 "떨어뜨릴 이유 1~3 … 반박" 줄이 셋 안 되면 그 글.
  * 밤새 외부감사 PASS 60건 중 31건이 같은 정형문이었다. 순수 — check 가 돌린다. null 이면 모양이 맞다.
+ * 반박은 이유와 같은 줄(지시문의 " — 반박: …" 꼴)만 셌었다 — 엔진이 다음 줄에 적거나 "반론"이라 쓰면(같은
+ * 뜻인데 말만 다름) 통과인데 REVISE 로 되돌려졌다(2판 코드 점검 #4). 그 이유 줄부터 다음 "떨어뜨릴 이유"
+ * 줄 전까지(또는 글 끝까지)를 한 덩이로 보고 그 안 어디에 반박·반론이 있으면 센다.
  */
 export function passShapeError(text) {
   const s = String(text ?? '');
   if (/빠진 것\s*0\s*건/.test(s) && /더해진 것\s*0\s*건/.test(s)) return '정형문("빠진 것 0건 · 더해진 것 0건")은 판정이 아니다';
-  const reasons = s.split('\n').filter((l) => /^\s*(?:[-*·]\s*)?떨어뜨릴 이유\s*[1-3]/.test(l));
-  const rebutted = reasons.filter((l) => /반박/.test(l));
-  if (reasons.length < 3) return `떨어뜨릴 이유가 ${reasons.length}개 — 셋을 적고 각각 반박한 뒤에만 PASS`;
+  const lines = s.split('\n');
+  const reasonAt = lines.map((l, i) => (/^\s*(?:[-*·]\s*)?떨어뜨릴 이유\s*[1-3]/.test(l) ? i : -1)).filter((i) => i >= 0);
+  if (reasonAt.length < 3) return `떨어뜨릴 이유가 ${reasonAt.length}개 — 셋을 적고 각각 반박한 뒤에만 PASS`;
+  const rebutted = reasonAt.filter((idx, k) => {
+    const end = k + 1 < reasonAt.length ? reasonAt[k + 1] : lines.length;
+    return lines.slice(idx, end).some((l) => /반박|반론/.test(l));
+  });
   if (rebutted.length < 3) return `떨어뜨릴 이유 셋 중 반박이 ${rebutted.length}개 — 셋 다 한 줄로 반박해야 PASS`;
   return null;
 }

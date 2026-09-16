@@ -899,11 +899,13 @@ switch (cmd) {
           passShapeError('봤습니다. 좋아요.'),
           passShapeError('떨어뜨릴 이유 1: a — 반박: b\n떨어뜨릴 이유 2: c\n떨어뜨릴 이유 3: e — 반박: f'),
           passShapeError(shaped('됐다')),
+          // 반박이 다음 줄에 오거나(2판 #4) "반론"이라 써도 — 통과인데 REVISE 로 되돌려지던 것
+          passShapeError('떨어뜨릴 이유 1: a\n반박: b\n떨어뜨릴 이유 2: c — 반론: d\n떨어뜨릴 이유 3: e\n반박이다: f'),
         ];
         const vi = verdictInstruction('out/x.md', '테라');
-        const psWant = /정형문/.test(ps[0]) && /0개/.test(ps[1]) && /반박이 2개/.test(ps[2]) && ps[3] === null
+        const psWant = /정형문/.test(ps[0]) && /0개/.test(ps[1]) && /반박이 2개/.test(ps[2]) && ps[3] === null && ps[4] === null
           && vi.startsWith('⟦판정 요청⟧ out/x.md') && vi.includes('만든 사람: 테라') && vi.includes('떨어뜨릴 이유 1:') && vi.includes('못 열었다 — 판정 아님');
-        out.push(['PASS 모양(점검 3-9 — 떨어뜨릴 이유 셋)', psWant ? '✓ 정형문 되돌림 · 이유 0개 · 반박 2개 되돌림 · 셋+반박이면 통과 · 지시문에 모양·만든 사람·못 열면 판정 아님' : '✗ ' + JSON.stringify({ ps, vi: vi.slice(0, 120) })]);
+        out.push(['PASS 모양(점검 3-9 — 떨어뜨릴 이유 셋)', psWant ? '✓ 정형문 되돌림 · 이유 0개 · 반박 2개 되돌림 · 셋+반박이면 통과 · 다음 줄·반론도 반박으로 셈(2판 #4) · 지시문에 모양·만든 사람·못 열면 판정 아님' : '✗ ' + JSON.stringify({ ps, vi: vi.slice(0, 120) })]);
         // out/ 산출물 커밋(나리 09-16) — 100KB 넘는 그림만 .gitignore 표시 블록에(tools/out-ignore.mjs). dev/out/shots 는 안 세고, 그림 아닌 큰 파일은 안 뺀다. 블록은 갈아 끼우고 없으면 끝에.
         const { largeImages, spliceBlock } = await import('../tools/out-ignore.mjs');
         const fakeWalk = function* () { yield ['teams/design/out/a.png', 200_000]; yield ['teams/design/out/b.png', 1_000]; yield ['teams/dev/out/shots/x.png', 900_000]; yield ['teams/dev/out/big.md', 900_000]; yield ['teams/dev/out/c.JPG', 150_000]; };
