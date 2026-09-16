@@ -397,35 +397,40 @@ const server = http.createServer((req, res) => {
     return json(res, 200, { since: new Date(since).toISOString(), until: new Date(until).toISOString(), done: doneBy, next, images, proxy, chief, chiefFile: chief ? `hq/out/daily/${dayKey}.md` : null, nightly, blocked, teams: teamRows });
   }
 
-  // 카드 재료 (작업 C5) — 팀 하나의 상황판 넷(doing·done·blocked·boss) + 결재 큐(대기 중) + 회차(round·milestone·phase) + 로드맵의 지금 마일스톤 제목.
-  // 이 문장들은 그대로 화면에 나갈 수 있어 대표 화면 사람 말 검사(결정 140)를 거친다 — app.js bossLine·bossTitle 과 같은 규칙, 다만 여기는 API 라 펼침 없이 안 맞는 줄은 NOT_YET 으로 바꿔 낸다.
-  // 시각은 그대로 ISO 문자열(우리 시각 변환은 화면 몫) — bus.mjs 가 이미 그렇게 저장한다.
+  // 카드 재료 (작업 C5) — server/public/card.js 머리 JSDoc 이 정한 teamCard(d) 입력 모양 그대로 낸다(테라 C6 —
+  // 부품과 재료가 모양이 안 맞아 C7 이 못 붙었던 것, R32). 사람이 읽는 문장은 전부 결정 140 검사(bossOk)를 거친다.
   const cardMatch = url.pathname.match(/^\/api\/card\/([^/]+)$/);
   if (cardMatch) {
     const t = decodeURIComponent(cardMatch[1]);
     if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
     const line = (s) => { const v = String(s ?? '').trim(); return v ? (bossOk(v) ? v : NOT_YET) : null; };
-    const lines = (arr) => (arr ?? []).map(line).filter(Boolean);
 
-    const p = readProgress(t);   // 이 파일 위쪽 readProgress — bus.readProgress 에 fresh 를 얹은 것(다른 라우트와 같은 것을 쓴다)
-    const progress = { doing: lines(p?.doing), done: lines(p?.done), blocked: lines(p?.blocked), boss: lines(p?.boss), at: p?.at ?? null, fresh: p?.fresh ?? null };
+    const p = readProgress(t);
+    const who = p?.by ?? null;
+    const doingText = line(p?.doing?.[0]);
+    const doing = doingText ? { who, text: doingText } : null;
+    const done = (p?.done ?? []).slice(0, 3).map((s) => line(s)).filter(Boolean).map((text) => ({ who, text, file: null }));
+    const blocked = (p?.blocked ?? []).slice(0, 2).map((s) => line(s)).filter(Boolean).map((text) => ({ text, who: null }));
 
-    // 결재 큐 — 대기 중인 것만. 제목은 화면의 bossTitle 과 같은 규칙: --boss 한 줄이 자에 맞으면 그것, 아니면 원문.
-    const approvals = listApprovals({ team: t, status: 'pending' }).map((r) => {
-      const title = bossOk(r.boss) ? r.boss : r.what;
-      return { id: r.id, grade: r.grade, title: line(title), at: r.ts };
-    });
+    // 결재 큐 — 대기 중인 첫 건만 카드에 실린다(teamCard 는 boss 하나). 제목은 화면의 bossTitle 과 같은 규칙:
+    // --boss 한 줄이 자에 맞으면 그것, 아니면 원문.
+    const pending = listApprovals({ team: t, status: 'pending' })[0] ?? null;
+    const boss = pending ? { id: pending.id, text: line(bossOk(pending.boss) ? pending.boss : pending.what) } : null;
 
     const state = readState(t);
     const roadmap = readRoadmap(t);
-    const milestone = roadmap.milestones?.find((m) => m.n === state.milestone) ?? null;
+    const total = roadmap.milestones?.length ?? 0;
+    const stage = state.milestone ? { n: state.milestone, total, round: state.round ?? 0 } : null;
+
+    // 팀 이름·색 — app.js teamColor(id) 와 같은 자리(hq 는 chief, 그 밖은 guide 의 color).
+    const teamName = listTeams().find((x) => x.id === t)?.name ?? t;
+    const color = readCast(t).agents?.[t === 'hq' ? 'chief' : 'guide']?.color ?? 'var(--ink-4)';
 
     return json(res, 200, {
-      team: t,
-      progress,
-      approvals,
-      round: { round: state.round ?? 0, milestone: state.milestone ?? 0, phase: state.phase ?? 'idle' },
-      milestoneTitle: milestone?.title ?? null,
+      team: t, name: teamName, color,
+      state: boss ? 'boss' : blocked.length ? 'blocked' : 'working',
+      at: p?.at ?? null,
+      doing, done, blocked, boss, stage,
     });
   }
 
