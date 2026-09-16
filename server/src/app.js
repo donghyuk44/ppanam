@@ -72,7 +72,8 @@ const STATE_LABEL = { off: '오프라인', idle: '대기', busy: '진행 중', t
 function stateOf(id) {
   const c = summary.conductor ?? {};
   const a = cast.agents?.[id];
-  if (a?.model === 'gpt' || a?.model === 'gemini') return c.outsideBusy ? 'busy' : (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'off';   // 다른 회사 엔진 자리 — 세션 없음(결정 77)
+  // 다른 회사 엔진 자리(결정 77) — 세션이 없어 부를 때만 온다. 안 부른 동안은 '오프라인' 이 아니라 '대기'(사전 3-1 "부를 때만 와요") — 방 머리 "레오 오프라인" 을 대표가 "안 열렸다" 로 읽으셨다(09-16 17:1x).
+  if (a?.model === 'gpt' || a?.model === 'gemini') return c.outsideBusy ? 'busy' : (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'idle';
   const s = summary.sessions?.[id];
   if (!s || !s.alive) return (c.pending ?? []).some((p) => p.startsWith(id + ':')) ? 'turn' : 'off';
   if (s.busy) return 'busy';
