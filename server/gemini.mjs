@@ -58,7 +58,10 @@ function onLine(s, line) {
     else {
       const answer = String(j.response ?? textOf(j) ?? '').trim() || p.text.trim();
       const out = { answer, sessionId: s.conversationId, firstMs: p.first ? p.first - p.at : null, totalMs: Date.now() - p.at, turns: s.turns };
-      if (!answer) out.raw = s.raw.slice();   // 빈 답 — 어떤 줄이 왔는지 그대로(outside.mjs --check 가 보여 준다)
+      // 빈 답 — 어떤 줄이 왔는지 그대로(outside.mjs --check 가 보여 준다) + stderr 꼬리(ANSI 뗌). 도구 거부
+      // (agy 헤드리스가 확인 없이 명령을 auto-denied 로 막을 때)가 stderr 에만 남고 방엔 조용했다(나리 16:5x
+      // 실측 — "레오가 안 켜진다"로 보였다) — outside.mjs 가 이걸로 방 note 를 남긴다.
+      if (!answer) { out.raw = s.raw.slice(); out.stderrTail = s.stderr ? s.stderr.replace(/\x1b\[[0-9;]*m/g, '').trim().slice(-300) : null; }
       p.resolve(out);
     }
     next(s);

@@ -242,7 +242,14 @@ async function runGemini(input, opts = {}) {
   }
   // 빈 답은 답이 아니다 — 재시작 직후 상주 프로세스가 빈 답을 돌려줬고(R25 실측) 그대로 쓰면 감사역이 다시 죽는다. agy -p 로 넘어간다.
   if (pooled?.answer) return pooled;
-  if (pooled) process.stderr.write(`상주 gemini 빈 답(${pooled.totalMs != null ? (pooled.totalMs / 1000).toFixed(1) + '초' : '?'}) — agy -p 로\n`);
+  if (pooled) {
+    // 도구 거부(auto-denied)가 stderr 에만 남고 방엔 조용했던 게 "레오가 안 켜진다" 로 보인 사고의 절반이다
+    // (나리 16:5x 실측 — 명령 둘이 agy 허용 목록에 없어 빈 답으로 돌아왔다). 여기서 방에 한 줄 남긴다.
+    const denied = /denied/i.test(pooled.stderrTail ?? '');
+    const why = denied ? `도구 거부(auto-denied) — ${String(pooled.stderrTail).split('\n').pop().slice(0, 160)}` : `${pooled.totalMs != null ? (pooled.totalMs / 1000).toFixed(1) + '초' : '?'} 만에 빈 답`;
+    process.stderr.write(`상주 gemini 빈 답(${why}) — agy -p 로\n`);
+    if (opts.team) try { emit(opts.team, { actor: ACTOR, type: 'note', text: `상주 gemini 가 빈 답을 냈습니다 — ${why}. agy -p 로 한 번 더 부릅니다.`, meta: { retry: { actor: ACTOR, engine: 'pool→agy', why, empty: true } } }); } catch { /* 기록 실패는 삼킨다 */ }
+  }
   if (await hasAgy()) {
     // 상주 프로세스의 대화 id 를 agy -p 가 못 이어받을 수 있다 — 그러면 한 번은 새 대화로(인격·방 대화는 매 턴 다시 실리므로 답은 나온다)
     try { return await runAgy(input, opts); }
