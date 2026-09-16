@@ -286,6 +286,25 @@ function giveTurn(team, actor, kind, tries = 1) {
   if (sent?.refused) { r.inflight.delete(actor); persist(team); note(team, `${nameOf(team, actor)}의 차례를 주지 못했습니다 — ${sent.reason}`); }
 }
 
+/**
+ * 나리(system)는 세션이 hq 하나뿐이다(N1 재정의, 나리 지적 09-16 10:5x — 팀마다 세션이 생기면 대표가 막은
+ * 이중 소모다). 다른 방에서 불리면 그 방 사정을 들려줘 hq 세션에게 묻고, 답이 오면 그 방에 옮겨 적는다 —
+ * 전화를 대신 받아 적는 것과 같다. 진짜 기록(그의 진짜 대화)은 hq 대화록에 남고, 부른 방에는 meta.via:'hq'
+ * 사본이 선다. sendAndWait 을 쓰므로(진행 중인 턴이 있으면 큐에 서서) 기다렸다 처리한다 — fire-and-forget.
+ */
+function callSystemElsewhere(team, kind = 'called') {
+  const { lines, last } = unheard(team, 'system', {});
+  if (last) setCursor(team, 'system', last);
+  const roomName = listTeams().find((t) => t.id === team)?.room ?? team;
+  const anchor = `너는 나리다. 지금 ${roomName}에서 불렸다 — 네 세션은 총괄실 하나뿐이라 총괄실 세션이 그 방 사정을 듣고 대신 답한다. `;
+  const body = (lines.length ? `그동안 그 방에서 오간 말:\n\n${lines.join('\n')}\n\n---\n` : '') + anchor + INSTRUCTION[kind];
+  session.sendAndWait('hq', quiet(body), 'system', { kind: 'called', internal: true }).then((text) => {
+    const t = String(text ?? '').trim();
+    if (!t || t === '(패스)') return;
+    try { emit(team, { actor: 'system', type: 'message', text: t, meta: { via: 'hq' } }); } catch { /* 방이 닫혔으면 조용히 넘어간다 */ }
+  }).catch((e) => note(team, `나리에게 묻지 못했습니다 — ${String(e.message ?? e).slice(0, 160)}`));
+}
+
 /* ── 다른 회사 엔진 자리의 실패(8단계 ①) — outside.mjs 가 안에서 한 번 더 부르고도 못 냈거나(exit 1), 프로세스 자체가 죽었다(signal). ──
  * 조용히 버리지 않는다: note 를 남기고 그 차례를 **큐에 남겨** OUTSIDE_RETRY_MS 뒤 다시 준다. 큐에서 준 것도 실패하면(OUTSIDE_MAX_TRIES) 그때 버리고,
  * 판정 흐름이 그를 기다리던 중이면 흐름도 멈춘다(verdictFlow:'abort') — 안 그러면 flow 가 굳어 다음 /verdict 가 "이미 돌고 있습니다" 로 거부된다.
@@ -805,9 +824,12 @@ export function noticeEvents(team, events) {
     if (!isOffice(team) && isStale(e, state.round)) continue;   // 위에서 넘어온 차례로 줬다
     if (e.actor === 'system') {
       // 시스템 발언은 차례 계산에서 빠지되, 첫머리에 이름을 불렀으면 그 사람을 깨운다 — 하네스가 "결과 도착" 을
-      // 시스템 화자로 남겼는데 아무도 안 깨어 20분 멈춘 일(2026-09-12). codex 자리도 같다.
+      // 시스템 화자로 남겼는데 아무도 안 깨어 20분 멈춘 일(2026-09-12). codex 자리도 같다. system(나리) 자신이
+      // 남긴 note 가 또 나리를 부르는 경우는 없다 — 있어도 아래 callable 판단이 hq 로 돌려보낸다.
       for (const to of addressees(e.text, cast)) {
-        if (to !== 'boss' && participants(team).includes(to)) { enqueue(team, to, 'called'); armLull(team); }
+        if (to === 'boss') continue;
+        if (to === 'system' && team !== 'hq') { callSystemElsewhere(team, 'called'); armLull(team); continue; }
+        if (participants(team).includes(to)) { enqueue(team, to, 'called'); armLull(team); }
       }
       continue;
     }
@@ -824,11 +846,14 @@ export function noticeEvents(team, events) {
 
     // 부른 사람 전부, 부른 순서대로 차례 (결정 22). 두 사람 왕복 브레이크(3회면 제3자·쉼)는 **결정 120 으로 철회** — 대표 09-14 "3번 넘으면 대화 못하게 하는 거 철회해",
     // 09-02 "대화로 풀어가라고 했잖아". 그 브레이크는 대표가 만든 게 아니라 09-02 하네스가 Fable 감사 뒤 넣은 것(bf81ead)이었다.
-    const called = addressees(e.text, cast).filter((to) => to !== e.actor && participants(team).includes(to));
+    // system(나리)은 이 방 참여자 목록(participants)에 안 뜨는 방이 많다(세션이 hq 하나뿐이라 model 이 거기만
+    // claude) — 그래도 이름을 부르면 불려야 하니 따로 끼운다(N1 재정의).
+    const called = addressees(e.text, cast).filter((to) => to !== e.actor && (to === 'system' || participants(team).includes(to)));
     for (const [k, to] of called.entries()) {
       // 대표가 부른 사람이 claude 자리면 /api/say 가 이미 그에게 넣었다(첫 사람) — 다시 주지 않는다.
       // codex 자리면 넣을 세션이 없어 서버가 말풍선만 남겼다 — 여기서 깨운다 (레오 감사, 2026-09-12).
       if (e.actor === 'boss' && k === 0 && !isOutside(team, to)) continue;
+      if (to === 'system' && team !== 'hq') { callSystemElsewhere(team, 'called'); continue; }
       enqueue(team, to, 'called');
     }
     // 말로 외부감사를 판정으로 불렀다("레오, … 판정 …") — 흐름(startVerdict) 없이 called 차례만 가면 "재보겠습니다" 로 끝나고 카드가 안 온다

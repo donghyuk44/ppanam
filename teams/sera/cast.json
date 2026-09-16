@@ -22,7 +22,7 @@
       "color": "#8a8175",
       "title": "사장",
       "does": "대표가 초대한 자리 — 말만 남고 자동 안내는 안 뜬다. 파일을 열어 다시 센다",
-      "model": "claude",
+      "model": null,
       "titleWas": "검수"
     }
   }
