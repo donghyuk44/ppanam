@@ -2584,7 +2584,10 @@ export function doneOf(log, cast, { team = null, since = null, until = null, app
       const apr = m.approval ? approvals.find((a) => a.id === m.approval) : null;
       const backfilled = apr?.decisions?.find((d) => d.boss)?.boss ?? null;
       const bossText = m.boss || backfilled ? one(m.boss ?? backfilled, 60) : null;
-      out.push({ id: `proxy:${e.id}`, kind: 'proxy', team, by: 'chief', ts: e.ts, text: (bossText && bossOk(bossText) ? bossText : plain(e.text)) ?? '대표님 대신 정했어요', ref: m.approval ?? m.proxyAnswer ?? null });
+      const hasBoss = !!(bossText && bossOk(bossText));
+      // hasBoss:false — 진짜 --boss 줄이 없어 plain() 짐작으로 채운 것(세라 조건, O4 아침 한 장).
+      // 자(isBossWord) 는 이 fallback 문장도 그냥 사람 말이라 통과시키니, 검사기가 이 표시로 따로 잡는다.
+      out.push({ id: `proxy:${e.id}`, kind: 'proxy', team, by: 'chief', ts: e.ts, text: (hasBoss ? bossText : plain(e.text)) ?? '대표님 대신 정했어요', hasBoss, ref: m.approval ?? m.proxyAnswer ?? null });
     } else if (e.type === 'message' && e.actor !== 'boss' && e.actor !== 'system' && agents[e.actor] && callsBoss(e.text, agents) && !asksBoss(e.text, agents)) {
       out.push({ id: `report:${e.id}`, kind: 'report', team, by: e.actor, ts: e.ts, text: plain(e.text) ?? '대표님께 보고했어요', ref: null });
     } else if (e.type === 'tool' && agents[e.actor]) {

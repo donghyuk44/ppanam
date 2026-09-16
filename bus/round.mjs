@@ -470,11 +470,14 @@ switch (cmd) {
       out.push(['한 것 — 글은 사람 말(결정 140)', !dnBad.length ? '✓ 여덟 줄 다 자에 맞음 · 60자 안 · 경로·번호는 ref' : '✗ ' + JSON.stringify(dnBad)]);
       // 대리 결정 보고 요약 — meta.boss 를 먼저 쓴다(테라 code-review 지적 #5, decideApproval --boss).
       // 없으면 plain() 이 글 안 첫 " — " 앞만 남겨 "대리 결정" 다섯 글자로 잘려 요약이 빈 것처럼 보였다.
+      // hasBoss(세라 조건, O4 아침 한 장) — 진짜 --boss 없이 fallback 문장으로 채운 건 자를 통과해도
+      // 검사기(tools/boss-words-check.mjs)가 따로 ✗ 로 잡을 수 있게 표시만 남긴다.
       const dnBoss = doneOf([
         { id: 'pb1', ts: at(9), actor: 'system', type: 'note', text: '대리 결정 — 승인 통과 [C] apr_9f8e7d6c 요청 — 로드맵 3단계 착수', meta: { proxy: ['chief', 'outside'], approval: 'apr_p', boss: '로드맵 다음 단계로 넘어갑니다' } },
+        { id: 'pb2', ts: at(9.5), actor: 'system', type: 'note', text: '대리 결정 — 승인 통과 [C] apr_없음 요청', meta: { proxy: ['chief', 'outside'], approval: 'apr_없음' } },
       ], pcast, { team: 'dev', approvals: [], now: d0.getTime() + 20 * 60_000 });
-      out.push(['대리 결정 보고 요약 — meta.boss 우선(테라 지적 #5)', dnBoss[0]?.text === '로드맵 다음 단계로 넘어갑니다'
-        ? '✓ boss 있으면 그대로 씀 · plain() 의 " — " 자르기를 안 탐' : '✗ ' + JSON.stringify(dnBoss)]);
+      out.push(['대리 결정 보고 요약 — meta.boss 우선(테라 지적 #5)', dnBoss[1]?.text === '로드맵 다음 단계로 넘어갑니다' && dnBoss[1]?.hasBoss === true && dnBoss[0]?.hasBoss === false
+        ? '✓ boss 있으면 그대로 씀 · plain() 의 " — " 자르기를 안 탐 · 없으면 hasBoss:false(세라 조건)' : '✗ ' + JSON.stringify(dnBoss)]);
       // 뒤늦은 사람 말(attachBossLine, 나리 요청 09-16 14:5x) — decide 가 끝난 옛 카드는 --boss 를 그때
       // 못 실었다. boss-line 한 줄로 결정에 채우고, doneOf 는 meta.boss 가 없어도 approvals[] 교차 참조로
       // 그 값을 찾는다(그 옛 로그 note 자체는 못 고치니까).

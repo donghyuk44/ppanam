@@ -59,7 +59,16 @@ const get = async (u) => { try { return await (await fetch(`http://localhost:${p
 const apr = args.includes('--file') ? null : await get('/api/approvals');
 for (const a of apr?.pending ?? []) rows.push({ where: `결재 ${a.grade} ${a.id}`, text: String(a.what ?? '') });
 const done = args.includes('--file') ? null : await get(`/api/done?since=${Date.now() - 12 * 3600e3}`);
-for (const it of (done?.items ?? []).slice(0, 40)) rows.push({ where: `누가뭘했나 ${it.kind ?? ''}`, text: String(it.text ?? it.title ?? '') });
+// 대리 결정(kind:proxy)은 hasBoss:false 면 자를 통과해도 검사 ✗(세라 조건, O4 아침 한 장) — doneOf 의
+// fallback 문장("대표님 대신 정했어요")은 그 자체로 사람 말이라 isBossWord 는 못 잡는다. --boss·--boss-line
+// 으로 실제 사람 말을 실은 것만 "된 것"(물건)으로 센다.
+for (const it of (done?.items ?? []).slice(0, 40)) rows.push({ where: `누가뭘했나 ${it.kind ?? ''}`, text: String(it.text ?? it.title ?? ''), noBoss: it.kind === 'proxy' && it.hasBoss === false });
 let bad = 0;
-for (const r of rows) { const ok = isBossWord(r.text) && r.text.length <= MAX_LEN; if (!ok) bad++; if (r.text.length > MAX_LEN) r.where += ` (${r.text.length}자, ${MAX_LEN} 넘음)`; if (all || !ok) console.log(ok ? '○' : '✗', r.where, '|', r.text.replace(/\s+/g, ' ').slice(0, 110)); }
+for (const r of rows) {
+  const ok = isBossWord(r.text) && r.text.length <= MAX_LEN && !r.noBoss;
+  if (!ok) bad++;
+  if (r.text.length > MAX_LEN) r.where += ` (${r.text.length}자, ${MAX_LEN} 넘음)`;
+  if (r.noBoss) r.where += ' (--boss 줄 없음)';
+  if (all || !ok) console.log(ok ? '○' : '✗', r.where, '|', r.text.replace(/\s+/g, ' ').slice(0, 110));
+}
 console.log(`--- 대표 화면 글 ${rows.length}줄 중 하네스 말 ${bad}줄 (${rows.length ? Math.round(bad * 100 / rows.length) : 0}%)`);
