@@ -176,7 +176,7 @@
 
 | 칸 | 값 | 출처 |
 | --- | --- | --- |
-| 얼굴 | `out/portraits/card/<자리>.png`(파이어 엠블렘풍 실사 초상, 512×430 — 대표 09:17~09:21 확정) — 폰 40 원 · PC 48 원, 테두리 2 = 팀 색, `preserveAspectRatio="xMidYMid slice"`(정사각 아니라 눌리지 않게). 대표는 아직 안 골라 `out/faces/boss.png`(도트) 그대로, 골라지면 같은 자리에 `portraits/card/boss.png` | 9-16 낮 초상 전환(클레멘타인). 옛 출처 6단계 얼굴 열일곱은 `chip-crop.md`·`pick.md` 로 넘어감 |
+| 얼굴 | `out/portraits/chip/<자리>.png`(파이어 엠블렘풍 실사 초상, 394×394 정사각, `chip-crop.md` 값 — 대표 09:17~09:21 확정) — 폰 40 원 · PC 48 원, 테두리 2 = 팀 색. 대표는 아직 안 골라 `out/faces/boss.png`(도트) 그대로, 골라지면 같은 자리에 `portraits/chip/boss.png` | 09-16 낮 초상 전환(클레멘타인) · 09-16 헨리 고침(card/ 512×430 은 폭이 넓어 원 칩에서 정수리가 잘리고 코가 밀린다 — chip/ 정사각으로. card/ 는 profile.svg 위 띠 자리) |
 | 이름 · 직책 · 팀 | "톰 / 실장 · 총괄실" — 직책은 결정 136, 팀은 방 이름 | `cast.json` |
 | 한 줄 인격 | 40-persona 열 줄 **2**(바깥눈 다섯은 2가 자리 설명이라 **3**). 대표는 세라 열 줄 2 + "인격 파일 없음(결정 37)" | 바이블 |
 | 인격 파일 → | `teams/<팀>/<자리>.md`(세라 `teams/sera/secretary.md` · 나리 `40-persona/hq.system.md` 초안 · 대표 없음) | 파일 |
