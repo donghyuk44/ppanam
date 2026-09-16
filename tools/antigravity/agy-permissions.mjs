@@ -20,6 +20,9 @@ export const ALLOW = [
   'command(node --check)', 'command(node --test)', 'command(node bus/round.mjs check)', 'command(node bus/round.mjs status)',
   // 감사가 물건을 연다(점검-0916 3-9) — 화면 사진과 책장 조회. 둘 다 읽기(사진은 out/shots/ 에 쓰지만 저장소 코드는 안 건드린다).
   'command(node tools/screen-shot.mjs)', 'command(node tools/library.mjs)',
+  // 작업 보드가 "확인: node tools/work-board.mjs" 로 시키는 것과 대표 화면 자 — 둘 다 읽기만. 09-16 16:5x 실측: 레오가 33회차 판정에서 이걸 돌리다
+  // "a tool required the 'command' permission … auto-denied" 로 빈 답을 내고 방엔 아무것도 안 떴다(대표 "레오 안켜진다"). 상주 gemini stderrTail 에만 남아 있었다.
+  'command(node tools/work-board.mjs)', 'command(node tools/boss-words-check.mjs)',
 ];
 export const DENY = [
   'write_file(*)',
