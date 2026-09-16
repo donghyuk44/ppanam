@@ -192,12 +192,7 @@ teams/*/in/
 state/infra.json
 # 서버가 밤마다 쓰는 상태 (server/nightly.mjs 24행) — 파일이 진실, 이건 커서
 state/nightly.json
-# 유니티는 순서 9 "안 함" — 에디터가 만든 것은 넣지 않는다 (ProjectVersion.txt 는 이미 추적 중). 합치기-정리-0916.md
-unity/ppanam-shot/ProjectSettings/*.asset
-unity/**/*.meta
-unity/**/packages-lock.json
-state/nightly.json
-# 유니티가 만든 것 (순서 9 안 함)
+# 유니티가 만든 것 (순서 9 안 함, ProjectVersion.txt 는 이미 추적 중)
 unity/ppanam-shot/ProjectSettings/
 unity/**/*.meta
 unity/**/packages-lock.json
