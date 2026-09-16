@@ -500,7 +500,15 @@ function drain(s) {
       }
       try { recordUsage(s.team, s.actor, readState(s.team).round, msg); } catch { /* 장부 실패는 턴을 막지 않는다 */ }
       done?.resolve?.(typeof msg.result === 'string' ? msg.result : '');
-      if (closing.has(s.team)) { dropped(s); maybeFinishClose(s.team); return; }
+      if (closing.has(s.team)) {
+        dropped(s); maybeFinishClose(s.team);
+        // turnEndListeners 는 그래도 부른다(2판 코드 점검 #5) — 사회자의 r.inflight 가 이 자리를 못 지우면
+        // 고아로 저장 파일에 남고(persist), 재시작 뒤 restoreQueue 가 그걸 또 나가 있던 차례로 보고 다시
+        // 준다("재시작 뒤 같은 차례 둘"). conductor.dispatch 는 이 상태(session.isClosing)를 이미 보고
+        // stash 로 조용히 넘기니, 여기서 불러도 새 차례가 나가지 않는다 — next(s) 만 건너뛰면 된다.
+        for (const fn of turnEndListeners) { try { fn(s.team, s.actor); } catch { /* 듣는 쪽 사정 */ } }
+        return;
+      }
       next(s);
       // 대표가 모델·강도를 바꿨다 (결정 69) — 도는 턴은 안 끊고, 쌓인 것까지 다 끝난 뒤 내린다. 다음 send 가 새 인자로 다시 띄운다(id 는 남긴다).
       // 그 뒤 차례는 그대로 준다 — 닫히는 중의 send 는 pendingAfterClose 로 갔다가 새 프로세스가 받는다(onClosed).

@@ -537,7 +537,11 @@ export function expireFlows(now = Date.now()) {
     const f = r.flow;
     if (!f?.waiting || !f.since || now - f.since < FLOW_TIMEOUT_MS) continue;
     const who = f.waiting;
-    r.flow = null; r.pending.delete(who); persist(team);
+    // 아직 일하는 중이면 안 끊는다(2판 코드 점검 #5) — 시간만 보고 끊으면 긴 감사 도중에도 흐름이
+    // 놓였다. 진짜 멈춘 세션은 세션 자체의 무응답 타이머(session.mjs TURN_TIMEOUT)가 먼저 잡는다 —
+    // 그러면 busy 가 꺼지고 여기서 다음 틱에 정리된다.
+    if (busy(team, who)) continue;
+    r.flow = null; r.pending.delete(who); r.inflight.delete(who); persist(team);
     emit(team, { actor: 'system', type: 'note', text: `판정 흐름을 멈춥니다 — ${nameOf(team, who)}이 ${Math.round(FLOW_TIMEOUT_MS / 60_000)}분 안에 판정을 내지 않았습니다. 다시 부르세요 (node bus/round.mjs verdict).`, meta: { verdictFlow: 'timeout', waiting: who } });
   }
 }
