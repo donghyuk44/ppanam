@@ -2142,7 +2142,9 @@ function personCard(t, id, a, p) {
     c.addEventListener('click', () => jumpTo(t.id, q.id));
     card.appendChild(c);
   }
-  // 엔진 · 모델 · 추론 강도 줄(결정 69)은 설정 탭으로 옮겼다(나리 R32 ② — 대표 화면의 사람 카드에 claude/codex/gemini·opus 고르기가 서 있었다). castRow 는 loadSettings 가 쓴다.
+  // 엔진 · 모델 · 추론 강도 줄(결정 69) — 사람 카드에 그대로 둔다(대표 14:1x "우리 팀원들 모델 바꾸는 거 갑자기 사라졌는데?", 결정 172). R32 에 설정 탭으로 옮겼던 걸 되돌림 — 설정 탭 것도 같이 둔다.
+  // 규칙(장부 172): 대표가 쓰는 손잡이를 옮기거나 빼려면 대표께 먼저.
+  card.appendChild(castRow(t, id, a));
   return card;
 }
 /**
