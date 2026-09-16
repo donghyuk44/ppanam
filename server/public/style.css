@@ -372,7 +372,22 @@ body {
   padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
   background: var(--panel); border-top: 1px solid var(--line);
 }
-.composer { align-items: flex-end; }
+.composer { align-items: flex-end; position: relative; }
+/* @ 멘션 목록(C13) — 입력창 위에 뜨는 작은 목록. 위아래·Enter·클릭 */
+.mpop { position: absolute; left: 16px; bottom: calc(100% - 4px); z-index: 7; min-width: 180px; max-width: 320px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,.12); padding: 4px; }
+.mpop__row { display: flex; align-items: center; gap: 7px; width: 100%; text-align: left; font: inherit; font-size: 13px; color: var(--ink); background: none; border: 0; border-radius: 7px; padding: 6px 8px; cursor: pointer; }
+.mpop__row[aria-selected="true"], .mpop__row:hover { background: var(--sunk); }
+.mpop__row b { font-weight: 500; }
+.mpop__t { font-size: 11px; color: var(--ink-4); margin-left: auto; }
+/* 불린 이름 칩(C13) — 말풍선 첫머리 "@이름" 을 박스 안에(대표 09-16 "박스 안에 이름"). 색은 그 사람 색(--c), 옆에 받았나 작은 글자 */
+.mention.chip { display: inline-flex; align-items: center; gap: 5px; margin: 0 4px 0 0; padding: 1px 7px 1px 6px; border-radius: 6px; border: 1px solid color-mix(in srgb, var(--c, var(--ink-3)) 55%, var(--line)); background: color-mix(in srgb, var(--c, var(--ink-3)) 12%, var(--panel)); color: var(--c, var(--ink)); font-weight: 600; font-size: 12.5px; vertical-align: baseline; }
+.mention__got { font-size: 10px; font-weight: 400; color: var(--ink-4); }
+.mention.chip[data-got="ok"] .mention__got { color: var(--live); }
+.mention.chip[data-got="busy"] .mention__got { color: var(--ink-3); }
+/* C16 — 나리(system) 말의 이름 박스: 총괄실 서버 세션(meta.hand server) 노랑 · say.mjs --as system(cli) 파랑. 서버가 hand 를 안 찍으면 색 없음 */
+.row[data-hand] .name b { display: inline-block; padding: 0 6px; border-radius: 5px; border: 1px solid transparent; }
+.row[data-hand="server"] .name b { background: var(--me); border-color: var(--me-line); color: var(--me-ink); }
+.row[data-hand="cli"] .name b { background: #dbe9ff; border-color: #9dbdf5; color: #123a7a; }
 /* 여러 줄. Enter 는 보내기, Shift+Enter 는 줄바꿈 — 폰은 ↵ 버튼 (대표 원문 09-13, 결정 19). 높이는 app.js 가 내용에 맞춘다. */
 .composer__in {
   flex: 1; min-width: 0; font: inherit; font-size: 13.5px; line-height: 1.45; color: var(--ink);

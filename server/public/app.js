@@ -109,8 +109,10 @@ function bubble(text, team = active) {
   let mentionHtml = '';
   const mm = parseMention(body);
   if (mm) {
-    const hit = Object.values(cast.agents ?? {}).find((p) => p.name === mm.name);
-    if (hit) { mentionHtml = `<b class="mention" style="color:${hit.color ?? FALLBACK.color}">${escapeHtml(mm.marker + mm.name)}</b>${escapeHtml(mm.sep)}`; body = body.slice(mm.full.length); }
+    const hitId = Object.keys(cast.agents ?? {}).find((id) => cast.agents[id]?.name === mm.name);
+    const hit = hitId ? cast.agents[hitId] : null;
+    // 불린 이름은 박스(칩) — 대표 09-16 11:0x "이런 박스 안에 이름 넣는 거 괜찮다. 이름 멘션할 때 잘 안 보이더라고"(C13). 받았나는 markMentions 가 뒤에 채운다(data-mention).
+    if (hit) { mentionHtml = `<span class="mention chip" data-mention="${escapeHtml(hitId)}" style="--c:${hit.color ?? FALLBACK.color}">@${escapeHtml(mm.name)}</span>${mm.sep === ',' ? '' : escapeHtml(mm.sep)}`; body = body.slice(mm.full.length); }
   }
   let html = escapeHtml(body)
     .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
@@ -634,6 +636,9 @@ function draw(e) {
       const cont = lastActor === e.actor && !called;
       lastActor = e.actor;
       const row = el('div', `row${me ? ' me' : ''}${cont ? ' cont' : ''}${called ? ' calls-boss' : ''}`);
+      row.dataset.actor = e.actor;   // 멘션 "받았나"(markMentions) — 뒤에 이 사람 말이 있으면 답한 것
+      // C16(대표 09-16 11:0x "서버 나리는 노랑, 너는 파랑 박스 안에 이름") — 나리(system) 말은 어느 손인지 meta.hand 로: 'server'(총괄실 세션) 노랑 · 'cli'(say.mjs --as system) 파랑. 서버가 아직 안 찍으면 색 없음
+      if (e.actor === 'system' && e.meta?.hand) row.dataset.hand = e.meta.hand;
       const av = el('div', 'av', a.initial ?? '?');
       av.style.background = a.color ?? FALLBACK.color;
       // 얼굴·이름은 문이다(결정 130 ① · 화면이-답하는-질문 "카드는 문") — 누르면 관제탑 사람 카드가 그 자리에 뜬다. 대표·system 은 카드가 없다(마을과 같다).
@@ -743,6 +748,7 @@ function paint(events, { replace = true } = {}) {
   const frag = document.createDocumentFragment();
   for (const e of events) drawWithDay(e, frag);
   stream.appendChild(frag);
+  markMentions();
   if (replace) feed.scrollTop = feed.scrollHeight;
 }
 
@@ -753,7 +759,27 @@ function append(events) {
   const frag = document.createDocumentFragment();
   for (const e of events) drawWithDay(e, frag);
   stream.appendChild(frag);
+  markMentions();
   if (stick) feed.scrollTop = feed.scrollHeight;
+}
+
+/**
+ * 멘션 칩에 "받았나"(C13 — 불린 사람은 받았어요 표시). 화면에 있는 것만 본다: 그 칩 뒤에 불린 사람의 말풍선이 있으면 "답함",
+ * 없고 그 사람이 일하는 중이면 "읽음, 답변 중", 아니면 "대기". 대표 부름은 사람 카드의 bossAsk(서버 셈)가 따로 있다 — 여기는 칩 옆 작은 글자 하나.
+ */
+function markMentions() {
+  const rows = [...stream.querySelectorAll('.row[data-actor]')];
+  for (const chip of stream.querySelectorAll('.mention[data-mention]')) {
+    const who = chip.dataset.mention;
+    const myRow = chip.closest('.row');
+    const answered = rows.some((r) => r.dataset.actor === who && r !== myRow && (myRow.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_FOLLOWING));
+    const st = answered ? '답함' : (stateOf(who) === 'busy' ? '읽음, 답변 중' : '대기');
+    chip.dataset.got = answered ? 'ok' : stateOf(who) === 'busy' ? 'busy' : 'wait';
+    chip.title = `${cast.agents?.[who]?.name ?? who} · ${st}`;
+    let s = chip.querySelector('.mention__got');
+    if (!s) { s = el('span', 'mention__got'); chip.appendChild(s); }
+    s.textContent = st;
+  }
 }
 
 /* ── 팀 전환 ── */
@@ -1008,8 +1034,58 @@ function fitInput() {
 }
 input.addEventListener('input', fitInput);
 
-// Enter 는 보내기, Shift+Enter 는 줄바꿈. 한글 조합 중(isComposing)의 Enter 는 조합 확정이라 보내지 않는다.
+/* ── @ 멘션 (C13 — 대표 09-16 11:04 "멘션하는 방법을 @ 하고 적는, 이런 명령스킬도 우리 채팅에 추가해줘").
+ * 입력창에서 "@" 를 치면 그 방 사람 목록이 뜨고(위아래·Enter·클릭), 고르면 "@이름, " 이 들어간다 — 서버 판별(mention.js)이 이미 "@이름" 을 호명으로 읽으니 글자만 넣으면 된다.
+ * 대표·나리(system)도 부를 수 있다(나리는 총괄실 세션이 그 방에 답한다, N1). ── */
+const mentionPop = el('div', 'mpop'); mentionPop.hidden = true; mentionPop.setAttribute('role', 'listbox');
+$('composer').appendChild(mentionPop);
+let mentionSel = 0;
+function mentionQuery() {
+  const s = input.selectionStart ?? input.value.length;
+  const before = input.value.slice(0, s);
+  const m = /(^|\s)@([가-힣A-Za-z]{0,6})$/.exec(before);   // 커서 바로 앞의 "@…" — 낱말 중간의 @ 는 안 잡는다
+  return m ? { start: s - m[2].length - 1, q: m[2] } : null;
+}
+function mentionPeople(q) {
+  const list = Object.entries(cast.agents ?? {}).filter(([id, a]) => a?.name && id !== 'boss').map(([id, a]) => ({ id, ...a }));
+  return list.filter((a) => !q || a.name.startsWith(q)).slice(0, 8);
+}
+function renderMentionPop() {
+  const mq = mentionQuery();
+  if (!mq) { mentionPop.hidden = true; return; }
+  const people = mentionPeople(mq.q);
+  if (!people.length) { mentionPop.hidden = true; return; }
+  mentionSel = Math.min(mentionSel, people.length - 1);
+  mentionPop.replaceChildren();
+  people.forEach((a, i) => {
+    const b = el('button', 'mpop__row'); b.type = 'button'; b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(i === mentionSel));
+    const dot = el('span', 'dot'); dot.style.background = a.color ?? FALLBACK.color; b.appendChild(dot);
+    b.appendChild(el('b', null, a.name)); if (a.title) b.appendChild(el('span', 'mpop__t', a.title));
+    b.addEventListener('mousedown', (e) => { e.preventDefault(); pickMention(a); });
+    mentionPop.appendChild(b);
+  });
+  mentionPop.hidden = false;
+}
+function pickMention(a) {
+  const mq = mentionQuery(); if (!mq) return;
+  const after = input.value.slice(input.selectionStart ?? input.value.length);
+  const ins = `@${a.name}, `;
+  input.value = input.value.slice(0, mq.start) + ins + after.replace(/^,?\s*/, '');
+  input.selectionStart = input.selectionEnd = mq.start + ins.length;
+  mentionPop.hidden = true; mentionSel = 0; fitInput(); input.focus();
+}
+input.addEventListener('input', renderMentionPop);
+input.addEventListener('blur', () => { setTimeout(() => { mentionPop.hidden = true; }, 120); });
+
+// Enter 는 보내기, Shift+Enter 는 줄바꿈. 한글 조합 중(isComposing)의 Enter 는 조합 확정이라 보내지 않는다. 멘션 목록이 떠 있으면 위아래·Enter 는 목록 몫.
 input.addEventListener('keydown', (e) => {
+  if (!mentionPop.hidden && !e.isComposing) {
+    const n = mentionPop.children.length;
+    if (e.key === 'ArrowDown') { e.preventDefault(); mentionSel = (mentionSel + 1) % n; renderMentionPop(); return; }
+    if (e.key === 'ArrowUp') { e.preventDefault(); mentionSel = (mentionSel - 1 + n) % n; renderMentionPop(); return; }
+    if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); const p = mentionPeople(mentionQuery()?.q ?? '')[mentionSel]; if (p) pickMention(p); return; }
+    if (e.key === 'Escape') { mentionPop.hidden = true; return; }
+  }
   if (e.key !== 'Enter' || e.isComposing || e.shiftKey) return;
   e.preventDefault();
   $('composer').requestSubmit();
