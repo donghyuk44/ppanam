@@ -567,25 +567,35 @@ const server = http.createServer((req, res) => {
   // 방에 그림 올리기 (대표 결정 130 ② — "이미지 업로드하고싶은데 안 되네"). base64 로 받아 teams/<팀>/in/ 에 저장하고
   // in/<파일> 을 적은 말로 /api/say 와 같은 규칙(idle 채팅 표시·FAIL 풀기·호명·codex/claude 배달)을 그대로 태운다.
   // /api/say 코드를 공유 함수로 뽑지 않고 나란히 둔 것은 지금 그 경로가 결정 127 로 막 바뀌어서 — 여기서 리팩터로 흔들지 않는다.
-  const UPLOAD_MIME = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
+  // 그림 외 문서도 끌어다 놓거나 붙여넣으면 첨부되게(C17, 대표 09-16 11:10 "pdf같은 문서 첨부도 되야겠다") — 확장자만 다르고 길은 그림과 같다.
+  const UPLOAD_IMAGE = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
+  const UPLOAD_DOC = {
+    'application/pdf': 'pdf', 'text/markdown': 'md', 'text/plain': 'txt', 'text/csv': 'csv',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  };
+  const UPLOAD_MIME = { ...UPLOAD_IMAGE, ...UPLOAD_DOC };
   const UPLOAD_MAX = 8 * 1024 * 1024;   // base64 문자열 기준 — 디코드하면 6MB 안팎. 채팅 그림이지 자료실이 아니다.
   if (url.pathname === '/api/upload' && req.method === 'POST') {
     readBody(req, res, ({ team: t, data, mime, quiet: q }) => {
       if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
-      const ext = UPLOAD_MIME[String(mime ?? '')];
-      if (!ext) return json(res, 400, { error: `그림 형식만 됩니다 (png·jpg·gif·webp) — 받은 것: ${mime}` });
+      // code-review 지적 — 그냥 [] 읽기는 Object.prototype 상속 값(mime:'constructor' 등)을 진짜 값처럼 돌려준다.
+      const mimeKey = String(mime ?? '');
+      const ext = Object.hasOwn(UPLOAD_MIME, mimeKey) ? UPLOAD_MIME[mimeKey] : undefined;
+      if (!ext) return json(res, 400, { error: `그림·문서 형식만 됩니다 (png·jpg·gif·webp·pdf·md·txt·csv·docx·xlsx·pptx) — 받은 것: ${mime}` });
       const b64 = String(data ?? '').replace(/^data:[^,]*,/, '');
-      if (!b64) return json(res, 400, { error: '그림이 비어 있습니다.' });
+      if (!b64) return json(res, 400, { error: '파일이 비어 있습니다.' });
       let buf;
-      try { buf = Buffer.from(b64, 'base64'); } catch { return json(res, 400, { error: '그림을 읽지 못했습니다.' }); }
-      if (!buf.length) return json(res, 400, { error: '그림을 읽지 못했습니다.' });
+      try { buf = Buffer.from(b64, 'base64'); } catch { return json(res, 400, { error: '파일을 읽지 못했습니다.' }); }
+      if (!buf.length) return json(res, 400, { error: '파일을 읽지 못했습니다.' });
 
       const name = `${new Date().toISOString().replace(/[:.]/g, '-')}-${crypto.randomBytes(3).toString('hex')}.${ext}`;
       const dir = paths(t).in;
       fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(path.join(dir, name), buf);
 
-      const say = `그림을 올렸습니다: in/${name}`;
+      const say = `${Object.hasOwn(UPLOAD_IMAGE, mimeKey) ? '그림' : '파일'}을 올렸습니다: in/${name}`;
       const phase = isOffice(t) ? 'running' : readState(t).phase;
       if (phase === 'idle' && !q) bus.allowIdleChat(t);
       if (phase === 'blocked' && !q) resumeRound(t, { text: say });
