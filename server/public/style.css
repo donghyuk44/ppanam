@@ -821,6 +821,12 @@ body {
 .apr__fold { font-size: 12px; }
 .apr__fold summary { cursor: pointer; color: var(--ink-3); }
 .apr__fold .apr__detail { margin-top: 4px; }
+/* 결재 카드 '자세히 ▸'(헨리 diff 11절 ①, 시안 5절) — 원문·변경 사항·쓴 원문·낸 것은 접힘. 왜는 두 줄까지 */
+.apr__why { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.apr__more { font-size: 12px; margin-top: 4px; }
+.apr__more > summary { cursor: pointer; color: var(--ink-3); list-style: none; }
+.apr__more > summary::before { content: '▸ '; } .apr__more[open] > summary::before { content: '▾ '; }
+.apr__more[open] > summary { margin-bottom: 4px; }
 .apr__pv { font-size: 11.5px; color: var(--ink-2); background: var(--sunk); border-radius: 8px; padding: 8px 10px; }
 .apr__pv table { border-collapse: collapse; width: 100%; }
 .apr__pv td { padding: 2px 8px 2px 0; vertical-align: top; white-space: pre-wrap; word-break: break-word; }

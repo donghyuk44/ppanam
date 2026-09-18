@@ -1575,7 +1575,7 @@ function previewNode(r) {
  * 줄 = 누가 · 어디 · 결재 기다림 · N분 전 → 주제 → [읽고 답하기]. 누르면 카드가 팝업으로(approvalCard) — 왜 → 바뀌는 것 → N이 쓴 원문 → 낸 것 → 확인 / 돌려보냄.
  * 누른 뒤엔 카드가 사라지지 않고 그 줄이 "됐어요 — 확인, 개발에 전해졌어요 · 밤 10:50" 로 남는다(evt_f054428919 "전송이 안 된 거야?" 의 답, 5판 3-5-1). 낱말은 하영 5판. */
 const decidedLines = [];   // 이 화면에서 누른 것 — [{ id, text }] 새로 고침 전까지
-const GRADE_WORD = { A: '자동 승인', B: '총괄이 봄', C: '대표 승인' };   // 하영 1절 120행·0-3 폴드7 QA 표 — 대표가 B·C 를 외울 이유가 없다
+const GRADE_WORD = { A: '혼자 해도 됨', B: '사장이 봄', C: '대표님이 정함' };   // 하영 사전 191·245행(등급 A·B·C) — 대표가 B·C 를 외울 이유가 없다. 헨리 diff 11절 ③: '대표 승인' → '대표님이 정함'
 /** 시각을 때와 같이 — "아침 8:41 · 낮 12:13 · 새벽 3시 · 저녁 6시 · 밤 10:50"(하영 5판 3-5-1, 결정 101 우리 시각). :00 이면 "N시". */
 function whenKo(ts) {
   const d = new Date(ts); if (Number.isNaN(d.getTime())) return '';
@@ -1587,7 +1587,7 @@ function whenKo(ts) {
 function approvalHead(r) {
   const t = teams.find((x) => x.id === r.team);
   const who = (summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by;
-  return `${who} · ${t?.name ?? r.team} · 승인 필요 · ${ago(r.ts)}`;
+  return `${who} · ${t?.name ?? r.team} · 결재 대기`;   // '결재 대기' 사전 124행 · 'N일 전' 시각 낱말은 뺌(헨리 diff 11절 ③, 결정 188)
 }
 let theirsOpen = false;   // 띠의 "톰·제리가 보는 중 N건" 줄을 폈나 — 새로 그릴 때도 유지, 그 카드가 다 빠지면 다시 접힘
 /** 결재 카드 ① — 끝난 결재는 판정 사건이 오는 순간 화면에서 지운다(나리·톰). 서버가 요청한 방에 남기는 note 의 meta.status(passed·revised, 계약 6절 625행)를 보고
@@ -1671,30 +1671,34 @@ function approvalCard(r) {
   // 제목 — --boss 한 줄이 자에 맞으면 그것, 아니면 원문을 잰다. 안 맞으면 "아직 쉬운 말로 안 적음" 이 서고 원문(r.what)은 바로 아래 펼침에(결정 140 · 사용성-0916 3절 2).
   // 카드는 단추가 아니라 진짜 <details> 를 쓴다 — 띠의 한 줄(apr--line)은 단추라 bossLine 의 눌러 펼침.
   const title = bossTitle(r), titleOk = bossOk(title);
-  card.appendChild(titleOk ? linked('apr__what', title) : el('div', 'apr__what', `${teams.find((x) => x.id === r.team)?.name ?? r.team} 결재`));   // "요약 없음" 대신 '{팀} 결재', 원문은 바로 밑 펼침(opus ④)
-  if (!titleOk || title !== r.what) { const fold = el('details', 'apr__fold'); fold.appendChild(el('summary', null, '원문')); fold.appendChild(linked('apr__detail', r.what)); card.appendChild(fold); }
+  card.appendChild(titleOk ? linked('apr__what', title) : el('div', 'apr__what', `${teams.find((x) => x.id === r.team)?.name ?? r.team} 결재`));   // "요약 없음" 대신 '{팀} 결재', 원문은 자세히 안 펼침(opus ④)
   // 왜 — 대표 원문이 있으면 그 말부터(세라 자리, 결정 98 — 아직 세라가 안 바꾼 카드는 요청자 글 첫 문장 한 줄). 원문 칸은 그대로, 줄이지 않는다(5판 3-5-1 "N이 쓴 원문").
   // R31 ①(나리): 왜와 원문이 같은 글로 두 번 찍히지 않게 — 왜는 한 줄, 원문은 그 한 줄보다 긴 것이 있을 때만(같으면 칸 숨김). 왜가 주제와 같은 글이면 그 칸도 숨긴다.
   const detail = r.detail || '';
   const why = detail ? oneLine(detail) : '사유 없음 — 요청자에게 문의';   // 안 적힌 때의 글은 하영 196행
   if (why.trim() !== (r.what ?? '').trim()) {
     card.appendChild(el('div', 'apr__k', '사유'));
-    card.appendChild(linked('apr__why', why));
+    card.appendChild(linked('apr__why', why));   // 두 줄까지(CSS) — 헨리 5절 "물음 한 줄 + 왜 두 줄 + 단추"
   }
+  // 그 밑은 '자세히 ▸' 뒤로 접는다(헨리 diff 11절 ① — 다 펼치면 카드 하나가 1,300px): 원문(제목이 원문과 다를 때) · 변경 사항 · 쓴 원문 · 낸 것. 있을 때만 접힘이 선다.
+  const more = el('details', 'apr__more'); more.appendChild(el('summary', null, '자세히'));
+  let moreN = 0;
+  if (!titleOk || title !== r.what) { more.appendChild(el('div', 'apr__k', '원문')); more.appendChild(linked('apr__detail', r.what)); moreN++; }
   const pv = previewNode(r);
-  if (pv) { card.appendChild(el('div', 'apr__k', '변경 사항')); card.appendChild(pv); }
+  if (pv) { more.appendChild(el('div', 'apr__k', '변경 사항')); more.appendChild(pv); moreN++; }
   if (detail && detail.trim() !== why.trim()) {
     const who = (summaries[r.team]?.cast ?? {})[r.by]?.name ?? r.by;
-    card.appendChild(el('div', 'apr__k', `${who}이 쓴 원문`));
-    card.appendChild(linked('apr__detail', detail));
+    more.appendChild(el('div', 'apr__k', `${who}이 쓴 원문`));
+    more.appendChild(linked('apr__detail', detail)); moreN++;
   }
   // 산출물 — 그림이 있어야 "가" 를 누를 수 있다 (대표 결정 36). 서버가 stat 한 목록: 없는 파일은 없다고 뜬다.
   if (r.artifacts?.length) {
     const arts = el('div', 'apr__arts');
     arts.appendChild(el('div', 'apr__artsk', `낸 것 ${r.artifacts.length}`));
     for (const f of r.artifacts) arts.appendChild(outFileNode(f));
-    card.appendChild(arts);
+    more.appendChild(arts); moreN++;
   }
+  if (moreN) card.appendChild(more);
   if (r.grade === 'C') {
     // 위임 중(결정 136)이고 톰·제리가 대리할 수 있는 카드 — 단추 위에 한 줄, 단추는 그대로(R31 ②, 나리 · 톰 apr_e3e08ac8 반려: 대표가 누르는 길은 안 닫는다). 돈·바깥(proxyable false)은 단추만.
     const proxied = delegated(delegation) && !!r.proxyable;

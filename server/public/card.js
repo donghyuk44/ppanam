@@ -142,7 +142,8 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
   head.appendChild(tile);
   const names = el('span', 'card__names');
   names.appendChild(el('span', 'card__name', d.name ?? d.team ?? ''));
-  names.appendChild(el('span', 'card__doer', d.doing?.who && card.dataset.state === 'working' ? `${d.doing.who} 진행 중` : STATE_WORD[card.dataset.state]));
+  // 작은 줄은 사람이다(헨리 diff 11절 ②) — 상태 말은 옆 알약이 이미 하니 여기엔 '누구 진행 중'(상황판 doing 의 사람)만, 사람이 없으면 줄 없음
+  if (d.doing?.who) names.appendChild(el('span', 'card__doer', `${d.doing.who} 진행 중`));
   head.appendChild(names);
   const pill = el('span', 'card__pill', STATE_WORD[card.dataset.state]); pill.dataset.state = card.dataset.state;
   head.appendChild(pill);
