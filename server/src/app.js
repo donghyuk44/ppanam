@@ -2719,11 +2719,11 @@ function timelineTeamWide(t, cols) {
     // 작업 줄 — 안 끝난 것부터, 끝난 것(☑)은 접지 않고 뒤에 줄로(헨리 diff 12절) + 그 주 칸에 ✓(doneAt 이 지난주·이번 주면). 진행 중은 이번 주 "하는 중", 감사 대기는 놋쇠, 시작 가능은 다음 칸, 뒤에 걸림은 그 뒤 칸, 막힘은 빨강.
     for (const k of tasks.filter((x) => x.status !== '통과')) {
       const cells = [blank(), blank(), blank(), blank()];
-      if (k.status === '진행') cells[1] = tlCell('now', '하는 중');
+      if (k.status === '진행') cells[1] = tlCell('now', '진행 중');
       else if (k.status === '감사 대기') cells[1] = tlCell('wait', '감사 대기');
       else if (k.status === '막힘') cells[1] = tlCell('bad', '막힘');
       else if (k.ready) cells[2] = tlCell('next', '시작할 수 있어요');
-      else if (k.status === '대기') cells[3] = tlCell('after', afterNames(k) ?? '뒤에 걸림');   // 그 뒤 칸 점선 칩엔 걸린 작업 이름(13절)
+      else if (k.status === '대기') cells[3] = tlCell('after', afterNames(k) ?? '앞 일 남음');   // 그 뒤 칸 점선 칩엔 걸린 작업 이름(13절)
       row(taskRow(t, k, cast), cells);
     }
     for (const k of tasks.filter((x) => x.status === '통과')) row(taskRow(t, k, cast), [tlCell('pass', inWeek(k.doneAt, prev.key) ? '✓' : ''), tlCell('pass', inWeek(k.doneAt, cur.key) ? '✓' : ''), blank(), blank()]);
@@ -2786,7 +2786,7 @@ function timelineTeam(t, cols) {
       else if (k.status === '감사 대기') chip(1, 'wait', '감사 대기');
       else if (k.status === '막힘') chip(1, 'bad', '막힘');
       else if (k.ready) chip(2, 'next', '시작할 수 있어요');
-      else if (k.status === '대기') chip(3, 'after', afterNames(k) ?? '뒤에 걸림');
+      else if (k.status === '대기') chip(3, 'after', afterNames(k) ?? '앞 일 남음');
     }
     for (const list of cells) { const s = el('span', 'tl__cell tl__cell--stack'); s.append(...list); grid.appendChild(s); }
   }
