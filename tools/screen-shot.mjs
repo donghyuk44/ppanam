@@ -10,6 +10,9 @@
 import { spawn } from 'node:child_process'; import fs from 'node:fs'; import path from 'node:path'; import os from 'node:os';
 const [,, OUT, HASH = 'dev/room', W = '412', H = '915', TAB = '', PORT = '9612'] = process.argv;
 if (!OUT) { console.error('사용법: node tools/screen-shot.mjs <out.png> <hash> [W] [H] [towerTab] [port]'); process.exit(1); }
+// 사진은 같은 이름에 덮어쓰지 않는다(결정 171·178, 나리 09-18 — 헨리가 어느 판을 대보는지 파일만으로 알아야 하고 옛 판과 견줄 길이 남아야 한다). 있으면 찍기 전에 멈춘다 — 판 이름(-b, -c …)을 붙여 다시.
+if (fs.existsSync(OUT)) { console.error(`이미 있는 이름 — 새 이름(판 붙여서)으로: ${OUT}`); process.exit(4); }
+// exit 4 = 같은 이름
 const CH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const SERVER = process.env.PPANAM_URL || 'http://localhost:4321';
 const PROFILE = fs.mkdtempSync(path.join(os.tmpdir(), 'ppanam-screen-'));
