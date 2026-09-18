@@ -29,7 +29,7 @@ import { noticeEvents, startVerdict, snapshot, setClock, wake, restoreQueues, ex
 import * as world from './world.mjs';
 import { startInfra } from './infra.mjs';
 import * as gemini from './gemini.mjs';
-import { bossOk, NOT_YET } from './public/bosswords.js';
+import { bossOk, isBossWord, NOT_YET } from './public/bosswords.js';
 import { todayUsage } from './usage.mjs';
 
 const PORT = Number(process.env.PORT || 4321);
@@ -479,6 +479,9 @@ const server = http.createServer((req, res) => {
   // 순수 함수는 bus.weeksOf·timelineTeamOf — 여긴 roadmap·work.json·rounds.jsonl 을 모아 건네고 결정 140 사람 말 검사만 입힌다.
   if (url.pathname === '/api/timeline') {
     const line = (s) => { const v = String(s ?? '').trim(); return v ? (bossOk(v) ? v : NOT_YET) : null; };
+    // 목표 카드(슬로건·이번 달성 목표·팀 목표·'지금')만 60자 자를 면제한다(나리 대리, 09-18 — 대표님·팀장 문장을
+    // 그대로 보이는 자리라 자르면 원문이 아니게 된다). 하네스 낱말 자(isBossWord)는 그대로 — 길면 화면이 줄임표로 접는다(시안 14절).
+    const goalLine = (s) => { const v = String(s ?? '').trim(); return v && isBossWord(v) ? v : null; };
     const now = Date.now();
     const items = bus.readWork().items ?? [];
     // 목표 한 장(teams/hq/goal.md) + 팀마다 순서 목록(order.md) — 타임라인 맨 위 목표 카드(테라 요청 0918). 없으면 null, 자로 거른다.
@@ -492,7 +495,7 @@ const server = http.createServer((req, res) => {
       return {
         id: t.id, name: t.name,
         weeks: tl.weeks,
-        destination: line(order.goal),
+        destination: goalLine(order.goal),
         projects: tl.projects.map((p) => ({
           ...p,
           tasks: p.tasks.map((task) => ({
@@ -514,11 +517,11 @@ const server = http.createServer((req, res) => {
     const sera = listTeams().find((t) => t.id === 'sera');
     const seraOrder = sera ? bus.orderTeamOf(readSafe(path.join(paths('sera').dir, 'order.md'))) : null;
     const goal = {
-      slogan: line(goalText.slogan),
-      goalNow: line(goalText.goalNow),
+      slogan: goalLine(goalText.slogan),
+      goalNow: goalLine(goalText.goalNow),
       teams: [
-        ...teamsOut.map((t) => ({ id: t.id, name: t.name, goal: t.destination, now: line(orderByTeam[t.id]?.now) })),
-        ...(sera ? [{ id: sera.id, name: sera.name, goal: line(seraOrder.goal), now: line(seraOrder.now) }] : []),
+        ...teamsOut.map((t) => ({ id: t.id, name: t.name, goal: t.destination, now: goalLine(orderByTeam[t.id]?.now) })),
+        ...(sera ? [{ id: sera.id, name: sera.name, goal: goalLine(seraOrder.goal), now: goalLine(seraOrder.now) }] : []),
       ],
     };
     return json(res, 200, { now: new Date(now).toISOString(), weeks, teams: teamsOut, goal });
