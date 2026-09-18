@@ -295,7 +295,12 @@ export function addressees(text, cast, { except = null } = {}) {
       if (id === except || !a?.name || out.includes(id)) continue;
       // 이름을 정규식에 그대로 넣으면 "함동혁(댄)" 의 괄호가 그룹이 되어 영영 안 잡힌다.
       // "나리야,"·"세라야," 도 부름이다(대표 09-18 11:2x, 톰 226) — 이름 뒤 호격 조사 야/아도 받는다.
-      if (new RegExp('^' + escapeRegExp(a.name) + '(?:야|아)?\\s*(씨|님)?\\s*[,，、:·]').test(head)) { out.push(id); break; }
+      // "나리야 대답해봐" 처럼 야/아 뒤에 쉼표 없이 바로 말이 이어질 때도 부름이다(대표 09-18, 톰 대리 결정)
+      // — 야/아 가 붙었을 땐 구두점을 안 따지고, 안 붙었을 땐 여전히 구두점(,，、:·)이 있어야 한다(오인식 방지).
+      const nm = escapeRegExp(a.name);
+      const called = new RegExp('^' + nm + '(?:야|아)\\s*(씨|님)?(?:\\s|[!?,，、:·]|$)').test(head)
+        || new RegExp('^' + nm + '\\s*(씨|님)?\\s*[,，、:·]').test(head);
+      if (called) { out.push(id); break; }
     }
   }
   return out;
