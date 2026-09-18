@@ -1014,13 +1014,16 @@ html[data-font="large"] { zoom: 1.12; }
 .report .tower__head h1 { display: flex; align-items: baseline; gap: 8px; }
 .report .tower__head p { white-space: pre-line; }
 .rep__sec { margin-bottom: 12px; }
-.rep__axis { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--ink-4); font-family: 'IBM Plex Mono', monospace; padding: 2px 0 0 92px; }
-.rep__legend { font-size: 11px; color: var(--ink-4); padding: 4px 0 6px; }
-.rep__rest { font-size: 12px; color: var(--ink-2); padding: 6px 0; border-top: 1px dashed var(--line); }
-.rep__stuck .dash__head b { color: var(--ink); }
-.rep__team .dash__head { flex-wrap: wrap; }
-.rep__thumbs { display: flex; gap: 6px; margin-top: 4px; }
-.rep__thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line-2); background: var(--sunk); }
+/* 막힌 것 목록 카드(헨리 1판-d ①, 시간 띠 대신) — 팀 색 점 10 · 일 이름 한 줄 · 담당자, 머리 오른쪽 작은 글 */
+.rep__k { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.rep__kr { font-size: 11px; font-weight: 400; color: var(--ink-4); white-space: nowrap; }
+.dash__row.rep__stuck { flex-direction: row; align-items: center; gap: 10px; }
+.rep__stuck .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.rep__stuckT { flex: 1; min-width: 0; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rep__who { flex: none; font-size: 12px; color: var(--ink-3); }
+.rep__team .dash__head { flex-wrap: nowrap; align-items: flex-start; }   /* 점은 첫 줄 앞에 붙고 글만 줄바꿈 */
+.rep__team .dash__head .dot { margin-top: 5px; }
+.rep__team .dash__head b { flex: 1; min-width: 0; }
 .rep__word { margin: 4px 0 18px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; font-size: 13px; line-height: 1.6; color: var(--ink); white-space: pre-line; }
 .rep__by { color: var(--ink-4); }
 .rep__more { margin-left: 8px; font-size: 11px; color: var(--ink-3); }
@@ -1166,16 +1169,6 @@ button.dash__row:hover b { text-decoration: underline; }
 /* 진행 막대는 .pbar — .bar 는 방 머리(142행)다. 어제 .bar 로 넣어 방 머리가 72×5px 로 눌려 '누가 살아 있나' 줄·칩이 대표 화면에서 사라졌다(대표 09-15 첫 버그). */
 .pbar { display: inline-block; width: 72px; height: 5px; border-radius: 2.5px; background: var(--line); overflow: hidden; flex: none; vertical-align: middle; }
 .pbar__fill { display: block; height: 100%; border-radius: 2.5px; background: var(--ink-4); }
-.tband { position: relative; display: block; height: 12px; margin-top: 4px; background: var(--sunk); border-radius: 3px; width: 100%; }
-.tband__dot { position: absolute; top: 2px; width: 8px; height: 8px; border-radius: 50%; transform: translateX(-50%); background: var(--ink-4); }
-.tband__dot--bad { background: var(--bad); }
-.tband__span { position: absolute; top: 3px; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--bad) 55%, transparent); }
-.bands { display: flex; flex-direction: column; gap: 4px; padding: 2px 0 8px; border-bottom: 1px solid var(--line-2); margin-bottom: 4px; }
-.bands__row { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 8px; align-items: center; }
-.bands__who { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* '누가 뭘 했나' 사람 줄 — 막대 길이 = 오늘 한 것 수(가장 많은 사람이 끝까지). 수는 글자로 안 적는다(자기 통계, 하영) — 손 올리면 한 줄 (톰 req_0964bae9: 꽉 찬 시간 띠는 아무 말도 안 했다) */
-.bands__bar { display: inline-flex; align-items: center; min-width: 0; }
-.bands__row .tband { margin-top: 0; }
 .forest { display: flex; gap: 10px; margin-bottom: 2px; }
 .num { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; }
 .num b { font-family: 'Gowun Batang', serif; font-size: 28px; font-weight: 400; line-height: 1.1; }
@@ -1422,6 +1415,9 @@ button.dash__row:hover b { text-decoration: underline; }
   .tower__grid { grid-template-columns: minmax(0, 1fr); padding: 12px; gap: 10px; }
   .tower__head { padding: 14px 16px 11px; }
   .tower__head p { display: none; }   /* 폰에서는 설명문이 첫 카드를 아래로 민다 (검수 #12) */
+  .report .tower__head h1 { display: none; }   /* 리포트(헨리 1판-d): 윗줄 '리포트' 하나면 되고, 머리엔 '‹요일› ‹만든 시각› 기준' 한 줄만 */
+  .report .tower__head p { display: block; margin-top: 0; }
+  .report .tower__head { padding: 10px 16px 9px; }
   .tabs { padding: 6px 10px; }
   .tabs button { flex: 1; justify-content: center; padding: 5px 6px; }
   /* 개인 탭의 묶음 머리는 위에 붙는다 — 열다섯 장을 내리다 어느 팀인지 잃지 않게 (헨리 설계 4절) */
