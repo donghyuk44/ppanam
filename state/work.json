@@ -1298,6 +1298,24 @@
       "owner": "테라"
     },
     {
+      "id": "J21",
+      "stream": "순서 목록",
+      "what": "경영 도서관 셋(ALTER) — 색인 다시 만들기(library/manifest.json) · 사서 명령 tools/library.mjs find 가 자리 세션에서 실제로 도는지 실측 · 책장 낡은 두 줄 고침",
+      "team": "finance",
+      "seat": "guide",
+      "after": [
+        "F3"
+      ],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "결정 233(대표 11:5x '업무 문서관리 도서관 시스템') · 230 ② 잊힌 일 — 색인은 09-15 밤 뒤 안 만들어짐, 사서 명령 사용 0(나래 실측). 나리 대리 11:5x: 유진 '다음' 첫 줄, 아침 한 장이 빅터 판정으로 끝나면 진행",
+      "milestone": {
+        "team": "finance",
+        "n": 4
+      },
+      "owner": "유진"
+    },
+    {
       "id": "J20",
       "stream": "운영",
       "what": "공용 사진 도구 tools/screen-shot.mjs — 같은 이름이 있으면 안 쓰고 멈추는 세 줄(171·178). 담기 전까지 사진 한 장도 안 찍는다",
