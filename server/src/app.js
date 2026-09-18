@@ -1689,7 +1689,19 @@ function approvalCard(r) {
       const reason = d === 'REVISE' ? reasonBox.value.trim() : '';
       if (d === 'REVISE' && !reason) { reasonBox.hidden = false; reasonBox.focus(); return; }
       const res = await post('/api/approvals', { id: r.id, decision: d, reason });
-      if (!res.ok) { err.textContent = res.data.error ?? '실패 — 다시 시도'; err.hidden = false; return; }
+      if (!res.ok) {
+        // 결재 카드 ② — 이미 끝난 결재를 누르면 결과 말로 한 줄(하영, 사전 1절 결재 표: '이미 승인된/반려된 결재예요', 모르면 '이미 끝난 결재예요').
+        // 서버 글을 안 읽고 목록(all)에서 그 카드 상태를 다시 본다. 채팅 맨 위 목록에선 카드 자리에 그 한 줄(decidedLines, '됐어요' 줄과 같은 자리)이 서고,
+        // 팝업·대시보드 인라인 카드는 그대로 선 채 밑에 그 줄(err)을 보인다(code-review — 목록을 다시 그리면 카드가 사라져 줄이 안 보인다).
+        const st = await fetch('/api/approvals').then((x) => x.json()).then((a) => (a.all ?? []).find((x) => x.id === r.id)?.status ?? null).catch(() => null);
+        if (st && st !== 'pending') {
+          const line = st === 'passed' ? '이미 승인된 결재예요' : st === 'revised' ? '이미 반려된 결재예요' : '이미 끝난 결재예요';
+          err.textContent = line;
+          if (!decidedLines.some((x) => x.id === r.id)) decidedLines.unshift({ id: r.id, text: line });
+          approvals = approvals.filter((x) => x.id !== r.id); renderApprovals(); renderBossBadge();
+        } else err.textContent = res.data.error ?? '실패 — 다시 시도';
+        err.hidden = false; return;
+      }
       const t = teams.find((x) => x.id === r.team);
       decidedLines.unshift({ id: r.id, text: `됐어요 — ${d === 'PASS' ? '승인' : '반려'}, ${t?.name ?? r.team}에 전해졌어요 · ${whenKo(Date.now())}` });
       approvals = approvals.filter((x) => x.id !== r.id);
