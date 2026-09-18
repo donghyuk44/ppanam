@@ -2687,8 +2687,10 @@ export function orderTeamOf(md) {
   const text = String(md ?? '');
   const goalM = /\*\*우리 팀 목표:\*\*\s*(.+)/.exec(text);
   // # 칸은 "1"뿐 아니라 "1 (G2·L2·K4)" 처럼 보드 번호가 붙기도 한다(톰 결정 229, 09-18) — 숫자로 시작하는 줄로만
-  // 좁히지 않고 다섯 칸 표 줄 모양으로 본다(맨 앞 칸은 안 본다). 구분줄(--- 행)은 상태가 "지금"이 아니라 저절로 빠진다.
-  const rows = [...text.matchAll(/^\|[^|]*\|([^|]+)\|[^|]+\|[^|]+\|([^|]+)\|\s*$/gm)]
+  // 좁히지 않고 표 줄 모양으로 본다(맨 앞 칸은 안 본다). 칸 수도 팀마다 다르다 — 총괄은 책임자 칸이 있어 여섯 칸
+  // (결정 210·212, 톰 09-18) — 둘째 칸을 "일", 맨 끝 칸을 "상태"로 본다, 그 사이 칸 수는 안 가린다.
+  // 구분줄(--- 행)은 상태가 "지금"이 아니라 저절로 빠진다.
+  const rows = [...text.matchAll(/^\|[^|]*\|([^|]+)\|(?:[^|]*\|)*?([^|]+)\|\s*$/gm)]
     .filter(([, , status]) => status.trim() === '지금');
   if (goalM || rows.length) {
     return { goal: goalM ? goalM[1].trim() : null, now: rows.length ? rows.map(([, what]) => what.trim()).join(' · ') : null };
