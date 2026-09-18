@@ -18,10 +18,10 @@
 //     2026-09-12). 외부감사·대표·총괄 사칭은 이미 막혔고, 이 구멍은 B1 이 닫는다.
 //   - 환경이 없는 셸은 대표의 터미널이다. 방을 --team 으로 고르되, 위의 화자 제한은 같다.
 
-import { emit, readCast, recordVerdict, verdictSeatError, EVENT_TYPES, VERDICTS, defaultTeam, teamExists, listTeams, isOffice } from './bus.mjs';
+import { emit, readCast, readLog, recordVerdict, verdictSeatError, EVENT_TYPES, VERDICTS, defaultTeam, teamExists, listTeams, isOffice } from './bus.mjs';
 
 const argv = process.argv.slice(2);
-const o = { team: null, type: 'message', actor: null, text: null, verdict: null, target: 'guide', tool: null, stdin: false };
+const o = { team: null, type: 'message', actor: null, text: null, verdict: null, target: 'guide', tool: null, stdin: false, reply: null };
 const rest = [];
 
 for (let i = 0; i < argv.length; i++) {
@@ -34,6 +34,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--tool') { o.tool = argv[++i]; o.type = 'tool'; }
   else if (a === '--text') o.text = argv[++i];
   else if (a === '--stdin') o.stdin = true;
+  else if (a === '--reply') o.reply = argv[++i];
   else if (a === '-h' || a === '--help') {
     console.log(`사용법: say.mjs --as <화자> [옵션] "할 말"
 
@@ -43,6 +44,7 @@ for (let i = 0; i < argv.length; i++) {
   --verdict ${[...VERDICTS].join(' | ')}   (type 을 verdict 로 만듦)
   --target  판정 대상 (기본 guide)
   --tool    도구 이름 (type 을 tool 로 만듦)
+  --reply   <evt id>   그 말풍선에 답장(결정 245, meta.replyTo)
   --stdin   본문을 표준입력에서 읽음`);
     process.exit(0);
   } else rest.push(a);
@@ -94,13 +96,21 @@ if (cast.agents && !cast.agents[o.actor]) {
   console.error(`경고: '${o.actor}' 는 ${team} 팀 명단에 없는 화자입니다. 기본 아바타로 표시됩니다.`);
 }
 
+// 답장(결정 245, event-schema 3절) — 자리가 답장할 땐 여기가 /api/say 와 같은 값을 찍는다(서버는 솔라 기존 몫).
+let replyTo = null;
+if (o.reply) {
+  const found = readLog(team).find((e) => e.id === o.reply);
+  if (!found) { console.error(`오류: '${o.reply}' 말풍선을 이 방 대화록에서 못 찾았습니다.`); process.exit(1); }
+  replyTo = { event: found.id, actor: found.actor, text: String(found.text ?? '').trim().slice(0, 60) };
+}
+
 let rec;
 try {
   // hand:'cli' — 이 자리 세션이 스스로 낸 말이 아니라 명령줄로 대신 친 말이다(C16, 대표 말풍선 색 구분 —
   // 서버 세션 자리는 노랑, 이 길로 온 것은 파랑). 훅(.claude/hooks/to-bus.mjs)이 남기는 말은 hand:'server'.
   rec = o.type === 'verdict'
     ? recordVerdict(team, { actor: o.actor, verdict: o.verdict, text, target: o.target })
-    : emit(team, { actor: o.actor, type: o.type, text, meta: { ...(o.tool ? { tool: o.tool } : {}), hand: 'cli' } });
+    : emit(team, { actor: o.actor, type: o.type, text, meta: { ...(o.tool ? { tool: o.tool } : {}), ...(replyTo ? { replyTo } : {}), hand: 'cli' } });
 } catch (e) {
   console.error('오류: ' + e.message);
   process.exit(1);

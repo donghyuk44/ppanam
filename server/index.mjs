@@ -589,10 +589,16 @@ const server = http.createServer((req, res) => {
   // 낡은 길이 하나 남아 있다: `/api/upload` 의 비-silent 갈래(약 700행 아래)는 아직 훅이 남긴다 — 화면이 이제
   // silent 만 쓰니 안 밟히지만, 새 길을 여기 더할 땐 이 둘이 다르다는 걸 잊지 않는다(테라 판정-솔라-0918 ③).
   if (url.pathname === '/api/say' && req.method === 'POST') {
-    readBody(req, res, ({ text, team: t, quiet: q }) => {
+    readBody(req, res, ({ text, team: t, quiet: q, replyTo }) => {
       if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
       const say = String(text ?? '').trim();
       if (!say) return json(res, 400, { error: '빈 지시입니다.' });
+      // 답장(결정 245, J33·event-schema 3절) — 대표 말풍선 meta 에 그대로 찍는다. 세션에 넣는 글 첫 줄엔
+      // 누구의 어느 말에 대한 답인지 붙인다(reply 갈래 하나뿐 — session.send 로 가는 길, 638행).
+      const reply = replyTo?.actor && replyTo?.text
+        ? { event: replyTo.event ?? null, actor: String(replyTo.actor), text: String(replyTo.text).trim().slice(0, 60) }
+        : null;
+      const replyMeta = reply ? { replyTo: reply } : undefined;   // emit() 은 meta 가 없으면(undefined) 안 찍는다 — {} 를 주면 매 말풍선에 빈 meta 가 남는다
 
       // 방이 닫혀 있어도 채팅은 된다(결정 127 ② — 대표가 직접 겪은 불편, 오늘 첫째).
       // 전엔 여기서 막았다 — 훅이 idle 이면 안 적어서 막지 않으면 말이 화면에서 그냥 사라졌다.
@@ -612,14 +618,14 @@ const server = http.createServer((req, res) => {
         // 대표가 외부감사(codex)를 불렀다. codex 는 세션이 없어 넣을 곳이 없다 — 서버가 대표 말풍선을 직접 남기고
         // 사회자가 그를 깨운다. 주인은 다음 차례에 듣는다 (레오 감사, 2026-09-12: 다니엘은 대표가 불러도 안 깼다).
         if (to && bus.isForeign(cast[to]?.model)) {
-          const rec = emit(t, { actor: 'boss', type: 'message', text: say });
+          const rec = emit(t, { actor: 'boss', type: 'message', text: say, meta: replyMeta });
           return json(res, 200, { ok: true, to, queued: 0, event: rec.id });
         }
         // 대표가 로밍 자리(나리·세라)를 이 방에서 불렀다 — 이 방엔 그 자리 세션이 없다(N1, 집은 hq·sera 뿐).
         // 말풍선만 남기면 사회자(noticeEvents 의 called 루프)가 callHomeElsewhere 로 집 세션을 깨운다.
         // 여기서 session.send(actor=undefined) 로 떨어지면 방 주인에게 조용히 잘못 배달된다 (점검-코드리뷰-0916 #1).
         if (to && ROAM_HOME[to] && ROAM_HOME[to] !== t) {
-          const rec = emit(t, { actor: 'boss', type: 'message', text: say });
+          const rec = emit(t, { actor: 'boss', type: 'message', text: say, meta: replyMeta });
           return json(res, 200, { ok: true, to, queued: 0, event: rec.id });
         }
         // 주인이 codex 자리다 (결정 69 ① — 대표가 실무를 codex 로 바꿨다). 세션이 없으니 말풍선을 남기고 사회자가 깨운다.
@@ -627,17 +633,20 @@ const server = http.createServer((req, res) => {
         const owner = session.ownerOf(t);
         if (!to && bus.isForeign(cast[owner]?.model)) {
           if (q) return json(res, 200, { ok: true, to: owner, queued: 0 });
-          const rec = emit(t, { actor: 'boss', type: 'message', text: say });
+          const rec = emit(t, { actor: 'boss', type: 'message', text: say, meta: replyMeta });
           wake(t, owner);
           return json(res, 200, { ok: true, to: owner, queued: 0, event: rec.id });
         }
         const actor = to && (cast[to]?.model === 'claude') ? to : undefined;
+        // 답장이면 세션에 넣는 글 첫 줄에 누구의 어느 말에 대한 답인지(event-schema 3절 "○○의 말 … 에 답장").
+        const quoteName = reply ? (cast[reply.actor]?.name ?? reply.actor) : null;
+        const sessionText = reply ? `(${quoteName}의 말 "${reply.text}" 에 답장)\n${say}` : say;
         // 보낸 게 받아들여진 뒤에만 남긴다 — 먼저 남기고 보내면, 회차가 닫히는 중이라 거절될 때(session.mjs
         // isClosing) 대화록엔 말풍선이 서고 세션은 못 받아 대표가 다시 보내면 같은 말이 둘 선다(테라
         // 판정-솔라-0918 ①). quiet() 라 훅은 어느 순서든 다시 안 적으니 순서를 바꿔도 안전하다.
-        const sent = session.send(t, quiet(say), actor);
+        const sent = session.send(t, quiet(sessionText), actor);
         if (sent.refused) return json(res, 409, { error: sent.reason, closing: true });
-        const rec = q ? null : emit(t, { actor: 'boss', type: 'message', text: say });
+        const rec = q ? null : emit(t, { actor: 'boss', type: 'message', text: say, meta: replyMeta });
         json(res, 200, { ok: true, to: actor ?? session.ownerOf(t), ...(rec ? { event: rec.id } : {}), ...sent });
       } catch (e) {
         json(res, 500, { error: `실무에게 전달하지 못했습니다 — ${e.message}` });
