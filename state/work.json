@@ -43,7 +43,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": null
     },
     {
       "id": "T3",
@@ -61,7 +62,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": null
     },
     {
       "id": "T4",
@@ -79,7 +81,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": null
     },
     {
       "id": "P1",
@@ -319,7 +322,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": null
     },
     {
       "id": "C6",
@@ -339,7 +343,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": "커밋 8663d18·bccef89(card.js 판정 카드·팀 카드) — 파일 server/public/card.js"
     },
     {
       "id": "C7",
@@ -360,7 +365,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": "커밋 d5048f5(세 곳에 꽂음)·bccef89 — 사진은 헨리 대조 판 r34-dash3-412.png"
     },
     {
       "id": "C8",
@@ -453,7 +459,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": "커밋 e20fa90(회차 기다림 — 대기 사유 적으면 침묵 부름 건너뜀) — 파일 server/conductor.mjs"
     },
     {
       "id": "O2",
@@ -889,7 +896,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": "코드 40b9e99 · 자 시험 통과(doneCheck 칸 그대로)"
     },
     {
       "id": "D2",
@@ -928,7 +936,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": "코드 616d225 · node tools/work-board.mjs 출력(doneCheck 칸 그대로)"
     },
     {
       "id": "D4",
@@ -1315,7 +1324,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": "커밋 a24b562·9cc4135(첫 화면 순서 뒤집기) · 사진 teams/dev/out/shots/r37-dash3b-412.png"
     },
     {
       "id": "K2",
@@ -1351,7 +1361,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": "커밋 d682167·52fb8e4(꼬리 \"끝난 수/전체 · 지금 N단계\") · 사진 r37-dash3b-412.png"
     },
     {
       "id": "K4",
@@ -1369,7 +1380,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": "커밋 62045a4(\"요약 없음\" 없앰)·9cc4135 · 사진 r37-dash3b-412.png"
     },
     {
       "id": "K5",
@@ -1494,7 +1506,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": "커밋 cc23d69·8684e22(/api/timeline·goal·after) — 재시작 뒤 실물 r37-timeline-412-f.png"
     },
     {
       "id": "J2",
