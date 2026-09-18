@@ -2600,7 +2600,7 @@ function loadDashboard() {
     const body = $('dashBody');
     for (const id of ['dashBand', 'dashGates']) { const n = $(id); n.replaceChildren(); n.hidden = true; }   // 옛 띠·문 상자는 비우고 숨긴다(빈 상자가 회색 줄로 남는다, 1280 실측)
     if (!r) { body.replaceChildren(el('p', 'tcard__quiet', '타임라인 로딩 실패 — 서버 재시작 필요')); return; }
-    const wide = window.innerWidth >= 1180;   // PC 1280: 팀 카드 하나에 왼쪽 나무 + 오른쪽 기둥 넷(13절). 폰: 카드 둘.
+    const wide = window.innerWidth >= 700;   // 폴드 750·PC 1280: 팀 카드 하나에 왼쪽 나무(폴드 300 · PC 480, CSS) + 오른쪽 기둥 넷(13절). 폰 412: 카드 둘.
     const mark = JSON.stringify([wide, r.weeks, ahead.lines, (r.teams ?? []).map((t) => [t.id, t.signals, (t.projects ?? []).map((p) => [p.n, p.status, p.weeks, (p.tasks ?? []).map((k) => [k.id, k.status, k.seat, k.ready, k.doneAt, k.what])])])]);
     if (tlMark === mark) return;   // 안 바뀌었으면 다시 안 그린다(펼친 줄이 닫히지 않게)
     tlMark = mark;

@@ -716,10 +716,11 @@ body {
 .tl__bar--now { background: var(--ink); color: var(--panel); }
 .tl__bar--next, .tl__bar--after { background: transparent; border: 1px dashed var(--ink-4); color: var(--ink-3); }
 .tl__bar--bad { background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad-line); }
-.tl__bar--wait { background: color-mix(in srgb, var(--seal) 18%, transparent); color: var(--seal-ink); border: 1px solid var(--seal); }   /* 감사 대기 — 놋쇠(13절) */
+.tl__bar--wait { background: color-mix(in srgb, var(--seal) 18%, transparent); color: var(--seal); border: 1px solid var(--seal); }   /* 감사 대기 — 놋쇠(13절). 글자도 놋쇠 — seal-ink 는 어두운 바탕에서 안 읽힘(750 실측) */
 /* PC 1280(13절) — 기둥 머리 한 줄 + 팀 카드 하나에 왼쪽 나무 480 · 오른쪽 칸 넷. 줄마다 칸이 붙는다 */
-.tl__cols { display: grid; grid-template-columns: 480px repeat(4, minmax(0, 1fr)); gap: 4px 6px; padding: 0 14px 6px; position: sticky; top: 0; background: var(--ground); z-index: 1; }
-.tl__wgrid { display: grid; grid-template-columns: 480px repeat(4, minmax(0, 1fr)); gap: 2px 6px; align-items: center; }
+.tl__cols { display: grid; grid-template-columns: 300px repeat(4, minmax(0, 1fr)); gap: 4px 6px; padding: 0 14px 6px; position: sticky; top: 0; background: var(--ground); z-index: 1; }   /* 폴드 750: 왼쪽 300 · PC 1280: 480(아래 미디어) */
+.tl__wgrid { display: grid; grid-template-columns: 300px repeat(4, minmax(0, 1fr)); gap: 2px 6px; align-items: center; }
+@media (min-width: 1180px) { .tl__cols, .tl__wgrid { grid-template-columns: 480px repeat(4, minmax(0, 1fr)); } }
 .tl__wgrid > .tl__stage, .tl__wgrid > .tl__task, .tl__wgrid > .tl__fold { min-width: 0; }
 .tl__wgrid > .tl__fold { border-top: 1px solid var(--line-2); }
 .tl__wgrid .tl__cell { min-height: 24px; }
