@@ -136,7 +136,9 @@ function foldBubble(label, inner, jump = null) {
 
 function bubble(text, team = active) {
   const n = el('div', 'bub');
-  const src = String(text ?? '');
+  // 올린 그림·문서 줄("그림을 올렸습니다: in/…")은 글자로 안 보이고 밑의 카드(그림 그대로)로만(대표 09-18 14:4x "이미지 말고 파일 위치랑 같이 뜬다"). 글이 그 줄뿐이면 말풍선은 카드만.
+  const src = String(text ?? '').split('\n').filter((l) => !/^\s*(그림|파일)을 올렸습니다:\s*in\/\S+\s*$/.test(l)).join('\n').trim();
+  const uploads = [...String(text ?? '').matchAll(/(?:그림|파일)을 올렸습니다:\s*(in\/\S+)/g)].map((m) => m[1]);
   const blocks = [];
   // 코드블록과 표(연속된 | 줄)를 떼어 접는다
   let body = src.replace(/```[^\n]*\n([\s\S]*?)```/g, (_, code) => { blocks.push(['코드', code]); return `\u0000${blocks.length - 1}\u0000`; });
@@ -164,8 +166,11 @@ function bubble(text, team = active) {
   });
   // 호명을 떼어 낸 뒤엔 앞 공백을 남긴다 — trim() 이 "톰, 코드" 의 쉼표 뒤 공백을 먹어 "톰,코드" 로 붙었다(나리 usability-0916 U6).
   n.innerHTML = mentionHtml + (mentionHtml ? html.trimEnd() : html.trim());
-  // 그림은 말풍선 안에, md·글은 눌러 펼쳐 읽게. 여섯 개까지 — 나머지는 링크로 족하다.
-  for (const f of findOutPaths(body, team).filter((f) => f.kind !== 'file').slice(0, 6)) n.appendChild(outFileNode(f));
+  if (!n.textContent.trim()) n.classList.add('bub--files');   // 글 없이 카드만
+  // 그림은 말풍선 안에, md·글은 눌러 펼쳐 읽게. 여섯 개까지 — 나머지는 링크로 족하다. 올린 파일 줄은 글에서 뺐으니 경로로 다시 찾아 붙인다.
+  const files = findOutPaths([body, ...uploads].join('\n'), team).filter((f) => f.kind !== 'file');
+  const seen = new Set();
+  for (const f of files.filter((f) => !seen.has(f.url) && seen.add(f.url)).slice(0, 6)) n.appendChild(outFileNode(f));
   return n;
 }
 
@@ -813,11 +818,33 @@ function append(events) {
   const stick = atBottom();
   const q = stream.querySelector('.quiet');
   if (q) q.remove();
+  // 대표 말이 진짜로 방에 섰으면 미리 그린 말풍선(pending)을 걷는다 — 같은 글이면 같은 말(대표 09-18 14:4x "채팅 치면 한참 뒤에 뜬다")
+  for (const e of events) if (e.actor === 'boss' && e.type === 'message') dropPending(e.text);
   const frag = document.createDocumentFragment();
   for (const e of events) drawWithDay(e, frag);
   stream.appendChild(frag);
   markMentions();
   if (stick) feed.scrollTop = feed.scrollHeight;
+}
+/* ── 미리 그리기(대표 09-18 14:4x) — 보내기를 누르면 그 자리에서 대표 말풍선을 바로 그린다(연한 상태). 진짜 사건(훅이 남긴 대표 말)이 오면 걷고, 못 보냈으면 걷고 '못 보냈어요' 줄. ── */
+const pendingEchoes = [];   // [{ text, node }]
+function pushPending(text) {
+  const row = el('div', 'row me pending'); row.dataset.actor = 'boss';
+  const av = withFace(el('div', 'av', who('boss').initial ?? '나'), 'hq', 'boss'); av.style.background = who('boss').color ?? FALLBACK.color;
+  row.appendChild(av);
+  const stack = el('div', 'stack'); stack.appendChild(bubble(text)); row.appendChild(stack);
+  const stick = atBottom();
+  stream.appendChild(row);
+  if (stick) feed.scrollTop = feed.scrollHeight;
+  pendingEchoes.push({ text, node: row });
+  lastActor = 'boss';
+  return row;
+}
+function dropPending(text) {
+  const norm = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
+  const i = pendingEchoes.findIndex((p) => text == null || norm(p.text) === norm(text));
+  if (i < 0) return;
+  pendingEchoes[i].node.remove(); pendingEchoes.splice(i, 1);
 }
 
 /**
@@ -1316,14 +1343,17 @@ function sayFailed(text, why) {
   box.hidden = false;
 }
 async function sendSay(text) {
-  // 말풍선은 여기서 그리지 않는다. 지시가 세션에 들어가면 훅이 남긴다.
+  // 진짜 말풍선은 훅이 남긴다(지시가 세션에 들어간 뒤) — 그때까지 몇 초가 비어 대표가 "한참 뒤에 뜬다" 하셨다(09-18 14:4x). 보내는 순간 연한 말풍선을 먼저 그리고, 진짜가 오면 걷는다.
+  pushPending(text);
   let r;
   try {
     r = await post('/api/say', { text, team: active });
   } catch {
+    dropPending(text);
     return sayFailed(text, '서버 연결 실패');
   }
   if (!r.ok) {
+    dropPending(text);
     if (r.data.needsRound) { input.value = text; fitInput(); say(r.data.error ?? '전송 실패'); pendingSay = text; showOpen(true, { topic: text.split('\n')[0].slice(0, 80) }); return; }
     sayFailed(text, r.data.error ?? null);
     return;

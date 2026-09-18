@@ -338,7 +338,13 @@ body {
 .outf { margin-top: 8px; font-size: 12px; }
 .outf__meta, .outf__miss { color: var(--ink-4); font-size: 11px; }
 .outf__miss { color: var(--bad); }
-.outf__img { display: block; margin-top: 6px; max-width: 100%; max-height: 360px; border: 1px solid var(--line); border-radius: 6px; background: var(--sunk); }
+.outf__img { display: block; margin-top: 6px; max-width: 100%; max-height: 360px; border: 1px solid var(--line); border-radius: 6px; background: var(--sunk); cursor: zoom-in; }
+/* 그림 카드는 그림만(대표 09-18 14:4x "이미지 말고 파일 위치랑 같이 뜬다") — 경로·크기 글자는 팝업 밑에서 본다 */
+.outf[data-kind="image"] > .outa, .outf[data-kind="image"] > .outf__meta { display: none; }
+.outf[data-kind="image"] .outf__img { margin-top: 0; }
+.bub--files { padding: 6px; }
+/* 미리 그린 대표 말풍선(보내는 중) — 연하게, 진짜가 오면 사라진다 */
+.row.pending .bub { opacity: .6; }
 .outf__fold { margin-top: 4px; font-size: 12px; }
 .outf__fold summary { cursor: pointer; color: var(--ink-3); }
 .outf__fold pre { margin: 6px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; background: var(--sunk); padding: 8px; border-radius: 6px; }
