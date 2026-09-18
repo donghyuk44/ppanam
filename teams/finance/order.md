@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- |
 | 1 (A1) | 서고와 사서 — 문서를 통째로 읽지 않고 색인으로 찾기 | 찾기 도구 `tools/library.mjs` + 색인 `teams/finance/out/library/` + 팀별 책장 다섯 장 `teams/<팀>/shelf.md` | 유진 | 끝 ✓ |
 | 2 (J13) | 대표 보고서 양식 — 조사·비교·시안·매뉴얼·실제 파일 교체 | `teams/finance/out/report/` 조사·비교·시안·매뉴얼·잣대 다섯 장, 대표 보고서 실제 파일 `teams/hq/out/daily/2026-09-15-경영틀.md` | 유진 | 끝 ✓ |
-| 3 (F1) | 아침 한 장 틀 — 세 칸(된 것·막힌 것·대표님이 하실 일)과 팀당 한 줄 본보기 | `teams/finance/out/daily-template.md`(3판) | 유진 | 끝 ✓ |
+| 3 (F1) | 아침 한 장 양식 — 세 칸(된 것·막힌 것·대표님이 하실 일)과 팀당 한 줄 본보기 | `teams/finance/out/daily-template.md`(3판) | 유진 | 끝 ✓ |
 | 4 (F2) | 아침 한 장 잣대 — 하네스 낱말 0줄 · 12살 30초 | `teams/finance/out/report/아침한장-잣대.md` | 노라 | 끝 ✓ |
 | 5 (F3) | 서버가 쓴 아침 한 장 첫 실제 파일 검수 — 자·세 칸·재료 대조 | `teams/finance/out/daily-first-check.md`(1판 — 서버가 쓴 실제 파일 `teams/hq/out/daily/2026-09-16-자동.md` 18:54 판) | 유진 | 지금 |
 | 6 (F3) | 12살 30초 읽기 시험 — 같은 실제 파일을 처음 보는 눈으로 | `daily-first-check.md` 기록 칸 "30초" 줄 | 노라 | 지금 |
