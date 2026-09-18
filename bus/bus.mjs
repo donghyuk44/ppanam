@@ -69,8 +69,12 @@ export function headSha() {
  * PASS 이고 그 meta.sha 가 같아야 한다. 요청(requestApproval)과 실행자(executor.mjs) 둘 다 본다. 못 열면 이유 문장, 열리면 null.
  */
 export function pushGateError(events, sha, { actor = 'outside' } = {}) {
-  const cards = (events ?? []).filter((e) => e.type === 'verdict' && e.actor === actor && !e.meta?.stale);
-  if (!cards.length) return '이 라운드에 외부감사 판정 카드가 없습니다 — 레오 PASS 뒤에 푸시를 요청합니다 (결정 63).';
+  // actor 는 하나('outside') 또는 여럿(바깥눈이 중단이면 팀 안 감사 자리들 — 대표 09-18 14:21 "외부감사 없애고 팀원 간 상호감사만", 세라 한 줄)
+  const actors = Array.isArray(actor) ? actor : [actor];
+  const cards = (events ?? []).filter((e) => e.type === 'verdict' && actors.includes(e.actor) && !e.meta?.stale);
+  if (!cards.length) return actors.includes('outside')
+    ? '이 라운드에 외부감사 판정 카드가 없습니다 — 레오 PASS 뒤에 푸시를 요청합니다 (결정 63).'
+    : '이 라운드에 팀 안 감사 판정 카드가 없습니다 — 만든 사람이 아닌 감사 자리의 PASS 뒤에 푸시를 요청합니다 (바깥눈 중단, 대표 09-18).';
   const last = cards[cards.length - 1];
   if (last.meta?.verdict !== 'PASS') return `외부감사의 마지막 판정이 ${last.meta?.verdict ?? '?'} 입니다 — PASS 뒤에 푸시를 요청합니다 (결정 63).`;
   if (!last.meta?.sha) return '외부감사 PASS 카드에 SHA 가 없습니다(문 전의 카드) — 다시 감사받은 뒤 요청합니다 (결정 63).';
@@ -498,7 +502,12 @@ export function requestApproval(team, { by = 'guide', grade, what, detail = '', 
   // 푸시 문 (결정 63) — 이 라운드에 그 SHA 를 본 외부감사 PASS 카드가 있어야 한다. 총괄실은 라운드가 없어 못 건다.
   if (action?.type === 'push') {
     if (isOffice(team)) throw new Error('총괄실에서는 푸시를 걸 수 없습니다 — 팀 방에서 외부감사 PASS 뒤에 겁니다 (결정 63).');
-    const bad = pushGateError(readContext(team), action.sha);
+    // 바깥눈 자리가 중단이면(대표 09-18 14:21 — 외부감사 없이 팀 안 상호감사, 비서실 최종 검수 뒤 푸시) 팀 안 감사 자리의 PASS 카드로 문을 연다.
+    const castNow = readCast(team);
+    const gateActors = castNow.agents?.outside?.suspended
+      ? [...verdictSeats(castNow.agents, readState(team))].filter((a) => a !== 'outside')
+      : 'outside';
+    const bad = pushGateError(readContext(team), action.sha, { actor: gateActors });
     if (bad) throw new Error(bad);
   }
   const rec = {
