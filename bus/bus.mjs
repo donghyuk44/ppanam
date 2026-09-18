@@ -294,7 +294,8 @@ export function addressees(text, cast, { except = null } = {}) {
       // 서버 자동 note(actor:'system')를 사람이 부른 것으로 잘못 세는 것과는 다른 얘기 — 그건 이름이 아니라 화자(actor)를 보는 자리에서 막는다.
       if (id === except || !a?.name || out.includes(id)) continue;
       // 이름을 정규식에 그대로 넣으면 "함동혁(댄)" 의 괄호가 그룹이 되어 영영 안 잡힌다.
-      if (new RegExp('^' + escapeRegExp(a.name) + '\\s*(씨|님)?\\s*[,，、:·]').test(head)) { out.push(id); break; }
+      // "나리야,"·"세라야," 도 부름이다(대표 09-18 11:2x, 톰 226) — 이름 뒤 호격 조사 야/아도 받는다.
+      if (new RegExp('^' + escapeRegExp(a.name) + '(?:야|아)?\\s*(씨|님)?\\s*[,，、:·]').test(head)) { out.push(id); break; }
     }
   }
   return out;

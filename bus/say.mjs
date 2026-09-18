@@ -18,7 +18,7 @@
 //     2026-09-12). 외부감사·대표·총괄 사칭은 이미 막혔고, 이 구멍은 B1 이 닫는다.
 //   - 환경이 없는 셸은 대표의 터미널이다. 방을 --team 으로 고르되, 위의 화자 제한은 같다.
 
-import { emit, readCast, recordVerdict, verdictSeatError, EVENT_TYPES, VERDICTS, defaultTeam, teamExists, listTeams } from './bus.mjs';
+import { emit, readCast, recordVerdict, verdictSeatError, EVENT_TYPES, VERDICTS, defaultTeam, teamExists, listTeams, isOffice } from './bus.mjs';
 
 const argv = process.argv.slice(2);
 const o = { team: null, type: 'message', actor: null, text: null, verdict: null, target: 'guide', tool: null, stdin: false };
@@ -38,7 +38,7 @@ for (let i = 0; i < argv.length; i++) {
     console.log(`사용법: say.mjs --as <화자> [옵션] "할 말"
 
   --team    ${listTeams().map((t) => t.id).join(' | ')}   (기본 ${defaultTeam()})
-  --as      guide | review | ops | system   (outside 는 outside.mjs, boss 는 화면, chief 는 총괄실 훅)
+  --as      guide | review | ops | system | secretary   (outside 는 outside.mjs, boss 는 화면, chief 는 총괄실 훅)
   --type    ${[...EVENT_TYPES].join(' | ')}
   --verdict ${[...VERDICTS].join(' | ')}   (type 을 verdict 로 만듦)
   --target  판정 대상 (기본 guide)
@@ -55,7 +55,10 @@ if (!teamExists(team)) {
   console.error(`오류: '${team}' 팀이 없습니다. 있는 팀: ${listTeams().map((t) => t.id).join(', ')}`);
   process.exit(1);
 }
-if (envTeam && team !== envTeam) {
+// 나리(hq·system)·세라(sera·secretary)가 서로 방을 커버한다(대표 09-18 11:2x, 톰 224) — 총괄실·비서실 두 office
+// 방 사이에서만, 그 자리 그대로일 때만 제 방 밖에 말한다. 그 밖엔 그대로 제 방만.
+const covering = isOffice(envTeam) && isOffice(team) && (envActor === 'system' || envActor === 'secretary');
+if (envTeam && team !== envTeam && !covering) {
   console.error(`오류: 너는 '${envTeam}' 방 사람이다. '${team}' 방에는 말할 수 없다.`);
   process.exit(1);
 }
@@ -70,7 +73,7 @@ async function readStdin() {
 const text = (o.stdin ? (await readStdin()).trimEnd() : (o.text ?? rest.join(' '))).trim();
 
 if (!o.actor) { console.error('오류: --as <화자> 가 필요합니다. 예) --as guide'); process.exit(1); }
-const SAYABLE = new Set(['guide', 'review', 'ops', 'system']);
+const SAYABLE = new Set(['guide', 'review', 'ops', 'system', 'secretary']);
 if (!SAYABLE.has(o.actor)) {
   console.error(`오류: '${o.actor}' 는 여기서 말할 수 없다. outside 는 bus/outside.mjs 가, boss 는 화면이, chief 는 총괄실 세션이 남긴다.`);
   process.exit(1);
