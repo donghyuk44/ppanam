@@ -2077,10 +2077,11 @@ function renderTowerAll(grid) {
   // ① 띠 — 큰 숫자 셋(사전 191행 셈). 누르면 그 블록으로. 채팅 머리 한 줄(③)과 같은 값 하나(dashStats).
   grid.appendChild(statBand(stat, 'big', jump));
 
-  // ② 정할 것 N — 결재(C)·물어봄·FAIL 판단만 센다(사전 208행 "결재 대기 + 답변 대기"). 상황판 '대표님이 보실 것' 줄은 안 세고 밑에만 붙는다(나리·톰 결재 카드 ③). 둘 다 없으면 "오늘은 없어요"(나리 상시 대리 188 뒤 기본 모양).
+  // ② 정할 것 N — 결재(C)·물어봄·FAIL 판단만 센다(사전 208행 "결재 대기 + 답변 대기"). 상황판 '대표님이 보실 것' 줄은 이 상자 밖, 아래 따로 한 상자
+  // '대표님이 보실 것 N'(나리 대리 09-18 15:4x — 수와 목록이 같은 상자 안에서 맞게, 하영 req_d82aaf90). 없으면 "오늘은 없어요"(나리 상시 대리 188 뒤 기본 모양).
   const sec3 = el('section', 'dash__card'); sec3.dataset.block = 'mine'; if (stat.decide) sec3.dataset.alert = '1';
   sec3.appendChild(el('div', 'dash__k', `정할 것 ${stat.decide}`));
-  if (!stat.decide && !fromBoard.length) sec3.appendChild(el('div', 'dash__empty', '오늘은 없어요'));
+  if (!stat.decide) sec3.appendChild(el('div', 'dash__empty', '오늘은 없어요'));
   for (const it of mine) {
     // 결재는 카드 그대로(승인·반려 단추 · '대표님이 정함' 칩 — 헨리 diff-0916 11절 ①, 시안 5절 폭 384). 물어봄·FAIL 판단은 줄.
     if (it.kind === 'approval') {
@@ -2095,8 +2096,15 @@ function renderTowerAll(grid) {
     row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (it.kind === 'approval') { const r = approvals.find((a) => a.id === (tg.approval ?? String(it.id).split(':')[1])); if (r) openApprovalPop(r); else document.querySelector('.approvals')?.scrollIntoView({ block: 'start' }); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
     sec3.appendChild(row);
   }
-  for (const b of fromBoard) {
-    const row = el('button', 'dash__row'); row.type = 'button';
+  grid.appendChild(sec3);
+  // 상황판 '대표님이 보실 것' 줄 — 따로 한 상자, 머리 수는 실제로 선 줄 수(자에 걸려 안 선 줄은 안 센다). 줄이 없으면 상자도 없다.
+  const boardRows = boardBossRows(fromBoard, (t) => goRoom(t));
+  if (boardRows.length) {
+    const sec3b = el('section', 'dash__card'); sec3b.dataset.block = 'board';
+    sec3b.appendChild(el('div', 'dash__k', `대표님이 보실 것 ${boardRows.length}`));
+    for (const row of boardRows) sec3b.appendChild(row);
+    grid.appendChild(sec3b);
+  }
     if (!startsWithTeam(b.text, b.teamName)) row.appendChild(el('b', null, b.teamName));   // 줄이 이미 팀 이름으로 시작하면 머리를 안 붙인다(폴드 QA #4)
     if (!putLine(row, b.text, 'dash__sub', b.team)) continue;
     row.addEventListener('click', goRoom(teams.find((t) => t.id === b.team)));
@@ -2138,6 +2146,19 @@ function renderTowerAll(grid) {
 /** 대표 몫 하나 — 정할 것의 재료(결재 C·물어봄·FAIL 판단 = blockedOf 의 waitOn boss, + 상황판 '보실 것' 줄). 대시보드 블록·띠·채팅 머리가 같은 것을 쓴다(code-review — 두 벌이면 갈린다). */
 function bossItems() {
   const now = Date.now();
+/** 상황판 '대표님이 보실 것' 줄들 → 행(대시보드·리포트가 같은 부품). 자에 안 맞아 글이 없으면 행이 없다 — 머리 수는 이 배열 길이로 센다(하영 05:58 "수와 목록 하나로"). */
+function boardBossRows(fromBoard, onClick) {
+  const rows = [];
+  for (const b of fromBoard) {
+    const row = el('button', 'dash__row'); row.type = 'button';
+    if (!startsWithTeam(b.text, b.teamName)) row.appendChild(el('b', null, b.teamName));   // 줄이 이미 팀 이름으로 시작하면 머리를 안 붙인다(폴드 QA #4)
+    if (!putLine(row, b.text, 'dash__sub', b.team)) continue;
+    const t = teams.find((x) => x.id === b.team);
+    row.addEventListener('click', onClick ? onClick(t) : () => jumpTo(b.team, null));
+    rows.push(row);
+  }
+  return rows;
+}
   const pendingAll = approvals.map((r) => ({ id: r.id, grade: r.grade, team: r.team, by: r.by, what: r.what, ts: r.requestedAt ?? r.ts }));
   const openReq = requestsAll.filter((r) => r.status !== 'closed');
   const mine = blockedOf({ teams, summaries, approvals: pendingAll, requests: openReq, infra }, { now, pauses }).filter((it) => it.waitOn === 'boss');
@@ -3003,23 +3024,24 @@ function renderReport(r) {
   const teamOf = (id) => (r.teams ?? []).find((t) => t.id === id) ?? teams.find((t) => t.id === id) ?? { id, name: id };
   const colorOf = (id) => teamOf(id).color ?? teamColor(id);
 
-  // ① 오늘 정하실 것 N — 현황 ③ 과 같은 목록(결재 C · 대표님께 물어봄 · 멈춤). 수는 대표님 몫만 — 상황판 '대표님이 보실 것' 줄은 안 세고 밑에만(결재 카드 ③, 대시보드 dashStats 와 같은 셈). 둘 다 없으면 칸이 사라진다
+  // ① 오늘 정하실 것 N — 현황 ③ 과 같은 목록(결재 C · 대표님께 물어봄 · 멈춤). 수는 대표님 몫만 — 상황판 '대표님이 보실 것' 줄은 따로 한 상자(나리 대리 09-18 15:4x, 대시보드와 같은 부품 boardBossRows). 없으면 칸이 사라진다
   const pendingAll = approvals.map((a) => ({ id: a.id, grade: a.grade, team: a.team, by: a.by, what: a.what, ts: a.requestedAt ?? a.ts }));
   const mine = blockedOf({ teams, summaries, approvals: pendingAll, requests: requestsAll.filter((q) => q.status !== 'closed'), infra }, { now, pauses }).filter((it) => it.waitOn === 'boss');
   const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
-  if (mine.length || fromBoard.length) {
+  if (mine.length) {
     const sec = el('section', 'dash__card rep__sec'); sec.dataset.block = 'mine'; sec.dataset.alert = '1';
     sec.appendChild(el('div', 'dash__k', `정할 것 ${mine.length}`));   // 어느 탭이든 '정할 것 N'(사전 1절 152행 · req_d82aaf90 ②) — 옛 '승인 필요' 는 셋째 이름이었다
     for (const it of mine) {
       const row = el('button', 'dash__row'); row.type = 'button';
       row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '결재 대기' : it.kind === 'boss' ? '답변 대기' : '검토 필요'}`));   // 건마다 글자는 대시보드 2090행과 같은 것
       putLine(row, it.text, 'dash__sub', it.team);   // 대표 몫은 행은 남기고(누를 수 있어야) 글만 — 없으면 머리 한 줄(opus ④)
-      row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '확인' : '채팅 열기'));
-      row.addEventListener('click', () => { const tg = it.target ?? {}; if (it.kind === 'approval') { const a = approvals.find((x) => x.id === (tg.approval ?? String(it.id).split(':')[1])); if (a) openApprovalPop(a); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
-      sec.appendChild(row);
-    }
-    for (const b of fromBoard) { const row = el('button', 'dash__row'); row.type = 'button'; if (!startsWithTeam(b.text, b.teamName)) row.appendChild(el('b', null, b.teamName)); if (!putLine(row, b.text, 'dash__sub', b.team)) continue; row.addEventListener('click', () => jumpTo(b.team, null)); sec.appendChild(row); }   // 머리는 팀 이름 한 번, 줄이 팀 이름으로 시작하면 머리 없음(폴드 QA #4) · 낼 글 없으면 행 없음(opus ④)
-    body.appendChild(sec);
+  // 상황판 '대표님이 보실 것' — 정할 것 상자 밖 따로, 머리 수 = 선 줄 수(대시보드와 같은 부품)
+  const boardRows = boardBossRows(fromBoard);
+  if (boardRows.length) {
+    const secB = el('section', 'dash__card rep__sec'); secB.dataset.block = 'board';
+    secB.appendChild(el('div', 'dash__k', `대표님이 보실 것 ${boardRows.length}`));
+    for (const row of boardRows) secB.appendChild(row);
+    body.appendChild(secB);
   }
 
   // ② 톰·제리가 대표님 대신 정했어요 — 창 안의 대리 결정(note meta.proxy). 되돌리시려면 방에 한마디(결정 85 ③)
