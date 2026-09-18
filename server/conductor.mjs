@@ -946,6 +946,9 @@ export function noticeEvents(team, events) {
     // 로밍 자리(system·secretary)는 이 방 참여자 목록(participants)에 안 뜨는 방이 많다(세션이 집 하나뿐이라
     // model 이 거기서만 claude) — 그래도 이름을 부르면 불려야 하니 따로 끼운다(N1 재정의).
     const called = addressees(e.text, cast).filter((to) => to !== e.actor && (ROAM_HOME[to] || participants(team).includes(to)));
+    // 비서실에서 대표님이 말하면 세라만이 아니라 나리도 차례를 받는다 — 나리는 대표가 초대한 자리라 이름을 안 불러도
+    // 듣고 있어야 한다(톰 대리 09-18 ②, 대표 09-18 11:19 "비서실 3명 중에…"). 이미 불렸으면 다시 안 넣는다.
+    if (team === 'sera' && e.actor === 'boss' && cast.system && !called.includes('system')) called.push('system');
     for (const [k, to] of called.entries()) {
       // 대표가 부른 사람이 이 방의 claude 자리면 /api/say 가 이미 그에게 넣었다(첫 사람) — 다시 주지 않는다.
       // codex 자리나 로밍 자리(나리·세라, 집이 아닌 방)는 /api/say 가 세션에 못 넣고 말풍선만 남겼다 —

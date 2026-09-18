@@ -284,23 +284,35 @@ export function addressee(text, cast, { except = null } = {}) {
  * "대표님, … / 안젤, … / 다니엘, …" 에서 첫 24자만 보면 안젤·다니엘은 안 깨어 대표가 "죽어 있는 것 같다" 고 봤다
  * (하영 진단, 2026-09-13 — 대표 결정 22). 같은 사람은 한 번만.
  */
+// 이름 하나가 head 맨 앞을 부르는 만큼(글자 수) — 못 부르면 0. 야/아 가 붙었을 땐 구두점 없이 빈칸·!·?·줄
+// 끝·구두점 아무거나로 끝나도 되고, 안 붙었을 땐 여전히 구두점(,，、:·—)이 있어야 한다(오인식 방지, "나리이야기" 같은 말).
+function addressedLen(name, head) {
+  const nm = escapeRegExp(name);
+  const m1 = new RegExp('^' + nm + '(?:야|아)\\s*(?:씨|님)?(?:\\s|[!?,，、:·—]|$)').exec(head);
+  if (m1) return m1[0].length;
+  const m2 = new RegExp('^' + nm + '\\s*(?:씨|님)?\\s*[,，、:·—]').exec(head);
+  return m2 ? m2[0].length : 0;
+}
+
 export function addressees(text, cast, { except = null } = {}) {
   const out = [];
   const paras = String(text ?? '').split(/\n\s*\n/);
+  const entries = Object.entries(cast ?? {}).filter(([id, a]) => id !== except && a?.name);
   for (const p of paras) {
-    const head = p.trim().slice(0, 24);
-    for (const [id, a] of Object.entries(cast ?? {})) {
-      // 'system' 자리(나리)도 이름으로 불리면 잡힌다(N1, 대표 승인 — 서버 세션으로 차례를 받으려면 먼저 호명이 돼야 한다).
-      // 서버 자동 note(actor:'system')를 사람이 부른 것으로 잘못 세는 것과는 다른 얘기 — 그건 이름이 아니라 화자(actor)를 보는 자리에서 막는다.
-      if (id === except || !a?.name || out.includes(id)) continue;
-      // 이름을 정규식에 그대로 넣으면 "함동혁(댄)" 의 괄호가 그룹이 되어 영영 안 잡힌다.
-      // "나리야,"·"세라야," 도 부름이다(대표 09-18 11:2x, 톰 226) — 이름 뒤 호격 조사 야/아도 받는다.
-      // "나리야 대답해봐" 처럼 야/아 뒤에 쉼표 없이 바로 말이 이어질 때도 부름이다(대표 09-18, 톰 대리 결정)
-      // — 야/아 가 붙었을 땐 구두점을 안 따지고, 안 붙었을 땐 여전히 구두점(,，、:·)이 있어야 한다(오인식 방지).
-      const nm = escapeRegExp(a.name);
-      const called = new RegExp('^' + nm + '(?:야|아)\\s*(씨|님)?(?:\\s|[!?,，、:·]|$)').test(head)
-        || new RegExp('^' + nm + '\\s*(씨|님)?\\s*[,，、:·]').test(head);
-      if (called) { out.push(id); break; }
+    // "대표님, … / 안젤, … / 다니엘, …" 는 문단(빈 줄)마다 한 사람 — 그리고 "세라, 나리 — …" 처럼 한 문단
+    // 첫머리에 쉼표로 이어진 이름도 다 깨운다(톰 대리 09-18 ①, "세라, 나리 —" 에서 나리만 놓친 사고).
+    let head = p.trim().slice(0, 40);
+    for (;;) {
+      let hit = null;
+      for (const [id, a] of entries) {
+        if (out.includes(id)) continue;
+        const len = addressedLen(a.name, head);
+        if (len) { hit = { id, len }; break; }
+      }
+      if (!hit) break;
+      out.push(hit.id);
+      head = head.slice(hit.len).replace(/^\s*/, '');
+      if (!head) break;
     }
   }
   return out;

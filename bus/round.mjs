@@ -1774,7 +1774,9 @@ switch (cmd) {
       {
         const { applyAction: applyAction2 } = await import('../server/notifier.mjs');
         const { REQUESTS_DIR } = await import('../bus/requests.mjs');
-        const apr = { id: 'apr_reqdup', team: T, by: 'guide', what: '중복 시험 부탁', grade: 'B', action: { type: 'request', to: { team: 'design', actor: 'guide' }, why: '', due: null, mode: 'once' } };
+        // to.team 은 실제 팀(design)이면 안 된다 — openRequest 가 두 방(from·to) 모두에 note 를 emit 해서, 매번
+        // 진짜 design 방 대화록에 "중복 시험 부탁" 이 쌓였다(톰 지적 09-18, 오늘 29번·43줄). 가짜 방(_check2)으로.
+        const apr = { id: 'apr_reqdup', team: T, by: 'guide', what: '중복 시험 부탁', grade: 'B', action: { type: 'request', to: { team: '_check2', actor: 'guide' }, why: '', due: null, mode: 'once' } };
         const first = applyAction2(apr, {});
         const firstId = first.match(/요청 블록 (req_[0-9a-f]{8}) 이 열렸습니다/)?.[1];
         const second = applyAction2(apr, {});
