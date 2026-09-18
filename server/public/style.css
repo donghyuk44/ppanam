@@ -679,6 +679,44 @@ body {
 .gates__k { font-size: 10.5px; letter-spacing: .12em; color: var(--ink-4); margin: 6px 0 6px; }
 .gates__card { background: var(--panel); border: 1px solid var(--me-line); border-radius: 8px; padding: 6px 10px; font-size: 13px; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }   /* 상황판 '대표 차례' 줄이 문단이라 세 줄에서 접는다(412 실측) — 전문은 그 방 상황판 */
 .gates__card b { font-weight: 600; margin-right: 4px; }
+/* ── 타임라인 탭 3판-b(헨리 ui-spec 13절, 테라 09-18) — 팀마다 카드 둘: 나무 카드(머리 + 단계·작업 줄) + 얇은 주 칸 카드(기둥 넷). 색·간격은 대시보드 카드 토큰 그대로 — 클레멘타인 셈은 뒤에 ── */
+.tl__card, .tl__weeks { margin-bottom: 8px; }
+.tl__weeks { padding: 8px 10px; }
+.tl__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-bottom: 6px; }
+.tl__head .card__tile { width: 28px; height: 28px; font-size: 13px; border-radius: 7px; }
+.tl__name { font-size: 15px; font-weight: 700; }
+.tl__chips { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+.tl__chip { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-4); white-space: nowrap; }
+.tl__chip[data-k="good"] { border-color: var(--good-line); background: var(--good-bg); color: var(--good); }
+.tl__chip[data-k="bad"]  { border-color: var(--bad-line); background: var(--bad-bg); color: var(--bad); }
+.tl__fold { border-top: 1px solid var(--line-2); padding: 6px 0; }
+.tl__fold summary { font-size: 13px; color: var(--ink-4); cursor: pointer; list-style: none; }
+.tl__fold summary::before { content: '▸ '; } .tl__fold[open] summary::before { content: '▾ '; }
+.tl__stage { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line-2); padding: 7px 0 5px; min-width: 0; }
+.tl__stage--pass { border-top: 0; padding: 3px 0 3px 14px; font-size: 12.5px; color: var(--ink-4); }
+.tl__stage--now .tl__title { font-size: 14px; font-weight: 700; }
+.tl__stage--wait .tl__title, .tl__stage--none .tl__title { font-size: 13px; color: var(--ink-4); }
+.tl__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.tl__task { display: flex; align-items: center; gap: 6px; padding: 4px 0 4px 24px; min-width: 0; font-size: 13px; }
+.tl__box { flex: none; font-size: 14px; color: var(--ink-3); }
+.tl__face { flex: none; position: relative; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 10px; font-weight: 700; overflow: hidden; }
+.tl__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.tl__face--none { width: auto; border-radius: 999px; padding: 0 7px; font-size: 10.5px; background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad-line); }
+.tl__what { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl__what--done { color: var(--ink-4); font-weight: 400; }
+.tl__what[data-notyet="1"] { color: var(--ink-4); font-style: italic; }
+.tl__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-4); }
+.tl__dot[data-k="done"] { background: var(--good); } .tl__dot[data-k="live"] { background: var(--ink); } .tl__dot[data-k="wait"] { background: var(--seal); } .tl__dot[data-k="bad"] { background: var(--bad); } .tl__dot[data-k="off"] { opacity: .4; }
+.tl__grid { display: grid; grid-template-columns: 52px repeat(4, minmax(0, 1fr)); gap: 3px 4px; align-items: stretch; }
+.tl__gh { font-size: 10px; font-weight: 700; color: var(--ink-4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; }
+.tl__gl { font-size: 11px; color: var(--ink-4); white-space: nowrap; align-self: center; }
+.tl__cell { min-height: 22px; border-radius: 5px; background: var(--panel-2); display: flex; align-items: center; min-width: 0; }
+.tl__bar { flex: 1; min-width: 0; font-style: normal; font-size: 10px; line-height: 1.15; padding: 3px 4px; border-radius: 5px; overflow: hidden; white-space: normal; word-break: keep-all; }   /* 폰은 칸 글자가 줄을 바꿔 선다(13절 "칸 글자 세로로") */
+.tl__bar--pass { background: var(--good-bg); color: var(--good); border: 1px solid var(--good-line); }
+.tl__bar--now { background: var(--ink); color: var(--panel); }
+.tl__bar--next, .tl__bar--after { background: transparent; border: 1px dashed var(--ink-4); color: var(--ink-3); }
+.tl__bar--bad { background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad-line); }
+@media (min-width: 1180px) { .tl__grid { grid-template-columns: 120px repeat(4, minmax(0, 1fr)); } .tl__bar { font-size: 11px; white-space: normal; } }
 .dash__body table { border-collapse: collapse; width: 100%; margin-bottom: 18px; font-size: 13px; }
 .dash__body th, .dash__body td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top; }
 .dash__body th { background: var(--panel); font-weight: 600; }

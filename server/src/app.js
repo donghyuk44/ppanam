@@ -2551,8 +2551,6 @@ function renderTowerTeams(grid) {
 
 /* ══ 대시보드 (결정 128) ══ */
 
-let dashMark = '';
-
 /** teams/hq/out/plan-table.md 를 그대로 — 톰이 파일로 관리한다. 읽기만, 여기서 안 고친다.
  * 표 문법만 안다(머리·구분줄·데이터줄) — 이 파일이 쓰는 것 이상은 필요 없다. */
 function mdToDom(text) {
@@ -2581,91 +2579,138 @@ function mdToDom(text) {
   return box;
 }
 
-/* ── 앞날 띠 (헨리 시안 1판 dashboard.svg · 결정 128) — 줄 = 팀, 칸 = 단계, 왼쪽부터 지금 단계 → 다음.
- * 결정 188(대표 09-16 17:0x "모든 시간 관련된거 다 폐기해"): 시간 눈금(오늘·내일·모레·이번 주)·"{날}까지"·"예정 대비 N분 지연"·"회차 평균 90분 × N회차 → 내일" 은
- * 우리가 timebox 로 지어낸 앞날이라 뺐다. 남는 건 사실뿐 — 단계 번호·제목·상태(진행·막힘·대표 결정 후)·담당 점. 칸은 순서대로 같은 폭.
- * 서버(bus.timelineOf) 의 plannedFrom/To·late 는 화면이 안 읽는다 — 걷는 건 솔라 몫. 누르면 왜(펼친 줄).
- */
+/** 우리 시각 그날 0시 — 계약의 dayStartSeoul 과 같은 식. 리포트의 '오늘·어제' 날 이름(사실)에만 쓴다. */
 const DAY = 86_400_000;
-const seoulDayStart = (ms) => Math.floor((ms + 9 * 3600_000) / DAY) * DAY - 9 * 3600_000;   // 계약의 dayStartSeoul 과 같은 식 — 리포트의 '오늘·어제' 날 이름(사실)에만 쓴다
-function loadDashboardBand(r) {
-  const band = $('dashBand'), gates = $('dashGates');
-  band.replaceChildren(); gates.replaceChildren();
-  // 첫 층 — 대표님이 시킨 일 다섯, 한 줄씩(사용성-0916 표 8, 하영 ahead-five.md 2판). 팀 띠는 그 밑 둘째 층. 줄이 하나도 없으면 층을 안 그린다.
-  loadAheadFive(() => loadDashboard());
-  document.getElementById('dashAhead')?.remove();
-  if (ahead.lines.length) {
-    const first = el('section', 'dash__card'); first.id = 'dashAhead'; first.dataset.block = 'ahead';
-    first.appendChild(el('div', 'dash__k', '대표님이 시킨 일'));
-    for (const a of ahead.lines) first.appendChild(el('div', 'card__text', a.text));
-    band.parentElement.insertBefore(first, band);
-  }
-  const wide = window.innerWidth >= 1180;
-  const BOX_W = wide ? 14 : 18;   // 칸 폭(%) — 시간이 아니라 순서. 넘치면 오른쪽 끝에 붙는다(아래).
-  // 글자는 하영 화면 글 틀 1판(teams/marketing/out/screen-text-frames.md 1-2 · 1-4 · 6절)에서 날·시·분·늦음 줄만 뺀 것(결정 188).
-  const stageNo = (s) => (s.n != null ? `${s.n}단계` : s.title);
-  const shortTitle = (s) => String(s.title ?? '').split(/\s*(?:—|∥|\()\s*/)[0].trim();   // 폰 폭 — 첫 구분 기호 앞까지(1-1)
-  const openWhy = (row, text) => { const why = row.querySelector('.band__why'); if (why) { why.remove(); return; } const w = el('div', 'band__why'); w.textContent = text; row.appendChild(w); };
-  const whyOf = (t, s) => {
-    if (s.status === 'gated') return `로드맵 조건 — "${s.gate}"`;
-    if (s.status === 'blocked') return s.blockedWhy ?? '';
-    return `${stageNo(s)} ${s.title}`;   // 날짜를 지어내지 않는다(결정 188)
-  };
-  for (const t of r.teams ?? []) {
-    const row = el('div', 'band__row'); row.dataset.team = t.id;
-    const label = el('div', 'band__team');
-    label.appendChild(el('b', null, t.room ?? t.name));
-    const nowStage = t.stages.find((s) => s.status === 'running' || s.status === 'blocked');
-    label.appendChild(el('span', null, nowStage ? `${nowStage.n}단계 ${shortTitle(nowStage)}` : '단계 없음'));   // 사전 1절 125행 — 단계(마일스톤은 0-3 후보로만, 폴드 QA #14)
-    row.appendChild(label);
-    const lane = el('div', 'band__lane'); lane.style.setProperty('--team', t.color ?? 'var(--ink-4)');
-    lane.style.setProperty('--seg', '100%');   // 칸 선 없음 — 눈금이 없다(결정 188)
-    if (!t.stages.length) {   // 빈칸 말 둘(1-2) — 계획표 파일이 없다 / 있는데 남은 단계가 없다. 대표 문이 아니다 — 총괄실 계획표는 톰이, 경영 다음 단계는 노라가 적는다(T7)
-      const g = el('button', 'band__box band__box--gated', t.hasRoadmap === false ? '로드맵 없음' : '다음 단계 없음'); g.type = 'button'; g.style.left = '0'; g.style.width = '48%';
-      g.addEventListener('click', () => openWhy(row, '로드맵 등록 시 표시'));
-      lane.appendChild(g);
-    }
-    let cursorPct = 0;
-    const boxW = Math.max(BOX_W, Math.min(wide ? 24 : 32, Math.floor(96 / Math.max(1, t.stages.length)) - 1));   // 단계가 적으면 넓게 — 글자가 잘리지 않게
-    for (const s of t.stages) {
-      let left = cursorPct, width = boxW;   // 순서대로 같은 폭 — 시각으로 자리를 정하지 않는다(결정 188)
-      if (left + width > 100) width = 100 - left;
-      if (width < 6) { left = Math.max(0, 100 - 6); width = 6; }
-      cursorPct = left + width + 1;
-      const b = el('button', `band__box band__box--${s.status}`); b.type = 'button';
-      // 점선 칸 "N단계 — 대표님이 정한 뒤"(대표 문) · "N단계 — {무엇} 뒤"(다른 팀·다른 일 뒤, T4). 빨간 칸 "N단계 — 막힘 (이유)". 채움 "N단계". 날·지연은 없다(결정 188)
-      const text = s.status === 'gated' ? `${stageNo(s)} — ${s.gateWhat ?? '대표 결정 후'}` : s.status === 'blocked' ? `${stageNo(s)} — 막힘${s.blockedWhy ? ' (' + s.blockedWhy + ')' : ''}` : stageNo(s);
-      b.textContent = text; b.title = `${s.n != null ? s.n + '단계 ' : ''}${s.title}`;
-      b.style.left = `${left}%`; b.style.width = `${width}%`;
-      b.addEventListener('click', () => openWhy(row, `${whyOf(t, s)} — 로드맵은 현황 팀 카드에`));
-      lane.appendChild(b);
-    }
-    row.appendChild(lane);
-    // 담당 점 둘(1-3, 결정 128 "누가") — 그 팀의 둘, 머리글자 · 직책 색. 서버 owners(cast 에서 다른 회사 뺀 둘, 팀장 먼저)
-    const who = el('div', 'band__who');
-    for (const o of t.owners ?? []) { const d = el('i', null, o.initial); d.style.background = o.color ?? 'var(--ink-4)'; d.title = o.name; who.appendChild(d); }
-    row.appendChild(who);
-    band.appendChild(row);
-  }
-  // gated 단계만 — 결재·상황판 대표 차례는 관제탑 '내 차례' 에 있다(같은 것을 두 군데 두지 않는다, 톰 req_2749e30e). 없으면 칸이 사라진다.
-  // 머리 글자는 하영 사전 4절 "대표님이 여실 단계"(09-15 23:57 — 전엔 사전 밖 말 '대표 답이 있어야 열리는 단계' 였다, R26 어긋남 다섯 중 마지막).
-  const bg = (r.bossGates ?? []).filter((g) => g.kind === 'stage');
-  if (bg.length) {
-    gates.appendChild(el('div', 'gates__k', `대표 결정 대기 ${bg.length}`));
-    // 꼬리가 두 번("— 대표가 고른 뒤 — 대표가 고른 뒤", 폴드 QA #16 — 로드맵 제목에 이미 든 조건을 서버가 한 번 더 붙임) → 하나로
-    for (const g of bg) { const c = el('div', 'gates__card'); c.appendChild(el('b', null, teams.find((t) => t.id === g.team)?.name ?? g.team)); c.append(' ' + String(g.what ?? '').replace(/( — [^—]+?)\s*\1$/, '$1')); gates.appendChild(c); }
-  }
-}
+const seoulDayStart = (ms) => Math.floor((ms + 9 * 3600_000) / DAY) * DAY - 9 * 3600_000;
 
-async function loadDashboard() {
-  const r = await fetch('/api/dashboard').then((r) => r.json()).catch(() => null);
-  const body = $('dashBody');
-  const mark = r ? `${r.at ?? ''}|${(r.teams ?? []).map((t) => t.stages.map((s) => `${s.n}${s.status}${s.plannedTo}${s.late > 0}`).join(',')).join(';')}|${(r.bossGates ?? []).length}|${window.innerWidth >= 1180}` : '';
-  if (dashMark === mark) return;   // 안 바뀌었으면 다시 안 그린다(펼친 줄이 닫히지 않게 — 다른 탭과 같은 습관)
-  dashMark = mark;
-  if (r?.teams) loadDashboardBand(r);
-  // 아래층 '예정 작업 표 (톰)' — 톰 문서(plan-table.md) 원문을 통째로 붙이던 것은 뺐다(폴드 QA #17 못 씀: 대표 화면에 작업 문서 원문·옛 말 "관제탑·방·마을"). 위 띠가 그 표다. 줄기 × 작은 일 표(작업보드)는 34회차.
-  body.replaceChildren();
+/* ── 타임라인 탭 (타임라인 계획-0916 2절 · 헨리 ui-spec 13절 3판-b · 결정 187·188) — 팀 → 단계(프로젝트) → 작업 나무 + 주 칸.
+ * 재료는 /api/timeline 하나(솔라 cc23d69: bus.weeksOf·timelineTeamOf — rounds.jsonl 실측 주 묶기 + work.json 작업). 옛 순서 칸 띠(loadDashboardBand, /api/dashboard)는 버렸다(계획 4절 7).
+ * 폰 412: 팀마다 카드 둘 — 나무 카드(머리 + 줄) + 얇은 주 칸 카드(기둥 넷: 지난 주 · 이번 주 · 다음 · 그 뒤). 날짜 글자는 지난 주·이번 주 머리 둘뿐, 앞일 칸엔 없다(188).
+ * 첫 층 '대표님이 시킨 일'(34회차, 하영 ahead-five.md)은 그대로 위에. 낱말은 계획 2절 표준 낱말·ui-spec 13절 안 — 하영 낱말 아홉이 오면 그 글자로.
+ */
+let tlMark = '';
+const TASK_DOT = { '통과': 'done', '진행': 'live', '감사 대기': 'wait', '대기': 'idle', '막힘': 'bad', '안 함': 'off' };   // 상태 점(ui-spec 13절): 완료 초록 · 진행 중 먹 · 감사 대기 놋쇠 · 대기 회색 · 막힘 빨강
+const weekMD = (key) => { const [, m, d] = String(key).split('-'); return `${Number(m)}/${Number(d)}`; };   // '2026-09-07' → '9/7' — 지난 주·이번 주 머리에만
+const shortTitle = (s) => String(s ?? '').split(/\s*(?:—|∥|\()\s*/)[0].trim() || String(s ?? '');   // 단계 제목은 첫 구분 기호 앞까지 — 뒤 꼬리(결정 번호·괄호)는 자에 걸리는 하네스 말(140). 전문은 title 에
+function loadDashboard() {
+  loadAheadFive(() => loadDashboard());
+  return fetch('/api/timeline').then((r) => (r.ok ? r.json() : null)).catch(() => null).then((r) => {
+    const body = $('dashBody');
+    for (const id of ['dashBand', 'dashGates']) { const n = $(id); n.replaceChildren(); n.hidden = true; }   // 옛 띠·문 상자는 비우고 숨긴다(빈 상자가 회색 줄로 남는다, 1280 실측)
+    if (!r) { body.replaceChildren(el('p', 'tcard__quiet', '타임라인 로딩 실패 — 서버 재시작 필요')); return; }
+    const mark = JSON.stringify([r.weeks, ahead.lines, (r.teams ?? []).map((t) => [t.id, t.signals, (t.projects ?? []).map((p) => [p.n, p.status, p.weeks, (p.tasks ?? []).map((k) => [k.id, k.status, k.seat, k.ready, k.doneAt, k.what])])])]);
+    if (tlMark === mark) return;   // 안 바뀌었으면 다시 안 그린다(펼친 줄이 닫히지 않게)
+    tlMark = mark;
+    body.replaceChildren();
+    if (ahead.lines.length) {
+      const first = el('section', 'dash__card'); first.id = 'dashAhead'; first.dataset.block = 'ahead';
+      first.appendChild(el('div', 'dash__k', '대표님이 시킨 일'));
+      for (const a of ahead.lines) first.appendChild(el('div', 'card__text', a.text));
+      body.appendChild(first);
+    }
+    // 기둥 넷 — 지난 주(마지막 지난 주 키) · 이번 주 · 다음 · 그 뒤. 이번 주에 회차가 없으면 이번 주 칸은 날짜 없이 '이번 주'.
+    const weeks = r.weeks ?? [];
+    const thisW = weeks.find((w) => w.label === '이번 주') ?? null;
+    const past = weeks.filter((w) => w.label !== '이번 주');
+    const prevW = past.length ? past[past.length - 1] : null;
+    const cols = [
+      { key: prevW?.key ?? null, head: prevW ? `지난 주 ${weekMD(prevW.key)}` : '지난 주' },
+      { key: thisW?.key ?? null, head: thisW ? `이번 주 ${weekMD(thisW.key)}` : '이번 주' },
+      { key: 'next', head: '다음' },
+      { key: 'after', head: '그 뒤' },
+    ];
+    for (const t of r.teams ?? []) body.append(...timelineTeam(t, cols));
+  });
+}
+/** 팀 하나 — 카드 둘(나무 · 주 칸). 얼굴은 portraits/chip128(withFace), 담당이 비면 빨간 칩 "담당 없음". */
+function timelineTeam(t, cols) {
+  const cast = summaries[t.id]?.cast ?? {};
+  const color = teamColor(t.id);
+  const projects = t.projects ?? [];
+  const passed = projects.filter((p) => p.status === 'pass');
+  const open = projects.filter((p) => p.status !== 'pass');
+  // ── 나무 카드 ──
+  const card = el('section', 'dash__card tl__card'); card.dataset.team = t.id;
+  const head = el('div', 'tl__head');
+  const tile = el('span', 'card__tile', String(t.name ?? '?').slice(0, 1)); tile.style.background = color;
+  head.appendChild(tile);
+  head.appendChild(el('b', 'tl__name', t.name));
+  const sig = t.signals ?? {};
+  const chips = el('div', 'tl__chips');
+  for (const [label, n, k] of [['끝난 것', sig.done ?? 0, 'good'], ['막힌 것', sig.blocked ?? 0, 'bad'], ['담당 없음', sig.unassigned ?? 0, 'bad']]) {
+    const c = el('span', 'tl__chip', `${label} ${n}`); c.dataset.k = n > 0 ? k : 'zero'; chips.appendChild(c);
+  }
+  head.appendChild(chips);
+  card.appendChild(head);
+  if (passed.length) {
+    // 끝난 단계는 ✓ 로 접힌다(보관소, 계획 2절) — 펼치면 제목만
+    const fold = el('details', 'tl__fold');
+    fold.appendChild(el('summary', null, `✓ 끝난 단계 ${passed.length} · ${passed[0].n}~${passed[passed.length - 1].n}단계`));
+    for (const p of passed) { const d = el('div', 'tl__stage tl__stage--pass', `${p.n}단계 ${shortTitle(p.title)}`); d.title = p.title; fold.appendChild(d); }
+    card.appendChild(fold);
+  }
+  for (const p of open) {
+    const row = el('div', `tl__stage tl__stage--${p.status ?? 'none'}`);
+    const title = el('span', 'tl__title', p.n != null ? `${p.n}단계 ${shortTitle(p.title)}` : p.title); title.title = p.title;
+    row.appendChild(title);
+    if (p.status === 'now') row.appendChild(pill('진행 중', 'live'));
+    card.appendChild(row);
+    // 작업 줄 — 진행 중 단계와 '단계 없음' 묶음만 펼친다. 대기 단계는 제목만(계획 2절). 끝난 작업(☑)은 줄에 남지 않고 접힌다(계획 2절 "체크되서 넘어가는 것처럼" — 수는 주 칸에).
+    if (p.status === 'now' || p.n == null) {
+      const tasks = p.tasks ?? [];
+      for (const k of tasks.filter((x) => x.status !== '통과')) card.appendChild(taskRow(t, k, cast));
+      const done = tasks.filter((x) => x.status === '통과');
+      if (done.length) {
+        const fold = el('details', 'tl__fold tl__fold--tasks');
+        fold.appendChild(el('summary', null, `☑ 끝난 작업 ${done.length}`));
+        for (const k of done) fold.appendChild(taskRow(t, k, cast));
+        card.appendChild(fold);
+      }
+    }
+  }
+  // ── 주 칸 카드 ── 줄 = 단계(지난 주·이번 주에 돈 것, 진행 중, 대기), 칸 넷. 지난 것은 실측 막대(회차 수 · ✓), 앞은 날짜 없는 칩.
+  const wk = el('section', 'dash__card tl__weeks'); wk.dataset.team = t.id;
+  const grid = el('div', 'tl__grid');
+  grid.appendChild(el('span', 'tl__gh tl__gh--first', ''));
+  for (const c of cols) grid.appendChild(el('span', 'tl__gh', c.head));
+  const [prev, cur] = cols;
+  const thisKey = cur.key;
+  const rows = projects.filter((p) => p.status !== 'pass' || (prev.key && p.weeks?.[prev.key]) || (thisKey && p.weeks?.[thisKey]));
+  for (const p of rows) {
+    grid.appendChild(el('span', 'tl__gl', p.n != null ? `${p.n}단계` : '단계 없음'));
+    const tasks = p.tasks ?? [];
+    const doneThisWeek = thisKey ? tasks.filter((k) => k.doneAt && k.doneAt.slice(0, 10) >= thisKey).length : 0;
+    const ready = tasks.filter((k) => k.ready).length;
+    const held = tasks.filter((k) => k.status === '대기' && !k.ready).length;
+    const blocked = tasks.filter((k) => k.status === '막힘').length;
+    const cell = (kind, text) => { const s = el('span', 'tl__cell'); if (text) { const b = el('i', `tl__bar tl__bar--${kind}`, text); s.appendChild(b); } grid.appendChild(s); };
+    // 막대 글자 — 지난 주는 "N회차 (✓)", 이번 주는 진행 중 단계면 "N회차 · 끝난 것 N"(이번 주 doneAt 수 — 지난 주 칸엔 안 붙인다, code-review)
+    const bar = (w, { thisWeek = false } = {}) => (w ? `${w.rounds}회차${w.pass ? ' ✓' : thisWeek && p.status === 'now' && doneThisWeek ? ` · 끝난 것 ${doneThisWeek}` : ''}` : '');
+    cell(p.status === 'pass' ? 'pass' : 'now', bar(prev.key ? p.weeks?.[prev.key] : null));
+    cell(p.status === 'pass' ? 'pass' : 'now', bar(thisKey ? p.weeks?.[thisKey] : null, { thisWeek: true }));
+    // 다음: 시작할 수 있는 작업(뒤에 걸린 게 없거나 풀림, isReady) · 대기 단계는 앞 단계 뒤. 그 뒤: 뒤에 걸린 작업 · 막힌 것. 날짜·시각 글자 없음(188).
+    cell('next', ready ? `시작할 수 있어요 ${ready}` : p.status === 'wait' ? `${(p.n ?? 1) - 1}단계 뒤` : '');
+    cell(blocked ? 'bad' : 'after', blocked ? `막힌 것 ${blocked}` : held ? `뒤에 걸림 ${held}` : '');
+  }
+  wk.appendChild(grid);
+  return [card, wk];
+}
+/** 작업 한 줄 — ☐/☑ · 담당 얼굴 칩 20(없으면 빨간 "담당 없음") · 이름 · 상태 점. "뒤에: ○○" 는 API 에 이름이 아직 없어 안 쓴다(솔라 after 이름 실으면). */
+function taskRow(t, k, cast) {
+  const row = el('div', 'tl__task'); row.dataset.status = k.status;
+  const done = k.status === '통과';
+  row.appendChild(el('span', 'tl__box', done ? '☑' : '☐'));
+  if (k.seat) {
+    const a = cast[k.seat] ?? summaries.hq?.cast?.[k.seat] ?? null;
+    const chip = el('span', 'tl__face', a?.initial ?? String(k.seat).slice(0, 1)); chip.style.background = a?.color ?? 'var(--ink-4)'; chip.title = a?.name ?? k.seat;
+    row.appendChild(withFace(chip, t.id, k.seat));
+  } else row.appendChild(el('span', 'tl__face tl__face--none', '담당 없음'));
+  const what = String(k.what ?? '').trim();
+  const text = el('span', `tl__what${done ? ' tl__what--done' : ''}`, what && what !== NOT_YET ? what : '아직 쉬운 말로 안 적음');   // 자에 안 맞는 줄은 서버가 NOT_YET 으로 준다 — 그 글자는 안 찍는다(결정 140)
+  if (!what || what === NOT_YET) text.dataset.notyet = '1';
+  row.appendChild(text);
+  const dot = el('i', 'tl__dot'); dot.dataset.k = TASK_DOT[k.status] ?? 'idle'; dot.title = k.status; row.appendChild(dot);
+  return row;
 }
 
 /* ══ 보고서 — "어제 하루가 어땠나" (나리 정본 · 헨리 report 1판 · 결정 80·81, 새 7단계) ══
