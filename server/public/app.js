@@ -184,10 +184,12 @@ function outFileNode(f) {
   if (f.missing) { box.appendChild(el('span', 'outf__miss', ' — 파일 없음')); return box; }
   if (f.size != null) box.appendChild(el('span', 'outf__meta', ` ${fmtSize(f.size)}`));
   if (f.kind === 'image') {
+    // 그림은 누르면 팝업으로 크게(대표 09-18 14:3x "누르면 팝업으로 뜨고 끌 수 있게") — 새 창이 아니라 이 화면 안, × · 바깥 누름 · Esc 로 닫힘. 새 창은 팝업 안 '새 창' 단추.
     const link = el('a'); link.href = f.url; link.target = '_blank'; link.rel = 'noopener';
     const img = el('img', 'outf__img'); img.src = f.url; img.alt = f.rel; img.loading = 'lazy';
     img.addEventListener('error', () => { link.replaceWith(el('span', 'outf__miss', ' — 이미지 없음')); });
     link.appendChild(img);
+    link.addEventListener('click', (e) => { e.preventDefault(); openImagePop(f); });
     box.appendChild(link);
   } else if (f.kind === 'md' || f.kind === 'text') {
     const d = el('details', 'outf__fold');
@@ -848,6 +850,7 @@ async function selectTeam(id) {
   const prev = active;
   active = id;
   unread[id] = 0;
+  applyFold();   // 위쪽 접힘은 방마다 기억
   // 서버가 막 뜨는 중이면 오류 JSON 이나 실패가 온다 — 그때 cast·events 를 undefined 로 덮으면 화면이 통째로 빈다(대표 13:11 총괄실 빈 화면의 한 길). 있던 것을 두고 false 로 돌아간다.
   // 그때 active 도 되돌린다 — 안 그러면 입력창은 새 방에 보내고 화면은 옛 방인 채로 갈린다(code-review 지적). 배너는 소켓이 끊겼을 때만, 아니면 짧게 한 줄.
   const r = await fetch(`/api/team?team=${encodeURIComponent(id)}`).then((x) => (x.ok ? x.json() : null)).catch(() => null);
@@ -1345,6 +1348,18 @@ $('composer').addEventListener('submit', async (e) => {
 
 const openSide = (on) => { app.dataset.side = on ? '1' : '0'; $('scrim').hidden = !on; };
 $('sideToggle').addEventListener('click', () => openSide(app.dataset.side !== '1'));
+
+/* ── 위쪽 접기(대표 09-18 14:3x "채팅창 위에 상단 저거 접기·닫기, 방이름 밑에 한 줄 누르면 다시 켜지고") — 띠·회차 줄·팀 카드를 접는다. 방마다 기억(localStorage). ── */
+const foldKey = (team) => `fold:${team}`;
+function applyFold() {
+  let on = false; try { on = localStorage.getItem(foldKey(active)) === '1'; } catch { /* 기본은 펼침 */ }
+  app.dataset.fold = on ? '1' : '0';
+  $('barFold').hidden = !on;
+  $('foldToggle').setAttribute('aria-label', on ? '위쪽 펼치기' : '위쪽 접기');
+}
+function setFold(on) { try { localStorage.setItem(foldKey(active), on ? '1' : '0'); } catch { /* 무시 */ } applyFold(); }
+$('foldToggle').addEventListener('click', () => setFold(app.dataset.fold !== '1'));
+$('barFold').addEventListener('click', () => setFold(false));
 $('sideClose').addEventListener('click', () => openSide(false));
 $('scrim').addEventListener('click', () => openSide(false));
 
@@ -2205,6 +2220,23 @@ function openPersonPop(teamId, id) {
   x.focus();
 }
 function closePop() { for (const n of document.querySelectorAll('.pop, .pop__scrim')) n.remove(); }
+/** 그림 팝업(대표 09-18 14:3x) — 말풍선·카드의 그림을 누르면 화면 안에서 크게. 닫기는 × · 바깥 누름 · Esc(closePop 과 같은 길). '새 창' 단추로 원본. */
+function openImagePop(f) {
+  closePop();
+  const scrim = el('div', 'scrim pop__scrim'); scrim.addEventListener('click', closePop);
+  const pop = el('div', 'pop pop--img'); pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', f.rel ?? '그림');
+  const x = el('button', 'pop__x', '×'); x.type = 'button'; x.title = '닫기'; x.addEventListener('click', closePop);
+  pop.appendChild(x);
+  const img = el('img', 'pop__img'); img.src = f.url; img.alt = f.rel ?? '';
+  pop.appendChild(img);
+  const foot = el('div', 'pop__foot');
+  foot.appendChild(el('span', 'pop__name', `${f.team}/${f.root ?? 'out'}/${f.rel}`));
+  const open = el('a', 'pop__open', '새 창'); open.href = f.url; open.target = '_blank'; open.rel = 'noopener';
+  foot.appendChild(open);
+  pop.appendChild(foot);
+  document.body.append(scrim, pop);
+  x.focus();
+}
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closePop(); });
 
 /* 사람 카드 — 헨리 시안 2판(person.svg, 9단계 ①): 줄 셋(이름·직책·알약 / 지금 하는 일 / N분 전에 움직임) + 있을 때만 붙는 줄 둘 —

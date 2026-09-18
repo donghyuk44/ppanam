@@ -68,9 +68,14 @@
         <h1 id="roomName">채팅</h1>
         <!-- 자리마다 상태 글자 — 폰에서는 칩(crew)이 숨어 이 줄이 전부다 (독립검수 #5) -->
         <div class="who" id="roomWho">연결 중…</div>
+        <!-- 위쪽(띠·회차 줄·팀 카드)을 접었을 때 방 이름 밑 한 줄 — 누르면 다시 펼친다(대표 09-18 14:3x). 접힘은 방마다 기억(app.js foldTop) -->
+        <button type="button" class="bar__fold" id="barFold" hidden>펼치기 ▾</button>
       </div>
       <div class="bar__right">
         <div class="crew" id="crew"></div>
+        <button class="iconbtn iconbtn--fold" id="foldToggle" type="button" aria-label="위쪽 접기" title="띠·회차 줄·팀 카드 접기">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14l6-6 6 6"/></svg>
+        </button>
         <!-- 서버 연결 점. 칩 밖에 둔다 — 폰에서도 보여야 한다 -->
         <div class="live" id="liveDot" data-on="0" title="서버 연결"></div>
         <button class="iconbtn" id="sideToggle" aria-label="상황판 열기">
