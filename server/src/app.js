@@ -2593,7 +2593,7 @@ const TASK_DOT = { '통과': 'done', '진행': 'live', '감사 대기': 'wait', 
 const weekMD = (key) => { const [, m, d] = String(key).split('-'); return `${Number(m)}/${Number(d)}`; };   // '2026-09-07' → '9/7' — 지난 주·이번 주 머리에만
 const shortTitle = (s) => String(s ?? '').split(/\s*(?:—|∥|\()\s*/)[0].trim() || String(s ?? '');   // 단계 제목 첫 구분 기호 앞까지 — 전문이 자에 안 맞을 때의 대안
 /** 단계 제목 — 전문에서 "(결정 N…)" 꼬리만 떼고 자에 맞으면 그대로(헨리 3판-c 는 '—' 뒤까지 다 보인다), 안 맞으면 첫 구분 기호 앞까지. 원문은 title 에. */
-const stageTitle = (s) => { const full = String(s ?? '').replace(/\s*\(결정[^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim(); return full && bossOk(full) ? full : shortTitle(s); };
+const stageTitle = (s) => { const full = String(s ?? '').replace(/\s*\((?:결정\s*)?\d[^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim(); return full && bossOk(full) ? full : shortTitle(s); };   // 괄호 안 번호 꼬리 '(결정 N…)'·'(187: …)' 는 뗀다(하영 req_d29407c3 ②)
 /** 자를 지난 줄인가 — 서버가 자에 안 맞는 글을 NOT_YET 으로 주니 그 글자는 안 찍는다(140). */
 const okText = (s) => { const v = String(s ?? '').trim(); return v && v !== NOT_YET ? v : null; };
 /** 그 시각이 든 주의 월요일 날짜(YYYY-MM-DD, 우리 시각) — 서버 bus.weekKeyOf 와 같은 식(서울 자정 → 그 요일만큼 물러남 → +9시간 해서 읽음). 작업 doneAt 을 주 칸에 놓는 데 쓴다. */
@@ -2805,7 +2805,7 @@ function taskRow(t, k, cast) {
   } else row.appendChild(el('span', 'tl__face tl__face--none', '담당자 없음'));
   const what = okText(k.what);
   const stack = el('span', 'tl__whatStack');
-  const text = el('span', `tl__what${done ? ' tl__what--done' : ''}`, what ?? '아직 쉬운 말로 안 적음');   // 자에 안 맞는 줄은 서버가 NOT_YET 으로 준다 — 그 글자는 안 찍는다(결정 140)
+  const text = el('span', `tl__what${done ? ' tl__what--done' : ''}`, what ?? '');   // 자에 안 맞는 글은 안내 글자 없이 비운다(하영 req_d29407c3 ① — 톰이 보드 서른 줄을 자 안으로 고쳐 거의 안 남는다)   // 자에 안 맞는 줄은 서버가 NOT_YET 으로 준다 — 그 글자는 안 찍는다(결정 140)
   if (!what) text.dataset.notyet = '1';
   stack.appendChild(text);
   // "뒤에: ○○" — 아직 안 끝난 뒤 작업 이름(솔라 after, 자 통과분). 끝난 작업엔 안 붙인다.
