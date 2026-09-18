@@ -170,7 +170,7 @@
 - 숫자는 꼬리 둘뿐(단계 끝/전체 · 회차). 된 것·막힌 것은 줄이 곧 수. 알약 글자·블록 이름은 하영 카드 글 규칙이 오면 그 글자로.
 - 서버 값(솔라 `/api/card/<팀>`) — `{ team, name, color, state: working|stuck|boss, at, now:{who,text}, done:[{who,text,file}], stuck:[{text}], boss:{text, kind: approval|ask, approval?}, stage:{n,done,total}, round }`. 판정 사건 — `{ verdict: pass|again|stop, from, to, topic, line, detail, rebuttal?:{n,of:3}, ts }`. 사람 말 검사 통과분만(결정 140 4항).
 
-## 9. 설정 › 세계관 — `ui/world.svg` (1판, 09-16, U1 — 09-16 낮 클레멘타인이 이어받음)
+## 9. 설정 › 멤버 — `ui/world.svg` (1판, 09-16, U1 — 09-16 낮 클레멘타인이 이어받음, 09-18 저녁 이름 "세계관"→"멤버", 하영 사전 64~66행·설정 3판-b)
 
 대표 원문(08:3x) "설정 탭에 서브탭으로 각자 전 인원의 프로필과 설정을 확인할 수 있는 세계관 탭을 신설." 카드 하나 = 사람 하나, **열일곱**(대표 포함 — 세었다: 대표 1 + 총괄실 4 + 마케팅 3 + 개발 3 + 디자인 3 + 경영 3 = 17). 순서 대표 → 총괄실(톰·제리·세라·나리) → 마케팅 → 개발 → 디자인 → 경영.
 
