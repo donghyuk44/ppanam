@@ -497,8 +497,8 @@
       "seat": "guide",
       "after": [],
       "bottleneck": null,
-      "status": "감사 대기",
-      "note": "노라 떨어뜨릴 이유 셋 → 빅터 판정",
+      "status": "통과",
+      "note": "노라 떨어뜨릴 이유 셋 → 빅터 판정 | 14:5x 나리: 경영 4단계 닫힘(라운드 10 pass)으로 통과 처리 — 톰이 옮김",
       "milestone": {
         "team": "finance",
         "n": 4
@@ -515,8 +515,8 @@
       "seat": "review",
       "after": [],
       "bottleneck": null,
-      "status": "감사 대기",
-      "note": "유진 떨어뜨릴 이유 셋 → 빅터 판정",
+      "status": "통과",
+      "note": "유진 떨어뜨릴 이유 셋 → 빅터 판정 | 14:5x 나리: 경영 4단계 닫힘(라운드 10 pass)으로 통과 처리 — 톰이 옮김",
       "milestone": {
         "team": "finance",
         "n": 4
