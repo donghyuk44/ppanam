@@ -746,7 +746,7 @@ body {
 .tl__grid { display: grid; grid-template-columns: 52px repeat(4, minmax(0, 1fr)); gap: 3px 4px; align-items: stretch; }
 .tl__gh { font-size: 10px; font-weight: 700; color: var(--ink-4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; }
 .tl__gl { font-size: 11px; color: var(--ink-4); white-space: nowrap; align-self: center; }
-.tl__cell { min-height: 22px; border-radius: 5px; background: var(--panel-2); display: flex; align-items: center; min-width: 0; }
+.tl__cell { min-height: 22px; border-radius: 5px; display: flex; align-items: center; min-width: 0; }   /* 빈 칸은 상자 없이 비운다(헨리 diff 12절 ② — 줄마다 상자 넷이 나무보다 시끄럽다) */
 .tl__bar { flex: 1; min-width: 0; font-style: normal; font-size: 10px; line-height: 1.15; padding: 3px 4px; border-radius: 5px; overflow: hidden; white-space: normal; word-break: keep-all; }   /* 폰은 칸 글자가 줄을 바꿔 선다(13절 "칸 글자 세로로") */
 .tl__bar--pass { background: var(--good-bg); color: var(--good); border: 1px solid var(--good-line); }
 .tl__bar--now { background: var(--ink); color: var(--panel); }
@@ -762,6 +762,8 @@ body {
 .tl__wgrid .tl__cell { min-height: 24px; }
 .tl__wgrid .tl__bar { font-size: 11px; }
 .tl__wgrid .tl__bar--pass:empty { display: none; }
+.tl__wgrid .tl__whatStack { flex-direction: row; align-items: baseline; gap: 10px; }   /* PC 작업 줄 끝에 '뒤에: ○○' 한 마디(헨리) */
+.tl__wgrid .tl__after { flex: none; max-width: 40%; }
 @media (min-width: 1180px) { .tl__grid { grid-template-columns: 120px repeat(4, minmax(0, 1fr)); } .tl__bar { font-size: 11px; } }
 .dash__body table { border-collapse: collapse; width: 100%; margin-bottom: 18px; font-size: 13px; }
 .dash__body th, .dash__body td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top; }

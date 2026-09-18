@@ -129,9 +129,7 @@ function timelineTeamWide(t, cols) {
     if (p.status === 'wait' && p.n != null) row(left, [blank(), blank(), tlCell('next', `${p.n - 1}단계 뒤`), blank()]);
     else row(left, [tlCell('now', bar(prev.key ? p.weeks?.[prev.key] : null, false)), tlCell('now', bar(cur.key ? p.weeks?.[cur.key] : null, true)), blank(), blank()]);
     if (p.status !== 'now' && p.n != null) continue;   // 대기 단계는 제목만(계획 2절)
-    // 작업 줄 — 끝난 것 중 지난 주·이번 주에 끝난 건 그 주 칸에 ✓ 로 남고, 그 밖 끝난 것은 접힘. 진행 중은 이번 주 "하는 중", 감사 대기는 놋쇠, 시작 가능은 다음 칸, 뒤에 걸림은 그 뒤 칸, 막힘은 빨강.
-    const recentDone = tasks.filter((k) => k.status === '통과' && (inWeek(k.doneAt, prev.key) || inWeek(k.doneAt, cur.key)));
-    const oldDone = tasks.filter((k) => k.status === '통과' && !recentDone.includes(k));
+    // 작업 줄 — 안 끝난 것부터, 끝난 것(☑)은 접지 않고 뒤에 줄로(헨리 diff 12절) + 그 주 칸에 ✓(doneAt 이 지난주·이번 주면). 진행 중은 이번 주 "하는 중", 감사 대기는 놋쇠, 시작 가능은 다음 칸, 뒤에 걸림은 그 뒤 칸, 막힘은 빨강.
     for (const k of tasks.filter((x) => x.status !== '통과')) {
       const cells = [blank(), blank(), blank(), blank()];
       if (k.status === '진행') cells[1] = tlCell('now', '하는 중');
@@ -141,13 +139,7 @@ function timelineTeamWide(t, cols) {
       else if (k.status === '대기') cells[3] = tlCell('after', afterNames(k) ?? '뒤에 걸림');   // 그 뒤 칸 점선 칩엔 걸린 작업 이름(13절)
       row(taskRow(t, k, cast), cells);
     }
-    for (const k of recentDone) row(taskRow(t, k, cast), [tlCell('pass', inWeek(k.doneAt, prev.key) ? '✓' : ''), tlCell('pass', inWeek(k.doneAt, cur.key) ? '✓' : ''), blank(), blank()]);
-    if (oldDone.length) {
-      const fold = el('details', 'tl__fold tl__fold--tasks');
-      fold.appendChild(el('summary', null, `☑ 완료 ${oldDone.length}`));
-      for (const k of oldDone) fold.appendChild(taskRow(t, k, cast));
-      row(fold, [blank(), blank(), blank(), blank()]);
-    }
+    for (const k of tasks.filter((x) => x.status === '통과')) row(taskRow(t, k, cast), [tlCell('pass', inWeek(k.doneAt, prev.key) ? '✓' : ''), tlCell('pass', inWeek(k.doneAt, cur.key) ? '✓' : ''), blank(), blank()]);
   }
   card.appendChild(grid);
   return card;
@@ -174,17 +166,11 @@ function timelineTeam(t, cols) {
     row.appendChild(title);
     if (p.status === 'now') row.appendChild(pill('진행 중', 'live'));
     card.appendChild(row);
-    // 작업 줄 — 진행 중 단계와 '단계 없음' 묶음만 펼친다. 대기 단계는 제목만(계획 2절). 끝난 작업(☑)은 줄에 남지 않고 접힌다(계획 2절 "체크되서 넘어가는 것처럼" — 수는 주 칸에).
+    // 작업 줄 — 진행 중 단계와 '단계 없음' 묶음만 펼친다. 대기 단계는 제목만(계획 2절). 안 끝난 것부터, 끝난 것(☑)은 접지 않고 뒤에 줄로(헨리 diff 12절).
     if (p.status === 'now' || p.n == null) {
       const tasks = p.tasks ?? [];
       for (const k of tasks.filter((x) => x.status !== '통과')) card.appendChild(taskRow(t, k, cast));
-      const done = tasks.filter((x) => x.status === '통과');
-      if (done.length) {
-        const fold = el('details', 'tl__fold tl__fold--tasks');
-        fold.appendChild(el('summary', null, `☑ 완료 ${done.length}`));
-        for (const k of done) fold.appendChild(taskRow(t, k, cast));
-        card.appendChild(fold);
-      }
+      for (const k of tasks.filter((x) => x.status === '통과')) card.appendChild(taskRow(t, k, cast));
     }
   }
   // ── 주 칸 카드 ── 줄 = 단계(지난 주·이번 주에 돈 것, 진행 중, 대기), 칸 넷. 지난 것은 실측 막대(회차 수 · ✓), 앞은 날짜 없는 칩.
