@@ -2631,14 +2631,17 @@ export function weeksOf(rounds, { now = Date.now() } = {}) {
  * 타임라인 탭 팀 하나(타임라인 계획-0916 2·3절) — 로드맵 단계를 프로젝트로, work.json 항목을 그 milestone 칸으로 걸러 작업으로,
  * weeksOf 를 주 칸으로 묶는다. 순수 — roadmap·items(전체, 여기서 team 으로 거른다)·rounds 를 그대로 받는다.
  * milestone 칸이 아직 없는 작업(톰이 안 붙인 것)은 n:null "단계 없음" 묶음. 담당 없음(seat 빈칸)·막힘·이번 주 끝난 수는 signals 로.
- * @returns { weeks:[{key,label}], projects:[{n,title,status,weeks:{key:{rounds,pass}},tasks:[{id,what,seat,status,bottleneck,doneAt,ready}]}], signals:{done,blocked,unassigned} }
+ * @returns { weeks:[{key,label}], projects:[{n,title,status,weeks:{key:{rounds,pass}},tasks:[{id,what,seat,status,bottleneck,doneAt,ready,after:[{id,what}]}]}], signals:{done,blocked,unassigned} }
  */
 export function timelineTeamOf(team, { roadmap, items, rounds, now = Date.now() } = {}) {
   const weeks = weeksOf(rounds, { now });
   const mine = (items ?? []).filter((it) => it.team === team);
+  const byId = new Map(mine.map((it) => [it.id, it]));
   const passedIds = new Set(mine.filter((it) => it.status === '통과').map((it) => it.id));
   const isReady = (it) => it.status === '대기' && (!it.after?.length || it.after.every((a) => passedIds.has(a)));
-  const taskOf = (it) => ({ id: it.id, what: it.what, seat: it.seat, status: it.status, bottleneck: it.bottleneck ?? null, doneAt: it.doneAt ?? null, ready: isReady(it) });
+  // after 는 id 뿐이라 화면이 "뒤에: ○○" 를 못 썼다(테라 R37) — 걸린 항목의 what 을 같이 낸다. 사람 말 검사는 index.mjs 가 입힌다(이 함수는 순수).
+  const afterOf = (it) => (it.after ?? []).map((a) => ({ id: a, what: byId.get(a)?.what ?? null }));
+  const taskOf = (it) => ({ id: it.id, what: it.what, seat: it.seat, status: it.status, bottleneck: it.bottleneck ?? null, doneAt: it.doneAt ?? null, ready: isReady(it), after: afterOf(it) });
 
   const byMilestone = new Map();
   for (const it of mine) {
@@ -2663,6 +2666,27 @@ export function timelineTeamOf(team, { roadmap, items, rounds, now = Date.now() 
   const blocked = mine.filter((it) => it.status === '막힘').length;
   const unassigned = mine.filter((it) => !it.seat).length;
   return { weeks: weeks.map((w) => ({ key: w.key, label: w.label })), projects, signals: { done, blocked, unassigned } };
+}
+
+/**
+ * 대표 목표 한 장(teams/hq/goal.md) 1·2절의 인용문 — 슬로건·이번 달성 목표. 타임라인 탭 맨 위 목표 카드(goal.md 14절, 테라 요청 0918).
+ * 순수 — md 글을 받아 "> **...**" 인용문을 절 순서대로 둘 뽑는다(1절 슬로건, 2절 이번 달성 목표). 없으면 null.
+ */
+export function goalTextOf(md) {
+  const quotes = [...String(md ?? '').matchAll(/^>\s*\*\*(.+?)\*\*\s*$/gm)].map((m) => m[1].trim());
+  return { slogan: quotes[0] ?? null, goalNow: quotes[1] ?? null };
+}
+
+/**
+ * 팀 순서 목록(teams/<팀>/order.md) 의 팀 목표 한 줄과 '지금' 상태인 일 줄 — 타임라인 목표 카드의 팀별 칸(goal.md 3절 표와 같은 값).
+ * 순수 — md 글만. 목표는 "**우리 팀 목표:** ..." 줄, now 는 상태 칸이 "지금"인 표 행의 일 칸(여럿이면 " · " 로 묶는다).
+ */
+export function orderTeamOf(md) {
+  const text = String(md ?? '');
+  const goalM = /\*\*우리 팀 목표:\*\*\s*(.+)/.exec(text);
+  const rows = [...text.matchAll(/^\|\s*\d+\s*\|([^|]+)\|[^|]+\|[^|]+\|([^|]+)\|\s*$/gm)]
+    .filter(([, , status]) => status.trim() === '지금');
+  return { goal: goalM ? goalM[1].trim() : null, now: rows.length ? rows.map(([, what]) => what.trim()).join(' · ') : null };
 }
 
 /** 판정·결재 낱말 — 하영 card-words.md 2판 머리(대표 09-16 07:4x 표준어): PASS 승인 · REVISE 반려 · FAIL 보류. 화면의 판정 카드(G3)와 같은 글자. */

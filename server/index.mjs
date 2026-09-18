@@ -481,12 +481,27 @@ const server = http.createServer((req, res) => {
     const line = (s) => { const v = String(s ?? '').trim(); return v ? (bossOk(v) ? v : NOT_YET) : null; };
     const now = Date.now();
     const items = bus.readWork().items ?? [];
+    // 목표 한 장(teams/hq/goal.md) + 팀마다 순서 목록(order.md) — 타임라인 맨 위 목표 카드(테라 요청 0918). 없으면 null, 자로 거른다.
+    const readSafe = (p) => { try { return fs.readFileSync(p, 'utf8'); } catch { return ''; } };
+    const goalText = bus.goalTextOf(readSafe(path.join(paths('hq').dir, 'goal.md')));
+    const orderByTeam = {};
     const teamsOut = listTeams().filter((t) => t.id !== 'sera').map((t) => {
       const tl = bus.timelineTeamOf(t.id, { roadmap: readRoadmap(t.id), items, rounds: listRounds(t.id), now });
+      const order = bus.orderTeamOf(readSafe(path.join(paths(t.id).dir, 'order.md')));
+      orderByTeam[t.id] = order;
       return {
         id: t.id, name: t.name,
         weeks: tl.weeks,
-        projects: tl.projects.map((p) => ({ ...p, tasks: p.tasks.map((task) => ({ ...task, what: line(task.what), bottleneck: task.bottleneck ? line(task.bottleneck) : null })) })),
+        destination: line(order.goal),
+        projects: tl.projects.map((p) => ({
+          ...p,
+          tasks: p.tasks.map((task) => ({
+            ...task,
+            what: line(task.what),
+            bottleneck: task.bottleneck ? line(task.bottleneck) : null,
+            after: task.after.map((a) => ({ id: a.id, what: a.what ? line(a.what) : null })),
+          })),
+        })),
         signals: tl.signals,
       };
     });
@@ -494,7 +509,12 @@ const server = http.createServer((req, res) => {
     const weekMap = new Map();
     for (const t of teamsOut) for (const w of t.weeks) if (!weekMap.has(w.key)) weekMap.set(w.key, w.label);
     const weeks = [...weekMap.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([key, label]) => ({ key, label }));
-    return json(res, 200, { now: new Date(now).toISOString(), weeks, teams: teamsOut });
+    const goal = {
+      slogan: line(goalText.slogan),
+      goalNow: line(goalText.goalNow),
+      teams: teamsOut.map((t) => ({ id: t.id, name: t.name, goal: t.destination, now: line(orderByTeam[t.id]?.now) })),
+    };
+    return json(res, 200, { now: new Date(now).toISOString(), weeks, teams: teamsOut, goal });
   }
 
   // 팀 하나를 깊게 본다. 대화록을 다시 훑지 않고도 무슨 일이 있었는지 알 수 있어야 한다.
