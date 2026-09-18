@@ -2685,7 +2685,8 @@ function timelineTeamWide(t, cols) {
     fold.appendChild(el('summary', null, `✓ 끝난 단계 ${passed.length} · ${passed[0].n}~${passed[passed.length - 1].n}단계`));
     for (const p of passed) { const d = el('div', 'tl__stage tl__stage--pass', `${p.n}단계 ${shortTitle(p.title)}`); d.title = p.title; fold.appendChild(d); }
     // 돈 주의 합 — 그 주에 돈 끝난 단계들의 회차 수 · ✓ 수
-    const sum = (key) => { if (!key) return ''; let n = 0, ok = 0; for (const p of passed) { const w = p.weeks?.[key]; if (w) { n += w.rounds; if (w.pass) ok++; } } return n ? `${n}회차 · ✓ ${ok}` : ''; };
+    // 막대 글자에 회차 수는 없다(헨리, 13절 낱말 줄) — 그 주에 통과한 단계 수 '✓ N' 만
+    const sum = (key) => { if (!key) return ''; let ok = 0; for (const p of passed) if (p.weeks?.[key]?.pass) ok++; return ok ? `✓ ${ok}` : ''; };
     row(fold, [tlCell('pass', sum(prev.key)), tlCell('pass', sum(cur.key)), blank(), blank()]);
   }
   for (const p of open) {
@@ -2695,7 +2696,7 @@ function timelineTeamWide(t, cols) {
     if (p.status === 'now') left.appendChild(pill('진행 중', 'live'));
     const tasks = p.tasks ?? [];
     const doneThisWeek = tasks.filter((k) => k.status === '통과' && inWeek(k.doneAt, cur.key)).length;   // 통과인 것만 — 다시 열린 작업의 옛 doneAt 은 안 센다(code-review)
-    const bar = (w, thisWeek) => (w ? `${w.rounds}회차${w.pass ? ' ✓' : thisWeek && p.status === 'now' && doneThisWeek ? ` · 끝난 ${doneThisWeek}` : ''}` : '');
+    const bar = (w, thisWeek) => (!w ? '' : w.pass ? '✓' : thisWeek && p.status === 'now' ? `끝난 ${doneThisWeek}` : '');   // 회차 수 없이(헨리) — 통과한 주 '✓', 진행 중 단계의 이번 주 '끝난 N'
     if (p.status === 'wait' && p.n != null) row(left, [blank(), blank(), tlCell('next', `${p.n - 1}단계 뒤`), blank()]);
     else row(left, [tlCell('now', bar(prev.key ? p.weeks?.[prev.key] : null, false)), tlCell('now', bar(cur.key ? p.weeks?.[cur.key] : null, true)), blank(), blank()]);
     if (p.status !== 'now' && p.n != null) continue;   // 대기 단계는 제목만(계획 2절)
@@ -2764,7 +2765,7 @@ function timelineTeam(t, cols) {
   for (const c of cols) grid.appendChild(el('span', 'tl__gh', c.head));
   const [prev, cur] = cols;
   const thisKey = cur.key;
-  const rows = projects.filter((p) => p.status !== 'pass' || (prev.key && p.weeks?.[prev.key]) || (thisKey && p.weeks?.[thisKey]));
+  const rows = projects.filter((p) => p.status !== 'pass' || (prev.key && p.weeks?.[prev.key]?.pass) || (thisKey && p.weeks?.[thisKey]?.pass));   // 끝난 단계는 그 두 주에 통과한 것만 줄로(막대 글자가 ✓ 뿐이라)
   for (const p of rows) {
     grid.appendChild(el('span', 'tl__gl', p.n != null ? `${p.n}단계` : '단계 없음'));
     const tasks = p.tasks ?? [];
@@ -2774,7 +2775,7 @@ function timelineTeam(t, cols) {
     const blocked = tasks.filter((k) => k.status === '막힘').length;
     const cell = (kind, text) => { const s = el('span', 'tl__cell'); if (text) { const b = el('i', `tl__bar tl__bar--${kind}`, text); s.appendChild(b); } grid.appendChild(s); };
     // 막대 글자 — 지난 주는 "N회차 (✓)", 이번 주는 진행 중 단계면 "N회차 · 끝난 것 N"(이번 주 doneAt 수 — 지난 주 칸엔 안 붙인다, code-review)
-    const bar = (w, { thisWeek = false } = {}) => (w ? `${w.rounds}회차${w.pass ? ' ✓' : thisWeek && p.status === 'now' && doneThisWeek ? ` · 끝난 ${doneThisWeek}` : ''}` : '');
+    const bar = (w, { thisWeek = false } = {}) => (!w ? '' : w.pass ? '✓' : thisWeek && p.status === 'now' ? `끝난 ${doneThisWeek}` : '');   // 회차 수 없이(헨리) — 통과한 주 '✓', 진행 중 단계의 이번 주 '끝난 N'
     cell(p.status === 'pass' ? 'pass' : 'now', bar(prev.key ? p.weeks?.[prev.key] : null));
     cell(p.status === 'pass' ? 'pass' : 'now', bar(thisKey ? p.weeks?.[thisKey] : null, { thisWeek: true }));
     // 다음: 시작할 수 있는 작업(뒤에 걸린 게 없거나 풀림, isReady) · 대기 단계는 앞 단계 뒤. 그 뒤: 뒤에 걸린 작업 · 막힌 것. 날짜·시각 글자 없음(188).
