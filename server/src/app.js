@@ -1401,6 +1401,10 @@ function setView(v) {
     if (v === 'world' && b.dataset.view === 'world') b.hidden = false;
   }
   for (const b of document.querySelectorAll('#repTabs button, #anTabs button')) b.setAttribute('aria-current', String(b.dataset.view === v));
+  // 폰 윗줄 가운데 화면 이름(카카오톡 꼴 시안) — 탭 글자 그대로. 방 목록은 닫는다.
+  const tab = $('views').querySelector(`button[data-view="${shown}"] span, button[data-view="${shown}"]`);
+  $('phoneTitle').textContent = tab?.textContent?.trim() || '채팅';
+  app.dataset.list = '0';
   if (v === 'tower') renderTower();
   if (v === 'dashboard') loadDashboard();
   if (v === 'report') loadReport({ force: true });
@@ -1413,6 +1417,9 @@ function setView(v) {
 for (const b of document.querySelectorAll('#views button, #repTabs button, #anTabs button')) {
   b.addEventListener('click', () => setView(b.dataset.view));
 }
+// 폰 '‹ 목록' — 방 목록(rail__list)을 윗줄 밑에 펼친다. 방을 고르면 닫힌다(selectTeam 뒤 setView 가 list 를 0 으로).
+$('phoneList').addEventListener('click', () => { app.dataset.list = app.dataset.list === '1' ? '0' : '1'; });
+$('teams').addEventListener('click', (e) => { if (e.target.closest('.team')) app.dataset.list = '0'; });
 
 /* ══ 설정 — 권한 현황 · 낱말 사전 · 인격 파일 목록 · 숨김 화면(마을) (나리 R32, 카드-체계-0916 4절) ══ */
 

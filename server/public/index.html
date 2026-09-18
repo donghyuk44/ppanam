@@ -42,6 +42,12 @@
       <!-- 부제(옛 '작전실')는 세계 이름이 안 정해져 비운다(하영 L1 1절 — 제품 이름 하나만, 대표 한마디 자리). 같은 글자 둘이 겹치지 않게 -->
       <span class="rail__sub" hidden></span>
     </div>
+    <!-- 폰 윗줄(카카오톡 꼴 시안 412, 헨리 req_f8a12066): 왼쪽 '‹ 목록'(방 목록 열기) · 가운데 화면 이름 · 오른쪽은 종(고정). PC 에선 안 보인다 -->
+    <div class="phonebar" id="phonebar">
+      <button type="button" class="phonebar__list" id="phoneList" aria-label="방 목록">‹ 목록</button>
+      <span class="phonebar__title" id="phoneTitle">채팅</span>
+      <span class="phonebar__spacer"></span>
+    </div>
     <nav class="views" id="views" aria-label="화면">
       <!-- 탭 다섯은 표준어(대표 09-16 07:4x "어디 회사나 서비스나 플랫폼에서 이런 단어를 사용하냐" → 카드-체계-0916 4절 · 사전 0-3, 나리 R32). 속 이름(data-view·주소)은 그대로 —
            room=채팅 · tower=대시보드 · dashboard=타임라인 · report=리포트(둘째 탭이 analysis) · settings=설정. 옛 이름(팀 방·현황·앞으로·보고서·분석)은 사전 0-1 에 남는다. -->

@@ -97,6 +97,7 @@ body {
   background: var(--rail); border-right: 1px solid var(--line);
 }
 .rail > .views { grid-column: 1; grid-row: 1 / span 2; }
+.phonebar { display: none; }   /* 폰 윗줄 — 819 이하에서만 */
 .rail > .rail__head, .rail > .rail__list { grid-column: 2; }
 .rail__head { padding: 15px 16px 12px; border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); }
 .rail__list { border-left: 1px solid var(--line); }
@@ -1262,10 +1263,18 @@ button.dash__row:hover b { text-decoration: underline; }
   .room, .tower, .dashboard, .report, .analysis, .settings, .world { grid-row: 3; }   /* 대시보드(결정 128)·보고서도 — 컴퓨터 86줄과 같은 빠짐이 폰에서 또 나지 않게 */
   .approvals { margin: 8px 10px 0; padding: 10px 12px; }
   /* 폰 윗줄(폴드 QA 1 — 닫힘 411 에서 큰 글꼴이면 탭 다섯만으로 줄이 넘쳐 방 칩·종이 잘렸다): 탭 띠와 방 칩 띠가 각각 가로 스크롤, 방 칩 띠는 96px 은 지킨다. 종은 뷰포트에 고정 */
-  .rail { display: flex; flex-direction: row; border-right: none; border-bottom: 1px solid var(--line); min-width: 0; overflow: hidden; }   /* PC 격자(아이콘 띠 + 목록 판)를 폰에선 한 줄로 */
+  .rail { display: flex; flex-direction: row; border-right: none; border-bottom: 1px solid var(--line); min-width: 0; overflow: visible; position: relative; }   /* PC 격자(아이콘 띠 + 목록 판)를 폰에선 한 줄로 */
   .rail__head { display: none; }
-  .rail__list { border-left: 0; }
-  .team__tile { display: none; }   /* 폰 칩엔 타일 없음 — 글자만 */
+  /* 폰 윗줄(카카오톡 꼴 시안 412, req_f8a12066): '‹ 목록' · 가운데 화면 이름 · 종(고정) — 방 칩 띠는 '목록' 을 누르면 밑에 세로 목록으로 펼쳐진다 */
+  .phonebar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; flex: 1 1 auto; min-width: 0; height: 48px; padding: 0 56px 0 8px; box-sizing: border-box; }
+  .phonebar__list { justify-self: start; font: inherit; font-size: 13.5px; color: var(--ink-2); background: transparent; border: 0; padding: 6px 8px; cursor: pointer; }
+  .phonebar__title { font-family: 'Gowun Batang', serif; font-size: 17px; color: var(--ink); white-space: nowrap; }
+  .rail__list { display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 7; flex-direction: column; gap: 2px; padding: 8px; margin: 0; border-left: 0; border-bottom: 1px solid var(--line); background: var(--rail); box-shadow: 0 12px 30px rgba(20, 16, 10, .25); max-height: 70dvh; overflow-y: auto; }
+  .app[data-list="1"] .rail__list { display: flex; }
+  .rail__list::after { display: none; }
+  .team { width: 100%; flex: none; padding: 8px 10px; border-color: transparent; background: transparent; }
+  .team__sub { display: block; }
+  .team__tile { display: grid; width: 36px; height: 36px; font-size: 14px; }
 
   /* 폰 — 탭 다섯은 아래 줄(헨리 카카오톡 꼴 시안 fig-0916-kakao-room-412: 아이콘 + 글자, 화면 아래 고정). 위 줄엔 방 칩 띠와 종만 남아 좁지 않다(대표 09-18 14:2x). */
   .app { padding-bottom: calc(56px + env(safe-area-inset-bottom)); box-sizing: border-box; }
@@ -1306,24 +1315,8 @@ button.dash__row:hover b { text-decoration: underline; }
   .dash__body td:empty { display: none; }
   .dash__tile b { font-size: 19px; }
   .an__body { padding: 12px; }
-  .rail__list {
-    flex: 1 1 0; min-width: 96px; flex-direction: row; overflow-x: auto; overflow-y: hidden;   /* 방 칩 띠 — 탭이 커져도 96px 은 남는다 */
-    padding: 8px 8px 8px 10px; margin-right: 52px; gap: 6px; scrollbar-width: none;   /* 종 자리는 margin — 띠의 보이는 끝이 종 앞에서 끝나야 칩이 종 밑에 안 들어간다(375·412 실측: 마지막 칩 왼쪽 반이 종 밑이라 눌러도 종이 눌렸다, 적대검수 09-16) */
-  }
-  /* 스크롤 끝 여백은 실제 요소로(padding-right 는 스크롤 끝에서 무시됨 — R23 ②) */
-  .rail__list::after { content: ''; flex: none; width: 8px; }
-  /* 띠 밖에 방이 더 있다는 힌트 (검수 #4) — 종 왼쪽에 작은 알약 "밖 N". 데스크톱은 세로라 없다. */
-  .rail { position: relative; }
-  .rail__more {
-    display: block; position: absolute; right: 54px; top: 50%; transform: translateY(-50%); z-index: 2;
-    font: inherit; font-size: 10.5px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--bad-line);
-    background: var(--panel); color: var(--bad); cursor: pointer; box-shadow: -10px 0 10px var(--panel);
-  }
-  .rail__more[hidden] { display: none; }
+  .rail__more { display: none; }   /* 옛 가로 칩 띠의 "밖 N" 힌트 — 세로 목록엔 밖이 없다 */
   .approvals { padding-right: 52px; }   /* 첫 카드의 오른쪽 끝(방에서 보기)이 종 밑에 안 들어가게 */
-  .rail__list::-webkit-scrollbar { display: none; }
-  .team { width: auto; flex: none; padding: 6px 11px; border-color: var(--line); background: var(--panel); }
-  .team__sub { display: none; }
   .room { border-right: none; }
   /* 회차 줄(폴드 QA 2 — 닫힘 411 에서 "세라 진행 중 · 방금 활동 · 기다리는 말 2 · 차례: …" 가 오른쪽에서 잘림): 넘치면 둘째 줄로 내려간다, 제목은 줄임표 그대로 */
   .roundbar { flex-wrap: wrap; row-gap: 4px; }
