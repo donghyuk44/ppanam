@@ -31,6 +31,7 @@
       "id": "T2",
       "stream": "토큰",
       "what": "회차 닫혀도 세션 안 버림",
+      "deliverable": "커밋 c439733(세션은 마일스톤이 pass 로 닫힐 때만 비움) · fa58cd0. 확인: git show c439733 -- server/session.mjs (세라 09-18 14:0x 저장소에서 찾음, 톰 확인)",
       "team": "dev",
       "seat": "ops",
       "after": [],
@@ -69,6 +70,7 @@
       "id": "T4",
       "stream": "토큰",
       "what": "큰 파일 전문 읽기 금지 · 책장 절",
+      "deliverable": "커밋 fa58cd0(책장 배선 — 세션 프롬프트에 책장 절) · 4f579c7(D2 검사기). 확인: git show fa58cd0 --stat · 리셋 뒤 첫 턴 프롬프트에 책장 절 (세라 09-18 14:0x, 톰 확인)",
       "team": "dev",
       "seat": "ops",
       "after": [],
@@ -309,6 +311,7 @@
       "id": "C5",
       "stream": "카드 체계",
       "what": "카드 재료 API /api/card/<팀>",
+      "deliverable": "커밋 2dacf61(GET /api/card/<팀>) · deb382b(자 안 맞으면 null). 확인: curl localhost:4321/api/card/dev (server/index.mjs 423행) (세라 09-18 14:0x, 톰 확인)",
       "team": "dev",
       "seat": "ops",
       "after": [
