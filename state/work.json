@@ -106,17 +106,54 @@
     {
       "id": "P3",
       "stream": "권한",
-      "what": "훅 Bash 기록 (대표 손, 모아서 한 번)",
+      "what": "훅 Bash 기록 — settings.json 허용 줄은 대표만 고치니 필요한 줄을 모아 한 번에 대표께(그 뜻의 '모아서 한 번')",
       "team": "hq",
       "seat": "boss",
       "after": [
         "P2"
       ],
-      "bottleneck": "대표",
-      "status": "대기",
+      "bottleneck": null,
+      "status": "통과",
+      "note": "09-16 09:2x 대표가 settings.json 'Bash(node tools/*)' 를 직접 고침 → 닫힘(장부 344행 나리 대리 줄, 솔라 실측). 보드가 낡아 09-18 12:1x 톰이 통과로 — 나래 물음",
       "milestone": {
         "team": "hq",
         "n": 2
+      },
+      "owner": "톰"
+    },
+    {
+      "id": "J23",
+      "stream": "순서 목록",
+      "what": "헌법 한 장 + 목차·색인 — 최종 목표(209)·팀 역할(210 매트릭스)·회사의 법칙(211)·폴더 여섯 목차(212 ②)를 한 장으로, 색인은 사서 색인과 잇는다",
+      "team": "hq",
+      "seat": "chief",
+      "after": [
+        "J18"
+      ],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "나래 순서 계획 ④(계획 4). 톰(글)·하영(낱말)·유진(색인). 주제 0 셋의 안 3판(세라 지적)에서 보드 번호 없던 것 — 12:1x 톰이 세움",
+      "milestone": {
+        "team": "hq",
+        "n": 3
+      },
+      "owner": "톰"
+    },
+    {
+      "id": "J24",
+      "stream": "순서 목록",
+      "what": "일마다 책임자·시작·끝·결과물 칸 — 보드 항목에 owner(됨)·startedAt·doneAt(서버가 찍음)·deliverable 칸을 세우고 화면이 읽는다",
+      "team": "hq",
+      "seat": "chief",
+      "after": [
+        "J18"
+      ],
+      "bottleneck": "server(솔라) — 날짜 칸은 서버가 찍음",
+      "status": "대기",
+      "note": "나래 순서 계획 ⑥(계획 6). 솔라(서버 칸)·톰(보드 값). 주제 0 셋의 안 3판에서 보드 번호 없던 것 — 12:1x 톰이 세움. owner 칸은 09-18 첫 판 들어감(23f7a81)",
+      "milestone": {
+        "team": "hq",
+        "n": 3
       },
       "owner": "톰"
     },
