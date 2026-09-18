@@ -31,28 +31,32 @@ function stageFile(f) {
   attachments.push({ file: f, mime, key, url: uploadKind(mime) === '그림' ? URL.createObjectURL(f) : null });
   renderAttachments(); say(null); input.focus();
 }
-/** 첨부 하나를 올린다 — 서버가 방에 말풍선으로 띄운다. 실패하면 false(그 파일은 첨부 줄에 남는다). */
+/** 첨부 하나를 올린다 — silent 로 부른다: 서버가 지원하면(응답 silent:true) 파일만 두고 말풍선은 안 띄운다(글과 한 말풍선, C17 · 나리 대리). 옛 서버면 제 말풍선을 띄운다.
+ *  돌려주는 것: { name, silent } — 실패하면 null(그 파일은 첨부 줄에 남는다). */
 async function uploadOne(a) {
   const data = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(r.error); r.readAsDataURL(a.file); }).catch(() => null);
-  if (!data) { say(`${uploadKind(a.mime)} 로딩 실패 — ${a.file.name ?? ''}`); return false; }
-  const r = await post('/api/upload', { team: active, mime: a.mime, name: a.file.name || null, data }).catch(() => null);
-  if (!r?.ok) { say(r?.data?.error ?? `${uploadKind(a.mime)} 업로드 실패 — ${a.file.name ?? ''}`); return false; }
-  return true;
+  if (!data) { say(`${uploadKind(a.mime)} 로딩 실패 — ${a.file.name ?? ''}`); return null; }
+  const r = await post('/api/upload', { team: active, mime: a.mime, name: a.file.name || null, data, silent: true }).catch(() => null);
+  if (!r?.ok) { say(r?.data?.error ?? `${uploadKind(a.mime)} 업로드 실패 — ${a.file.name ?? ''}`); return null; }
+  return { name: r.data?.name ?? null, silent: r.data?.silent === true, kind: uploadKind(a.mime) };
 }
-/** 첨부 전부 차례로 올린다 — 올라간 것은 첨부 줄에서 빠지고, 실패한 것은 남는다. 전부 올라갔으면 true. */
+/** 첨부 전부 차례로 올린다 — 올라간 것은 첨부 줄에서 빠지고, 실패한 것은 남는다. 전부 올라갔으면 { lines } — 서버가 말풍선을 안 띄운(silent) 파일의 "그림을 올렸습니다: in/…" 줄들, 글 뒤에 붙여 한 말풍선으로. 하나라도 실패면 null. */
 let uploading = false;
 async function flushAttachments() {
-  if (!attachments.length) return true;
-  if (uploading) { say('올리는 중이에요 — 잠시만요', 0); return false; }
+  if (!attachments.length) return { lines: [] };
+  if (uploading) { say('올리는 중이에요 — 잠시만요', 0); return null; }
   uploading = true; attachBar.dataset.busy = '1';
+  const lines = [];
   try {
     for (const a of [...attachments]) {
-      if (!(await uploadOne(a))) continue;
+      const up = await uploadOne(a);
+      if (!up) continue;
+      if (up.silent && up.name) lines.push(`${up.kind}을 올렸습니다: in/${up.name}`);   // 서버 upload 줄과 같은 글 — 말풍선이 in/ 경로를 파일 카드로 그린다(findOutPaths)
       attachments.splice(attachments.indexOf(a), 1); if (a.url) URL.revokeObjectURL(a.url);
       renderAttachments();
     }
   } finally { uploading = false; delete attachBar.dataset.busy; }
-  return !attachments.length;
+  return attachments.length ? null : { lines };
 }
 $('uploadBtn').addEventListener('click', () => $('uploadFile').click());
 $('uploadFile').addEventListener('change', () => { for (const f of [...($('uploadFile').files ?? [])]) stageFile(f); $('uploadFile').value = ''; });   // 같은 파일 다시 골라도 change 가 나게
