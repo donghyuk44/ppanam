@@ -619,6 +619,7 @@ body {
   background: transparent; border: 1px solid transparent; border-radius: 7px;
   padding: 5px 4px; cursor: pointer; white-space: nowrap;
 }
+.views button svg { display: none; }   /* 아이콘은 폰 아래 줄에서만(819 이하) */
 .views button:hover { color: var(--ink); }
 .views button[aria-current="true"] {
   color: var(--ink); background: var(--panel); border-color: var(--line);
@@ -1245,11 +1246,20 @@ button.dash__row:hover b { text-decoration: underline; }
   .rail { flex-direction: row; border-right: none; border-bottom: 1px solid var(--line); min-width: 0; overflow: hidden; }
   .rail__head { display: none; }
 
-  /* 폰에서는 화면 전환과 팀이 위쪽 한 줄에 나란히 선다. */
-  .views { flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 8px 0 8px 10px; gap: 2px; align-self: center; }   /* 큰 글꼴이면 탭 띠가 제 안에서 밀린다 */
-  .views::-webkit-scrollbar { display: none; }
-  .views button { flex: none; padding: 5px 8px; }
-  .views + .rail__list { padding-left: 6px; }
+  /* 폰 — 탭 다섯은 아래 줄(헨리 카카오톡 꼴 시안 fig-0916-kakao-room-412: 아이콘 + 글자, 화면 아래 고정). 위 줄엔 방 칩 띠와 종만 남아 좁지 않다(대표 09-18 14:2x). */
+  .app { padding-bottom: calc(56px + env(safe-area-inset-bottom)); box-sizing: border-box; }
+  .views {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; height: calc(56px + env(safe-area-inset-bottom));
+    padding: 4px 0 env(safe-area-inset-bottom); gap: 0; background: var(--panel); border-top: 1px solid var(--line);
+    display: flex; align-items: stretch;
+  }
+  .views button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 4px 2px; border: 0; border-radius: 0; background: transparent; font-size: 10.5px; color: var(--ink-4); }
+  .views button[hidden] { display: none; }   /* 분석·마을은 숨김 그대로(display:flex 가 hidden 을 이기지 않게) */
+  .views button svg { display: block; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .views button[aria-current="true"] { color: var(--ink); background: transparent; border: 0; }
+  .views button[aria-current="true"] svg { background: var(--sunk); border-radius: 12px; padding: 3px 10px; width: 42px; box-sizing: content-box; }
+  .views + .rail__list { padding-left: 10px; }
+  .composer { padding-bottom: 12px; }   /* 입력창 밑 여백은 아래 줄이 대신한다 */
   .tower__grid { grid-template-columns: minmax(0, 1fr); padding: 12px; gap: 10px; }
   .tower__head { padding: 14px 16px 11px; }
   .tower__head p { display: none; }   /* 폰에서는 설명문이 첫 카드를 아래로 민다 (검수 #12) */
