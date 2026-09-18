@@ -154,14 +154,18 @@ const MORNING_MARK = '서버가 상황판에서 만듦';
 
 /**
  * 팀 이름을 앞에 붙인 줄이 자를 넘기는지 — bossOk 는 내용에만 재는데 파일 줄은 "- {이름} · " 접두가 더 붙어
- * 42자 내용도 줄 전체는 68자가 됐다(유진 ⑥, 09-18 01:42 "잣대는 파일 줄 전체"). 이름이 raw 안에 이미 있으면
- * 안 겹친다(유진 ⑤). prefix:false 면 이름을 새로 안 붙인다(상황판 boss[] 줄은 그대로, 유진 틀 2절).
+ * 42자 내용도 줄 전체는 68자가 됐다(유진 ⑥, 09-18 01:42 "잣대는 파일 줄 전체"). names 중 하나로 raw 가 이미
+ * 시작하면 안 겹친다(유진 ⑤ — 된 것 줄은 상황판이 사람 이름·팀 이름 둘 중 하나로 이미 시작할 수 있어 둘 다 본다).
+ * prefix:false 면 이름을 새로 안 붙인다(상황판 boss[] 줄은 그대로, 유진 틀 2절).
+ * @param names 붙일 이름(맨 앞 것을 쓴다) 또는 겹침을 볼 이름들의 배열(맨 앞 것을 붙임 후보로 쓴다)
  * @returns "- {이름} · {내용}"(또는 "- {raw}", prefix:false) 파일 줄 그대로, 또는 자를 못 넘으면 null.
  */
-function boardLine(name, raw, { prefix = true } = {}) {
+function boardLine(names, raw, { prefix = true } = {}) {
+  const list = Array.isArray(names) ? names : [names];
   const v = String(raw ?? '').trim();
   if (!v) return null;
-  const body = prefix ? (v.startsWith(`${name} · `) ? v : `${name} · ${v}`) : v;
+  const already = list.some((n) => v.startsWith(`${n} · `));
+  const body = prefix ? (already ? v : `${list[0]} · ${v}`) : v;
   if (!isBossWord(body)) return null;
   const full = `- ${body}`;
   return full.length <= MAX_LEN ? full : null;
@@ -189,21 +193,27 @@ export function buildMorning(day, { now = Date.now(), since = now - MORNING_WIND
     const rs = [...listRounds(t.id)].filter((r) => r.verdict === 'PASS' && inWin(r.endedAt)).sort((a, b) => Date.parse(a.endedAt) - Date.parse(b.endedAt));
     const raw = rs.at(-1)?.topic ?? (readProgress(t.id)?.done ?? [])[0] ?? null;
     if (!raw) return `- ${t.name} · 어제는 낸 게 없어요`;   // 유진 daily-template.md 1절 표기 그대로 — 창이 하루가 아니어도 이 문구
-    const ok = boardLine(name, raw);
+    const ok = boardLine([name, t.name], raw);   // 상황판 줄이 사람 이름·팀 이름 둘 중 하나로 이미 시작할 수 있다(유진 ⑤, "톰 · 총괄 · …")
     if (!ok) skipped.push({ team: t.id, text: raw });
     return ok ?? `- ${t.name} · ${NOT_YET}`;
   });
 
-  const blockedLines = teams.flatMap((t) => (readProgress(t.id)?.blocked ?? []).map((b) => {
-    const ok = boardLine(t.name, b);
-    if (!ok) { skipped.push({ team: t.id, text: b }); return null; }
-    return ok;
-  }).filter(Boolean));
+  // 자에 걸린 줄은 빼지 말고 "{팀} · 요약 없음" 으로 내고 N 에 센다(유진 ⑺) — 빼면 "막힌 것 0"·"하실 일 0" 으로
+  // 읽혀서 실제로는 있는 문제가 없는 것처럼 보였다. raw 가 아예 없으면(빈 값) 줄 자체를 안 낸다.
+  const orNotYet = (t, raw, names, opts) => {
+    const v = String(raw ?? '').trim();
+    if (!v) return null;
+    const ok = boardLine(names, v, opts);
+    if (!ok) skipped.push({ team: t.id, text: v });
+    return ok ?? `- ${t.name} · ${NOT_YET}`;
+  };
+
+  const blockedLines = teams.flatMap((t) => (readProgress(t.id)?.blocked ?? []).map((b) => orNotYet(t, b, t.name)).filter(Boolean));
 
   const bossLines = teams.flatMap((t) => {
     // 상황판(progress.json boss[])은 그대로(유진 daily-template.md 2절 "상황판은 그대로") — 카드만 {팀} · {--boss} 로 묶는다.
-    const board = (readProgress(t.id)?.boss ?? []).map((b) => { const ok = boardLine(t.name, b, { prefix: false }); if (!ok) skipped.push({ team: t.id, text: b }); return ok; }).filter(Boolean);
-    const cards = delegating ? [] : listApprovals({ team: t.id, status: 'pending' }).filter((r) => r.grade === 'C').map((r) => boardLine(t.name, bossOk(r.boss) ? r.boss : r.what)).filter(Boolean);
+    const board = (readProgress(t.id)?.boss ?? []).map((b) => orNotYet(t, b, t.name, { prefix: false })).filter(Boolean);
+    const cards = delegating ? [] : listApprovals({ team: t.id, status: 'pending' }).filter((r) => r.grade === 'C').map((r) => orNotYet(t, bossOk(r.boss) ? r.boss : r.what, t.name)).filter(Boolean);
     return [...cards, ...board];
   });
 
