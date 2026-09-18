@@ -2444,6 +2444,28 @@
       "urgency": "긴급",
       "deliverable": "커밋 + 판정 낱말이 든 방 말 하나가 판정으로 안 읽힌 기록",
       "doneCheck": "판정 뒤 방 말에 PASS·REVISE 글자가 있어도 판정이 안 선다"
+    },
+    {
+      "id": "J52",
+      "stream": "운영",
+      "what": "아침 한 장 줄 글자를 하영 표(daily-words 2판 5절 여섯 자리)대로 — 자에 걸려 빠지는 줄 0",
+      "team": "dev",
+      "seat": "ops",
+      "after": [
+        "J49"
+      ],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "블록 req_adccef59(하영→솔라 12:49, 톰 감시) — 솔라 답 없이 서 있음. O4 는 통과로 닫혔는데 글자 자리 여섯은 안 됨 — 오늘 아침 한 장이 만들 때마다 23~26줄을 자에 걸려 뺀다(나리 안내). 순서는 보드 칸(J42·J49 뒤)",
+      "milestone": {
+        "team": "dev",
+        "n": 10
+      },
+      "owner": "솔라",
+      "importance": "보통",
+      "urgency": "보통",
+      "deliverable": "커밋 + 아침 한 장 새 판에서 뺀 줄 0(뺀줄.md 비어 있음)",
+      "doneCheck": "나리 안내 \"자에 안 맞아 N줄 뺌\" 이 0 이 된다"
     }
   ]
 }
