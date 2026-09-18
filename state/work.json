@@ -1185,6 +1185,276 @@
         "team": "design",
         "n": 7
       }
+    },
+    {
+      "id": "J1",
+      "stream": "순서 목록",
+      "what": "서버 — 새 단계가 승인되면 회차를 바로 엶(201 ②) · 시각 예측 걷음(188) · 타임라인 자료 /api/timeline(8684e22)",
+      "team": "dev",
+      "seat": "ops",
+      "after": [],
+      "bottleneck": null,
+      "status": "감사 대기",
+      "note": "dev/order.md 3 · 재시작 apr_e41e44c5 뒤 실물",
+      "milestone": {
+        "team": "dev",
+        "n": 10
+      }
+    },
+    {
+      "id": "J2",
+      "stream": "순서 목록",
+      "what": "타임라인 탭 새 판 — 나무·주 칸·맨 위 목표 한 장, 폰 412·폴드 750·PC 1280(200·207)",
+      "team": "dev",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "진행",
+      "note": "dev/order.md 6 · req_264866d8, 헨리 같다 대기(빈 칸 상자 하나) · 목표 한 장은 재시작 뒤",
+      "milestone": {
+        "team": "dev",
+        "n": 10
+      }
+    },
+    {
+      "id": "J3",
+      "stream": "순서 목록",
+      "what": "방 말 검사기가 낱말표 \"- \" 줄만 읽기 · 계약 카드 닫기 · 서버 시간 값 넷은 대표 답 뒤",
+      "team": "dev",
+      "seat": "ops",
+      "after": [],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "dev/order.md 7",
+      "milestone": {
+        "team": "dev",
+        "n": 10
+      }
+    },
+    {
+      "id": "J4",
+      "stream": "순서 목록",
+      "what": "그래프 보기 자료 — state/graph.json + /api/graph(220 \"계획대로 뒤에\")",
+      "team": "dev",
+      "seat": "ops",
+      "after": [],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "dev/order.md 8 · 예정, 하영 낱말·유진 지표 뒤",
+      "milestone": null
+    },
+    {
+      "id": "J5",
+      "stream": "순서 목록",
+      "what": "카카오톡 꼴 화면 시안 다섯 탭 폰·PC(180)",
+      "team": "design",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "통과",
+      "note": "design/order.md 3",
+      "milestone": {
+        "team": "design",
+        "n": 7
+      }
+    },
+    {
+      "id": "J6",
+      "stream": "순서 목록",
+      "what": "대시보드 새 설계 시안 3판(192)",
+      "team": "design",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "통과",
+      "note": "design/order.md 4 · 실물은 K1·K3·K4",
+      "milestone": {
+        "team": "design",
+        "n": 7
+      }
+    },
+    {
+      "id": "J7",
+      "stream": "순서 목록",
+      "what": "실물이 시안과 같은지 대보기 — 대시보드·타임라인·타임라인 맨 위 목표 한 장",
+      "team": "design",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "진행",
+      "note": "design/order.md 7 · 같다 왕복 두 번까지(227)",
+      "milestone": {
+        "team": "design",
+        "n": 7
+      }
+    },
+    {
+      "id": "J8",
+      "stream": "순서 목록",
+      "what": "그래프 보기 시안 셋 — 그래프·타임라인·기록(220 뒤에)",
+      "team": "design",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "design/order.md 8",
+      "milestone": null
+    },
+    {
+      "id": "J9",
+      "stream": "순서 목록",
+      "what": "붙은 화면 다섯 30초 시험 — 대표가 30초 안에 볼 것 한 문장",
+      "team": "marketing",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "통과",
+      "note": "marketing/order.md 2",
+      "milestone": {
+        "team": "marketing",
+        "n": 5
+      }
+    },
+    {
+      "id": "J10",
+      "stream": "순서 목록",
+      "what": "보통 말 표 스무 줄·기계가 읽는 검사 목록·자리 지침 경로·첫 읽는 글 셋(198) · 한국어 규정집과 금지 낱말 스물여섯(216)",
+      "team": "marketing",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "진행",
+      "note": "marketing/order.md 5 · 규정집 1판 나리 대조 어긋남 0",
+      "milestone": {
+        "team": "marketing",
+        "n": 7
+      }
+    },
+    {
+      "id": "J11",
+      "stream": "순서 목록",
+      "what": "나래 계획 3~6 마케팅 몫 — 기다리는 말씀·헌법 낱말, 첫 읽는 글",
+      "team": "marketing",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "marketing/order.md 8",
+      "milestone": {
+        "team": "marketing",
+        "n": 7
+      }
+    },
+    {
+      "id": "J12",
+      "stream": "순서 목록",
+      "what": "그래프 보기 낱말 — 그래프 보기·점·선·상세(220 뒤에)",
+      "team": "marketing",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "marketing/order.md 9",
+      "milestone": null
+    },
+    {
+      "id": "J13",
+      "stream": "순서 목록",
+      "what": "대표 보고서 틀 — 조사·비교·시안·매뉴얼·실물 교체",
+      "team": "finance",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "통과",
+      "note": "finance/order.md 2",
+      "milestone": {
+        "team": "finance",
+        "n": 3
+      }
+    },
+    {
+      "id": "J14",
+      "stream": "순서 목록",
+      "what": "켜질 때 읽는 것 셋으로 줄이기 — 경영 책장(211 세션 룰)",
+      "team": "finance",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "finance/order.md 7-1",
+      "milestone": {
+        "team": "finance",
+        "n": 4
+      }
+    },
+    {
+      "id": "J15",
+      "stream": "순서 목록",
+      "what": "그래프 보기 지표 정의와 12살 30초 시험(220 뒤에)",
+      "team": "finance",
+      "seat": "guide",
+      "after": [],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "finance/order.md 8·9",
+      "milestone": null
+    },
+    {
+      "id": "J16",
+      "stream": "순서 목록",
+      "what": "비서실 — 디자인·개발 집중 확인(223), 나리 결정 다섯 잣대(156)",
+      "team": "sera",
+      "seat": "secretary",
+      "after": [],
+      "bottleneck": null,
+      "status": "진행",
+      "note": "sera/order.md · 셋의 합의 판(228)",
+      "milestone": null
+    },
+    {
+      "id": "J17",
+      "stream": "순서 목록",
+      "what": "나리 — 마케팅·경영 집중 확인(223) · 카드 판정(141)",
+      "team": "hq",
+      "seat": "system",
+      "after": [],
+      "bottleneck": null,
+      "status": "진행",
+      "note": "sera/order.md 나리 줄",
+      "milestone": {
+        "team": "hq",
+        "n": 3
+      }
+    },
+    {
+      "id": "J18",
+      "stream": "순서 목록",
+      "what": "총괄 — 목표 한 장·기다리는 말씀·순서 목록 여섯을 보드에(203~212)",
+      "team": "hq",
+      "seat": "chief",
+      "after": [],
+      "bottleneck": null,
+      "status": "진행",
+      "note": "hq/order.md 4·7",
+      "milestone": {
+        "team": "hq",
+        "n": 3
+      }
+    },
+    {
+      "id": "J19",
+      "stream": "순서 목록",
+      "what": "예정 작업 표 2판(대표가 물으신 것만) → 첫 주간 계획서",
+      "team": "hq",
+      "seat": "chief",
+      "after": [],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "hq/order.md 8·9",
+      "milestone": {
+        "team": "hq",
+        "n": 3
+      }
     }
   ]
 }
