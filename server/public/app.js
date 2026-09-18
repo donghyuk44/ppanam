@@ -311,7 +311,7 @@ function bossTurns() {
 /** 방 하나가 대표 차례인 이유 — 한 줄. */
 function bossWhyOf(t) {
   const s = summaries[t.id] ?? {};
-  if (s.needsBoss) return BOSS_WHY[s.needsBossWhy] ?? '답변 필요';
+  if (s.needsBoss) return BOSS_WHY[s.needsBossWhy] ?? '답변 대기';
   if (s.bossCall) return `${ga(s.cast?.[s.bossCall.by]?.name ?? s.bossCall.by)} 불렀습니다 · ${ago(s.bossCall.ts)}`;
   return '';
 }
@@ -341,7 +341,7 @@ function renderBossBadge() {
 }
 // 화면 글자는 하영 사전(teams/marketing/out/opsroom-words.md 3절 확정본, 결정 43 ⑥·100) 그대로 — 여기서 새로 짓지 않는다. 회차·단계·계획표·결재·낸 것·검토 결과.
 const BOSS_WHY = { blocked: '검토 필요 — 반려 뒤 중단', attempts: '검토 필요 — 3회 반려', silent: '24시간 이상 활동 없음' };
-const KIND_LABEL = { boss: '정하실 것', approval: '결재', blocked: '차단됨', report: '보고' };
+const KIND_LABEL = { boss: '대표님 할 일', approval: '결재', blocked: '차단됨', report: '보고' };   // 절 머리 '대표님 할 일' — 하영 사전 1절 152·247행(req_d82aaf90 ②)
 function renderBellMenu() {
   const m = $('bellMenu');
   m.replaceChildren();
@@ -575,7 +575,7 @@ function renderSide() {
     const dl = el('dl');
     for (const [k, v] of [
       ['단계', summary.milestone ? `${summary.milestone} / ${summary.milestonesTotal || '—'} 단계` : '—'],
-      ['상태', summary.needsBoss ? '답변 필요' : summary.phase === 'running' ? '진행 중' : '대기'],
+      ['상태', summary.needsBoss ? '답변 대기' : summary.phase === 'running' ? '진행 중' : '대기'],
       // 대화록 N건 — 뺐다(하영 3-2: opsroom-content.md 3절)
     ]) {
       const row = el('div', 'kv');
@@ -2087,7 +2087,7 @@ function renderTowerAll(grid) {
     }
     const row = el('button', 'dash__row'); row.type = 'button';
     const who = it.name ?? (it.by ? (summaries[it.team]?.cast?.[it.by]?.name ?? summaries.hq?.cast?.[it.by]?.name ?? null) : null);   // 누가 올렸나 — 글이 자에 걸려 머리만 남을 때 카드 둘이 같은 줄로 보이지 않게(톰 ②)
-    row.appendChild(el('b', null, `${it.teamName}${who ? ' · ' + who : ''} · ${it.kind === 'approval' ? '결재 대기' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));   // '결재 대기' — 사전 124행(헨리)
+    row.appendChild(el('b', null, `${it.teamName}${who ? ' · ' + who : ''} · ${it.kind === 'approval' ? '결재 대기' : it.kind === 'boss' ? '답변 대기' : '검토 필요'}`));   // '결재 대기' — 사전 124행(헨리)
     putLine(row, it.text, 'dash__sub', it.team);   // 대표 몫은 행은 남기고(누를 수 있어야) 글만 — 없으면 머리 한 줄(opus ④)
     row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '확인' : '채팅 열기'));
     row.addEventListener('click', () => { markRead([it.id]); const tg = it.target ?? {}; if (it.kind === 'approval') { const r = approvals.find((a) => a.id === (tg.approval ?? String(it.id).split(':')[1])); if (r) openApprovalPop(r); else document.querySelector('.approvals')?.scrollIntoView({ block: 'start' }); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
@@ -2197,8 +2197,9 @@ function renderTowerPeople(grid) {
   const bossCast = summaries[teams[0]?.id]?.cast?.boss ?? { name: '함동혁(댄)', initial: '댄', color: '#8a7320', title: '대표', does: '사람' };
   const bc = el('div', 'pcard'); bc.dataset.boss = '1';
   bc.appendChild(pcardTop(bossCast, el('span'), { team: 'hq', id: 'boss' }));
+  // 어느 탭이든 '정할 것 N' 하나 — 대시보드 띠·리포트와 같은 셈(bossItems, 사전 1절 152행 · req_d82aaf90 ②). 옛 '결재 N · 답 기다리는 방' 은 네 번째 이름·숫자였다(적대검수 48행).
   const { rooms } = bossTurns();
-  bc.appendChild(el('div', 'pcard__doing', `결재 ${approvals.length} · 답 기다리는 방 ${rooms.length ? rooms.map((t) => t.name).join('·') : '없음'}`));
+  bc.appendChild(el('div', 'pcard__doing', `정할 것 ${bossItems().mine.length}${rooms.length ? ' · ' + rooms.map((t) => t.name).join('·') : ''}`));
   grid.appendChild(bc);
 
   // 나리(system)는 비서실 묶음에만 — 세라·나리 둘(대표 16:5x "나리가 또 이리저리 팀마다 다 들어가있다", 결정 185). 여섯 방 cast 가 다 system 을 갖고
@@ -2257,7 +2258,7 @@ const firstLine = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, 20
  */
 function whyStopped(t, p) {
   const s = summaries[t.id] ?? {};
-  if (p.state === 'blocked') return BOSS_WHY[s.needsBossWhy] ?? '답변 필요';
+  if (p.state === 'blocked') return BOSS_WHY[s.needsBossWhy] ?? '답변 대기';
   // 세션이 안 떠 있는 것(alive false)은 '재시작 필요' 가 아니다 — 서버가 켜진 직후엔 다 그렇고 첫 차례에 다시 뜬다(T2·sessions.json). 대표가 켠 직후 '다 죽었다' 로 읽으셨다(나리 12:3x, 새는 것 ⑥).
   // 글자는 사전 3-1 "왜 멈췄나" 표(266~274행)·517행 ⑥ 그대로 — "대기 — 멘션 시 응답"·"5분 이상 멘션 없음" 은 113행이 하네스 말로 짚은 것(대표 16:35 ③ 한국어 50점).
   if (p.state === 'waiting') return s.phase !== 'running' ? '지금 하는 회차가 없어요' : '누가 부르면 답해요';
@@ -2504,8 +2505,9 @@ function renderTowerAsks(grid) {
  * 위에서 아래로: 머리(팀 · 알약) · 단계 N/M 목록(끝난 것 채움 · 지금 굵은 테두리 + 회차 네모 · 남은 것 점선) · 이 회차(상황판 네 칸 글자 그대로)
  * · 다른 팀에 부탁한 일 N(있을 때만) · 사람(칩 · 이름 직책 · 하는 일 · N분 전에 움직임 · 알약). 카드 안에서 누르면 옆으로만 — 단계 → 계획표 카드 · 부탁한 일 → 요청 탭 · 사람 → 사람 카드.
  * 마지막 발언·진행 막대·상황 접기는 뺐다(시안에 없다). 맨 밑 말하기·회차 시작/마무리 줄은 대표 손잡이라 그대로 둔다. ── */
-const ROOM_WORD = { hq: '총괄실', marketing: '마케팅팀', dev: '개발팀', design: '디자인팀', finance: '경영팀' };   // 하영 0-1 확정 방 이름
-const roomWord = (t) => ROOM_WORD[t.id] ?? t.room ?? t.name;
+// 팀 이름은 어느 자리든 teams.json name 하나("마케팅") — 채팅 방 이름만 room("마케팅 방", roomName 415행). 사무실(총괄실·비서실)은 그 이름이 곧 방 이름.
+// 옛 ROOM_WORD("마케팅팀")는 뺐다 — 같은 순간 "마케팅 방 · 마케팅팀 · 마케팅" 셋이 섰다(적대검수 47행, 하영 사전 1절 151행 · req_d82aaf90 ①).
+const roomWord = (t) => (t.kind === 'office' || t.office ? (t.room ?? t.name) : t.name);
 function renderTowerTeams(grid) {
   const focus = document.activeElement;
   const keep = focus?.classList?.contains('tcard__in')
@@ -2541,12 +2543,12 @@ function renderTowerTeams(grid) {
     name.addEventListener('click', async () => { await selectTeam(t.id); setView('room'); });
     top.appendChild(name);
     top.appendChild(pill(
-      s.needsBoss ? '답변 필요' : s.bossCall ? '답변 필요' : office ? '대표님과 톰' : s.phase === 'blocked' ? '차단됨' : running ? '진행 중' : '대기',
+      s.needsBoss ? '답변 대기' : s.bossCall ? '답변 대기' : office ? '대표님과 톰' : s.phase === 'blocked' ? '차단됨' : running ? '진행 중' : '대기',
       s.needsBoss || s.bossCall ? 'boss' : s.phase === 'blocked' ? 'bad' : running ? 'live' : 'idle'));
     card.appendChild(top);
     // 부제 — "N단계 제목 · N회차" (+ 왜 대표 차례인가). 총괄실은 회차가 없다
     const sub = office ? '대표님과 톰. 여기서 한 말을 톰이 팀에 나눠요'
-      : [s.round && s.milestone ? `${s.milestone}단계 ${s.milestoneTitle ?? ''}`.trim() : '진행 중인 회차 없음', s.round ? `${s.round}회차` : null, s.needsBoss ? (BOSS_WHY[s.needsBossWhy] ?? '답변 필요') : s.bossCall ? `${agents[s.bossCall.by]?.name ?? s.bossCall.by} · ${ago(s.bossCall.ts)}` : null].filter(Boolean).join(' · ');
+      : [s.round && s.milestone ? `${s.milestone}단계 ${s.milestoneTitle ?? ''}`.trim() : '진행 중인 회차 없음', s.round ? `${s.round}회차` : null, s.needsBoss ? (BOSS_WHY[s.needsBossWhy] ?? '답변 대기') : s.bossCall ? `${agents[s.bossCall.by]?.name ?? s.bossCall.by} · ${ago(s.bossCall.ts)}` : null].filter(Boolean).join(' · ');
     card.appendChild(el('div', 'tcard__sub', sub));
 
     // 단계 N/M — 계획표 그대로(도면 2겹). 지금 단계 오른쪽에 회차 네모(채움 = 닫힌 회차 · 초록 테두리 = 지금 · 회색 테두리 = 남은 것, timebox 회차 수만큼). 누르면 계획표 카드(방 오른쪽)
@@ -3005,10 +3007,10 @@ function renderReport(r) {
   const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
   if (mine.length || fromBoard.length) {
     const sec = el('section', 'dash__card rep__sec'); sec.dataset.block = 'mine'; sec.dataset.alert = '1';
-    sec.appendChild(el('div', 'dash__k', `승인 필요 ${mine.length}`));
+    sec.appendChild(el('div', 'dash__k', `정할 것 ${mine.length}`));   // 어느 탭이든 '정할 것 N'(사전 1절 152행 · req_d82aaf90 ②) — 옛 '승인 필요' 는 셋째 이름이었다
     for (const it of mine) {
       const row = el('button', 'dash__row'); row.type = 'button';
-      row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '승인 필요' : it.kind === 'boss' ? '답변 필요' : '검토 필요'}`));
+      row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '결재 대기' : it.kind === 'boss' ? '답변 대기' : '검토 필요'}`));   // 건마다 글자는 대시보드 2090행과 같은 것
       putLine(row, it.text, 'dash__sub', it.team);   // 대표 몫은 행은 남기고(누를 수 있어야) 글만 — 없으면 머리 한 줄(opus ④)
       row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '확인' : '채팅 열기'));
       row.addEventListener('click', () => { const tg = it.target ?? {}; if (it.kind === 'approval') { const a = approvals.find((x) => x.id === (tg.approval ?? String(it.id).split(':')[1])); if (a) openApprovalPop(a); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
@@ -3050,7 +3052,7 @@ function renderReport(r) {
   const bands = el('div', 'bands');
   for (const t of (r.teams ?? [])) {
     const line = el('div', 'bands__row');
-    const lab = el('span', 'bands__who'); const d = el('span', 'dot'); d.style.background = colorOf(t.id); lab.appendChild(d); lab.append(t.room ?? t.name); line.appendChild(lab);
+    const lab = el('span', 'bands__who'); const d = el('span', 'dot'); d.style.background = colorOf(t.id); lab.appendChild(d); lab.append(roomWord(t)); line.appendChild(lab);   // 팀 이름 하나(req_d82aaf90 ①)
     const items = (r.done ?? []).find((x) => x.team === t.id)?.items ?? [];
     const marks = items.map((it) => ({ at: Date.parse(it.ts), color: colorOf(t.id), title: `${it.name ?? t.name} · ${it.text} · ${whenKo(it.ts)}` }));
     const sp = spans.filter((s) => s.team === t.id).map((s) => ({ from: Math.max(since, Date.parse(s.from)), to: s.to ? Math.min(until, Date.parse(s.to)) : until }));
@@ -3089,7 +3091,7 @@ function renderReport(r) {
     const row = el('button', 'dash__row rep__team'); row.type = 'button';
     const head = el('span', 'dash__head');
     const d = el('span', 'dot'); d.style.background = colorOf(t.id); head.appendChild(d);
-    head.appendChild(el('b', null, t.room ?? t.name));
+    head.appendChild(el('b', null, roomWord(t)));   // 팀 이름 하나(req_d82aaf90 ①)
     head.appendChild(el('span', 'dash__stage', t.milestone ? `${t.milestone}단계 ${t.milestoneTitle ?? ''}`.slice(0, 22) + (t.round ? ` · ${t.round}회차` : '') : '단계 없음'));
     if (!t.office && t.total) { head.appendChild(progressBar(t.done, t.total, colorOf(t.id))); head.appendChild(el('span', 'bars__n', `${t.done}/${t.total}`)); }
     row.appendChild(head);

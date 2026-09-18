@@ -257,10 +257,10 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
 
 | `state` | 알약 | 언제 |
 | --- | --- | --- |
-| `working` | 일하는 중 | `busy`, 또는 (대표 부름·막힘이 아닌데) `lastSignal` 이 **5분 안** — 턴이 막 끝나도 5분은 일하는 중이다 |
-| `bossCall` | 대표 부름 | `bossCall` 이 있다(대표가 아직 답 안 함). `busy` 보다 뒤, 신호 5분보다 앞 — 부르고 기다리는 사람이 "일하는 중" 으로 가려지면 안 된다 |
-| `blocked` | 막힘 | 팀의 `phase === 'blocked'` |
-| `waiting` | 대기 | 세션이 떠 있다(`alive`), 또는 라운드가 없다(`phase !== 'running'`) — 차례나 라운드를 기다린다 |
+| `working` | 진행 중 | `busy` — 지금 차례를 도는 사람만(codex 는 `outsideRunning`). 신호 5분 안이라도 차례가 아니면 `waiting`(하영 사전 1절 150행, 09-18 — 전엔 "5분 안에 말했다" 가 진행 중이라 일과 상관없었다) |
+| `bossCall` | 답변 대기 | `bossCall` 이 있다(대표가 아직 답 안 함). `busy` 보다 뒤 — 부르고 기다리는 사람이 "진행 중" 으로 가려지면 안 된다 |
+| `blocked` | 차단됨 | 팀의 `phase === 'blocked'` |
+| `waiting` | 대기 | `lastSignal` 이 5분 안(턴이 막 끝난 사람 — 세션 없는 codex 가 곧바로 '자리 비움' 이 되지 않게), 또는 세션이 떠 있다(`alive`), 또는 라운드가 없다(`phase !== 'running'`) |
 | `resting` | 쉼 | 라운드가 도는데 세션이 없고 신호도 오래됐다 — 이 라운드에 안 끼어 있다. codex 는 세션이 없으니 5분 넘게 말이 없으면 여기 |
 
 마을 시계(`night`·`rest`)는 마을 탭에만. 집계는 순수 함수 `bus/bus.mjs peopleOf(log, cast, { now })`·`workStateOf` 라 `round.mjs check` 가 돌려본다.

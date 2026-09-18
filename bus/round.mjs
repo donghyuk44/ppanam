@@ -582,21 +582,22 @@ switch (cmd) {
       const bpOk = bp === '대표님, 한 줄요 — 유진 색이 겹쳐요. 계속 쓸까요?' && bp2 === '대표님, 올렸습니다.' && bp3 === '솔라, 이거 왜 이래?' && bpPeople.guide.bossCall?.text === '대표님, 한 줄요 — 계속 쓸까요?';
       out.push(['대표에게 한 그 문단(bossParagraph)', bpOk ? '✓ 물은 문단 · 부르기만 한 문단 · 없으면 원문 · 사람 카드 bossCall 인용도 그 문단' : '✗ ' + JSON.stringify({ bp, bp2, bp3, call: bpPeople.guide?.bossCall })]);
       // 일 상태 (결정 58 ①) — 마을 시계가 아니라 busy·bossCall·phase·alive·신호 5분으로. 일요일 저녁에 열넷이 "잠" 이던 버그.
+      // '진행 중'(working)은 차례를 도는 사람(busy)만 — 신호 5분 안은 '대기'(하영 사전 1절 150행, req_d82aaf90 ③).
       const wnow = d0.getTime() + 10 * 60_000;
       const ws = (p, phase) => workStateOf({ busy: false, alive: null, lastSignal: null, bossCall: null, ...p }, phase, wnow);
       const wsGot = [
         ws({ busy: true }, 'running'),                                             // working
         ws({ bossCall: { id: 'x' }, lastSignal: at(9) }, 'running'),               // bossCall — 신호 1분 전이라도 부름이 이긴다
         ws({ alive: true, lastSignal: at(9) }, 'blocked'),                         // blocked — 팀이 막히면 신호보다 앞
-        ws({ alive: false, lastSignal: at(6) }, 'running'),                        // working — 턴 끝났지만 4분 전 신호
+        ws({ alive: false, lastSignal: at(6) }, 'running'),                        // waiting — 턴 끝났고 4분 전 신호, 차례가 아니면 대기
         ws({ alive: true, lastSignal: at(0) }, 'running'),                         // waiting — 세션 떠 있고 차례 기다림
         ws({ alive: false, lastSignal: at(0) }, 'running'),                        // resting — 라운드 도는데 세션 없고 10분 조용
         ws({ alive: false }, 'idle'),                                              // waiting — 라운드가 없다
         ws({ alive: null, lastSignal: at(0) }, 'running'),                         // resting — codex, 10분 넘게 말 없음
-        ws({ alive: null, lastSignal: at(7) }, 'running'),                         // working — codex, 3분 전 발언
+        ws({ alive: null, lastSignal: at(7) }, 'running'),                         // waiting — codex, 3분 전 발언(도는 중이면 busy 라 working)
       ];
-      const wsWant = ['working', 'bossCall', 'blocked', 'working', 'waiting', 'resting', 'waiting', 'resting', 'working'];
-      out.push(['일 상태(결정 58)', wsGot.join() === wsWant.join() ? '✓ 마을 시계 없이 ' + wsWant.length + '경우' : '✗ ' + wsGot.join()]);
+      const wsWant = ['working', 'bossCall', 'blocked', 'waiting', 'waiting', 'resting', 'waiting', 'resting', 'waiting'];
+      out.push(['일 상태(결정 58)', wsGot.join() === wsWant.join() ? '✓ 마을 시계 없이 ' + wsWant.length + '경우, 진행 중은 차례 도는 사람만' : '✗ ' + wsGot.join()]);
       // 요청 블록 접기 (결정 49·51, 6-1절) — 순수 함수 foldRequest·lineError. 세 자리 밖 거부, done→ack→confirm 순서, milestone 모드는 ack 으로 안 닫힘.
       {
         const { foldRequest, lineError } = await import('./requests.mjs');
