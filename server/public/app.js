@@ -223,6 +223,7 @@ function renderRail() {
   const nav = $('teams');
   nav.replaceChildren();
   loadThreeLines(() => renderRail());   // 팀별 세 줄 정본이 오면(바뀌면) 한 번 더 — 60초 캐시라 매번 안 받는다
+  loadGoalNow(() => renderRail());      // 순서 목록 '지금' 줄(사무실 방 재료)도 같이
 
   for (const t of teams) {
     const s = summaries[t.id] ?? {};
@@ -239,8 +240,9 @@ function renderRail() {
     const body = el('span', 'team__body');
     body.appendChild(el('span', 'team__name', t.name));
     // 왼쪽 팀 줄 — "31회차 · 9단계" 는 대표님께 뜻이 없다(사용성-0916 표 4, 34회차): 지금 하는 일 한 줄(사람 말) — 팀별 세 줄 정본의 '지금', 없으면 상황판 하는 것 첫 줄, 둘 다 자에 안 맞으면 상태 말 하나
-    const nowLine = [three.byTeam[t.id]?.now, s.progress?.doing?.[0]].map((v) => String(v ?? '').trim()).find((v) => bossOk(v));
-    const sub = nowLine ?? (s.phase === 'running' ? '진행 중' : s.logCount ? '대기' : '시작 전');
+    // 사무실 방(총괄실·비서실)은 회차가 없어 phase 로 보면 늘 '대기'(대표 09-18 오후 "비서실 무한 대기") — 순서 목록 '지금' 줄, 없으면 일하는 사람 "세라 진행 중"
+    const nowLine = [three.byTeam[t.id]?.now, s.progress?.doing?.[0], goalNow.byTeam[t.id]].map((v) => String(v ?? '').trim()).find((v) => bossOk(v));
+    const sub = nowLine ?? (t.kind === 'office' ? officeDoer(t.id) : null) ?? (s.phase === 'running' ? '진행 중' : s.logCount ? '대기' : '시작 전');
     const subEl = el('span', 'team__sub', sub); subEl.title = sub;
     body.appendChild(subEl);
     b.appendChild(body);
@@ -1894,12 +1896,40 @@ function loadThreeLines(rerender = null) {
     if (changed && rerender) rerender();
   }).catch(() => {});
 }
+/**
+ * 팀마다 순서 목록의 '지금' 줄(teams/<팀>/order.md, 서버가 /api/timeline goal.teams 로 읽어 자로 거른 것 — 솔라 8684e22·ef6146e). 60초 캐시.
+ * 비서실·총괄실처럼 상황판이 없는 방의 "지금 하는 일" 재료(대표 09-18 오후 "비서실에 진행 중인 사항 표시 안 됨") — 팀별-세줄이 없을 때 이걸 쓴다.
+ */
+const goalNow = { byTeam: {}, fetchedAt: 0 };
+function loadGoalNow(rerender = null) {
+  if (Date.now() - goalNow.fetchedAt < 60_000) return;
+  goalNow.fetchedAt = Date.now();
+  fetch('/api/timeline').then((r) => (r.ok ? r.json() : null)).then((r) => {
+    const next = {};
+    for (const g of r?.goal?.teams ?? []) { const v = String(g.now ?? '').trim(); if (v && v !== NOT_YET) next[g.id] = v; }
+    const changed = JSON.stringify(next) !== JSON.stringify(goalNow.byTeam);
+    goalNow.byTeam = next;
+    if (changed && rerender) rerender();
+  }).catch(() => {});
+}
+/** 사무실 방(총괄실·비서실)의 사람 줄 — 지금 일하는 사람 이름으로 "세라 진행 중". 회차가 없어 상태만 보면 늘 '대기' 로 찍히던 것(대표 09-18 오후 "비서실 무한 대기"). 없으면 null. */
+function officeDoer(teamId) {
+  const s = summaries[teamId] ?? {};
+  const hit = Object.entries(s.people ?? {}).find(([id, p]) => id !== 'boss' && (p?.busy || p?.state === 'working'));
+  if (!hit) return null;
+  const name = s.cast?.[hit[0]]?.name ?? hit[0];
+  return `${name} 진행 중`;
+}
 /** 카드 노드 — 재료가 아직 없으면 null. 문 셋: 파일 → 새 창, 자세히 → 그 팀 채팅, 결재 단추 → 기존 결재 팝업(사유 칸·대리 안내가 거기 있다 — 결정 길은 하나). */
 function teamCardNode(team, rerender = null) {
-  loadCard(team, rerender); if (SHOW_USAGE) loadUsage(rerender); loadThreeLines(rerender);
+  loadCard(team, rerender); if (SHOW_USAGE) loadUsage(rerender); loadThreeLines(rerender); loadGoalNow(rerender);
   const d0 = cards.byTeam[team];
   if (!d0) return null;
-  const d = { ...d0, usage: SHOW_USAGE ? (d0.usage ?? usage.byTeam[team] ?? null) : null, three: d0.three ?? three.byTeam[team] ?? null };   // usage·three 는 서버가 카드 재료에 실으면 그것, 아니면 화면이 읽은 것
+  // three 는 서버 카드 재료 → 하영 팀별-세줄 → 순서 목록 '지금' 줄(사무실 방은 이것뿐) 순. doing 이 비면 지금 일하는 사람으로.
+  const clip60 = (s) => (s.length > 60 ? s.slice(0, 59).trimEnd() + '…' : s);   // 순서 목록 줄은 길다(길이 자 면제 자리) — 카드 줄은 60자라 잘라 준다(doingWord 와 같은 식)
+  const threeOf = d0.three ?? three.byTeam[team] ?? (goalNow.byTeam[team] ? { now: clip60(goalNow.byTeam[team]), next: null, later: null } : null);
+  const doer = officeDoer(team);
+  const d = { ...d0, usage: SHOW_USAGE ? (d0.usage ?? usage.byTeam[team] ?? null) : null, three: threeOf, doing: d0.doing ?? (doer ? { who: doer.replace(/ 진행 중$/, ''), text: null } : null) };   // usage·three 는 서버가 카드 재료에 실으면 그것, 아니면 화면이 읽은 것
   // 이름·색은 화면이 아는 것으로 채운다 — 서버가 옛 판(2dacf61)이면 name 이 없어 카드 머리에 hq·dev 가 그대로 섰다(나리 R32 ③)
   const t = teams.find((x) => x.id === team);
   return teamCard({ ...d, name: d.name ?? t?.name ?? team, color: d.color ?? teamColor(team) }, {
@@ -1924,7 +1954,8 @@ function renderRoomCard() {
   const box = $('roomCard');
   if (!box) return;
   const t = teams.find((x) => x.id === active);
-  if (!t || t.kind === 'office' || t.id === 'sera') { box.hidden = true; box.replaceChildren(); return; }
+  if (!t) { box.hidden = true; box.replaceChildren(); return; }
+  // 총괄실·비서실도 그린다 — 상황판은 없지만 순서 목록 '지금' 줄(goalNow)과 일하는 사람이 있다(대표 09-18 오후 "비서실에 진행 중인 사항 표시 안 됨"). 재료가 없으면 카드가 안 선다.
   const node = teamCardNode(active, () => { if (view === 'room') renderRoomCard(); });
   box.replaceChildren();
   if (node) { box.appendChild(node); box.hidden = false; } else box.hidden = true;
