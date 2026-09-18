@@ -220,7 +220,9 @@ function taskRow(t, k, cast) {
   } else row.appendChild(el('span', 'tl__face tl__face--none', '담당자 없음'));
   const what = okText(k.what);
   const stack = el('span', 'tl__whatStack');
-  const text = el('span', `tl__what${done ? ' tl__what--done' : ''}`, what ?? '');   // 자에 안 맞는 글은 안내 글자 없이 비운다(하영 req_d29407c3 ① — 톰이 보드 서른 줄을 자 안으로 고쳐 거의 안 남는다)   // 자에 안 맞는 줄은 서버가 NOT_YET 으로 준다 — 그 글자는 안 찍는다(결정 140)
+  // 자에 안 맞는 글은 안내 글자 대신 작업 이름 그대로(60자 넘으면 줄임표) — 하영 req_d29407c3 ①. 서버가 whatRaw 를 실으면 그걸(솔라), 없으면 빈 줄.
+  const raw = String(k.whatRaw ?? '').trim();
+  const text = el('span', `tl__what${done ? ' tl__what--done' : ''}`, what ?? (raw.length > 60 ? raw.slice(0, 59).trimEnd() + '…' : raw));   // 자에 안 맞는 줄은 서버가 NOT_YET 으로 준다 — 그 글자는 안 찍는다(결정 140)
   if (!what) text.dataset.notyet = '1';
   stack.appendChild(text);
   // "뒤에: ○○" — 아직 안 끝난 뒤 작업 이름(솔라 after, 자 통과분). 끝난 작업엔 안 붙인다.
@@ -231,5 +233,7 @@ function taskRow(t, k, cast) {
   return row;
 }
 /** 뒤에 걸린 작업 이름들 — after[].what 중 자를 지난 것만, '·' 로. 없으면 null. */
-function afterNames(k) { const names = (k.after ?? []).map((a) => okText(a?.what)).filter(Boolean); return names.length ? names.join(' · ') : null; }
+function afterNames(k) { const names = (k.after ?? []).map((a) => okText(a?.what)).filter(Boolean).map(stripNums); return names.length ? names.join(' · ') : null; }
+/** 괄호 안 번호 꼬리 '(203~212)'·'(결정 N)' 를 화면에서 뗀다 — 상자·'뒤에' 줄(하영 req_d29407c3 ②). 작업 이름 본문은 보드 글자라 안 건드린다. */
+function stripNums(s) { return String(s ?? '').replace(/\s*\((?:결정\s*)?\d[^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim(); }
 
