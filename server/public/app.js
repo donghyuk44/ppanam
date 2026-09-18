@@ -2105,12 +2105,6 @@ function renderTowerAll(grid) {
     for (const row of boardRows) sec3b.appendChild(row);
     grid.appendChild(sec3b);
   }
-    if (!startsWithTeam(b.text, b.teamName)) row.appendChild(el('b', null, b.teamName));   // 줄이 이미 팀 이름으로 시작하면 머리를 안 붙인다(폴드 QA #4)
-    if (!putLine(row, b.text, 'dash__sub', b.team)) continue;
-    row.addEventListener('click', goRoom(teams.find((t) => t.id === b.team)));
-    sec3.appendChild(row);
-  }
-  grid.appendChild(sec3);
 
   // ③ 팀 다섯 — 팀 카드(card.js teamCard: 진행 중·다음·예정 · 막힌 것 빨간 띠 · 머리 "누구 진행 중" · 꼬리 "끝난 수/전체 · 지금 N단계"). 재료가 아직이면 팀 이름 한 줄.
   const tl = el('section', 'dash__card'); tl.dataset.block = 'teams';
@@ -2146,6 +2140,12 @@ function renderTowerAll(grid) {
 /** 대표 몫 하나 — 정할 것의 재료(결재 C·물어봄·FAIL 판단 = blockedOf 의 waitOn boss, + 상황판 '보실 것' 줄). 대시보드 블록·띠·채팅 머리가 같은 것을 쓴다(code-review — 두 벌이면 갈린다). */
 function bossItems() {
   const now = Date.now();
+  const pendingAll = approvals.map((r) => ({ id: r.id, grade: r.grade, team: r.team, by: r.by, what: r.what, ts: r.requestedAt ?? r.ts }));
+  const openReq = requestsAll.filter((r) => r.status !== 'closed');
+  const mine = blockedOf({ teams, summaries, approvals: pendingAll, requests: openReq, infra }, { now, pauses }).filter((it) => it.waitOn === 'boss');
+  const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
+  return { mine, fromBoard };
+}
 /** 상황판 '대표님이 보실 것' 줄들 → 행(대시보드·리포트가 같은 부품). 자에 안 맞아 글이 없으면 행이 없다 — 머리 수는 이 배열 길이로 센다(하영 05:58 "수와 목록 하나로"). */
 function boardBossRows(fromBoard, onClick) {
   const rows = [];
@@ -2158,12 +2158,6 @@ function boardBossRows(fromBoard, onClick) {
     rows.push(row);
   }
   return rows;
-}
-  const pendingAll = approvals.map((r) => ({ id: r.id, grade: r.grade, team: r.team, by: r.by, what: r.what, ts: r.requestedAt ?? r.ts }));
-  const openReq = requestsAll.filter((r) => r.status !== 'closed');
-  const mine = blockedOf({ teams, summaries, approvals: pendingAll, requests: openReq, infra }, { now, pauses }).filter((it) => it.waitOn === 'boss');
-  const fromBoard = teams.flatMap((t) => (summaries[t.id]?.progress?.boss ?? []).map((text) => ({ team: t.id, teamName: t.name, text })));
-  return { mine, fromBoard };
 }
 /**
  * 띠 큰 숫자 셋 — 사전 191행(결정 192)의 셈, 값은 하나(대시보드 띠·채팅 머리 한 줄이 같이 쓴다).
@@ -3035,6 +3029,12 @@ function renderReport(r) {
       const row = el('button', 'dash__row'); row.type = 'button';
       row.appendChild(el('b', null, `${it.teamName}${it.name ? ' · ' + it.name : ''} · ${it.kind === 'approval' ? '결재 대기' : it.kind === 'boss' ? '답변 대기' : '검토 필요'}`));   // 건마다 글자는 대시보드 2090행과 같은 것
       putLine(row, it.text, 'dash__sub', it.team);   // 대표 몫은 행은 남기고(누를 수 있어야) 글만 — 없으면 머리 한 줄(opus ④)
+      row.appendChild(el('span', 'dash__go', it.kind === 'approval' ? '확인' : '채팅 열기'));
+      row.addEventListener('click', () => { const tg = it.target ?? {}; if (it.kind === 'approval') { const a = approvals.find((x) => x.id === (tg.approval ?? String(it.id).split(':')[1])); if (a) openApprovalPop(a); } else jumpTo(tg.team ?? it.team, tg.event ?? null); });
+      sec.appendChild(row);
+    }
+    body.appendChild(sec);
+  }
   // 상황판 '대표님이 보실 것' — 정할 것 상자 밖 따로, 머리 수 = 선 줄 수(대시보드와 같은 부품)
   const boardRows = boardBossRows(fromBoard);
   if (boardRows.length) {
