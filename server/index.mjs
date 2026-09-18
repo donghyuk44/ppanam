@@ -501,6 +501,7 @@ const server = http.createServer((req, res) => {
           tasks: p.tasks.map((task) => ({
             ...task,
             what: line(task.what),
+            whatRaw: task.what ?? null,   // 원문 — 자에 안 걸려도(결정 번호 섞인 이름) 화면이 60자 줄임표로 보여 줄 수 있게(테라 요청, c526140)
             bottleneck: task.bottleneck ? line(task.bottleneck) : null,
             after: task.after.map((a) => ({ id: a.id, what: a.what ? line(a.what) : null })),
           })),
