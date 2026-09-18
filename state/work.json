@@ -27,16 +27,17 @@
       "team": "dev",
       "seat": "ops",
       "after": [],
-      "bottleneck": "server(솔라)",
-      "status": "감사 대기",
-      "note": "나리 판단(08:0x): 회차 닫힘엔 안 죽이고 단계 닫힘에만 비운다. CLAUDE.md 대화록 표 한 줄을 같이 고친다(테라)",
+      "bottleneck": "테라",
+      "status": "대기",
+      "note": "나리 판단(08:0x): 회차 닫힘엔 안 죽이고 단계 닫힘에만 비운다. CLAUDE.md 대화록 표 한 줄을 같이 고친다(테라) | 결정 268(16:0x 셋 동의) 톰 적용 — 결과물 파일 없음, 테라 결과물 먼저(업무 관리 5번)",
       "milestone": {
         "team": "dev",
         "n": 10
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "judge": null
     },
     {
       "id": "T3",
@@ -45,9 +46,9 @@
       "team": "dev",
       "seat": "ops",
       "after": [],
-      "bottleneck": "server(솔라)",
-      "status": "감사 대기",
-      "note": "personaAnchor — d61339a 에 섞여 커밋됨(클레멘타인 커밋, 내용은 솔라 서브에이전트 T3). 테라 감사 | 결과물 줄 — 저장소에서 커밋을 못 찾음(톰·세라), 솔라 한 줄(커밋 번호·확인 방법) 대기",
+      "bottleneck": "테라",
+      "status": "대기",
+      "note": "personaAnchor — d61339a 에 섞여 커밋됨(클레멘타인 커밋, 내용은 솔라 서브에이전트 T3). 테라 감사 | 결과물 줄 — 저장소에서 커밋을 못 찾음(톰·세라), 솔라 한 줄(커밋 번호·확인 방법) 대기 | 결정 268(16:0x 셋 동의) 톰 적용 — 결과물 파일 없음, 테라 결과물 먼저(업무 관리 5번)",
       "milestone": {
         "team": "dev",
         "n": 10
@@ -55,7 +56,8 @@
       "owner": "테라",
       "importance": "매우",
       "urgency": "긴급",
-      "deliverable": null
+      "deliverable": null,
+      "judge": null
     },
     {
       "id": "T4",
@@ -65,16 +67,17 @@
       "team": "dev",
       "seat": "ops",
       "after": [],
-      "bottleneck": "server(솔라)",
-      "status": "감사 대기",
-      "note": "session.mjs assemblePrompt — 서브에이전트",
+      "bottleneck": "테라",
+      "status": "대기",
+      "note": "session.mjs assemblePrompt — 서브에이전트 | 결정 268(16:0x 셋 동의) 톰 적용 — 결과물 파일 없음, 테라 결과물 먼저(업무 관리 5번)",
       "milestone": {
         "team": "dev",
         "n": 10
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "judge": null
     },
     {
       "id": "P1",
@@ -307,16 +310,17 @@
       "after": [
         "C1"
       ],
-      "bottleneck": "server(솔라)",
-      "status": "감사 대기",
-      "note": "index.mjs — 서브에이전트, 지금 시작 가능",
+      "bottleneck": "테라",
+      "status": "대기",
+      "note": "index.mjs — 서브에이전트, 지금 시작 가능 | 결정 268(16:0x 셋 동의) 톰 적용 — 결과물 파일 없음, 테라 결과물 먼저(업무 관리 5번)",
       "milestone": {
         "team": "dev",
         "n": 10
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "judge": null
     },
     {
       "id": "C6",
@@ -329,7 +333,7 @@
       ],
       "bottleneck": null,
       "status": "감사 대기",
-      "note": "테라 서브에이전트 — app.js 안 건드림, 지금 시작 가능",
+      "note": "테라 서브에이전트 — app.js 안 건드림, 지금 시작 가능 | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 솔라",
       "milestone": {
         "team": "dev",
         "n": 10
@@ -337,7 +341,8 @@
       "owner": "테라",
       "importance": "매우",
       "urgency": "긴급",
-      "deliverable": "커밋 8663d18·bccef89(card.js 판정 카드·팀 카드) — 파일 server/public/card.js"
+      "deliverable": "커밋 8663d18·bccef89(card.js 판정 카드·팀 카드) — 파일 server/public/card.js",
+      "judge": "솔라"
     },
     {
       "id": "C7",
@@ -351,7 +356,7 @@
       ],
       "bottleneck": "app.js(테라)",
       "status": "감사 대기",
-      "note": "12:56 테라: d5048f5 로 이미 세 곳에 꽂힘 — 작업판이 낡았음. 솔라 감사 → 레오",
+      "note": "12:56 테라: d5048f5 로 이미 세 곳에 꽂힘 — 작업판이 낡았음. 솔라 감사 → 레오 | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 솔라",
       "milestone": {
         "team": "dev",
         "n": 10
@@ -359,7 +364,8 @@
       "owner": "테라",
       "importance": "매우",
       "urgency": "긴급",
-      "deliverable": "커밋 d5048f5(세 곳에 꽂음)·bccef89 — 사진은 헨리 대조 판 r34-dash3-412.png"
+      "deliverable": "커밋 d5048f5(세 곳에 꽂음)·bccef89 — 사진은 헨리 대조 판 r34-dash3-412.png",
+      "judge": "솔라"
     },
     {
       "id": "C8",
@@ -406,14 +412,15 @@
       "after": [],
       "bottleneck": null,
       "status": "감사 대기",
-      "note": "10:49 대표: 색·글꼴·간격·카드 모양은 트립튜드 피그마(S3)를 그대로 따름",
+      "note": "10:49 대표: 색·글꼴·간격·카드 모양은 트립튜드 피그마(S3)를 그대로 따름 | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 클레멘타인",
       "milestone": {
         "team": "design",
         "n": 7
       },
       "owner": "헨리",
       "importance": "보통",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "judge": "클레멘타인"
     },
     {
       "id": "S3",
@@ -445,7 +452,7 @@
       "after": [],
       "bottleneck": "server(솔라)",
       "status": "감사 대기",
-      "note": "conductor.mjs — 서브에이전트 | 독립검수 09:30: ㉢ 이 ownerOf 한 자리만 불러 노라 71분 못 잡음 → 몫 걸린 자리를 부르기 · 판정 완료 뒤 N분 안 round_end 없으면 실무에게 \"닫으세요\" | 10:34 마케팅: 하영이 다니엘 출처를 15분 기다리며 침묵 → \"기다림\"은 방에 한 줄 선언하고 자기 몫을 이어 감, 기다리는 자리(외부감사)가 10분 안 답 없으면 감시가 그 자리를 부름",
+      "note": "conductor.mjs — 서브에이전트 | 독립검수 09:30: ㉢ 이 ownerOf 한 자리만 불러 노라 71분 못 잡음 → 몫 걸린 자리를 부르기 · 판정 완료 뒤 N분 안 round_end 없으면 실무에게 \"닫으세요\" | 10:34 마케팅: 하영이 다니엘 출처를 15분 기다리며 침묵 → \"기다림\"은 방에 한 줄 선언하고 자기 몫을 이어 감, 기다리는 자리(외부감사)가 10분 안 답 없으면 감시가 그 자리를 부름 | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 솔라",
       "milestone": {
         "team": "dev",
         "n": 10
@@ -453,7 +460,8 @@
       "owner": "테라",
       "importance": "매우",
       "urgency": "긴급",
-      "deliverable": "커밋 e20fa90(회차 기다림 — 대기 사유 적으면 침묵 부름 건너뜀) — 파일 server/conductor.mjs"
+      "deliverable": "커밋 e20fa90(회차 기다림 — 대기 사유 적으면 침묵 부름 건너뜀) — 파일 server/conductor.mjs",
+      "judge": "솔라"
     },
     {
       "id": "O2",
@@ -463,7 +471,7 @@
       "seat": "chief",
       "after": [],
       "bottleneck": null,
-      "status": "진행",
+      "status": "대기",
       "milestone": {
         "team": "hq",
         "n": 3
@@ -471,7 +479,7 @@
       "owner": "톰",
       "importance": "보통",
       "urgency": "보통",
-      "note": "(옛 이름) 따라가기 표 · 결정 기록 · 카드 옮김"
+      "note": "(옛 이름) 따라가기 표 · 결정 기록 · 카드 옮김 | 결정 268(16:0x 셋 동의) 톰 적용 — 톰 지금은 J31"
     },
     {
       "id": "O3",
@@ -483,11 +491,12 @@
         "O2"
       ],
       "bottleneck": null,
-      "status": "진행",
+      "status": "대기",
       "milestone": null,
       "owner": "세라",
       "importance": "보통",
-      "urgency": "여유"
+      "urgency": "여유",
+      "note": "undefined | 결정 268(16:0x 셋 동의) 톰 적용 — 세라 자리 일 J16 뒤"
     },
     {
       "id": "F1",
@@ -598,7 +607,9 @@
       },
       "owner": "하영",
       "importance": "보통",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "judge": "안젤",
+      "note": "undefined | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 안젤"
     },
     {
       "id": "H2",
@@ -757,14 +768,15 @@
       ],
       "bottleneck": null,
       "status": "감사 대기",
-      "note": "클레멘타인 주인. 유진 틀 판정 뒤",
+      "note": "클레멘타인 주인. 유진 틀 판정 뒤 | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 클레멘타인",
       "milestone": {
         "team": "design",
         "n": 7
       },
       "owner": "헨리",
       "importance": "보통",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "judge": "클레멘타인"
     },
     {
       "id": "G4",
@@ -887,7 +899,7 @@
       "bottleneck": "",
       "status": "감사 대기",
       "doneCheck": "server/conductor.mjs",
-      "note": "(옛 이름) 완료 조건 — 자리마다 doneCheck 있으면 그 파일 있어야 닫으라 부름 → 확인: node bus/round.mjs check (완료 조건 D1 줄) | 대표 승인 10:0x ①②. 닫힘 조건은 둘뿐 — 코드 40b9e99, 자 시험 통과. 끝 — D1",
+      "note": "(옛 이름) 완료 조건 — 자리마다 doneCheck 있으면 그 파일 있어야 닫으라 부름 → 확인: node bus/round.mjs check (완료 조건 D1 줄) | 대표 승인 10:0x ①②. 닫힘 조건은 둘뿐 — 코드 40b9e99, 자 시험 통과. 끝 — D1 | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 솔라",
       "milestone": {
         "team": "dev",
         "n": 10
@@ -895,7 +907,8 @@
       "owner": "테라",
       "importance": "매우",
       "urgency": "긴급",
-      "deliverable": "코드 40b9e99 · 자 시험 통과(doneCheck 칸 그대로)"
+      "deliverable": "코드 40b9e99 · 자 시험 통과(doneCheck 칸 그대로)",
+      "judge": "솔라"
     },
     {
       "id": "D2",
@@ -927,7 +940,7 @@
       "bottleneck": "",
       "status": "감사 대기",
       "doneCheck": "tools/work-board.mjs",
-      "note": "(옛 이름) 작업판 표 도구 — work.json 에서 따라가기 표를 뽑음 → 확인: node tools/work-board.mjs | 대표 승인 10:0x ③. 이름은 하영 사전 따름 — 코드 616d225. 끝 — D3",
+      "note": "(옛 이름) 작업판 표 도구 — work.json 에서 따라가기 표를 뽑음 → 확인: node tools/work-board.mjs | 대표 승인 10:0x ③. 이름은 하영 사전 따름 — 코드 616d225. 끝 — D3 | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 솔라",
       "milestone": {
         "team": "dev",
         "n": 10
@@ -935,7 +948,8 @@
       "owner": "테라",
       "importance": "매우",
       "urgency": "긴급",
-      "deliverable": "코드 616d225 · node tools/work-board.mjs 출력(doneCheck 칸 그대로)"
+      "deliverable": "코드 616d225 · node tools/work-board.mjs 출력(doneCheck 칸 그대로)",
+      "judge": "솔라"
     },
     {
       "id": "D4",
@@ -1204,8 +1218,8 @@
       "seat": "system",
       "after": [],
       "bottleneck": "",
-      "status": "진행",
-      "note": "(옛 이름) 스킬 쓰기 규칙 — 팀 세션에 있는 스킬을 회차 조건에 박음: 개발 code-review·security-review(커밋 전), 디자인 web-design-guidelines·design(시안 검토), 리포트 그래프 dataviz. 저장소 스킬 넷(kickoff·round·verdict·review)은 지금 하네스와 맞나 점검 | 대표 11:08 '스킬들도 실제 추가 되어있나? 사용하고있나?' — 실측: 팀 세션 스킬 33개 보임, 오늘 팀 사용 0회(로그 Skill 호출 0). 나리(시스템)는 오늘 넷(영상 대본·아티팩트 둘·워크플로)",
+      "status": "대기",
+      "note": "(옛 이름) 스킬 쓰기 규칙 — 팀 세션에 있는 스킬을 회차 조건에 박음: 개발 code-review·security-review(커밋 전), 디자인 web-design-guidelines·design(시안 검토), 리포트 그래프 dataviz. 저장소 스킬 넷(kickoff·round·verdict·review)은 지금 하네스와 맞나 점검 | 대표 11:08 '스킬들도 실제 추가 되어있나? 사용하고있나?' — 실측: 팀 세션 스킬 33개 보임, 오늘 팀 사용 0회(로그 Skill 호출 0). 나리(시스템)는 오늘 넷(영상 대본·아티팩트 둘·워크플로) | 결정 268(16:0x 셋 동의) 톰 적용 — 나리 자리 일 J17 뒤",
       "milestone": {
         "team": "hq",
         "n": 3
@@ -1321,14 +1335,15 @@
       ],
       "bottleneck": "헨리 시안",
       "status": "감사 대기",
-      "note": "(옛 이름) 폴드 QA 헨리 몫 넷 — #6 색 · #13 두 줄 배치 · #21 범례 · #23 750 에서 옆판을 세울지 한 장 | 16:0x 헨리 넷 냄 — out/qa-fold-design-0916.md, fig-0916-fold-timeline-410·fold-tower-750 (38a2850) + 새 결 폰 판 일곱(f9f2492, 피그마 '새 결 09-16'). 클레멘타인 #6 .dash__k 888행. 마크 /verdict → 나리·세라 | apr_a933d589 통과(나리 대리·제리·세라 15:1x). 말풍선 560px 은 테라 d31e5e1 로 됨",
+      "note": "(옛 이름) 폴드 QA 헨리 몫 넷 — #6 색 · #13 두 줄 배치 · #21 범례 · #23 750 에서 옆판을 세울지 한 장 | 16:0x 헨리 넷 냄 — out/qa-fold-design-0916.md, fig-0916-fold-timeline-410·fold-tower-750 (38a2850) + 새 결 폰 판 일곱(f9f2492, 피그마 '새 결 09-16'). 클레멘타인 #6 .dash__k 888행. 마크 /verdict → 나리·세라 | apr_a933d589 통과(나리 대리·제리·세라 15:1x). 말풍선 560px 은 테라 d31e5e1 로 됨 | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 클레멘타인",
       "milestone": {
         "team": "design",
         "n": 7
       },
       "owner": "헨리",
       "importance": "보통",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "judge": "클레멘타인"
     },
     {
       "id": "K1",
@@ -1338,7 +1353,7 @@
       "after": [],
       "bottleneck": "app.js(테라)",
       "status": "감사 대기",
-      "note": "대시보드 3판(a24b562)에 들어감 — 헨리 \"같다\" 대기(req_7e1cff83)",
+      "note": "대시보드 3판(a24b562)에 들어감 — 헨리 \"같다\" 대기(req_7e1cff83) | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 솔라",
       "team": "dev",
       "milestone": {
         "team": "dev",
@@ -1347,7 +1362,8 @@
       "owner": "테라",
       "importance": "매우",
       "urgency": "긴급",
-      "deliverable": "커밋 a24b562·9cc4135(첫 화면 순서 뒤집기) · 사진 teams/dev/out/shots/r37-dash3b-412.png"
+      "deliverable": "커밋 a24b562·9cc4135(첫 화면 순서 뒤집기) · 사진 teams/dev/out/shots/r37-dash3b-412.png",
+      "judge": "솔라"
     },
     {
       "id": "K2",
@@ -1375,7 +1391,7 @@
       "after": [],
       "bottleneck": "app.js(테라)",
       "status": "감사 대기",
-      "note": "팀 카드 꼬리는 3판(d682167 셈 로드맵 기준). 왼쪽 팀 줄·타임라인도 같은 꼴인지는 헨리 대조",
+      "note": "팀 카드 꼬리는 3판(d682167 셈 로드맵 기준). 왼쪽 팀 줄·타임라인도 같은 꼴인지는 헨리 대조 | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 솔라",
       "team": "dev",
       "milestone": {
         "team": "dev",
@@ -1384,7 +1400,8 @@
       "owner": "테라",
       "importance": "매우",
       "urgency": "긴급",
-      "deliverable": "커밋 d682167·52fb8e4(꼬리 \"끝난 수/전체 · 지금 N단계\") · 사진 r37-dash3b-412.png"
+      "deliverable": "커밋 d682167·52fb8e4(꼬리 \"끝난 수/전체 · 지금 N단계\") · 사진 r37-dash3b-412.png",
+      "judge": "솔라"
     },
     {
       "id": "K4",
@@ -1394,7 +1411,7 @@
       "after": [],
       "bottleneck": "app.js(테라)",
       "status": "감사 대기",
-      "note": "대시보드 제안 2절 → 3판",
+      "note": "대시보드 제안 2절 → 3판 | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 솔라",
       "team": "dev",
       "milestone": {
         "team": "dev",
@@ -1403,7 +1420,8 @@
       "owner": "테라",
       "importance": "매우",
       "urgency": "긴급",
-      "deliverable": "커밋 62045a4(\"요약 없음\" 없앰)·9cc4135 · 사진 r37-dash3b-412.png"
+      "deliverable": "커밋 62045a4(\"요약 없음\" 없앰)·9cc4135 · 사진 r37-dash3b-412.png",
+      "judge": "솔라"
     },
     {
       "id": "K5",
@@ -1501,8 +1519,8 @@
       "seat": "guide",
       "after": [],
       "bottleneck": "헨리 시안",
-      "status": "대기",
-      "note": "타임라인은 결정 200(주 단위 팀별 간트) 시안으로 — 헨리·클레멘타인. 이름 하나로는 하영 낱말(마케팅 7단계)",
+      "status": "진행",
+      "note": "타임라인은 결정 200(주 단위 팀별 간트) 시안으로 — 헨리·클레멘타인. 이름 하나로는 하영 낱말(마케팅 7단계) | 결정 268(16:0x 셋 동의) 톰 적용 — 헨리 지금(3판 표). 남은 것 한 줄로 갈라 적어야 통과 조건(안 본 것 1)",
       "team": "design",
       "milestone": {
         "team": "design",
@@ -1522,7 +1540,7 @@
       "after": [],
       "bottleneck": null,
       "status": "감사 대기",
-      "note": "(옛 이름) 서버 — 새 단계가 승인되면 회차를 바로 엶(201 ②) · 시각 예측 걷음(188) · 타임라인 자료 /api/timeline(8684e22) | dev/order.md 3 · 재시작 apr_e41e44c5 뒤 실물",
+      "note": "(옛 이름) 서버 — 새 단계가 승인되면 회차를 바로 엶(201 ②) · 시각 예측 걷음(188) · 타임라인 자료 /api/timeline(8684e22) | dev/order.md 3 · 재시작 apr_e41e44c5 뒤 실물 | 결정 268(16:0x 셋 동의) 톰 적용 — 짝 판정 솔라",
       "milestone": {
         "team": "dev",
         "n": 10
@@ -1530,7 +1548,8 @@
       "owner": "테라",
       "importance": "매우",
       "urgency": "긴급",
-      "deliverable": "커밋 cc23d69·8684e22(/api/timeline·goal·after) — 재시작 뒤 실물 r37-timeline-412-f.png"
+      "deliverable": "커밋 cc23d69·8684e22(/api/timeline·goal·after) — 재시작 뒤 실물 r37-timeline-412-f.png",
+      "judge": "솔라"
     },
     {
       "id": "J2",
@@ -1542,8 +1561,8 @@
         "J20"
       ],
       "bottleneck": "재시작(apr_e41e44c5) — 목표 한 장 진짜 자료",
-      "status": "진행",
-      "note": "(옛 이름) 타임라인 탭 새 판 — 나무·주 칸·맨 위 목표 한 장, 폰 412·폴드 750·PC 1280(200·207) | dev/order.md 6 · req_264866d8 — 나무·주 칸은 헨리 같다(-b 판, 12절). 목표 한 장은 재시작 뒤 진짜 글자 사진(-c 꼴)에서 같다·비서실 줄·시킨 일 카드 뺌. 11:4x 나리 대리: 테라 '진행'은 J20 으로, 그게 담긴 뒤 여기로 돌아옴",
+      "status": "통과",
+      "note": "(옛 이름) 타임라인 탭 새 판 — 나무·주 칸·맨 위 목표 한 장, 폰 412·폴드 750·PC 1280(200·207) | dev/order.md 6 · req_264866d8 — 나무·주 칸은 헨리 같다(-b 판, 12절). 목표 한 장은 재시작 뒤 진짜 글자 사진(-c 꼴)에서 같다·비서실 줄·시킨 일 카드 뺌. 11:4x 나리 대리: 테라 '진행'은 J20 으로, 그게 담긴 뒤 여기로 돌아옴 | 결정 268(16:0x 셋 동의) 톰 적용 — 타임라인 새 판 실물 = 시안(diff-0916 12절 e70c498), 테라 지금은 C17",
       "milestone": {
         "team": "dev",
         "n": 10
@@ -1624,14 +1643,14 @@
       ],
       "bottleneck": null,
       "status": "대기",
-      "note": "인수인계 청소(나래 12:2x) 접수. 대시보드·타임라인은 J7",
+      "note": "인수인계 청소(나래 12:2x) 접수. 대시보드·타임라인은 J7 | 결정 268(16:0x 셋 동의) 톰 적용",
       "milestone": {
         "team": "design",
         "n": 7
       },
       "owner": "헨리",
-      "importance": null,
-      "urgency": null
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "J28",
@@ -1644,11 +1663,11 @@
       ],
       "bottleneck": null,
       "status": "대기",
-      "note": "(옛 이름) 연결고리 네 칸 시험 — 타임라인 새 판에서 다섯 팀 중 둘을 골라 끝낸 일 → 결과물 → 지금 일 → 다음이 읽히나(204 ②) | sera/order.md 5 · 인수인계 청소(나래 12:2x) 접수",
+      "note": "(옛 이름) 연결고리 네 칸 시험 — 타임라인 새 판에서 다섯 팀 중 둘을 골라 끝낸 일 → 결과물 → 지금 일 → 다음이 읽히나(204 ②) | sera/order.md 5 · 인수인계 청소(나래 12:2x) 접수 | 결정 268(16:0x 셋 동의) 톰 적용(나리 매김, 세라 한 마디로 바뀜)",
       "milestone": null,
       "owner": "세라",
-      "importance": null,
-      "urgency": null
+      "importance": "보통",
+      "urgency": "보통"
     },
     {
       "id": "J29",
@@ -1659,11 +1678,11 @@
       "after": [],
       "bottleneck": "server(솔라) — 한도 % 는 서버가 못 읽음(나리 09-16 18:1x), 읽을 길부터",
       "status": "대기",
-      "note": "인수인계 청소(나래 12:2x) 접수. 09-16 나리: 한도 % 는 클로드 계정 화면에만 있어 서버가 못 읽음 — 길이 생기기 전엔 달러 꼬리 빼고 숫자 없이",
+      "note": "인수인계 청소(나래 12:2x) 접수. 09-16 나리: 한도 % 는 클로드 계정 화면에만 있어 서버가 못 읽음 — 길이 생기기 전엔 달러 꼬리 빼고 숫자 없이 | 결정 268(16:0x 셋 동의) 톰 적용(나리 매김)",
       "milestone": null,
       "owner": "세라",
-      "importance": null,
-      "urgency": null
+      "importance": "보통",
+      "urgency": "보통"
     },
     {
       "id": "J30",
@@ -1674,14 +1693,14 @@
       "after": [],
       "bottleneck": "코덱스 한도(9월 20일 15:38 까지) — 대표 시각 아님, 바깥 서비스 값",
       "status": "대기",
-      "note": "(옛 이름) 코덱스 한도가 풀리면(state/outside-cooldown.json, 9월 20일 15:38) 다섯 팀 cast.json 바깥눈 모델을 제미나이에서 코덱스로 되돌림 | 인수인계 청소 마케팅·경영(나리 12:2x, f5c5c35)에서 나온 잊힌 일 하나. 담당 솔라·확인 나래. J25(대체 모델 값 대조)와 한 벌. 책임자는 팀장 꼴대로 테라(나래 12:4x)",
+      "note": "(옛 이름) 코덱스 한도가 풀리면(state/outside-cooldown.json, 9월 20일 15:38) 다섯 팀 cast.json 바깥눈 모델을 제미나이에서 코덱스로 되돌림 | 인수인계 청소 마케팅·경영(나리 12:2x, f5c5c35)에서 나온 잊힌 일 하나. 담당 솔라·확인 나래. J25(대체 모델 값 대조)와 한 벌. 책임자는 팀장 꼴대로 테라(나래 12:4x) | 결정 268(16:0x 셋 동의) 톰 적용",
       "milestone": {
         "team": "dev",
         "n": 10
       },
       "owner": "테라",
-      "importance": null,
-      "urgency": null
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "J31",
@@ -1711,14 +1730,15 @@
       "bottleneck": null,
       "status": "감사 대기",
       "deliverable": "커밋 2ca3441 — 열린 항목 이름 서른 고침, 대표 화면 자 검사(bossOk) 걸림 0. 확인은 다음 서버 판 타임라인 사진에 '아직 쉬운 말로 안 적음' 이 없는 것(하영 셈)",
-      "note": "(옛 이름) 작업 보드 일 이름(what)을 보통 말로 — 판정·블록·카드·감사·결정 번호 같은 우리끼리 말을 보통 말 표(plain-words.md)와 금지 낱말 스물여섯대로, 화면(타임라인 나무)에 그대로 뜨는 글자라 | 하영 apr_2fbf46fe(타임라인 글자 넷) 상세 — '작업 이름 안의 판정·블록·카드·번호는 work.json 글자라 톰 몫'. 108건 한 번에, 낱말만(뜻·번호 칸은 그대로)",
+      "note": "(옛 이름) 작업 보드 일 이름(what)을 보통 말로 — 판정·블록·카드·감사·결정 번호 같은 우리끼리 말을 보통 말 표(plain-words.md)와 금지 낱말 스물여섯대로, 화면(타임라인 나무)에 그대로 뜨는 글자라 | 하영 apr_2fbf46fe(타임라인 글자 넷) 상세 — '작업 이름 안의 판정·블록·카드·번호는 work.json 글자라 톰 몫'. 108건 한 번에, 낱말만(뜻·번호 칸은 그대로) | 결정 268(16:0x 셋 동의) 톰 적용 — 총괄실 것, 외부감사 없어 나리",
       "milestone": {
         "team": "hq",
         "n": 3
       },
       "owner": "톰",
       "importance": "보통",
-      "urgency": "보통"
+      "urgency": "보통",
+      "judge": "나리"
     },
     {
       "id": "J33",
@@ -1993,8 +2013,8 @@
       "seat": "secretary",
       "after": [],
       "bottleneck": null,
-      "status": "진행",
-      "note": "(옛 이름) 비서실 — 디자인·개발 집중 확인(223), 나리 결정 다섯 잣대(156) | sera/order.md · 셋의 합의 판(228)",
+      "status": "자리 일",
+      "note": "(옛 이름) 비서실 — 디자인·개발 집중 확인(223), 나리 결정 다섯 잣대(156) | sera/order.md · 셋의 합의 판(228) | 결정 268(16:0x 셋 동의) 톰 적용 — 상시라 상태 없이 자리 일",
       "milestone": null,
       "owner": "세라",
       "importance": null,
@@ -2008,8 +2028,8 @@
       "seat": "system",
       "after": [],
       "bottleneck": null,
-      "status": "진행",
-      "note": "(옛 이름) 나리 — 마케팅·경영 집중 확인(223) · 카드 판정(141) | sera/order.md 나리 줄",
+      "status": "자리 일",
+      "note": "(옛 이름) 나리 — 마케팅·경영 집중 확인(223) · 카드 판정(141) | sera/order.md 나리 줄 | 결정 268(16:0x 셋 동의) 톰 적용 — 상시라 상태 없이 자리 일",
       "milestone": {
         "team": "hq",
         "n": 3
@@ -2026,8 +2046,8 @@
       "seat": "chief",
       "after": [],
       "bottleneck": null,
-      "status": "진행",
-      "note": "(옛 이름) 총괄 — 목표 한 장·기다리는 말씀·순서 목록 여섯을 보드에(203~212) | hq/order.md 4·7",
+      "status": "대기",
+      "note": "(옛 이름) 총괄 — 목표 한 장·기다리는 말씀·순서 목록 여섯을 보드에(203~212) | hq/order.md 4·7 | 결정 268(16:0x 셋 동의) 톰 적용 — 톰 그다음",
       "milestone": {
         "team": "hq",
         "n": 3
@@ -2081,11 +2101,11 @@
       "what": "팀별 일 공백 점검 — 마케팅·경영 초안(나래가 나리 대신) → 나리 공격 → 셋 동의",
       "team": "sera",
       "seat": "secretary",
-      "status": "진행",
+      "status": "통과",
       "owner": "나래",
       "importance": "매우",
       "urgency": "긴급",
-      "note": "대표 13:51 \"각 팀별 업무 공백 점검은 누가 어떻게\"(245)·13:54 세라 답 3. 디자인·개발은 세라(파일 둘), 총괄·플랫폼은 나래(둘), 마케팅·경영 0 → 나래 초안. 셋 커버(224)"
+      "note": "대표 13:51 \"각 팀별 업무 공백 점검은 누가 어떻게\"(245)·13:54 세라 답 3. 디자인·개발은 세라(파일 둘), 총괄·플랫폼은 나래(둘), 마케팅·경영 0 → 나래 초안. 셋 커버(224) | 결정 268(16:0x 셋 동의) 톰 적용 — 됨, 나리 두 장에 합침"
     },
     {
       "after": [],
@@ -2216,8 +2236,8 @@
       "team": "dev",
       "seat": "ops",
       "after": [],
-      "status": "대기",
-      "note": "오늘 손 재시작 넷(14:14·14:40·14:52·14:56) — 카드마다 나래가 켜는 건 병(나리 14:56). 나리: 솔라 다음 첫 줄. 주제 2 \"회차 닫힐 때마다\" 길과 같이. 262 뒤로 재시작 카드는 \"켜 봤다\"(응답 200) 한 줄 필수",
+      "status": "진행",
+      "note": "오늘 손 재시작 넷(14:14·14:40·14:52·14:56) — 카드마다 나래가 켜는 건 병(나리 14:56). 나리: 솔라 다음 첫 줄. 주제 2 \"회차 닫힐 때마다\" 길과 같이. 262 뒤로 재시작 카드는 \"켜 봤다\"(응답 200) 한 줄 필수 | 결정 268(16:0x 셋 동의) 톰 적용 — 솔라 지금",
       "milestone": {
         "team": "dev",
         "n": 10
