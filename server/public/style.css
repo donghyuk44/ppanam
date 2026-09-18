@@ -685,7 +685,8 @@ body {
 .tl__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-bottom: 6px; }
 .tl__head .card__tile { width: 28px; height: 28px; font-size: 13px; border-radius: 7px; }
 .tl__name { font-size: 15px; font-weight: 700; }
-.tl__chips { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+.tl__chips { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; align-items: center; }
+.tl__chips-k { font-size: 10.5px; color: var(--ink-4); margin-right: 2px; }   /* '이번 주 요약' 머리(하영 아홉) */
 .tl__chip { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-4); white-space: nowrap; }
 .tl__chip[data-k="good"] { border-color: var(--good-line); background: var(--good-bg); color: var(--good); }
 .tl__chip[data-k="bad"]  { border-color: var(--bad-line); background: var(--bad-bg); color: var(--bad); }
