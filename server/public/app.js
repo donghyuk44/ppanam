@@ -2505,9 +2505,9 @@ function renderTowerAsks(grid) {
  * 위에서 아래로: 머리(팀 · 알약) · 단계 N/M 목록(끝난 것 채움 · 지금 굵은 테두리 + 회차 네모 · 남은 것 점선) · 이 회차(상황판 네 칸 글자 그대로)
  * · 다른 팀에 부탁한 일 N(있을 때만) · 사람(칩 · 이름 직책 · 하는 일 · N분 전에 움직임 · 알약). 카드 안에서 누르면 옆으로만 — 단계 → 계획표 카드 · 부탁한 일 → 요청 탭 · 사람 → 사람 카드.
  * 마지막 발언·진행 막대·상황 접기는 뺐다(시안에 없다). 맨 밑 말하기·회차 시작/마무리 줄은 대표 손잡이라 그대로 둔다. ── */
-// 팀 이름은 어느 자리든 teams.json name 하나("마케팅") — 채팅 방 이름만 room("마케팅 방", roomName 415행). 사무실(총괄실·비서실)은 그 이름이 곧 방 이름.
-// 옛 ROOM_WORD("마케팅팀")는 뺐다 — 같은 순간 "마케팅 방 · 마케팅팀 · 마케팅" 셋이 섰다(적대검수 47행, 하영 사전 1절 151행 · req_d82aaf90 ①).
-const roomWord = (t) => (t.kind === 'office' || t.office ? (t.room ?? t.name) : t.name);
+// 팀 이름은 어느 자리든 teams.json name 하나("마케팅" · 총괄실도 "총괄") — 채팅 방 이름만 room("마케팅 방", roomName 415행).
+// 옛 ROOM_WORD("마케팅팀"·"총괄실")는 뺐다 — 같은 순간 "마케팅 방 · 마케팅팀 · 마케팅" 셋이 섰다(적대검수 47행, 하영 사전 1절 151행 · req_d82aaf90 ①, 총괄은 하영 05:58).
+const roomWord = (t) => t.name ?? t.room ?? t.id;
 function renderTowerTeams(grid) {
   const focus = document.activeElement;
   const keep = focus?.classList?.contains('tcard__in')
