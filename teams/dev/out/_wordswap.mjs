@@ -1,10 +1,11 @@
-// 타임라인 블록 글자·호출 바꾸기 — 한 번에 여러 자리를 같은 글자로. (3판: 하영 req_d29407c3 — '뒤에 걸림' → '앞 일 남음', '하는 중' → '진행 중')
+// 타임라인 블록 글자·호출 바꾸기 — (4판: 하영 req_d29407c3 — 보드 값 '감사 대기' 는 화면에 '검토 기다림')
 import fs from 'node:fs';
 const P = 'teams/dev/out/_tl-block.mjs';
 let s = fs.readFileSync(P, 'utf8');
 const swaps = [
-  ["afterNames(k) ?? '뒤에 걸림'", "afterNames(k) ?? '앞 일 남음'"],
-  ["tlCell('now', '하는 중')", "tlCell('now', '진행 중')"],
+  ["tlCell('wait', '감사 대기')", "tlCell('wait', '검토 기다림')"],
+  ["chip(1, 'wait', '감사 대기')", "chip(1, 'wait', '검토 기다림')"],
+  ["dot.title = k.status;", "dot.title = STATUS_WORD[k.status] ?? k.status;"],
 ];
 let n = 0;
 for (const [a, b] of swaps) { if (!s.includes(a)) { console.error('없음:', a); process.exit(1); } n += s.split(a).length - 1; s = s.split(a).join(b); }

@@ -4,7 +4,8 @@
  * 맨 위는 우리의 목표 한 장(14절). 낱말은 하영 아홉(사전 111~125행)·ui-spec 13절 안.
  */
 let tlMark = '';
-const TASK_DOT = { '통과': 'done', '진행': 'live', '감사 대기': 'wait', '대기': 'idle', '막힘': 'bad', '안 함': 'off' };   // 상태 점(ui-spec 13절): 완료 초록 · 진행 중 먹 · 감사 대기 놋쇠 · 대기 회색 · 막힘 빨강
+const TASK_DOT = { '통과': 'done', '진행': 'live', '감사 대기': 'wait', '대기': 'idle', '막힘': 'bad', '안 함': 'off' };   // 상태 점(ui-spec 13절): 완료 초록 · 진행 중 먹 · 검토 기다림 놋쇠 · 대기 회색 · 막힘 빨강
+const STATUS_WORD = { '통과': '완료', '진행': '진행 중', '감사 대기': '검토 기다림' };   // 보드 값 → 대표 화면 글자(하영 보통 말 표, req_d29407c3). 없는 값은 그대로.
 const weekMD = (key) => { const [, m, d] = String(key).split('-'); return `${Number(m)}/${Number(d)}`; };   // '2026-09-07' → '9/7' — 지난 주·이번 주 머리에만
 const shortTitle = (s) => String(s ?? '').split(/\s*(?:—|∥|\()\s*/)[0].trim() || String(s ?? '');   // 단계 제목 첫 구분 기호 앞까지 — 전문이 자에 안 맞을 때의 대안
 /** 단계 제목 — 전문에서 "(결정 N…)" 꼬리만 떼고 자에 맞으면 그대로(헨리 3판-c 는 '—' 뒤까지 다 보인다), 안 맞으면 첫 구분 기호 앞까지. 원문은 title 에. */
@@ -135,7 +136,7 @@ function timelineTeamWide(t, cols) {
     for (const k of tasks.filter((x) => x.status !== '통과')) {
       const cells = [blank(), blank(), blank(), blank()];
       if (k.status === '진행') cells[1] = tlCell('now', '진행 중');
-      else if (k.status === '감사 대기') cells[1] = tlCell('wait', '감사 대기');
+      else if (k.status === '감사 대기') cells[1] = tlCell('wait', '검토 기다림');
       else if (k.status === '막힘') cells[1] = tlCell('bad', '막힘');
       else if (k.ready) cells[2] = tlCell('next', '시작할 수 있어요');
       else if (k.status === '대기') cells[3] = tlCell('after', afterNames(k) ?? '앞 일 남음');   // 그 뒤 칸 점선 칩엔 걸린 작업 이름(13절)
@@ -198,7 +199,7 @@ function timelineTeam(t, cols) {
     // 작업 칩 — 진행 중은 이번 주 '진행 중', 감사 대기는 놋쇠, 막힘은 빨강 · 시작할 수 있는 것은 다음 칸 · 뒤에 걸린 것은 그 뒤 칸에 걸린 작업 이름. 날짜·시각 글자 없음(188).
     if (p.status === 'now' || p.n == null) for (const k of tasks) {
       if (k.status === '진행') chip(1, 'now', '진행 중');
-      else if (k.status === '감사 대기') chip(1, 'wait', '감사 대기');
+      else if (k.status === '감사 대기') chip(1, 'wait', '검토 기다림');
       else if (k.status === '막힘') chip(1, 'bad', '막힘');
       else if (k.ready) chip(2, 'next', '시작할 수 있어요');
       else if (k.status === '대기') chip(3, 'after', afterNames(k) ?? '앞 일 남음');
@@ -229,7 +230,7 @@ function taskRow(t, k, cast) {
   const after = afterNames(k);
   if (!done && after) stack.appendChild(el('span', 'tl__after', `뒤에: ${after}`));
   row.appendChild(stack);
-  const dot = el('i', 'tl__dot'); dot.dataset.k = TASK_DOT[k.status] ?? 'idle'; dot.title = k.status; row.appendChild(dot);
+  const dot = el('i', 'tl__dot'); dot.dataset.k = TASK_DOT[k.status] ?? 'idle'; dot.title = STATUS_WORD[k.status] ?? k.status; row.appendChild(dot);
   return row;
 }
 /** 뒤에 걸린 작업 이름들 — after[].what 중 자를 지난 것만, '·' 로. 없으면 null. */
