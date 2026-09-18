@@ -419,7 +419,7 @@ export function listApprovals({ team = null, status = null } = {}) {
       const r = byId.get(l.id);
       if (!r || r.status !== 'pending') continue;
       r.decisions.push(l);
-      const needs = needsOf(r, dg);   // 작은 B 는 결정 자리 하나로 닫힌다
+      const needs = needsOf(r, dg, { hqOutsideSuspended: hqOutsideSuspendedNow() });   // 작은 B 는 결정 자리 하나로 닫힌다 · 제리 중단이면 총괄 B 도 하나로
       if (l.decision === 'REVISE') { r.status = 'revised'; r.decidedAt = l.ts; }
       // 결정 칸은 톰이든 나리든 같은 칸(sameSlot) — 위임 전에 톰이 통과시킨 옛 카드가 위임 뒤 다시 '대기' 로 살아나지 않게.
       else if (needs.every((who) => r.decisions.some((d) => sameSlot(d.by, who) && d.decision === 'PASS'))) {
@@ -450,11 +450,15 @@ export function listApprovals({ team = null, status = null } = {}) {
  * 순수(위임은 인자) — check 가 돌린다.
  */
 export const DECIDERS = new Set(['chief', 'system']);
-export const needsOf = (r, dg = readDelegation()) => {
+export const needsOf = (r, dg = readDelegation(), { hqOutsideSuspended = false } = {}) => {
   const decider = dg?.to === 'system' ? 'system' : 'chief';
-  if (r?.grade === 'B') return (r?.small || r?.team !== 'hq') ? [decider] : [decider, 'outside'];
+  // 총괄실 B(대리 결정 카드)의 둘째 칸은 제리(outside) — 그 자리가 중단이면 결정 자리 하나로 닫힌다(셋째 인자, 순수 함수 그대로).
+  // 대표 09-18 14:21 "외부감사 없애고 팀원 간 상호감사만" — 제리 칸을 기다리던 대리 카드 셋이 그 자리에서 섰다(세라 한 줄).
+  if (r?.grade === 'B') return (r?.small || r?.team !== 'hq' || hqOutsideSuspended) ? [decider] : [decider, 'outside'];
   return APPROVAL_GRADES[r?.grade]?.needs ?? [];
 };
+/** 총괄실 바깥눈(제리) 자리가 지금 중단인가 — 실제 cast 를 읽는 쪽은 여기 하나(needsOf 는 순수). */
+export const hqOutsideSuspendedNow = () => { try { return !!readCast('hq').agents?.outside?.suspended; } catch { return false; } };
 /** 결정 자리는 하나다 — 톰의 판정과 나리의 판정은 같은 칸을 채운다(옛 카드는 톰이, 위임 뒤는 나리가). 접을 때·중복 검사·남은 판정자 셈에 쓴다. */
 export const sameSlot = (a, b) => a === b || (DECIDERS.has(a) && DECIDERS.has(b));
 /** 아직 안 답한 판정자 — needs 중 같은 칸의 판정이 없는 것. 톰이 답한 칸은 나리 몫으로 다시 세지 않는다. */
