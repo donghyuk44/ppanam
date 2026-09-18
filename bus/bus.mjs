@@ -466,8 +466,10 @@ export const needsOf = (r, dg = readDelegation(), { hqOutsideSuspended = false }
 export const hqOutsideSuspendedNow = () => { try { return !!readCast('hq').agents?.outside?.suspended; } catch { return false; } };
 /** 결정 자리는 하나다 — 톰의 판정과 나리의 판정은 같은 칸을 채운다(옛 카드는 톰이, 위임 뒤는 나리가). 접을 때·중복 검사·남은 판정자 셈에 쓴다. */
 export const sameSlot = (a, b) => a === b || (DECIDERS.has(a) && DECIDERS.has(b));
-/** 아직 안 답한 판정자 — needs 중 같은 칸의 판정이 없는 것. 톰이 답한 칸은 나리 몫으로 다시 세지 않는다. */
-export const leftOf = (r, dg = readDelegation()) => needsOf(r, dg).filter((w) => !(r?.decisions ?? []).some((d) => sameSlot(d.by, w)));
+/** 아직 안 답한 판정자 — needs 중 같은 칸의 판정이 없는 것. 톰이 답한 칸은 나리 몫으로 다시 세지 않는다.
+ * needsOf 와 같이 순수(셋째 인자는 호출부가 문다) — bus/nightly.mjs 가 "파일을 안 읽는다" 는 자기 규칙을 지키며 이 함수를
+ * 쓰기 때문에, 여기서 hqOutsideSuspendedNow() 를 기본값으로 몰래 읽으면 그 규칙이 깨진다(세라 12c4c8d 뒤 확인). */
+export const leftOf = (r, dg = readDelegation(), { hqOutsideSuspended = false } = {}) => needsOf(r, dg, { hqOutsideSuspended }).filter((w) => !(r?.decisions ?? []).some((d) => sameSlot(d.by, w)));
 
 /**
  * D2 — 규칙은 검사기가 막는다(teams/hq/out/참고-비교-0916.md #2 "글로 된 규칙은 안 지켜진다", 대표 승인
@@ -2423,7 +2425,9 @@ export function workStateOf(p, phase, now = Date.now()) {
   if (p.busy) return 'working';
   if (p.bossCall) return 'bossCall';
   if (phase === 'blocked') return 'blocked';
-  if (p.lastSignal && now - new Date(p.lastSignal).getTime() < WORK_FRESH_MS) return 'working';
+  // 신호 5분 안은 '일하는 중' 이 아니라 '대기' — 진행 중은 지금 차례를 도는 사람(busy)만(하영 사전 1절 150행, req_d82aaf90 ③ — 적대검수 34행
+  // "이 화면의 진행 중은 5분 안에 말했다는 뜻, 일과 상관없다"). 5분은 세션 없는 자리(codex, alive null)가 턴 끝나자마자 '자리 비움' 으로 안 떨어지게만 쓴다.
+  if (p.lastSignal && now - new Date(p.lastSignal).getTime() < WORK_FRESH_MS) return 'waiting';
   if (p.alive || phase !== 'running') return 'waiting';
   return 'resting';
 }

@@ -29,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 import {
   listApprovals, readCast, readState, writeState, readRoadmap, isOffice, quiet, emit, paths, setMilestoneStatus,
   proxyCandidates, requestApproval, decideApproval, resumeRound, startRound, APPROVAL_GRADES, needsOf, leftOf, readDelegation, delegationTag, teamExists,
+  hqOutsideSuspendedNow,
 } from '../bus/bus.mjs';
 
 // 다시 부르기(R25) — 총괄실에 한 번 넣고 답이 없으면 30분마다, 세 번까지. 그 뒤엔 요청한 방에 한 줄 남기고 사람 몫.
@@ -68,12 +69,15 @@ function nameOf(team, actor) {
 function requestText(r) {
   const who = nameOf(r.team, r.by);
   const a = r.action;
+  // 제리(총괄실 외부감사)가 중단이면 needsOf 도 그렇게 안다(세라 12c4c8d) — 아니면 이 카드 글이 중단 중인
+  // 제리에게 대조를 시키라고 안내한다(테라 판정-솔라-0918 과 같은 결의 사고, 실측으로 잡음).
+  const hqOutsideSuspended = hqOutsideSuspendedNow();
   // 결정 자리 — 평소 톰, 위임 중(대표 09-16 "대리 판단은 나리")엔 나리. 톰은 기록만. 글은 총괄실 세션(톰)에 들어가고 나리는 방을 읽는다.
-  const decider = needsOf(r).find((w) => w === 'chief' || w === 'system') ?? 'chief';
+  const decider = needsOf(r, undefined, { hqOutsideSuspended }).find((w) => w === 'chief' || w === 'system') ?? 'chief';
   const dName = nameOf('hq', decider);
   // 제리(outside) 대조는 총괄실(hq) 자체 카드만(대표 09-16 16:4x "제리는 여기 총괄실 내용만 감사", 결정 183·185) —
   // 팀 카드(dev 등)는 결정 자리 하나로 닫히니 대조를 시키지도, 그 명령을 안내하지도 않는다.
-  const needsOutside = needsOf(r).includes('outside');
+  const needsOutside = needsOf(r, undefined, { hqOutsideSuspended }).includes('outside');
   return `승인 요청 ${r.id} [등급 B${r.small ? ' · 작은' : ''}] — ${r.team} 팀 ${who}: ${r.what}` +
     (decider === 'system' ? `\n결정은 ${dName}(위임) — 톰은 판정하지 않는다. ${dName}가 방에 "나리 판정: PASS/REVISE — 이유" 를 남기거나 --as system 으로 직접 적는다.` : '') +
     (r.small ? '\n작은 B — 재시작·문구·임시 파일 같은 것. 톰 혼자 보면 닫힌다, 제리 대조는 생략(점검-0916 3-9). 작은 게 아니면 REVISE 로 돌려보내 큰 카드로 다시 올리게.' : '') +

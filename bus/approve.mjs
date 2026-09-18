@@ -24,7 +24,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
   ROOT, requestApproval, decideApproval, voidApproval, attachBossLine, listApprovals, APPROVAL_GRADES, needsOf, leftOf,
-  defaultTeam, teamExists, listTeams, readCast, readRoadmap, paths, isOffice, pushAction, roomRules,
+  defaultTeam, teamExists, listTeams, readCast, readRoadmap, paths, isOffice, pushAction, roomRules, hqOutsideSuspendedNow,
 } from './bus.mjs';
 import { untilOf } from './requests.mjs';
 
@@ -226,7 +226,9 @@ if (o.mode === 'request') {
 
   if (r.status === 'passed') { console.log('등급 A — 바로 진행하세요.'); process.exit(0); }
 
-  if (r.grade === 'B') console.log(`큐에 남았습니다. 서버가 총괄실에 알리고, ${needsOf(r).map((w) => nameOf(r.team, w)).join('와 ')}가 판정하면 이 방에 들려줍니다. 대기 중에는 다음 일감으로 넘어가세요.`);
+  // 제리(총괄실 외부감사)가 중단이면 이 카드가 실제로 필요로 하는 자리도 하나뿐이다(세라 12c4c8d) — 여기가 그걸 몰라
+  // "제리와 톰이" 라고 찍으면 중단 중인 사람을 기다리라는 안내가 나간다.
+  if (r.grade === 'B') console.log(`큐에 남았습니다. 서버가 총괄실에 알리고, ${needsOf(r, undefined, { hqOutsideSuspended: hqOutsideSuspendedNow() }).map((w) => nameOf(r.team, w)).join('와 ')}가 판정하면 이 방에 들려줍니다. 대기 중에는 다음 일감으로 넘어가세요.`);
   if (r.grade === 'C') console.log('등급 C — 대표 판단입니다. 관제탑에 올라갑니다. 결과는 서버가 이 방에 들려줍니다. 다음 일감으로 넘어가세요.');
   process.exit(0);
 }
