@@ -584,8 +584,10 @@ const server = http.createServer((req, res) => {
 
   // 지시. 대표가 쓴 말이 실무 세션으로 들어간다.
   //
-  // 여기서 말풍선을 만들지 않는다 — 프롬프트가 세션에 들어가면 UserPromptSubmit
-  // 훅이 대표 말풍선을 남긴다. 여기서 또 남기면 같은 말이 두 번 뜬다.
+  // 대부분의 길(632행 아래)은 여기서 말풍선을 emit 하고 세션엔 quiet() 로 보낸다 — 훅(UserPromptSubmit)은
+  // 들려주기(isQuietRelay)라 다시 안 남긴다(테라 지적 0918 — 전엔 훅만 남겨서, 세션이 바쁘면 말이 늦게 떴다).
+  // 낡은 길이 하나 남아 있다: `/api/upload` 의 비-silent 갈래(약 700행 아래)는 아직 훅이 남긴다 — 화면이 이제
+  // silent 만 쓰니 안 밟히지만, 새 길을 여기 더할 땐 이 둘이 다르다는 걸 잊지 않는다(테라 판정-솔라-0918 ③).
   if (url.pathname === '/api/say' && req.method === 'POST') {
     readBody(req, res, ({ text, team: t, quiet: q }) => {
       if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
@@ -630,12 +632,12 @@ const server = http.createServer((req, res) => {
           return json(res, 200, { ok: true, to: owner, queued: 0, event: rec.id });
         }
         const actor = to && (cast[to]?.model === 'claude') ? to : undefined;
-        // 여기 남기고 바로 들려주기(quiet)로 보낸다 — 전엔 훅(UserPromptSubmit)이 세션에 넣은 뒤에야 적어서,
-        // 세션이 바쁘면(큐에 서면) 말풍선이 늦게 떴다(테라 지적 0918, 화면 낙관적 렌더로 가려 뒀다). 이제 여기
-        // 한 번 적고 quiet() 로 보내면 훅은 들려주기라 다시 안 적는다(isQuietRelay) — 두 번 안 남는다.
-        const rec = q ? null : emit(t, { actor: 'boss', type: 'message', text: say });
+        // 보낸 게 받아들여진 뒤에만 남긴다 — 먼저 남기고 보내면, 회차가 닫히는 중이라 거절될 때(session.mjs
+        // isClosing) 대화록엔 말풍선이 서고 세션은 못 받아 대표가 다시 보내면 같은 말이 둘 선다(테라
+        // 판정-솔라-0918 ①). quiet() 라 훅은 어느 순서든 다시 안 적으니 순서를 바꿔도 안전하다.
         const sent = session.send(t, quiet(say), actor);
         if (sent.refused) return json(res, 409, { error: sent.reason, closing: true });
+        const rec = q ? null : emit(t, { actor: 'boss', type: 'message', text: say });
         json(res, 200, { ok: true, to: actor ?? session.ownerOf(t), ...(rec ? { event: rec.id } : {}), ...sent });
       } catch (e) {
         json(res, 500, { error: `실무에게 전달하지 못했습니다 — ${e.message}` });

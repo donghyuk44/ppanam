@@ -289,12 +289,15 @@ export function addressee(text, cast, { except = null } = {}) {
  * (하영 진단, 2026-09-13 — 대표 결정 22). 같은 사람은 한 번만.
  */
 // 이름 하나가 head 맨 앞을 부르는 만큼(글자 수) — 못 부르면 0. 야/아 가 붙었을 땐 구두점 없이 빈칸·!·?·줄
-// 끝·구두점 아무거나로 끝나도 되고, 안 붙었을 땐 여전히 구두점(,，、:·—)이 있어야 한다(오인식 방지, "나리이야기" 같은 말).
-function addressedLen(name, head) {
+// 끝·구두점 아무거나로 끝나도 된다. 안 붙었을 때는 첫 이름(first:true)만 구두점(,，、:·—·!·?)을 반드시
+// 요구한다(오인식 방지, "나리이야기" 같은 말) — 이미 앞선 이름이 불려 사슬 안(first:false)이면 빈칸·줄 끝도
+// 부름으로 본다(테라 판정-솔라-0918 ②, "세라, 나리 둘 다" 에서 둘째 이름 나리가 빠졌다).
+function addressedLen(name, head, { first = true } = {}) {
   const nm = escapeRegExp(name);
   const m1 = new RegExp('^' + nm + '(?:야|아)\\s*(?:씨|님)?(?:\\s|[!?,，、:·—]|$)').exec(head);
   if (m1) return m1[0].length;
-  const m2 = new RegExp('^' + nm + '\\s*(?:씨|님)?\\s*[,，、:·—]').exec(head);
+  const punct = first ? '[!?,，、:·—]' : '(?:[!?,，、:·—]|\\s|$)';
+  const m2 = new RegExp('^' + nm + '\\s*(?:씨|님)?\\s*' + punct).exec(head);
   return m2 ? m2[0].length : 0;
 }
 
@@ -306,16 +309,18 @@ export function addressees(text, cast, { except = null } = {}) {
     // "대표님, … / 안젤, … / 다니엘, …" 는 문단(빈 줄)마다 한 사람 — 그리고 "세라, 나리 — …" 처럼 한 문단
     // 첫머리에 쉼표로 이어진 이름도 다 깨운다(톰 대리 09-18 ①, "세라, 나리 —" 에서 나리만 놓친 사고).
     let head = p.trim().slice(0, 40);
+    let first = true;
     for (;;) {
       let hit = null;
       for (const [id, a] of entries) {
         if (out.includes(id)) continue;
-        const len = addressedLen(a.name, head);
+        const len = addressedLen(a.name, head, { first });
         if (len) { hit = { id, len }; break; }
       }
       if (!hit) break;
       out.push(hit.id);
       head = head.slice(hit.len).replace(/^\s*/, '');
+      first = false;
       if (!head) break;
     }
   }
