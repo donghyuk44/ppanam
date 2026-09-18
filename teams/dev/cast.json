@@ -27,7 +27,7 @@
       "geminiModel": "gemini-3.6-flash",
       "geminiFallback": "gemini-3.1-pro",
       "fallback": "gpt",
-      "suspended": "2026-09-25"
+      "suspended": "2026-09-19"
     },
     "boss": {
       "name": "함동혁(댄)",
