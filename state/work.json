@@ -2269,6 +2269,72 @@
       "deliverable": "커밋 + 상황판·방 머리 412·1280 사진 새 이름(회차 번호 0)",
       "doneCheck": "대표 화면 어디에도 회차 번호가 안 보인다(자로 확인)",
       "bottleneck": null
+    },
+    {
+      "id": "J45",
+      "stream": "화면",
+      "what": "설정 탭을 3판-b 일반 설정 꼴로 — 내 프로필 줄, 묶음 카드(알림·화면·멤버·모델·회사·정보)",
+      "team": "dev",
+      "seat": "guide",
+      "after": [
+        "J33"
+      ],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "헨리 카드 apr_ca1c72be(15:4x) — 시안은 클레멘타인 판정 통과(마크 중단, 257 상호감사). ui-spec 15절 · 피그마 106:2 · fig-0918-settings-412-b.png. 폰 412 먼저, PC 는 껍데기 뒤 1280. 자리: 대표 답장(J33 매우·긴급) 뒤 매우·보통 칸 차례(나리 15:4x, 톰이 매김)",
+      "milestone": {
+        "team": "dev",
+        "n": 10
+      },
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통",
+      "deliverable": "커밋 + 412 사진 새 이름(PC 는 1280), 헨리 같다",
+      "doneCheck": "헨리 '같다' 한 줄(diff-0916 절)"
+    },
+    {
+      "id": "J46",
+      "stream": "화면",
+      "what": "리포트 탭을 1판-d 로 — 머리 기준 줄, 일일 보고·분석 알약, 결재 대기·대리 결정·막힌 것",
+      "team": "dev",
+      "seat": "guide",
+      "after": [
+        "J45"
+      ],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "헨리 카드 apr_ca1c72be(15:4x) — 시안은 클레멘타인 판정 통과(마크 중단, 257 상호감사). ui-spec 11절 · 피그마 58:845·64:2 · fig-0918-report-412·1280.png. 폰 412 먼저, PC 는 껍데기 뒤 1280. 자리: 대표 답장(J33 매우·긴급) 뒤 매우·보통 칸 차례(나리 15:4x, 톰이 매김)",
+      "milestone": {
+        "team": "dev",
+        "n": 10
+      },
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통",
+      "deliverable": "커밋 + 412 사진 새 이름(PC 는 1280), 헨리 같다",
+      "doneCheck": "헨리 '같다' 한 줄(diff-0916 절)"
+    },
+    {
+      "id": "J47",
+      "stream": "화면",
+      "what": "분석 탭을 2판으로 — 어디서 막히나·같은 일 몇 번째·느려진 것 자리",
+      "team": "dev",
+      "seat": "guide",
+      "after": [
+        "J46"
+      ],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "헨리 카드 apr_ca1c72be(15:4x) — 시안은 클레멘타인 판정 통과(마크 중단, 257 상호감사). ui-spec 7절 · 피그마 105:2 · fig-0918-analysis-412.png. 폰 412 먼저, PC 는 껍데기 뒤 1280. 자리: 대표 답장(J33 매우·긴급) 뒤 매우·보통 칸 차례(나리 15:4x, 톰이 매김)",
+      "milestone": {
+        "team": "dev",
+        "n": 10
+      },
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통",
+      "deliverable": "커밋 + 412 사진 새 이름(PC 는 1280), 헨리 같다",
+      "doneCheck": "헨리 '같다' 한 줄(diff-0916 절)"
     }
   ]
 }
