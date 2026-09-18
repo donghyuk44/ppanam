@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>ppanam</title>
+  <!-- 밝기·글자 크기(설정 › 화면, J45) — 첫 칠 전에 html[data-theme]·[data-font] 를 놓는다(깜빡임 없이). 값은 app.js applyDisplay 와 같은 규칙: 고른 값, 없으면 폰 설정 -->
+  <script>(function(){try{var t=localStorage.getItem('ppanam.theme')||'';document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.font=localStorage.getItem('ppanam.font')||''}catch(e){document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.font=''}})()</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -207,12 +209,14 @@
   </section>
 
   <!-- 설정 — 권한 현황(나리 표 그대로) · 낱말 사전(하영) · 인격 파일 목록. 마을은 맨 아래 '숨김 화면' 링크로만(나리 R32, 카드-체계-0916 4절) -->
-  <section class="settings" id="settings">
-    <header class="tower__head">
-      <h1>설정</h1>
-      <p>읽기 전용 — 변경은 파일에서</p>
+  <!-- 설정 3판 일반 설정 꼴(헨리 ui-spec 15절, fig-0918-settings-412-b, J45) — 목록(#setNav, app.js 가 폰에선 여기·PC 에선 방 목록 자리에 둔다) → 안쪽 화면(#setIn). 폰 안쪽 화면 머리엔 '‹ 설정' -->
+  <section class="settings" id="settings" data-page="">
+    <header class="tower__head set__head">
+      <button type="button" class="set__back" id="setBack" hidden>‹ 설정</button>
+      <h1 id="setTitle">설정</h1>
+      <p id="setSub">내 프로필 · 알림 · 화면 · 멤버 · 회사 · 정보</p>
     </header>
-    <div class="dash__body" id="setBody"></div>
+    <div class="dash__body set__body" id="setBody"></div>
   </section>
 
   <!-- 마을: 도트 마을에서 캐릭터와 말풍선으로 본다 -->

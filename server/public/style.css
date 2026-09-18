@@ -35,8 +35,15 @@
   --live:     #2f7d4f;
 }
 
+/* 밝기 — 설정 › 화면(J45, 헨리 15절): html[data-theme] 를 app.js applyDisplay 가 놓는다 — 대표가 고른 값(밝게·어둡게), '폰 설정' 이면 폰의 prefers-color-scheme 을 그대로 옮겨 놓는다.
+   옛 @media (prefers-color-scheme: dark) 묶음을 이 선택자로 바꿨다 — 값은 그대로. JS 가 놓기 전 첫 칠은 밝은 값. */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) { color-scheme: dark; }
+}
+@media all {
+  :root[data-theme="dark"] {
     --ground:   #151A21;
     --panel:    #1D232C;
     --panel-2:  #252C36;
@@ -181,8 +188,8 @@ body {
  * 색은 손 안 댐: chip.style.background(자리 색)가 사진의 투명한 테두리 자리에 그대로 비쳐 나온다. */
 /* 테라 C7(req_99dbd1fe) — 머리글자는 남기고 img 를 위에 얹는다(그림이 없으면 img 가 빠져 글자만 남게): grid 칸 안에서 글자·img 가 두 줄로 서지 않게 절대 위치.
  * 이름표(.av 32×32 r9)·종 목록(.nt__av)도 같은 꼴. 크기·둥글기 값은 클레멘타인 몫 그대로(inherit). 위 규칙(.chip img)을 이 한 줄로 합쳤다(code-review — 둘이 갈리지 않게). */
-.chip > img, .av > img, .nt__av > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
-.av, .nt__av { position: relative; }
+.chip > img, .av > img, .nt__av > img, .setnav__face > img, .setin__face > img, .mcard__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
+.av, .nt__av, .setnav__face, .setin__face, .mcard__face { position: relative; }   /* 설정 얼굴 셋(J45)도 같은 꼴 */
 .chip[data-state]::after {
   content: ''; position: absolute; right: -2px; bottom: -2px; width: 8px; height: 8px; border-radius: 50%;
   border: 2px solid var(--panel); background: var(--ink-4);
@@ -685,20 +692,94 @@ body {
 .app[data-view="settings"] .room, .app[data-view="settings"] .side,
 .app[data-view="dashboard"] .room, .app[data-view="dashboard"] .side { display: none; }
 .app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"], .app[data-view="report"], .app[data-view="settings"] { grid-template-columns: 300px minmax(0, 1fr); }
-/* 리포트 둘째 탭(분석)과 설정 — 서브탭 줄은 현황 탭(.tabs)과 같은 부품. 설정 본문은 표 하나·접힘 둘·목록 하나 */
+/* 리포트 둘째 탭(분석) — 서브탭 줄은 현황 탭(.tabs)과 같은 부품. 설정 글(권한·용어 사전 마크다운)은 .set__md */
 .report .tabs, .analysis .tabs { margin: 0 20px 6px; }
-.set__k { font-size: 12px; color: var(--ink-3); margin: 14px 0 6px; }
 .set__md h3 { font-size: 13px; margin: 10px 0 4px; }
 .set__md p { margin: 4px 0; font-size: 12.5px; color: var(--ink-2); }
 .set__md table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin: 4px 0 8px; }
 .set__md th, .set__md td { text-align: left; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line-2); vertical-align: top; overflow-wrap: anywhere; }
 .set__md th { color: var(--ink-3); font-weight: 500; }
-.set__fold summary { cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
-.set__list { margin: 0; padding-left: 0; list-style: none; font-size: 12.5px; }
-.set__list li { padding: 3px 0; border-bottom: 1px dashed var(--line-2); }
-.set__list code { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-3); }
-.set__hidden { margin-top: 22px; font-size: 12px; color: var(--ink-4); }
-.set__hidden a { color: var(--ink-4); }
+
+/* ── 설정 3판 일반 설정 꼴(헨리 ui-spec 15절 · fig-0918-settings-412-b, J45) — 묶음 목록(setnav) → 안쪽 화면(setin). 줄 꼴: 카드(rule·모서리 16) 안에 줄 12/14, 제목 15 Medium + 밑줄 12 muted + › 18 muted ── */
+html[data-font="small"] { zoom: .92; }   /* 글자 크기 — 화면 전체를 같은 비율로(px 값이 많아 뿌리 글자 크기로는 안 커진다) */
+html[data-font="large"] { zoom: 1.12; }
+.set__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.set__head h1 { margin: 0; }
+.set__head p { flex-basis: 100%; }
+.set__back { display: none; font: inherit; font-size: 14px; color: var(--ink-2); background: transparent; border: 0; padding: 0; cursor: pointer; }
+.set__body { display: flex; flex-direction: column; gap: 0; }
+.setnav__head { display: none; }
+.setnav__k { font-size: 12px; font-weight: 700; color: var(--ink-3); margin: 16px 0 6px; }
+.setnav__card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.setnav__card + .setnav__k { margin-top: 18px; }
+.setnav__card:first-child { margin-top: 2px; }
+.setnav__row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.setnav__row:last-child { border-bottom: 0; }
+.setnav__row:hover { background: var(--sunk); }
+.setnav__row[aria-current="true"] { background: var(--sunk); }
+.setnav__face { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 18px; overflow: hidden; background-size: cover; background-position: center; }
+.setnav__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.setnav__t { font-size: 15px; font-weight: 500; }
+.setnav__row .setnav__face + .setnav__body .setnav__t { font-size: 16px; font-weight: 700; }
+.setnav__s { font-size: 12px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.setnav__go { flex: none; font-size: 18px; color: var(--ink-3); }
+.setin__k { font-size: 12px; font-weight: 700; color: var(--ink-3); margin: 16px 0 6px; }
+.setin__k:first-child { margin-top: 2px; }
+.setin__card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.setin__card + .setin__card { margin-top: 12px; }
+.setin__row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; text-align: left; }
+.setin__row:last-child { border-bottom: 0; }
+.setin__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.setin__t { font-size: 15px; font-weight: 500; }
+.setin__s { font-size: 12px; color: var(--ink-3); }
+.setin__pick { border: 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.setin__pick .setin__t { flex: 1; }
+.setin__pick:hover { background: var(--sunk); }
+.setin__check { flex: none; width: 20px; text-align: right; color: var(--seal); font-weight: 700; }
+.setin__sw { flex: none; min-width: 44px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--sunk); color: var(--ink-3); font: inherit; font-size: 12px; cursor: pointer; }
+.setin__sw[aria-pressed="true"] { background: var(--seal); border-color: var(--seal); color: var(--seal-ink); }
+.setin__link { flex: none; font-size: 13px; color: var(--seal); }
+.setin__row--model { flex-wrap: wrap; }
+.setin__row--model .pcard__cast { flex-basis: 100%; margin-top: 4px; }
+.setin__md { padding: 12px 14px; }
+.setin__me { padding: 20px 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.setin__face { width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 32px; overflow: hidden; background-size: cover; background-position: center; }
+.setin__name { display: flex; flex-direction: column; gap: 2px; }
+.setin__name b { font-size: 17px; }
+.setin__name span { font-size: 12px; color: var(--ink-3); }
+.setin__line { font-size: 13px; color: var(--ink-2); }
+/* 멤버 카드(9절 U1) — 폰 한 줄, PC 세 단. 얼굴 40/48 · 이름 15 · 직책 11 · 한 줄 12.5 · 자기소개 12.5 네 줄 + …더보기 */
+.setin__people { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.mcard { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mcard__top { display: flex; align-items: center; gap: 10px; }
+.mcard__face { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 15px; overflow: hidden; background-size: cover; background-position: center; }
+.mcard__face.door { cursor: pointer; }
+.mcard__name { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.mcard__name b { font-size: 15px; }
+.mcard__name span { font-size: 11px; color: var(--ink-3); }
+.mcard__line { font-size: 12.5px; color: var(--ink-2); }
+.mcard__intro { font-size: 12.5px; line-height: 16px; color: var(--ink); overflow-wrap: anywhere; }
+.mcard__more { display: inline; border: 0; background: transparent; padding: 0; font: inherit; color: var(--ink-3); cursor: pointer; }
+@media (min-width: 820px) {
+  /* PC: 왼쪽 묶음 목록이 방 목록 자리(.rail 둘째 기둥 300)에 서고 오른쪽이 안쪽 화면 — 노션·슬랙 PC 설정 꼴 */
+  .app[data-view="settings"] .rail > .rail__head, .app[data-view="settings"] .rail > .rail__list, .app[data-view="settings"] .rail > .rail__more { display: none; }
+  .rail > .setnav { display: none; grid-column: 2; grid-row: 1 / span 2; overflow-y: auto; padding: 0 10px 14px; border-left: 1px solid var(--line); }
+  .app[data-view="settings"] .rail > .setnav { display: block; }
+  .rail > .setnav .setnav__head { display: block; font-family: 'Gowun Batang', serif; font-size: 17px; letter-spacing: .02em; padding: 15px 6px 12px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+  .setin__people { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .mcard__face { width: 48px; height: 48px; }
+  .set__body { max-width: 760px; }
+}
+@media (max-width: 819px) {
+  /* 폰: 목록 → 안쪽 화면 하나씩. 안쪽에선 목록이 숨고 머리에 '‹ 설정' */
+  .settings:not([data-page=""]) .setnav { display: none; }
+  .settings[data-page=""] .setin { display: none; }
+  .settings:not([data-page=""]) .set__back { display: inline; }
+  .settings:not([data-page=""]) .set__head h1 { font-size: 15px; }
+  .settings[data-page=""] .set__head { display: none; }   /* 목록 화면의 머리는 윗줄 '설정' 하나면 된다(시안) */
+  .settings:not([data-page=""]) .set__head p { display: none; }
+  .rail > .setnav { display: none; }   /* PC 에서 옮겨 둔 채 폰으로 좁아졌을 때 방 목록 서랍에 안 보이게(app.js 가 곧 되돌린다) */
+}
 
 .dash__body { padding: 16px 22px; overflow: auto; }
 .dash__sub { font-size: 12px; color: var(--ink-4); font-weight: 400; }
