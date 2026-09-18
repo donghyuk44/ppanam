@@ -31,7 +31,7 @@
       "id": "T2",
       "stream": "토큰",
       "what": "회차 닫혀도 세션 안 버림",
-      "deliverable": "커밋 c439733(세션은 마일스톤이 pass 로 닫힐 때만 비움) · fa58cd0. 확인: git show c439733 -- server/session.mjs (세라 09-18 14:0x 저장소에서 찾음, 톰 확인)",
+      "deliverable": null,
       "team": "dev",
       "seat": "ops",
       "after": [],
@@ -44,8 +44,7 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급",
-      "deliverable": null
+      "urgency": "긴급"
     },
     {
       "id": "T3",
@@ -56,7 +55,7 @@
       "after": [],
       "bottleneck": "server(솔라)",
       "status": "감사 대기",
-      "note": "personaAnchor — d61339a 에 섞여 커밋됨(클레멘타인 커밋, 내용은 솔라 서브에이전트 T3). 테라 감사",
+      "note": "personaAnchor — d61339a 에 섞여 커밋됨(클레멘타인 커밋, 내용은 솔라 서브에이전트 T3). 테라 감사 | 결과물 줄 — 저장소에서 커밋을 못 찾음(톰·세라), 솔라 한 줄(커밋 번호·확인 방법) 대기",
       "milestone": {
         "team": "dev",
         "n": 10
@@ -70,7 +69,7 @@
       "id": "T4",
       "stream": "토큰",
       "what": "큰 파일 전문 읽기 금지 · 책장 절",
-      "deliverable": "커밋 fa58cd0(책장 배선 — 세션 프롬프트에 책장 절) · 4f579c7(D2 검사기). 확인: git show fa58cd0 --stat · 리셋 뒤 첫 턴 프롬프트에 책장 절 (세라 09-18 14:0x, 톰 확인)",
+      "deliverable": null,
       "team": "dev",
       "seat": "ops",
       "after": [],
@@ -83,8 +82,7 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급",
-      "deliverable": null
+      "urgency": "긴급"
     },
     {
       "id": "P1",
@@ -171,7 +169,7 @@
       ],
       "bottleneck": "server(솔라) — 날짜 칸은 서버가 찍음",
       "status": "대기",
-      "note": "(옛 이름) 일마다 책임자·시작·끝·결과물 칸 — 보드 항목에 owner(됨)·startedAt·doneAt(서버가 찍음)·deliverable 칸을 세우고 화면이 읽는다 | 나래 순서 계획 ⑥(계획 6). 솔라(서버 칸)·톰(보드 값). 주제 0 셋의 안 3판에서 보드 번호 없던 것 — 12:1x 톰이 세움. owner 칸은 09-18 첫 판 들어감(23f7a81) | 비서실 회의 1(12:5x) 정한 것 2: 솔라 '다음' 은 이 재료 하나, 테라 화면 줄보다 앞",
+      "note": "(옛 이름) 일마다 책임자·시작·끝·결과물 칸 — 보드 항목에 owner(됨)·startedAt·doneAt(서버가 찍음)·deliverable 칸을 세우고 화면이 읽는다 | 나래 순서 계획 ⑥(계획 6). 솔라(서버 칸)·톰(보드 값). 주제 0 셋의 안 3판에서 보드 번호 없던 것 — 12:1x 톰이 세움. owner 칸은 09-18 첫 판 들어감(23f7a81) | 비서실 회의 1(12:5x) 정한 것 2: 솔라 '다음' 은 이 재료 하나, 테라 화면 줄보다 앞 | 개발 인수인계 \"다음\" ④ work-board.mjs 통과 길에도 doneAt(세라, 주제 7 청소) — 이 줄 안",
       "milestone": {
         "team": "hq",
         "n": 3
@@ -311,7 +309,7 @@
       "id": "C5",
       "stream": "카드 체계",
       "what": "카드 재료 API /api/card/<팀>",
-      "deliverable": "커밋 2dacf61(GET /api/card/<팀>) · deb382b(자 안 맞으면 null). 확인: curl localhost:4321/api/card/dev (server/index.mjs 423행) (세라 09-18 14:0x, 톰 확인)",
+      "deliverable": null,
       "team": "dev",
       "seat": "ops",
       "after": [
@@ -326,8 +324,7 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급",
-      "deliverable": null
+      "urgency": "긴급"
     },
     {
       "id": "C6",
@@ -1167,7 +1164,7 @@
     {
       "id": "C17",
       "stream": "화면",
-      "what": "입력창 — 그림과 글이 보내기 한 번에 한 말풍선, 첨부는 보내기 전 보관(여러 개·미리보기), 옆 스크롤바 없앰",
+      "what": "입력창 — 그림과 글이 보내기 한 번에 한 말풍선, 첨부는 보내기 전 보관, 옆 스크롤바 없앰",
       "team": "dev",
       "seat": "guide",
       "after": [
@@ -1469,7 +1466,7 @@
       "after": [],
       "bottleneck": "app.js(테라)",
       "status": "대기",
-      "note": "(옛 이름) 멤버 탭 — 나리 카드 하나로(185), 모델 칸은 접기, \"진행 중\" 은 실제 일할 때만 | 테라(나리 19:0x). 185 로 나리는 비서실에만 — 절반은 정해짐, 낱말은 하영",
+      "note": "(옛 이름) 멤버 탭 — 나리 카드 하나로(185), 모델 칸은 접기, \"진행 중\" 은 실제 일할 때만 | 테라(나리 19:0x). 185 로 나리는 비서실에만 — 절반은 정해짐, 낱말은 하영 | 대표 13:48 \"작업중이라고 했는데 왜 상태는 대기\" (246) — 사람 상태 낱말 셋(답하는 중 / 맡은 일 있음 / 오프라인, 세라 안): 하영 사전 먼저 → 테라 한 줄, 일 상태는 보드 진행 카드로",
       "team": "dev",
       "milestone": {
         "team": "dev",
@@ -2030,6 +2027,75 @@
       "owner": "톰",
       "importance": "보통",
       "urgency": "여유"
+    },
+    {
+      "after": [],
+      "bottleneck": null,
+      "milestone": {
+        "team": "dev",
+        "n": 10
+      },
+      "id": "J34",
+      "stream": "화면 글",
+      "what": "팀 카드 \"차단됨\" 은 사전 밖 — \"막힘\" 으로, 막힌 것 한 줄로 팀 전체가 막힌 듯 보이는 꼴 고침",
+      "team": "dev",
+      "seat": "guide",
+      "status": "대기",
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "긴급",
+      "note": "대표 13:51 마케팅 카드 사진(245). 낱말은 하영 한 줄 → 테라, 꼴은 헨리·테라. 세라 줄(14:0x), 톰 번호"
+    },
+    {
+      "after": [],
+      "bottleneck": null,
+      "milestone": null,
+      "id": "J35",
+      "stream": "운영",
+      "what": "팀별 일 공백 점검 — 마케팅·경영 초안(나래가 나리 대신) → 나리 공격 → 셋 동의",
+      "team": "sera",
+      "seat": "secretary",
+      "status": "진행",
+      "owner": "나래",
+      "importance": "매우",
+      "urgency": "긴급",
+      "note": "대표 13:51 \"각 팀별 업무 공백 점검은 누가 어떻게\"(245)·13:54 세라 답 3. 디자인·개발은 세라(파일 둘), 총괄·플랫폼은 나래(둘), 마케팅·경영 0 → 나래 초안. 셋 커버(224)"
+    },
+    {
+      "after": [],
+      "bottleneck": null,
+      "milestone": {
+        "team": "dev",
+        "n": 10
+      },
+      "id": "J36",
+      "stream": "화면 글",
+      "what": "금지 낱말 스물여섯 표를 화면 글 검사와 방 말 검사에 넣기 — 문자 그대로 뜻은 표시만",
+      "team": "dev",
+      "seat": "ops",
+      "status": "대기",
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "보통",
+      "note": "결정 216 개발 몫(테라·솔라). 개발 인수인계 \"다음\" 줄 ②(주제 7 청소, 세라). 하영 표는 사전 0절에 있음"
+    },
+    {
+      "after": [],
+      "bottleneck": null,
+      "milestone": {
+        "team": "dev",
+        "n": 10
+      },
+      "id": "J37",
+      "stream": "운영",
+      "what": "나래 자리 이름 — 자리 파일(cast.json)에 hq:admin(이름 나래, 파랑, 서버가 띄우지 않음)",
+      "team": "dev",
+      "seat": "ops",
+      "status": "대기",
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "긴급",
+      "note": "마케팅 카드 막힌 것 \"나래 자리 id — 톰·솔라\" 이틀째(세라). 톰 한 글자 14:0x: admin. 솔라가 코드에서 확인하면 닫힘. 218 두 사람·apr_df32c820 나래 인격 자리"
     }
   ]
 }
