@@ -2680,14 +2680,25 @@ export function goalTextOf(md) {
 
 /**
  * 팀 순서 목록(teams/<팀>/order.md) 의 팀 목표 한 줄과 '지금' 상태인 일 줄 — 타임라인 목표 카드의 팀별 칸(goal.md 3절 표와 같은 값).
- * 순수 — md 글만. 목표는 "**우리 팀 목표:** ..." 줄, now 는 상태 칸이 "지금"인 표 행의 일 칸(여럿이면 " · " 로 묶는다).
+ * 순수 — md 글만. 표 꼴(개발·디자인·마케팅·경영): 목표는 "**우리 팀 목표:** ..." 줄, now 는 상태 칸이 "지금"인 표 행의 일 칸
+ * (여럿이면 " · " 로 묶는다). 비서실은 표가 아니라 절 꼴이라("이번 달성 목표에서 {팀} 몫: ..." + "## 지금" 절의 "- " 줄들) 그걸로 대신 본다.
  */
 export function orderTeamOf(md) {
   const text = String(md ?? '');
   const goalM = /\*\*우리 팀 목표:\*\*\s*(.+)/.exec(text);
-  const rows = [...text.matchAll(/^\|\s*\d+\s*\|([^|]+)\|[^|]+\|[^|]+\|([^|]+)\|\s*$/gm)]
+  // # 칸은 "1"뿐 아니라 "1 (G2·L2·K4)" 처럼 보드 번호가 붙기도 한다(톰 결정 229, 09-18) — 숫자로 시작하는 줄로만
+  // 좁히지 않고 다섯 칸 표 줄 모양으로 본다(맨 앞 칸은 안 본다). 구분줄(--- 행)은 상태가 "지금"이 아니라 저절로 빠진다.
+  const rows = [...text.matchAll(/^\|[^|]*\|([^|]+)\|[^|]+\|[^|]+\|([^|]+)\|\s*$/gm)]
     .filter(([, , status]) => status.trim() === '지금');
-  return { goal: goalM ? goalM[1].trim() : null, now: rows.length ? rows.map(([, what]) => what.trim()).join(' · ') : null };
+  if (goalM || rows.length) {
+    return { goal: goalM ? goalM[1].trim() : null, now: rows.length ? rows.map(([, what]) => what.trim()).join(' · ') : null };
+  }
+  const goalSection = /이번 달성 목표에서 [^:\n]*몫:\s*(.+)/.exec(text);
+  // 절로 가른 뒤 "지금" 절만 — 빈 줄 하나만 있어도 끝나는 lazy·$ 조합은 멀티라인에서 헤딩 바로 뒤 빈 줄에 걸려 늘 빈 캡처를 냈다.
+  // \b 는 한글 앞뒤에서 안 걸린다(양쪽 다 \w 가 아니라 경계가 안 생긴다) — 뒤에 공백·줄끝인지로 본다.
+  const nowSec = text.split(/\n(?=##\s)/).find((s) => /^##\s*지금(?:\s|$)/.test(s.trim()));
+  const nowItems = nowSec ? [...nowSec.matchAll(/^-\s*(.+)$/gm)].map((m) => m[1].trim()) : [];
+  return { goal: goalSection ? goalSection[1].trim() : null, now: nowItems.length ? nowItems.join(' · ') : null };
 }
 
 /** 판정·결재 낱말 — 하영 card-words.md 2판 머리(대표 09-16 07:4x 표준어): PASS 승인 · REVISE 반려 · FAIL 보류. 화면의 판정 카드(G3)와 같은 글자. */

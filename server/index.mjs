@@ -509,10 +509,17 @@ const server = http.createServer((req, res) => {
     const weekMap = new Map();
     for (const t of teamsOut) for (const w of t.weeks) if (!weekMap.has(w.key)) weekMap.set(w.key, w.label);
     const weeks = [...weekMap.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([key, label]) => ({ key, label }));
+    // goal.teams 는 여섯(비서실 포함, 헨리 시안·goal.md 3절 — 테라 지적 0918) — 나무·주 칸은 못 가져도(로드맵이 없다)
+    // order.md 목표·'지금' 줄은 있다. teamsOut(다섯, 나무용)과는 따로 뽑는다.
+    const sera = listTeams().find((t) => t.id === 'sera');
+    const seraOrder = sera ? bus.orderTeamOf(readSafe(path.join(paths('sera').dir, 'order.md'))) : null;
     const goal = {
       slogan: line(goalText.slogan),
       goalNow: line(goalText.goalNow),
-      teams: teamsOut.map((t) => ({ id: t.id, name: t.name, goal: t.destination, now: line(orderByTeam[t.id]?.now) })),
+      teams: [
+        ...teamsOut.map((t) => ({ id: t.id, name: t.name, goal: t.destination, now: line(orderByTeam[t.id]?.now) })),
+        ...(sera ? [{ id: sera.id, name: sera.name, goal: line(seraOrder.goal), now: line(seraOrder.now) }] : []),
+      ],
     };
     return json(res, 200, { now: new Date(now).toISOString(), weeks, teams: teamsOut, goal });
   }
