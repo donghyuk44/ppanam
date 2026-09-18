@@ -2,7 +2,7 @@
 // 서고와 사서 (대표 결정 09-14 · 경영 M1). 문서를 다 읽지 않는다 — 목차로 좁히고, 색인으로 절을 고르고, 그 줄만 읽는다.
 //
 //   node tools/library.mjs build [--full] [--dry]   바뀐 것만 다시 읽어 목차·색인을 갱신한다. 다시 읽은 장수를 센다
-//   node tools/library.mjs toc                      목차 한 장 (10KB 한도) — 늘 들고 있어도 되는 것
+//   node tools/library.mjs toc [폴더]               목차 한 장 (10KB 한도) — 늘 들고 있어도 되는 것. 넘치면 큰 폴더부터 접고, 폴더를 주면 그것만 펼친다
 //   node tools/library.mjs show <경로>…              그 문서의 색인: 절 · 줄 범위 · 크기 · 낱말. 본문은 안 연다
 //   node tools/library.mjs find <낱말>…              목차·색인만 뒤져 후보 절을 낸다. 본문 0바이트
 //   node tools/library.mjs check                    통과 조건을 잰다 — 가) 본문 0 나) 다시 읽음 0/전체 다) 목차 ≤10KB
@@ -234,21 +234,24 @@ const clip = (s, n) => { s = String(s ?? '').replace(/\s+/g, ' ').trim(); return
 // 제목이 안 들어가면 " — " 뒤 부제부터 버린다 — "아트 디렉션 2판 — 인형 마을로 본 …" 보다 "아트 디렉션 2판" 이 낫다.
 const clipTitle = (s, n) => { s = String(s ?? '').replace(/\s+/g, ' ').trim(); if (s.length <= n) return s; const head = s.split(/\s[—–-]\s/)[0]; return clip(head.length >= 4 ? head : s, n); };
 
-function tocLines(m, descLen) {
+// 폴더마다 한 절 — 머리 한 줄(폴더 · 팀 · 장수 · 크기) 뒤에 파일 줄. renderToc 가 절 단위로 접는다.
+function tocSections(m, descLen) {
   const groups = new Map();
   for (const [rel, f] of Object.entries(m.files)) {
     const dir = path.dirname(rel) === '.' ? '(뿌리)' : `${path.dirname(rel)}/`;
     if (!groups.has(dir)) groups.set(dir, []);
     groups.get(dir).push({ rel, name: path.basename(rel), ...f });
   }
-  const out = [];
+  const sections = [];
   const sum = (xs) => xs.reduce((a, f) => a + f.size, 0);
   const stem = (f) => f.name.replace(/\.[^.]+$/, '');
   for (const [dir, all] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
     const files = all.filter((f) => f.kind !== 'image');
     const imgs = all.filter((f) => f.kind === 'image').sort((a, b) => a.name.localeCompare(b.name));
     const head = [files.length ? `${files.length}장` : '', imgs.length ? `그림 ${imgs.length}` : ''].filter(Boolean).join(' · ');
-    out.push('', `## ${dir} — ${teamName(all[0].rel)} · ${head} ${kb(sum(all))}`);
+    const out = ['', `## ${dir} — ${teamName(all[0].rel)} · ${head} ${kb(sum(all))}`];
+    // 접힌 꼴 — 머리 줄만 남기고 펼치는 명령 한 줄. 이름은 색인에 있으니 find 는 그대로 잡는다.
+    const folded = [...out, `(접음 — 펼치려면 \`node tools/library.mjs toc ${dir === '(뿌리)' ? '.' : dir}\`)`];
     const byExt = new Map();
     for (const f of files) { const e = path.extname(f.name); if (!byExt.has(e)) byExt.set(e, []); byExt.get(e).push(f); }
     for (const [ext, fs_] of [...byExt.entries()].sort((a, b) => (a[0] === '.md' ? -1 : b[0] === '.md' ? 1 : a[0].localeCompare(b[0])))) {
@@ -269,23 +272,43 @@ function tocLines(m, descLen) {
     }
     // 그림은 이름만 — 판정에 그림이 들어갈 때 어디 있는지는 알아야 한다. 열지는 않는다.
     if (imgs.length) out.push(`그림 ${imgs.length}장 ${kb(sum(imgs))} ${clip(imgs.map(stem).join('·'), descLen)}`);
+    sections.push({ dir, lines: out, folded, bytes: bytes(out.join('\n')), foldedBytes: bytes(folded.join('\n')) });
   }
-  return out;
+  return sections;
 }
 
-export function renderToc(m = readManifest()) {
+const tocHead = (m) => {
   const files = Object.values(m.files);
   const docs = files.filter((f) => f.kind !== 'image');
   const at = m.builtAt ? new Date(m.builtAt).toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 16) : '—';
-  const head = [
+  return [
     `# 서고 목차 · ${at} KST · 문서 ${docs.length}장 ${kb(docs.reduce((a, f) => a + f.size, 0))} · 그림 ${files.length - docs.length}장 · node tools/library.mjs`,
     '후보를 고른다 → `show <경로>` 로 절·줄을 본다 → 그 줄만 읽는다. `find <낱말>` 은 목차·색인만 뒤진다. 남에게 전할 땐 절 이름으로(줄은 밀린다). 줄: 파일 크기 제목. `*.json N장`·`*.md N장`·`그림 N장` 은 접은 것.',
   ];
+};
+
+export function renderToc(m = readManifest()) {
+  const head = tocHead(m);
   for (const n of [48, 40, 34, 28, 22, 16]) {
-    const text = [...head, ...tocLines(m, n), ''].join('\n');
+    const text = [...head, ...tocSections(m, n).flatMap((s) => s.lines), ''].join('\n');
     if (bytes(text) <= TOC_LIMIT) return text;
   }
-  return [...head, `> 경고: 제목을 16자로 줄여도 ${TOC_LIMIT} 바이트를 넘는다 — 서고가 커졌다. 접는 규칙을 손봐야 한다.`, ...tocLines(m, 16), ''].join('\n');
+  // 제목을 16자로 줄여도 넘으면 폴더를 접는다 — 큰 절부터 하나씩, 한도 안에 들 때까지만 (빅터 M1 지적 ②: 경고만 찍던 폴백을 접기로).
+  // 접힌 폴더는 머리 줄(장수·크기)만 남고 `toc <폴더>` 로 펼친다. 폴더 순서는 그대로라 접혀도 자리는 안 바뀐다.
+  const sections = tocSections(m, 16);
+  const fold = new Set();
+  const note = () => `> 접은 폴더 ${fold.size}/${sections.length} — 서고 ${sections.length}폴더가 ${TOC_LIMIT.toLocaleString()}바이트를 넘어 큰 폴더부터 접었다. 펼치기: \`node tools/library.mjs toc <폴더>\``;
+  const size = () => bytes([...head, note(), ...sections.flatMap((s) => (fold.has(s.dir) ? s.folded : s.lines)), ''].join('\n'));
+  const order = [...sections].sort((a, b) => (b.bytes - b.foldedBytes) - (a.bytes - a.foldedBytes) || a.dir.localeCompare(b.dir));
+  for (const s of order) { if (size() <= TOC_LIMIT) break; fold.add(s.dir); }
+  return [...head, note(), ...sections.flatMap((s) => (fold.has(s.dir) ? s.folded : s.lines)), ''].join('\n');
+}
+
+// 한 폴더만 펼친 목차 — 접힌 폴더를 볼 때. 제목은 48자, 본문은 안 연다.
+export function renderDir(dir, m = readManifest()) {
+  const key = dir === '.' || dir === '(뿌리)' ? '(뿌리)' : `${dir.replace(/\/+$/, '')}/`;
+  const s = tocSections(m, 48).find((x) => x.dir === key);
+  return s ? `${s.lines.join('\n')}\n` : null;
 }
 
 /* ── 사서: 찾기 ── */
@@ -339,7 +362,9 @@ if (isMain) {
     console.log(report(r));
     if (flags.has('--list') && r.rereadList.length) console.log(r.rereadList.join('\n'));
   } else if (cmd === 'toc') {
-    process.stdout.write(quietRefresh() + fs.readFileSync(TOC_PATH, 'utf8'));
+    process.stdout.write(quietRefresh());
+    if (args.length) { for (const d of args) process.stdout.write(renderDir(d) ?? `폴더 없음: ${d} — 목차의 \`## \` 줄에 있는 그대로 (teams/hq/out/ 처럼)\n`); }
+    else process.stdout.write(fs.readFileSync(TOC_PATH, 'utf8'));
   } else if (cmd === 'show') {
     if (!args.length) { console.error('쓰는 법: show <경로>…'); process.exit(2); }
     process.stdout.write(quietRefresh());
@@ -388,7 +413,7 @@ if (isMain) {
     for (const [name, pass, why] of rows) { ok &&= pass; console.log(`${pass ? '✓' : '✗'} ${name} — ${why}`); }
     process.exit(ok ? 0 : 1);
   } else {
-    console.log(`서고와 사서.\n  build [--full] [--dry] [--list]   바뀐 것만 다시 읽어 갱신\n  toc                              목차 (≤${TOC_LIMIT} 바이트)\n  show <경로>…                      문서의 절·줄 범위·낱말\n  find <낱말>…                      목차·색인만 뒤져 후보 절\n  check                            통과 조건 가·나·다`);
+    console.log(`서고와 사서.\n  build [--full] [--dry] [--list]   바뀐 것만 다시 읽어 갱신\n  toc [폴더]…                       목차 (≤${TOC_LIMIT} 바이트) — 폴더를 주면 그 폴더만 펼쳐서\n  show <경로>…                      문서의 절·줄 범위·낱말\n  find <낱말>…                      목차·색인만 뒤져 후보 절\n  check                            통과 조건 가·나·다`);
     process.exit(cmd ? 2 : 0);
   }
 }

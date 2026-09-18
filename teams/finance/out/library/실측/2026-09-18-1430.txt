@@ -1,0 +1,59 @@
+사서 실측 — 2026-09-18 14:15~14:3x KST · 유진 자리(경영 guide 세션) · 경영 5단계 ①·② · 라운드 11
+이 파일은 유진이 명령을 직접 돌리고 출력을 옮겨 적은 것. 스크립트 사서-실측-명령.sh 는 이 자리에서 `bash`·`sh`·`tee` 가 막혀 통째로는 못 돌렸다 — 아래 3절에 그 자리 실측.
+
+== 1. check (접는 규칙 고친 뒤, 14:2x — `node tools/library.mjs check` 출력 그대로)
+이번 build: 다시 읽음 0/492장 (새 0 · 바뀜 0 · 사라짐 0) · 그림 694장(안 읽음) · 본문 0바이트 · 목차 9833바이트 (한도 10,000)
+✓ 가) 물음 하나에 본문 읽은 바이트 = 0 — find+show 가 본문 0바이트, 색인 492장
+✓ 나) 안 바뀌었을 때 다시 읽은 장수 = 0 — 0/492장
+✓ 나′) 바뀐 것만 잡나 (임시 문서로 실측) — 새로 생김 1/493(잡음) · 같은 크기로 본문만 바뀜 1/493(잡음) · 사라짐 1(지움)
+✓ 다) 목차 ≤ 10,000바이트 — 9,833바이트
+
+고치기 전(14:1x, 같은 명령): 다) ✗ 23,703바이트(485장) — 제목을 16자로 줄여도 넘어 경고만 찍고 있었다(빅터 M1 지적 ②).
+고친 것: tools/library.mjs renderToc — 16자에서도 넘으면 폴더를 큰 것부터 하나씩 접는다(머리 줄 + 펼치는 명령 한 줄). 결과 17/68 폴더 접힘.
+  접힌 폴더 목록은 toc.md 3행 아래 `(접음 — 펼치려면 …)` 줄로 센다: `grep -c '접음 — 펼치려면' teams/finance/out/library/toc.md` = 17
+  펼치기: `node tools/library.mjs toc teams/finance/` → 6장 전부 48자 제목으로. 없는 폴더는 "폴더 없음" 한 줄.
+문서 수가 일하는 동안 자랐다 — 14:15 485장 → 14:27 492장 → 14:3x 493장(다른 방이 쓰는 중). 숫자는 그 순간 것.
+
+== 2. 통과 나) 오늘 문서가 잡히나 — `node tools/library.mjs find 경영 도서관 233 --limit=20`
+  5번째 줄: teams/hq/out/토론-주제5-경영-나리-안-0918.md · 토론 주제 5 — 경영팀 일의 문제·개선·조정·앞으로 (나리 안 1판, 2026-09-18 낮) — L1-4 0.5K (6)
+  마지막 줄: 본문 읽음 0바이트 · 목차 1장 · 색인 492/492장 열어봄
+  → 20 안에 든다(5번째), 본문 0바이트.
+
+== 3. 어느 자리에서 돌았나 (경영 5단계 ①의 실측 한 줄)
+  유진 자리(경영 guide, 이 세션) 09-18 14:15 — `node tools/library.mjs find 도서관 색인 사서 --limit=3` 됨(본문 0바이트 · 색인 485/485장). build·check·toc·find 전부 됨.
+  유진 자리 — `bash …/사서-실측-명령.sh`·`sh …`·`… | tee <파일>`·`node -e '…'`·`awk` 는 승인 요구로 막힘. 사서 명령 자체는 안 막힌다 — 책장 4행 "맨 명령이 막혀 있어" 는 낡은 줄(09-16 boss-words-check 거부 때 말).
+  세라 자리 09-18 14:0x 됨 — 주제 5 2판 5절(teams/hq/out/토론-주제5-경영-나리-안-0918.md 32행) 에 세라가 적음. 유진이 본 건 그 줄이지 출력이 아니다.
+  개발·마케팅·디자인 자리 — 오늘 실측 없음(안 잰 것).
+
+== 4. 빅터 M1 지적 ③·④ — 잰 값만, 고칠지는 뒤에(5단계 ④)
+  ③ check 의 부작용: check 는 build() 를 먼저 부르고(manifest.json·toc.md 를 씀), 나′) 실측을 위해 teams/finance/out/_사서-점검.md 를 만들었다 지운다(tools/library.mjs check 절, 366~379행). 지운 뒤 build() 를 한 번 더 돈다. → 잰 값: check 한 번에 manifest·toc 쓰기 3회, 임시 문서 생성·삭제 1회.
+  ④ out/ 임시 산출물이 색인에 드는가: `jq -r '.files | keys[] | select(test("finance/out/tmp-"))' manifest.json` → teams/finance/out/tmp-check.txt · tmp-nora300.txt · tmp-test.txt 셋(14:1x). 거름망 없음.
+  덧(랭킹, 빅터 ①): 물음 다섯 중 넷에서 첫 후보가 teams/finance/out/사서-물음-다섯.md(물음 자체를 적은 우리 파일)다 — 물음 낱말이 그 파일 절 제목에 다 있어서. 아래 5절.
+
+== 5. 물음 다섯 (사서-실측-명령.sh 의 다섯, --limit=3 으로 첫 셋만 — 20줄 전체는 스크립트가 돌 자리에서)
+=== 물음 1 · 마크 M2 인형 판정 (--limit=20 으로 돌림, 첫 둘)
+  teams/design/out/kit/parts-plan.md · 4. 인형 열다섯 — 몸 열둘 + 실루엣 규칙 — L54-82 3.5K (12)
+  teams/design/out/review/first-scene.md · 인형 줄서기 — 오늘 렌더 — L40-43 0.4K (9)
+  본문 읽음 0바이트 · 목차 1장 · 색인 493/493장 열어봄
+=== 물음 2 · 테라 계약 탭 절 (--limit=20, 첫 둘)
+  teams/finance/out/사서-물음-다섯.md · 2. 테라(개발 실무) — … — L29-44 2.2K (20)
+  teams/dev/decisions.md · 81. 화면 리뉴얼 — 대시보드·보고서 탭, 관제탑·분석 다시 (대표 원문, 09-13 23:45) — L172-172 0.7K (16)
+=== 물음 3 · 하영 분석 탭 낱말·직책 (--limit=3)
+  teams/finance/out/사서-물음-다섯.md · 3. 하영(마케팅 실무) — … — L45-58 2.1K (12)
+  teams/marketing/out/한국어-낱말-규정집.md · 3. 비유로 쓰면 안 되는 낱말 스물여섯 — 사전 0절 표가 정본 — L51-56 1.0K (10)
+  teams/marketing/out/screen-text-frames.md · 4. 분석 — 실물 문장 — L177-178 0.0K (9)
+=== 물음 4 · 톰 gemini 임시 외부감사 결정 (--limit=3)
+  teams/finance/out/사서-물음-다섯.md · 4. 톰(총괄) — … — L59-70 1.8K (16)
+  teams/dev/out/gemini-check.md · Gemini(agy) 외부감사 다섯 자리 — 실전 확인 — L1-4 0.2K (10)
+  teams/finance/out/report/폴백-부분성공.md · A2 — cast.json 폴백 값(gemini↔codex)과 부분 성공 규칙 — L1-4 0.3K (10)
+=== 물음 5 · 라운드 닫는 규칙 (--limit=3)
+  teams/finance/out/사서-물음-다섯.md · 5. 새로 뜬 세션 — … — L71-86 1.5K (16)
+  docs/event-schema.md · 라운드를 PASS 로 닫는 조건 — L864-890 3.5K (13)
+  docs/plan.md · 3. 라운드 — 영상에 없는 것을 우리가 채운다 — L135-150 1.0K (10)
+  (넷 다 마지막 줄: 본문 읽음 0바이트 · 목차 1장 · 색인 493/493장 열어봄)
+
+== 다시 재는 명령
+  node tools/library.mjs check
+  grep -c '접음 — 펼치려면' teams/finance/out/library/toc.md
+  node tools/library.mjs find 경영 도서관 233 --limit=20
+  node tools/library.mjs toc teams/finance/
