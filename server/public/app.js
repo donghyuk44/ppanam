@@ -2592,13 +2592,16 @@ let tlMark = '';
 const TASK_DOT = { '통과': 'done', '진행': 'live', '감사 대기': 'wait', '대기': 'idle', '막힘': 'bad', '안 함': 'off' };   // 상태 점(ui-spec 13절): 완료 초록 · 진행 중 먹 · 감사 대기 놋쇠 · 대기 회색 · 막힘 빨강
 const weekMD = (key) => { const [, m, d] = String(key).split('-'); return `${Number(m)}/${Number(d)}`; };   // '2026-09-07' → '9/7' — 지난 주·이번 주 머리에만
 const shortTitle = (s) => String(s ?? '').split(/\s*(?:—|∥|\()\s*/)[0].trim() || String(s ?? '');   // 단계 제목은 첫 구분 기호 앞까지 — 뒤 꼬리(결정 번호·괄호)는 자에 걸리는 하네스 말(140). 전문은 title 에
+/** 그 시각이 든 주의 월요일 날짜(YYYY-MM-DD, 우리 시각) — 서버 bus.weekKeyOf 와 같은 식(서울 자정 → 그 요일만큼 물러남 → +9시간 해서 읽음). 작업 doneAt 을 주 칸에 놓는 데 쓴다. */
+const tlWeekKey = (ts) => { const ms = Date.parse(ts); if (Number.isNaN(ms)) return null; const OFF = 9 * 3600_000; const day0 = Math.floor((ms + OFF) / DAY) * DAY - OFF; const dow = new Date(day0 + OFF).getUTCDay(); return new Date(day0 - ((dow + 6) % 7) * DAY + OFF).toISOString().slice(0, 10); };
 function loadDashboard() {
   loadAheadFive(() => loadDashboard());
   return fetch('/api/timeline').then((r) => (r.ok ? r.json() : null)).catch(() => null).then((r) => {
     const body = $('dashBody');
     for (const id of ['dashBand', 'dashGates']) { const n = $(id); n.replaceChildren(); n.hidden = true; }   // 옛 띠·문 상자는 비우고 숨긴다(빈 상자가 회색 줄로 남는다, 1280 실측)
     if (!r) { body.replaceChildren(el('p', 'tcard__quiet', '타임라인 로딩 실패 — 서버 재시작 필요')); return; }
-    const mark = JSON.stringify([r.weeks, ahead.lines, (r.teams ?? []).map((t) => [t.id, t.signals, (t.projects ?? []).map((p) => [p.n, p.status, p.weeks, (p.tasks ?? []).map((k) => [k.id, k.status, k.seat, k.ready, k.doneAt, k.what])])])]);
+    const wide = window.innerWidth >= 1180;   // PC 1280: 팀 카드 하나에 왼쪽 나무 + 오른쪽 기둥 넷(13절). 폰: 카드 둘.
+    const mark = JSON.stringify([wide, r.weeks, ahead.lines, (r.teams ?? []).map((t) => [t.id, t.signals, (t.projects ?? []).map((p) => [p.n, p.status, p.weeks, (p.tasks ?? []).map((k) => [k.id, k.status, k.seat, k.ready, k.doneAt, k.what])])])]);
     if (tlMark === mark) return;   // 안 바뀌었으면 다시 안 그린다(펼친 줄이 닫히지 않게)
     tlMark = mark;
     body.replaceChildren();
@@ -2619,20 +2622,20 @@ function loadDashboard() {
       { key: 'next', head: '다음' },
       { key: 'after', head: '그 뒤' },
     ];
-    for (const t of r.teams ?? []) body.append(...timelineTeam(t, cols));
+    if (wide) {
+      // 기둥 머리 한 줄(PC) — 왼쪽 "팀 · 단계 · 작업" + 칸 넷. 폰은 팀마다 주 칸 카드 머리에.
+      const colsRow = el('div', 'tl__cols');
+      colsRow.appendChild(el('span', 'tl__gh tl__gh--first', '팀 · 단계 · 작업'));
+      for (const c of cols) colsRow.appendChild(el('span', 'tl__gh', c.head));
+      body.appendChild(colsRow);
+      for (const t of r.teams ?? []) body.appendChild(timelineTeamWide(t, cols));
+    } else for (const t of r.teams ?? []) body.append(...timelineTeam(t, cols));
   });
 }
-/** 팀 하나 — 카드 둘(나무 · 주 칸). 얼굴은 portraits/chip128(withFace), 담당이 비면 빨간 칩 "담당 없음". */
-function timelineTeam(t, cols) {
-  const cast = summaries[t.id]?.cast ?? {};
-  const color = teamColor(t.id);
-  const projects = t.projects ?? [];
-  const passed = projects.filter((p) => p.status === 'pass');
-  const open = projects.filter((p) => p.status !== 'pass');
-  // ── 나무 카드 ──
-  const card = el('section', 'dash__card tl__card'); card.dataset.team = t.id;
+/** 팀 머리 — 팀 타일 · 이름 · 이번 주 요약 칩 셋(끝난 것 초록 · 막힌 것 · 담당 없음 — 0 은 회색, 1 이상은 빨강). 폰·PC 같은 부품. */
+function timelineHead(t) {
   const head = el('div', 'tl__head');
-  const tile = el('span', 'card__tile', String(t.name ?? '?').slice(0, 1)); tile.style.background = color;
+  const tile = el('span', 'card__tile', String(t.name ?? '?').slice(0, 1)); tile.style.background = teamColor(t.id);
   head.appendChild(tile);
   head.appendChild(el('b', 'tl__name', t.name));
   const sig = t.signals ?? {};
@@ -2641,7 +2644,74 @@ function timelineTeam(t, cols) {
     const c = el('span', 'tl__chip', `${label} ${n}`); c.dataset.k = n > 0 ? k : 'zero'; chips.appendChild(c);
   }
   head.appendChild(chips);
-  card.appendChild(head);
+  return head;
+}
+/** 칸 하나 — 막대(kind: pass 초록 · now 먹 · next/after 점선 · wait 놋쇠 · bad 빨강) 또는 빈 칸. */
+function tlCell(kind, text) { const s = el('span', 'tl__cell'); if (text) s.appendChild(el('i', `tl__bar tl__bar--${kind}`, text)); return s; }
+/** PC 1280 — 팀 카드 하나: 머리 + 격자(왼쪽 나무 줄 · 오른쪽 칸 넷). 줄마다 칸이 붙는다(13절 표) — 끝난 단계 접힘 줄엔 돈 주의 합, 진행 중 단계엔 회차 수, 작업엔 상태대로 ✓·하는 중·감사 대기·시작할 수 있어요·뒤에 걸림·막힌 것. */
+function timelineTeamWide(t, cols) {
+  const cast = summaries[t.id]?.cast ?? {};
+  const projects = t.projects ?? [];
+  const passed = projects.filter((p) => p.status === 'pass');
+  const open = projects.filter((p) => p.status !== 'pass');
+  const [prev, cur] = cols;
+  const inWeek = (ts, key) => !!(ts && key && tlWeekKey(ts) === key);
+  const card = el('section', 'dash__card tl__card tl__card--wide'); card.dataset.team = t.id;
+  card.appendChild(timelineHead(t));
+  const grid = el('div', 'tl__wgrid');
+  const row = (left, cells) => { grid.appendChild(left); for (const c of cells) grid.appendChild(c); };
+  const blank = () => tlCell('none', '');
+  if (passed.length) {
+    const fold = el('details', 'tl__fold');
+    fold.appendChild(el('summary', null, `✓ 끝난 단계 ${passed.length} · ${passed[0].n}~${passed[passed.length - 1].n}단계`));
+    for (const p of passed) { const d = el('div', 'tl__stage tl__stage--pass', `${p.n}단계 ${shortTitle(p.title)}`); d.title = p.title; fold.appendChild(d); }
+    // 돈 주의 합 — 그 주에 돈 끝난 단계들의 회차 수 · ✓ 수
+    const sum = (key) => { if (!key) return ''; let n = 0, ok = 0; for (const p of passed) { const w = p.weeks?.[key]; if (w) { n += w.rounds; if (w.pass) ok++; } } return n ? `${n}회차 · ✓ ${ok}` : ''; };
+    row(fold, [tlCell('pass', sum(prev.key)), tlCell('pass', sum(cur.key)), blank(), blank()]);
+  }
+  for (const p of open) {
+    const left = el('div', `tl__stage tl__stage--${p.status ?? 'none'}`);
+    const title = el('span', 'tl__title', p.n != null ? `${p.n}단계 ${shortTitle(p.title)}` : p.title); title.title = p.title;
+    left.appendChild(title);
+    if (p.status === 'now') left.appendChild(pill('진행 중', 'live'));
+    const tasks = p.tasks ?? [];
+    const doneThisWeek = tasks.filter((k) => k.status === '통과' && inWeek(k.doneAt, cur.key)).length;   // 통과인 것만 — 다시 열린 작업의 옛 doneAt 은 안 센다(code-review)
+    const bar = (w, thisWeek) => (w ? `${w.rounds}회차${w.pass ? ' ✓' : thisWeek && p.status === 'now' && doneThisWeek ? ` · 끝난 것 ${doneThisWeek}` : ''}` : '');
+    if (p.status === 'wait' && p.n != null) row(left, [blank(), blank(), tlCell('next', `${p.n - 1}단계 뒤`), blank()]);
+    else row(left, [tlCell('now', bar(prev.key ? p.weeks?.[prev.key] : null, false)), tlCell('now', bar(cur.key ? p.weeks?.[cur.key] : null, true)), blank(), blank()]);
+    if (p.status !== 'now' && p.n != null) continue;   // 대기 단계는 제목만(계획 2절)
+    // 작업 줄 — 끝난 것 중 지난 주·이번 주에 끝난 건 그 주 칸에 ✓ 로 남고, 그 밖 끝난 것은 접힘. 진행 중은 이번 주 "하는 중", 감사 대기는 놋쇠, 시작 가능은 다음 칸, 뒤에 걸림은 그 뒤 칸, 막힘은 빨강.
+    const recentDone = tasks.filter((k) => k.status === '통과' && (inWeek(k.doneAt, prev.key) || inWeek(k.doneAt, cur.key)));
+    const oldDone = tasks.filter((k) => k.status === '통과' && !recentDone.includes(k));
+    for (const k of tasks.filter((x) => x.status !== '통과')) {
+      const cells = [blank(), blank(), blank(), blank()];
+      if (k.status === '진행') cells[1] = tlCell('now', '하는 중');
+      else if (k.status === '감사 대기') cells[1] = tlCell('wait', '감사 대기');
+      else if (k.status === '막힘') cells[1] = tlCell('bad', '막힌 것');
+      else if (k.ready) cells[2] = tlCell('next', '시작할 수 있어요');
+      else if (k.status === '대기') cells[3] = tlCell('after', '뒤에 걸림');
+      row(taskRow(t, k, cast), cells);
+    }
+    for (const k of recentDone) row(taskRow(t, k, cast), [tlCell('pass', inWeek(k.doneAt, prev.key) ? '✓' : ''), tlCell('pass', inWeek(k.doneAt, cur.key) ? '✓' : ''), blank(), blank()]);
+    if (oldDone.length) {
+      const fold = el('details', 'tl__fold tl__fold--tasks');
+      fold.appendChild(el('summary', null, `☑ 끝난 작업 ${oldDone.length}`));
+      for (const k of oldDone) fold.appendChild(taskRow(t, k, cast));
+      row(fold, [blank(), blank(), blank(), blank()]);
+    }
+  }
+  card.appendChild(grid);
+  return card;
+}
+/** 팀 하나 — 카드 둘(나무 · 주 칸). 얼굴은 portraits/chip128(withFace), 담당이 비면 빨간 칩 "담당 없음". */
+function timelineTeam(t, cols) {
+  const cast = summaries[t.id]?.cast ?? {};
+  const projects = t.projects ?? [];
+  const passed = projects.filter((p) => p.status === 'pass');
+  const open = projects.filter((p) => p.status !== 'pass');
+  // ── 나무 카드 ──
+  const card = el('section', 'dash__card tl__card'); card.dataset.team = t.id;
+  card.appendChild(timelineHead(t));
   if (passed.length) {
     // 끝난 단계는 ✓ 로 접힌다(보관소, 계획 2절) — 펼치면 제목만
     const fold = el('details', 'tl__fold');
@@ -2679,7 +2749,7 @@ function timelineTeam(t, cols) {
   for (const p of rows) {
     grid.appendChild(el('span', 'tl__gl', p.n != null ? `${p.n}단계` : '단계 없음'));
     const tasks = p.tasks ?? [];
-    const doneThisWeek = thisKey ? tasks.filter((k) => k.doneAt && k.doneAt.slice(0, 10) >= thisKey).length : 0;
+    const doneThisWeek = thisKey ? tasks.filter((k) => k.status === '통과' && k.doneAt && tlWeekKey(k.doneAt) === thisKey).length : 0;
     const ready = tasks.filter((k) => k.ready).length;
     const held = tasks.filter((k) => k.status === '대기' && !k.ready).length;
     const blocked = tasks.filter((k) => k.status === '막힘').length;

@@ -716,7 +716,16 @@ body {
 .tl__bar--now { background: var(--ink); color: var(--panel); }
 .tl__bar--next, .tl__bar--after { background: transparent; border: 1px dashed var(--ink-4); color: var(--ink-3); }
 .tl__bar--bad { background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad-line); }
-@media (min-width: 1180px) { .tl__grid { grid-template-columns: 120px repeat(4, minmax(0, 1fr)); } .tl__bar { font-size: 11px; white-space: normal; } }
+.tl__bar--wait { background: color-mix(in srgb, var(--seal) 18%, transparent); color: var(--seal-ink); border: 1px solid var(--seal); }   /* 감사 대기 — 놋쇠(13절) */
+/* PC 1280(13절) — 기둥 머리 한 줄 + 팀 카드 하나에 왼쪽 나무 480 · 오른쪽 칸 넷. 줄마다 칸이 붙는다 */
+.tl__cols { display: grid; grid-template-columns: 480px repeat(4, minmax(0, 1fr)); gap: 4px 6px; padding: 0 14px 6px; position: sticky; top: 0; background: var(--ground); z-index: 1; }
+.tl__wgrid { display: grid; grid-template-columns: 480px repeat(4, minmax(0, 1fr)); gap: 2px 6px; align-items: center; }
+.tl__wgrid > .tl__stage, .tl__wgrid > .tl__task, .tl__wgrid > .tl__fold { min-width: 0; }
+.tl__wgrid > .tl__fold { border-top: 1px solid var(--line-2); }
+.tl__wgrid .tl__cell { min-height: 24px; }
+.tl__wgrid .tl__bar { font-size: 11px; }
+.tl__wgrid .tl__bar--pass:empty { display: none; }
+@media (min-width: 1180px) { .tl__grid { grid-template-columns: 120px repeat(4, minmax(0, 1fr)); } .tl__bar { font-size: 11px; } }
 .dash__body table { border-collapse: collapse; width: 100%; margin-bottom: 18px; font-size: 13px; }
 .dash__body th, .dash__body td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top; }
 .dash__body th { background: var(--panel); font-weight: 600; }
