@@ -1,7 +1,7 @@
 /* ── 타임라인 탭 (타임라인 계획-0916 2절 · 헨리 ui-spec 13절 3판-b · 결정 187·188) — 팀 → 단계(프로젝트) → 작업 나무 + 주 칸.
  * 재료는 /api/timeline 하나(솔라 cc23d69: bus.weeksOf·timelineTeamOf — rounds.jsonl 실측 주 묶기 + work.json 작업). 옛 순서 칸 띠(loadDashboardBand, /api/dashboard)는 버렸다(계획 4절 7).
  * 폰 412: 팀마다 카드 둘 — 나무 카드(머리 + 줄) + 얇은 주 칸 카드(기둥 넷: 지난 주 · 이번 주 · 다음 · 그 뒤). 날짜 글자는 지난 주·이번 주 머리 둘뿐, 앞일 칸엔 없다(188).
- * 첫 층 '대표님이 시킨 일'(34회차, 하영 ahead-five.md)은 그대로 위에. 낱말은 계획 2절 표준 낱말·ui-spec 13절 안 — 하영 낱말 아홉이 오면 그 글자로.
+ * 맨 위는 우리의 목표 한 장(14절). 낱말은 하영 아홉(사전 111~125행)·ui-spec 13절 안.
  */
 let tlMark = '';
 const TASK_DOT = { '통과': 'done', '진행': 'live', '감사 대기': 'wait', '대기': 'idle', '막힘': 'bad', '안 함': 'off' };   // 상태 점(ui-spec 13절): 완료 초록 · 진행 중 먹 · 감사 대기 놋쇠 · 대기 회색 · 막힘 빨강
@@ -14,24 +14,18 @@ const okText = (s) => { const v = String(s ?? '').trim(); return v && v !== NOT_
 /** 그 시각이 든 주의 월요일 날짜(YYYY-MM-DD, 우리 시각) — 서버 bus.weekKeyOf 와 같은 식(서울 자정 → 그 요일만큼 물러남 → +9시간 해서 읽음). 작업 doneAt 을 주 칸에 놓는 데 쓴다. */
 const tlWeekKey = (ts) => { const ms = Date.parse(ts); if (Number.isNaN(ms)) return null; const OFF = 9 * 3600_000; const day0 = Math.floor((ms + OFF) / DAY) * DAY - OFF; const dow = new Date(day0 + OFF).getUTCDay(); return new Date(day0 - ((dow + 6) % 7) * DAY + OFF).toISOString().slice(0, 10); };
 function loadDashboard() {
-  loadAheadFive(() => loadDashboard());
   return fetch('/api/timeline').then((r) => (r.ok ? r.json() : null)).catch(() => null).then((r) => {
     const body = $('dashBody');
     for (const id of ['dashBand', 'dashGates']) { const n = $(id); n.replaceChildren(); n.hidden = true; }   // 옛 띠·문 상자는 비우고 숨긴다(빈 상자가 회색 줄로 남는다, 1280 실측)
     if (!r) { body.replaceChildren(el('p', 'tcard__quiet', '타임라인 로딩 실패 — 서버 재시작 필요')); return; }
     const wide = window.innerWidth >= 700;   // 폴드 750·PC 1280: 팀 카드 하나에 왼쪽 나무(폴드 300 · PC 480, CSS) + 오른쪽 기둥 넷(13절). 폰 412: 카드 둘.
-    const mark = JSON.stringify([wide, r.weeks, r.goal ?? null, ahead.lines, (r.teams ?? []).map((t) => [t.id, t.destination ?? null, t.signals, (t.projects ?? []).map((p) => [p.n, p.status, p.weeks, (p.tasks ?? []).map((k) => [k.id, k.status, k.seat, k.ready, k.doneAt, k.what, (k.after ?? []).map((a) => a?.what ?? a)])])])]);
+    const mark = JSON.stringify([wide, r.weeks, r.goal ?? null, (r.teams ?? []).map((t) => [t.id, t.destination ?? null, t.signals, (t.projects ?? []).map((p) => [p.n, p.status, p.weeks, (p.tasks ?? []).map((k) => [k.id, k.status, k.seat, k.ready, k.doneAt, k.what, (k.after ?? []).map((a) => a?.what ?? a)])])])]);
     if (tlMark === mark) return;   // 안 바뀌었으면 다시 안 그린다(펼친 줄이 닫히지 않게)
     tlMark = mark;
     body.replaceChildren();
     // 맨 위 — 우리의 목표 한 장(14절 · 결정 207): 슬로건 → 이번 달성 목표 → 팀별(팀 · 팀 목표 · 지금). 값은 서버가 goal.md·order.md 를 읽어 자로 거른 것(솔라 8684e22) — 안 맞는 줄은 안 낸다.
+    // '대표님이 시킨 일' 카드(34회차, 하영 ahead-five.md 손 글 다섯 줄)는 뺐다 — 3판 시안에 없고 사람이 손으로 적는 칸이라(계획 6절 컷, 나리 대리 결정 · 헨리 09-18). 그 자리가 목표 한 장.
     body.append(...goalCards(r.goal, wide));
-    if (ahead.lines.length) {
-      const first = el('section', 'dash__card'); first.id = 'dashAhead'; first.dataset.block = 'ahead';
-      first.appendChild(el('div', 'dash__k', '대표님이 시킨 일'));
-      for (const a of ahead.lines) first.appendChild(el('div', 'card__text', a.text));
-      body.appendChild(first);
-    }
     // 기둥 넷 — 지난 주(마지막 지난 주 키) · 이번 주 · 다음 · 그 뒤. 이번 주에 회차가 없으면 이번 주 칸은 날짜 없이 '이번 주'.
     const weeks = r.weeks ?? [];
     const thisW = weeks.find((w) => w.label === '이번 주') ?? null;
