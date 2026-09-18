@@ -23,7 +23,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "T2",
@@ -39,7 +41,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "T3",
@@ -55,7 +59,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "T4",
@@ -71,7 +77,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "P1",
@@ -86,7 +94,9 @@
         "team": "hq",
         "n": 2
       },
-      "owner": "나리"
+      "owner": "나리",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "P2",
@@ -101,7 +111,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "P3",
@@ -119,7 +131,9 @@
         "team": "hq",
         "n": 2
       },
-      "owner": "톰"
+      "owner": "톰",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "J23",
@@ -137,7 +151,9 @@
         "team": "hq",
         "n": 3
       },
-      "owner": "톰"
+      "owner": "톰",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "J24",
@@ -155,7 +171,9 @@
         "team": "hq",
         "n": 3
       },
-      "owner": "톰"
+      "owner": "톰",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "G1",
@@ -167,7 +185,9 @@
       "bottleneck": null,
       "status": "통과",
       "milestone": null,
-      "owner": "나리"
+      "owner": "나리",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "G2",
@@ -182,7 +202,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "G3",
@@ -200,7 +222,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "C1",
@@ -215,7 +239,9 @@
         "team": "hq",
         "n": 3
       },
-      "owner": "나리"
+      "owner": "나리",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "C2",
@@ -232,7 +258,9 @@
         "team": "marketing",
         "n": 6
       },
-      "owner": "하영"
+      "owner": "하영",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "C3",
@@ -249,7 +277,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "C4",
@@ -267,7 +297,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "C5",
@@ -285,7 +317,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "C6",
@@ -303,7 +337,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "C7",
@@ -322,7 +358,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "C8",
@@ -339,7 +377,9 @@
         "team": "hq",
         "n": 3
       },
-      "owner": "나리"
+      "owner": "나리",
+      "importance": "아님",
+      "urgency": "여유"
     },
     {
       "id": "S1",
@@ -354,7 +394,9 @@
         "team": "design",
         "n": 5
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "S2",
@@ -370,7 +412,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": "보통",
+      "urgency": "긴급"
     },
     {
       "id": "S3",
@@ -389,7 +433,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": "아님",
+      "urgency": "여유"
     },
     {
       "id": "O1",
@@ -405,7 +451,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "O2",
@@ -420,7 +468,9 @@
         "team": "hq",
         "n": 3
       },
-      "owner": "톰"
+      "owner": "톰",
+      "importance": "보통",
+      "urgency": "보통"
     },
     {
       "id": "O3",
@@ -434,7 +484,9 @@
       "bottleneck": null,
       "status": "진행",
       "milestone": null,
-      "owner": "세라"
+      "owner": "세라",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "F1",
@@ -450,7 +502,9 @@
         "team": "finance",
         "n": 4
       },
-      "owner": "유진"
+      "owner": "유진",
+      "importance": "보통",
+      "urgency": "긴급"
     },
     {
       "id": "F2",
@@ -466,7 +520,9 @@
         "team": "finance",
         "n": 4
       },
-      "owner": "유진"
+      "owner": "유진",
+      "importance": "보통",
+      "urgency": "긴급"
     },
     {
       "id": "F3",
@@ -484,7 +540,9 @@
         "team": "finance",
         "n": 4
       },
-      "owner": "유진"
+      "owner": "유진",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "O4",
@@ -500,7 +558,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "W1",
@@ -516,7 +576,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "H1",
@@ -531,7 +593,9 @@
         "team": "marketing",
         "n": 6
       },
-      "owner": "하영"
+      "owner": "하영",
+      "importance": "보통",
+      "urgency": "긴급"
     },
     {
       "id": "H2",
@@ -548,7 +612,9 @@
         "team": "marketing",
         "n": 6
       },
-      "owner": "하영"
+      "owner": "하영",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "H3",
@@ -563,7 +629,9 @@
         "team": "marketing",
         "n": 6
       },
-      "owner": "하영"
+      "owner": "하영",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "M0",
@@ -575,7 +643,9 @@
       "bottleneck": null,
       "status": "안 함",
       "milestone": null,
-      "owner": "나리"
+      "owner": "나리",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "L1",
@@ -591,7 +661,9 @@
         "team": "marketing",
         "n": 6
       },
-      "owner": "하영"
+      "owner": "하영",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "U1",
@@ -609,7 +681,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "X1",
@@ -625,7 +699,9 @@
         "team": "marketing",
         "n": 7
       },
-      "owner": "하영"
+      "owner": "하영",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "J25",
@@ -643,7 +719,9 @@
         "team": "finance",
         "n": 4
       },
-      "owner": "유진"
+      "owner": "유진",
+      "importance": "보통",
+      "urgency": "보통"
     },
     {
       "id": "TL1",
@@ -659,7 +737,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": "아님",
+      "urgency": "여유"
     },
     {
       "id": "R1",
@@ -677,7 +757,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": "보통",
+      "urgency": "긴급"
     },
     {
       "id": "G4",
@@ -693,7 +775,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "L2",
@@ -710,7 +794,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "I1",
@@ -726,7 +812,9 @@
         "team": "design",
         "n": 6
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "A1",
@@ -742,7 +830,9 @@
         "team": "finance",
         "n": 4
       },
-      "owner": "유진"
+      "owner": "유진",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "A2",
@@ -758,7 +848,9 @@
         "team": "finance",
         "n": 4
       },
-      "owner": "유진"
+      "owner": "유진",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "A3",
@@ -776,7 +868,9 @@
         "team": "finance",
         "n": 4
       },
-      "owner": "유진"
+      "owner": "유진",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "D1",
@@ -793,7 +887,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "D2",
@@ -811,7 +907,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "D3",
@@ -828,7 +926,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "D4",
@@ -846,7 +946,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "C9",
@@ -861,7 +963,9 @@
       "status": "대기",
       "note": "대표 09:45 비서실 메모. 카카오톡·텔레그램·라인은 모양·구조 참고만, 우리에 맞춘 안을 이유와 함께(헨리 시안 먼저). 그림 안 글은 대표 개인 메모라 안 봄",
       "milestone": null,
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "C10",
@@ -876,7 +980,9 @@
       "status": "대기",
       "note": "대표 09:45 비서실 메모. 카카오톡·텔레그램·라인은 모양·구조 참고만, 우리에 맞춘 안을 이유와 함께(헨리 시안 먼저). 그림 안 글은 대표 개인 메모라 안 봄",
       "milestone": null,
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "C11",
@@ -891,7 +997,9 @@
       "status": "대기",
       "note": "대표 09:45 비서실 메모. 카카오톡·텔레그램·라인은 모양·구조 참고만, 우리에 맞춘 안을 이유와 함께(헨리 시안 먼저). 그림 안 글은 대표 개인 메모라 안 봄",
       "milestone": null,
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "C12",
@@ -906,7 +1014,9 @@
       "status": "대기",
       "note": "대표 09:45 비서실 메모. 카카오톡·텔레그램·라인은 모양·구조 참고만, 우리에 맞춘 안을 이유와 함께(헨리 시안 먼저). 그림 안 글은 대표 개인 메모라 안 봄",
       "milestone": null,
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "C13",
@@ -924,7 +1034,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "I2",
@@ -939,7 +1051,9 @@
       "status": "대기",
       "note": "대표 10:29 비서실 원문. 파일 5BbvUErs7OaweXJx6zQaGm. 허용 줄 mcp__claude_ai_Figma 는 대표가 10:31 넣음",
       "milestone": null,
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "아님",
+      "urgency": "여유"
     },
     {
       "id": "N1",
@@ -957,7 +1071,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "N2",
@@ -975,7 +1091,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "아님",
+      "urgency": "여유"
     },
     {
       "id": "C14",
@@ -992,7 +1110,9 @@
         "n": 10
       },
       "doneAt": "2026-09-18T02:20:04.917Z",
-      "owner": "테라"
+      "owner": "테라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "C15",
@@ -1007,7 +1127,9 @@
       "status": "대기",
       "note": "대표 10:55 원문: '왜 내가 비서실에서 나눈 세라랑 나리 대화가 그냥 그대로 다른방에 노출되는거야? 인용이면 인용되는것처럼 하면 되잖아.' 참고 그림: 카카오톡 답장 말풍선(모양·구조만). 서버 쪽 meta.quote 는 솔라",
       "milestone": null,
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "C16",
@@ -1022,7 +1144,9 @@
       "status": "대기",
       "note": "대표 11:03 원문: '우리 플랫폼에서는 색을 구분해서 노출해줄래? 서버나리는 노랑색, 너는 파랑색 박스 안에 이름'. say.mjs --as system 에서 온 것 = 시스템(파랑), hq:system 세션이 낸 것 = 나리(노랑). 서버 쪽 meta.hand 는 솔라",
       "milestone": null,
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "C17",
@@ -1037,7 +1161,9 @@
       "status": "대기",
       "note": "대표 11:07 원문: '이렇게 채팅 늘어나면 세로길이 늘어나는거, 채팅창에 바로 이미지 드랍해서 첨부하는것 이런것도 없잖아 지금' + 오르카 입력창 그림(모양 참고만) | 대표 11:10 비서실: \"pdf로 뽑았는데 첨부가 안된다 ㅠ 시스템으로 보낼건데 pdf같은 문서 첨부도 되야겠다\" — 지금은 그림만 됨. 첨부 파일은 teams/<팀>/in/ 에 저장 | 09-18 11:23 결정 226(대표 원문 셋): ① 넣자마자 보내지 말고 입력창에 보관, 여러 개 ② 오른쪽 스크롤바 없앰 ③ 미리보기 썸네일 상자 — 병의 뿌리는 파일이 지시처럼 곧장 가서 팀이 묻지 않고 받아들이는 것. 새 카드 아님, 여기 얹음(톰)",
       "milestone": null,
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "X2",
@@ -1053,7 +1179,9 @@
         "team": "hq",
         "n": 3
       },
-      "owner": "나리"
+      "owner": "나리",
+      "importance": "아님",
+      "urgency": "여유"
     },
     {
       "id": "O5",
@@ -1071,7 +1199,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "아님",
+      "urgency": "여유"
     },
     {
       "id": "H4",
@@ -1087,7 +1217,9 @@
         "team": "marketing",
         "n": 6
       },
-      "owner": "하영"
+      "owner": "하영",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "N3",
@@ -1105,7 +1237,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "Q1",
@@ -1121,7 +1255,9 @@
         "team": "finance",
         "n": 4
       },
-      "owner": "유진"
+      "owner": "유진",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "Q2",
@@ -1139,7 +1275,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "Q3",
@@ -1157,7 +1295,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": "보통",
+      "urgency": "긴급"
     },
     {
       "id": "K1",
@@ -1173,7 +1313,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "K2",
@@ -1189,7 +1331,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "긴급"
     },
     {
       "id": "K3",
@@ -1205,7 +1349,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "K4",
@@ -1221,7 +1367,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "K5",
@@ -1237,7 +1385,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "K6",
@@ -1250,7 +1400,9 @@
       "note": "솔라 — 채팅 기능 여덟(C9~C12·C15~C17·I2)을 개발 계획표에 한 단계로 붙이는 카드(B)에 묶음(나리 19:0x·19:1x 솔라로). 단계가 서면 여덟과 이 줄의 milestone 을 그 번호로",
       "team": "dev",
       "milestone": null,
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "긴급"
     },
     {
       "id": "K7",
@@ -1266,7 +1418,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "K8",
@@ -1284,7 +1438,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "K9",
@@ -1300,7 +1456,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "K10",
@@ -1316,7 +1474,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "J1",
@@ -1332,7 +1492,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "J2",
@@ -1350,7 +1512,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "J21",
@@ -1368,7 +1532,9 @@
         "team": "finance",
         "n": 4
       },
-      "owner": "유진"
+      "owner": "유진",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "J22",
@@ -1386,7 +1552,9 @@
         "team": "hq",
         "n": 3
       },
-      "owner": "톰"
+      "owner": "톰",
+      "importance": "보통",
+      "urgency": "보통"
     },
     {
       "id": "J26",
@@ -1404,7 +1572,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "J27",
@@ -1422,7 +1592,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "J28",
@@ -1437,7 +1609,9 @@
       "status": "대기",
       "note": "sera/order.md 5 · 인수인계 청소(나래 12:2x) 접수",
       "milestone": null,
-      "owner": "세라"
+      "owner": "세라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "J29",
@@ -1450,7 +1624,9 @@
       "status": "대기",
       "note": "인수인계 청소(나래 12:2x) 접수. 09-16 나리: 한도 % 는 클로드 계정 화면에만 있어 서버가 못 읽음 — 길이 생기기 전엔 달러 꼬리 빼고 숫자 없이",
       "milestone": null,
-      "owner": "세라"
+      "owner": "세라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "J30",
@@ -1466,7 +1642,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "솔라"
+      "owner": "솔라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "J20",
@@ -1482,7 +1660,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "J3",
@@ -1498,7 +1678,9 @@
         "team": "dev",
         "n": 10
       },
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "긴급"
     },
     {
       "id": "J4",
@@ -1511,7 +1693,9 @@
       "status": "대기",
       "note": "dev/order.md 8 · 예정, 하영 낱말·유진 지표 뒤",
       "milestone": null,
-      "owner": "테라"
+      "owner": "테라",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "J5",
@@ -1527,7 +1711,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "J6",
@@ -1543,7 +1729,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "J7",
@@ -1559,7 +1747,9 @@
         "team": "design",
         "n": 7
       },
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "J8",
@@ -1572,7 +1762,9 @@
       "status": "대기",
       "note": "design/order.md 8",
       "milestone": null,
-      "owner": "헨리"
+      "owner": "헨리",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "J9",
@@ -1588,7 +1780,9 @@
         "team": "marketing",
         "n": 5
       },
-      "owner": "하영"
+      "owner": "하영",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "J10",
@@ -1604,7 +1798,9 @@
         "team": "marketing",
         "n": 7
       },
-      "owner": "하영"
+      "owner": "하영",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "J11",
@@ -1620,7 +1816,9 @@
         "team": "marketing",
         "n": 7
       },
-      "owner": "하영"
+      "owner": "하영",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "J12",
@@ -1633,7 +1831,9 @@
       "status": "대기",
       "note": "marketing/order.md 9",
       "milestone": null,
-      "owner": "하영"
+      "owner": "하영",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "J13",
@@ -1649,7 +1849,9 @@
         "team": "finance",
         "n": 3
       },
-      "owner": "유진"
+      "owner": "유진",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "J14",
@@ -1665,7 +1867,9 @@
         "team": "finance",
         "n": 4
       },
-      "owner": "유진"
+      "owner": "유진",
+      "importance": "매우",
+      "urgency": "보통"
     },
     {
       "id": "J15",
@@ -1678,7 +1882,9 @@
       "status": "대기",
       "note": "finance/order.md 8·9",
       "milestone": null,
-      "owner": "유진"
+      "owner": "유진",
+      "importance": "보통",
+      "urgency": "여유"
     },
     {
       "id": "J16",
@@ -1691,7 +1897,9 @@
       "status": "진행",
       "note": "sera/order.md · 셋의 합의 판(228)",
       "milestone": null,
-      "owner": "세라"
+      "owner": "세라",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "J17",
@@ -1707,7 +1915,9 @@
         "team": "hq",
         "n": 3
       },
-      "owner": "나리"
+      "owner": "나리",
+      "importance": null,
+      "urgency": null
     },
     {
       "id": "J18",
@@ -1723,7 +1933,9 @@
         "team": "hq",
         "n": 3
       },
-      "owner": "톰"
+      "owner": "톰",
+      "importance": "매우",
+      "urgency": "긴급"
     },
     {
       "id": "J19",
@@ -1739,7 +1951,9 @@
         "team": "hq",
         "n": 3
       },
-      "owner": "톰"
+      "owner": "톰",
+      "importance": "보통",
+      "urgency": "여유"
     }
   ]
 }
