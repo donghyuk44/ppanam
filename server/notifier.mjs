@@ -365,7 +365,9 @@ export function runNotifier({ send = (team, text) => session.send(team, quiet(te
     // (a-2) 다시 부르기 — 한 번 넣고 답이 안 오면 영원히 대기였다(하네스 실측 R25: 제리 호출이 300초에 죽은 뒤 셋이 대표 화면 맨 위에 붙박이).
     // 아직 안 답한 판정자가 있고 마지막으로 넣은 지 REASK_MS 가 지났으면 그 사람 이름을 불러 다시 넣는다. 최대 REASK_MAX 번 — 그 뒤엔 방에 한 줄 남기고 사람 몫.
     if (r.grade === 'B' && r.status === 'pending' && t.requested) {
-      const need = leftOf(r);
+      // 제리 중단이면 다시 부르기 대상에서도 뺀다 — 안 그러면 대답 못 할 사람을 REASK_MAX 번 불러 놓고
+      // "답이 없습니다" 로 포기까지 찍는다(테라 판정-세라-0918 ④ 덧, notifier.mjs 368행).
+      const need = leftOf(r, undefined, { hqOutsideSuspended: hqOutsideSuspendedNow() });
       const lastAsk = new Date(t.reasked ?? t.requested).getTime();
       if (need.length && Date.now() - lastAsk > REASK_MS) {
         const n = (t.reaskCount ?? 0) + 1;

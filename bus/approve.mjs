@@ -251,7 +251,8 @@ if (o.mode === 'decide') {
   if (r.status !== 'pending') {
     console.log(`${r.status === 'passed' ? '통과' : '반려'}입니다. 서버가 ${r.team} 팀에 들려줍니다.`);
   } else {
-    const left = leftOf(r);
+    // 제리 중단이면 "아직 제리 판정이 남았습니다" 를 안 낸다 — 같은 결(테라 판정-세라-0918 ④).
+    const left = leftOf(r, undefined, { hqOutsideSuspended: hqOutsideSuspendedNow() });
     console.log(`아직 ${left.map((w) => nameOf(r.team, w)).join('·')} 판정이 남았습니다.`);
   }
   process.exit(0);
