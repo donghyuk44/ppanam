@@ -779,6 +779,7 @@ body {
 .tl__face { flex: none; position: relative; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 10px; font-weight: 700; overflow: hidden; }
 .tl__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .tl__face--none { width: auto; border-radius: 999px; padding: 0 7px; font-size: 10.5px; background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad-line); }
+.tl__seat { flex: none; font-size: 11.5px; color: var(--ink-3); max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* 얼굴 옆 담당자 이름 */
 .tl__what { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tl__what--done { color: var(--ink-4); font-weight: 400; }
 .tl__what[data-notyet="1"] { color: var(--ink-4); font-style: italic; }

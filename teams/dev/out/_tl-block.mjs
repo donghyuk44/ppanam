@@ -218,6 +218,7 @@ function taskRow(t, k, cast) {
     const a = cast[k.seat] ?? summaries.hq?.cast?.[k.seat] ?? null;
     const chip = el('span', 'tl__face', a?.initial ?? String(k.seat).slice(0, 1)); chip.style.background = a?.color ?? 'var(--ink-4)'; chip.title = a?.name ?? k.seat;
     row.appendChild(withFace(chip, t.id, k.seat));
+    row.appendChild(el('span', 'tl__seat', a?.name ?? k.seat));   // 얼굴 옆 이름 — 얼굴만으론 누군지 모른다(대표 09-18 14:5x "타임라인 쪽 누가 하는지 알 수가 없어")
   } else row.appendChild(el('span', 'tl__face tl__face--none', '담당자 없음'));
   const what = okText(k.what);
   const stack = el('span', 'tl__whatStack');

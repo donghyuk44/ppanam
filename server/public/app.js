@@ -2162,7 +2162,9 @@ function dashStats({ mine = null, fromBoard = null, day0 = dayStartSeoulMs(Date.
     for (const it of s.items ?? []) {
       if (!it.doneAt || new Date(it.doneAt).getTime() < day0) continue;
       const line = String(it.what ?? '').trim();
-      if (line && line !== NOT_YET && okLine(line)) doneList.push({ id: `work:${it.id}`, kind: 'work', team: it.team, line });
+      // 누가 끝냈나 — 보드 담당(seat) 이름을 앞에(대표 09-18 14:5x "대시보드 쪽 누가 말하는지 알 수가 없어")
+      const who = it.seat ? (summaries[it.team]?.cast?.[it.seat]?.name ?? summaries.hq?.cast?.[it.seat]?.name ?? null) : null;
+      if (line && line !== NOT_YET && okLine(line)) doneList.push({ id: `work:${it.id}`, kind: 'work', team: it.team, line: who ? `${who} · ${line}` : line });
     }
   }
   for (const t of teams.filter((x) => x.id !== 'sera')) {
@@ -2942,6 +2944,7 @@ function taskRow(t, k, cast) {
     const a = cast[k.seat] ?? summaries.hq?.cast?.[k.seat] ?? null;
     const chip = el('span', 'tl__face', a?.initial ?? String(k.seat).slice(0, 1)); chip.style.background = a?.color ?? 'var(--ink-4)'; chip.title = a?.name ?? k.seat;
     row.appendChild(withFace(chip, t.id, k.seat));
+    row.appendChild(el('span', 'tl__seat', a?.name ?? k.seat));   // 얼굴 옆 이름 — 얼굴만으론 누군지 모른다(대표 09-18 14:5x "타임라인 쪽 누가 하는지 알 수가 없어")
   } else row.appendChild(el('span', 'tl__face tl__face--none', '담당자 없음'));
   const what = okText(k.what);
   const stack = el('span', 'tl__whatStack');
