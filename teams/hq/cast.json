@@ -18,7 +18,8 @@
       "geminiModel": "gemini-3.6-flash",
       "geminiFallback": "gemini-3.1-pro",
       "effort": "low",
-      "fallback": "gpt"
+      "fallback": "gpt",
+      "suspended": "2026-09-25"
     },
     "secretary": {
       "name": "세라",
