@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // 얇은 감독 (N1 둘째 조각, 나리 13:2x·13:5x) — 진짜 서버(server/index.mjs)를 자식으로 띄우고 stdio 를
-// 그대로 흘린다. 재시작 카드(75)를 만나면 1초 뒤 다시 띄운다(포트가 놓일 시간, 09-18 EADDRINUSE 실측).
+// 그대로 흘린다. 재시작 카드(75)를 만나면 포트가 실제로 놓였는지 재고서 다시 띄운다(09-18 EADDRINUSE 실측).
 // 그 밖의 오류 종료도 다시 띄운다(세라
 // 태클 — 75 만 살리면 서버가 죽었을 때 감독도 같이 끝나 "멈추면 안 켜진다"가 그대로다) — 신호
 // (SIGTERM·SIGINT)로 끝난 것만 빼고, 그건 관리 창이 일부러 내린 것이다. 5분 안에 세 번 넘게 죽으면
@@ -10,6 +10,7 @@
 // pkill 로 감독을 죽이면 자식(서버)도 같이 죽는다(SIGTERM 을 그대로 넘긴다).
 
 import { spawn } from 'node:child_process';
+import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { emit } from '../bus/bus.mjs';
@@ -19,10 +20,33 @@ const RESTART_EXIT_CODE = 75;   // server/executor.mjs 와 같은 값 — 둘 �
 const CRASH_WINDOW_MS = 5 * 60_000;
 const CRASH_MAX = 3;               // 이 창 안에 이보다 많이(네 번째부터) 죽으면 멈춘다
 const BACKOFF_MS = [1000, 2000, 5000];   // 첫째·둘째·그 뒤론 5초
+// server/index.mjs 와 같은 기본값(35·42행) — 감독기가 실제로 그 포트가 놓였는지 재 본다.
+const PORT = Number(process.env.PORT || 4321);
+const HOST = process.env.HOST || '127.0.0.1';
 // 재시작 카드(75) 뒤 바로 띄우면 포트가 아직 안 놓였다(executor.mjs 가 server.close() 없이 exit 만 해서
-// OS 가 4321 을 거두는 사이 새 자식이 EADDRINUSE 로 또 죽는다) — 그 죽음이 crashes 에 또 쌓여 카드를
-// 여러 번 통과시키면 3진 아웃까지 갔다(09-18 14:57, 나리 실측 ①). 1초 여유를 준다.
-const RESTART_DELAY_MS = 1000;
+// OS 가 포트를 거두는 사이 새 자식이 EADDRINUSE 로 또 죽는다) — 그 죽음이 crashes 에 또 쌓여 카드를 여러
+// 번 통과시키면 3진 아웃까지 갔다(09-18 14:57, 나리 실측 ①). 고정 시간 대신 포트가 실제로 비는지 재서
+// 기다린다(테라 지적 — 고정 1초는 포트가 늦게 풀리는 날엔 또 겪는다) — 최대 PORT_WAIT_MAX_MS 는 안전망.
+const PORT_WAIT_INTERVAL_MS = 100;
+const PORT_WAIT_MAX_MS = 5000;
+
+/** 그 포트에 지금 새로 bind 할 수 있나 — 될 때까지 열었다 바로 닫는 시험. */
+function portFree(port, host) {
+  return new Promise((resolve) => {
+    const tester = net.createServer();
+    tester.once('error', () => resolve(false));
+    tester.once('listening', () => tester.close(() => resolve(true)));
+    tester.listen(port, host);
+  });
+}
+async function waitPortFree(port, host, { intervalMs = PORT_WAIT_INTERVAL_MS, maxMs = PORT_WAIT_MAX_MS } = {}) {
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    if (await portFree(port, host)) return true;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  return false;   // 못 기다려도 launch() 는 부른다 — 그때도 막히면 오류 종료 경로(backoff)가 이어받는다
+}
 
 let downedBySignal = false;   // 관리 창이 신호로 내렸다 — 다시 안 띄운다
 let crashes = [];             // 최근 오류 종료 시각들(75 가 아닌 종료) — 5분 창
@@ -35,7 +59,14 @@ function launch() {
   }
   child.on('exit', (code, signal) => {
     if (downedBySignal) { process.exit(0); return; }
-    if (code === RESTART_EXIT_CODE) { console.log(`[serve] 재시작 카드 — ${RESTART_DELAY_MS}ms 뒤 다시 띄웁니다(포트 놓일 시간).`); setTimeout(launch, RESTART_DELAY_MS); return; }
+    if (code === RESTART_EXIT_CODE) {
+      console.log(`[serve] 재시작 카드 — ${HOST}:${PORT} 놓이는지 재고 다시 띄웁니다.`);
+      waitPortFree(PORT, HOST).then((freed) => {
+        if (!freed) console.error(`[serve] ${PORT_WAIT_MAX_MS}ms 지나도 포트가 안 놓였습니다 — 그래도 띄웁니다.`);
+        launch();
+      });
+      return;
+    }
 
     // 그 밖의 모든 종료(오류·죽음·뜻밖의 코드 0) — 다시 띄우되 5분에 세 번 넘으면 포기한다.
     const now = Date.now();
