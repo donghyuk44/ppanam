@@ -247,7 +247,7 @@ function giveTurn(team, actor, kind, tries = 1) {
   (r.lastGiven ??= new Map()).set(actor, kind);   // 이 자리의 다음 말이 어떤 차례에서 나왔나 — 잡담 브레이크(결정 121)가 본다
 
   if (isOutside(team, actor)) {
-    // 중단(suspended)된 바깥눈 자리는 이름으로 불려도 띄우지 않는다 — 판정 흐름(491행)만 건너뛰고 부름·순찰은 여전히 gemini 를 띄워
+    // 중단(suspended)된 외부감사 자리는 이름으로 불려도 띄우지 않는다 — 판정 흐름(491행)만 건너뛰고 부름·순찰은 여전히 gemini 를 띄워
     // 502·503 만 남기던 것(대표 09-18 14:2x "외부감사쪽 없애, 지금 막기만하고 세션은 죽고 일은 안되고있고", 세라 한 줄 — 솔라 확인).
     const sus = readCast(team).agents?.[actor]?.suspended;
     if (sus) {
