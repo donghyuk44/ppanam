@@ -630,9 +630,13 @@ const server = http.createServer((req, res) => {
           return json(res, 200, { ok: true, to: owner, queued: 0, event: rec.id });
         }
         const actor = to && (cast[to]?.model === 'claude') ? to : undefined;
-        const sent = session.send(t, q ? quiet(say) : say, actor);
+        // 여기 남기고 바로 들려주기(quiet)로 보낸다 — 전엔 훅(UserPromptSubmit)이 세션에 넣은 뒤에야 적어서,
+        // 세션이 바쁘면(큐에 서면) 말풍선이 늦게 떴다(테라 지적 0918, 화면 낙관적 렌더로 가려 뒀다). 이제 여기
+        // 한 번 적고 quiet() 로 보내면 훅은 들려주기라 다시 안 적는다(isQuietRelay) — 두 번 안 남는다.
+        const rec = q ? null : emit(t, { actor: 'boss', type: 'message', text: say });
+        const sent = session.send(t, quiet(say), actor);
         if (sent.refused) return json(res, 409, { error: sent.reason, closing: true });
-        json(res, 200, { ok: true, to: actor ?? session.ownerOf(t), ...sent });
+        json(res, 200, { ok: true, to: actor ?? session.ownerOf(t), ...(rec ? { event: rec.id } : {}), ...sent });
       } catch (e) {
         json(res, 500, { error: `실무에게 전달하지 못했습니다 — ${e.message}` });
       }
