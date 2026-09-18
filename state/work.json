@@ -1971,14 +1971,15 @@
       "what": "그래프 보기 지표 정의와 12살 30초 시험(계획대로 뒤에)",
       "team": "finance",
       "seat": "guide",
-      "after": [],
+      "after": [
+        "J18",
+        "J23",
+        "J24"
+      ],
       "bottleneck": null,
       "status": "대기",
-      "note": "(옛 이름) 그래프 보기 지표 정의와 12살 30초 시험(220 뒤에) | finance/order.md 8·9 | 결정 251(14:23 나리 대리): 경영 6단계 wait — 그래프 지표는 총괄 넷 뒤(220)",
-      "milestone": {
-        "team": "finance",
-        "n": 6
-      },
+      "note": "(옛 이름) 그래프 보기 지표 정의와 12살 30초 시험(220 뒤에) | finance/order.md 8·9 | 결정 251(14:23 나리 대리): 경영 6단계 wait — 그래프 지표는 총괄 넷 뒤(220) | 결정 260(14:4x 나리 대리): 6단계 밖 '예정' — 총괄 넷(J18·J23·J24, 책임자 칸은 됨) 뒤(220). 앞으로 당기는 건 대표",
+      "milestone": null,
       "owner": "유진",
       "importance": "보통",
       "urgency": "여유"
@@ -2183,6 +2184,28 @@
       "urgency": "보통",
       "deliverable": "teams/dev/shelf.md 4~6행이 실측 한 줄(커밋), 안 돌면 출력 첫 줄이 실측 파일 3절에",
       "doneCheck": "grep -c 막혀 teams/dev/shelf.md = 0 또는 실측 파일 3절에 개발 자리 줄"
+    },
+    {
+      "id": "J41",
+      "stream": "운영",
+      "what": "'얼마나 됐나' 한 장 — 보드를 세어 팀별 통과·전체·감사 대기·막힘 수, 세는 규칙 셋과 출처",
+      "team": "finance",
+      "seat": "guide",
+      "after": [
+        "J14"
+      ],
+      "bottleneck": null,
+      "status": "진행",
+      "note": "결정 260(14:4x 나리 대리) — 경영 6단계는 이 한 장만으로 닫힌다. 라운드 12 열림, 유진 2판(14:41 값 38/112·20·25, 나리 서버 자리 값과 같음), 노라 판정 기다림. 세는 규칙: 막힘은 항목 병목 칸 · 통과·안 함 항목은 안 셈 · 셀 때마다 수가 자라니 jq 한 줄이 정본. 아침 한 장에 싣는 서버 코드는 솔라 몫(개발 줄 따로)",
+      "milestone": {
+        "team": "finance",
+        "n": 6
+      },
+      "owner": "유진",
+      "importance": "보통",
+      "urgency": "보통",
+      "deliverable": "teams/finance/out/report/얼마나-됐나.md — jq 한 줄, 수 넷, 출처 열, 규칙 셋",
+      "doneCheck": "jq 한 줄을 다시 돌려 수 넷이 같은 규칙으로 나온다 · 노라 판정"
     }
   ]
 }
