@@ -654,7 +654,7 @@ const server = http.createServer((req, res) => {
   const UPLOAD_MIME = { ...UPLOAD_IMAGE, ...UPLOAD_DOC };
   const UPLOAD_MAX = 8 * 1024 * 1024;   // base64 문자열 기준 — 디코드하면 6MB 안팎. 채팅 그림이지 자료실이 아니다.
   if (url.pathname === '/api/upload' && req.method === 'POST') {
-    readBody(req, res, ({ team: t, data, mime, quiet: q }) => {
+    readBody(req, res, ({ team: t, data, mime, quiet: q, silent }) => {
       if (!teamExists(t)) return json(res, 404, { error: '그런 팀이 없습니다.' });
       // code-review 지적 — 그냥 [] 읽기는 Object.prototype 상속 값(mime:'constructor' 등)을 진짜 값처럼 돌려준다.
       const mimeKey = String(mime ?? '');
@@ -670,6 +670,10 @@ const server = http.createServer((req, res) => {
       const dir = paths(t).in;
       fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(path.join(dir, name), buf);
+
+      // 조용히 올리기(C17, 테라 요청 0918) — 입력창에 첨부로 머물다 "보내기"를 누르면 그때 글과 한 말풍선으로
+      // 나간다. 여기선 파일만 저장하고 세션엔 아무것도 안 보낸다 — 화면이 이 응답을 쥐고 있다가 글과 합친다.
+      if (silent) return json(res, 200, { ok: true, name, silent: true });
 
       const say = `${Object.hasOwn(UPLOAD_IMAGE, mimeKey) ? '그림' : '파일'}을 올렸습니다: in/${name}`;
       const phase = isOffice(t) ? 'running' : readState(t).phase;
