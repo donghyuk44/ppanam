@@ -708,8 +708,8 @@ body {
 .tl__gteam { display: flex; align-items: center; gap: 6px; font-size: 14px; }
 .tl__gteam .card__tile { width: 24px; height: 24px; font-size: 12px; border-radius: 6px; }
 .tl__ggoal { font-size: 13px; color: var(--ink-3); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }   /* 팀 목표는 두 줄까지, 넘치면 줄임(14절 폰 · 나리: 길이 자 대신 화면이 접는다) */
-.tl__gnow { font-size: 13px; font-weight: 500; line-height: 1.45; padding-bottom: 6px; border-bottom: 1px solid var(--line-2); }
-.tl__gteams > .tl__gnow:last-child { border-bottom: 0; padding-bottom: 0; }
+.tl__gnow { font-size: 13px; font-weight: 500; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; border-bottom: 1px solid var(--line-2); }   /* '지금' 줄은 세 줄까지(비서실 줄이 문단이라 실측). 접는 상자엔 안여백 없음 — 넷째 줄이 여백에 비친다(412 -e 실측), 줄 사이는 격자 gap */
+.tl__gteams > .tl__gnow:last-child { border-bottom: 0; }
 .tl__whatStack { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 .tl__after { font-size: 11px; color: var(--ink-4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* "뒤에: ○○" */
 .tl__cell--stack { flex-direction: column; align-items: stretch; gap: 2px; padding: 2px; }
