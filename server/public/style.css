@@ -79,7 +79,7 @@ body {
 
 .app {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr) 304px;   /* 왼쪽 300 = 아이콘 띠 64 + 방 목록 236(카카오톡 꼴 시안) */
+  grid-template-columns: 300px minmax(0, 1fr);   /* 왼쪽 300 = 아이콘 띠 64 + 방 목록 236(카카오톡 꼴 시안). 오른쪽 상황판 기둥 304 는 뺐다 — 서랍으로(시안 67:2, 헨리 req_f8a12066 ②) */
   grid-template-rows: auto minmax(0, 1fr);   /* 첫 줄은 대표 차례(승인 대기) — 없으면 0 */
   height: 100dvh;
   max-width: 100vw; overflow-x: hidden;   /* 폰에서 순간 넓어지는 것(끊김 직후 412→469 실측, C14)이 뷰포트를 밀어 글자가 작아지지 않게 — 가로는 안쪽 띠(rail__list)만 스크롤 */
@@ -117,6 +117,9 @@ body {
 .team[aria-current="true"] { background: var(--panel); border-color: var(--line); color: var(--ink); }
 
 .team__tile { flex: none; width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 16px; background: var(--ink-4); }   /* 방 줄 팀 타일(카카오톡 꼴 시안) */
+.rail__filters { display: flex; gap: 6px; padding: 4px 6px 8px; }   /* 거르기 알약 셋(시안 66:5) */
+.rail__filter { font: inherit; font-size: 11.5px; padding: 3px 11px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink-3); cursor: pointer; }
+.rail__filter[aria-current="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
 .team__nameRow { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
 .team__n { font-size: 11px; color: var(--ink-4); }   /* 방 이름 옆 사람 수(시안) */
 .team__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-4); }
@@ -197,7 +200,7 @@ body {
 .live[data-on="0"] { background: var(--bad); }
 
 .iconbtn {
-  display: none; place-items: center; width: 30px; height: 30px;
+  display: grid; place-items: center; width: 30px; height: 30px;   /* 상황판 서랍 단추 — 이제 PC 에서도(서랍이 기본) */
   border: 1px solid var(--line); border-radius: 8px;
   background: transparent; color: var(--ink-3); cursor: pointer;
 }
@@ -540,13 +543,19 @@ body {
 
 /* ══ 오른쪽 · 상황판 ══ */
 
-.side { display: flex; flex-direction: column; min-height: 0; background: var(--panel); }
+/* 오른쪽 상황판 — 시안(피그마 67:2, 헨리 req_f8a12066 ②)은 방 오른쪽을 비운다(팀 카드가 방 위에 고정). PC 에서도 기본은 닫힌 서랍, 방 머리 ▯ 단추로 연다(전엔 1180 아래에서만 서랍) */
+.side {
+  display: flex; flex-direction: column; min-height: 0; background: var(--panel);
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(320px, 86vw); z-index: 6; border-left: 1px solid var(--line);
+  transform: translateX(100%); transition: transform .18s ease-out;
+}
+.app[data-side="1"] .side { transform: none; }
 .side__head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 15px 16px 12px; border-bottom: 1px solid var(--line);
   font-family: 'Gowun Batang', serif; font-size: 15px;
 }
-.side__head .iconbtn { display: none; }
+.side__head .iconbtn { display: grid; }
 .side__body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
 
 .card { border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); padding: 12px 14px; }

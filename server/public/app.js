@@ -226,13 +226,25 @@ function svg(d, size = 9, width = 3) {
 
 /* ── 왼쪽 레일 ── */
 
+// 방 목록 거르기 알약(카카오톡 꼴 시안 66:5 — 전체 · 안 읽음 · 팀). '안 읽음' = 안 읽은 말이 있거나 대표 차례인 방, '팀' = 사무실(총괄실·비서실) 뺀 다섯.
+let listFilter = 'all';
+const LIST_FILTERS = [['all', '전체'], ['unread', '안 읽음'], ['teams', '팀']];
 function renderRail() {
   const nav = $('teams');
   nav.replaceChildren();
+  const filters = el('div', 'rail__filters');
+  for (const [k, label] of LIST_FILTERS) {
+    const b = el('button', 'rail__filter', label); b.type = 'button'; b.setAttribute('aria-current', String(listFilter === k));
+    b.addEventListener('click', (e) => { e.stopPropagation(); listFilter = k; renderRail(); });
+    filters.appendChild(b);
+  }
+  nav.appendChild(filters);
+  const show = (t) => listFilter === 'all' ? true : listFilter === 'teams' ? t.kind !== 'office' : ((unread[t.id] ?? 0) > 0 || summaries[t.id]?.needsBoss || summaries[t.id]?.bossCall || t.id === active);
   loadThreeLines(() => renderRail());   // 팀별 세 줄 정본이 오면(바뀌면) 한 번 더 — 60초 캐시라 매번 안 받는다
   loadGoalNow(() => renderRail());      // 순서 목록 '지금' 줄(사무실 방 재료)도 같이
 
   for (const t of teams) {
+    if (!show(t)) continue;
     const s = summaries[t.id] ?? {};
     const b = el('button', 'team');
     b.type = 'button';
