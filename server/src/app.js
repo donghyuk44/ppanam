@@ -134,6 +134,22 @@ function foldBubble(label, inner, jump = null) {
   return d;
 }
 
+/** 원문 첫 줄 — 답장 인용에 쓰는 한 줄(60자 넘으면 줄임표). 올린 그림·문서 줄은 건너뛴다. */
+function firstLineOf(text) {
+  const l = String(text ?? '').split('\n').map((s) => s.trim()).find((s) => s && !/^(그림|파일)을 올렸습니다:\s*in\//.test(s)) ?? '';
+  return l.length > 60 ? l.slice(0, 59).trimEnd() + '…' : l;
+}
+/** 답장 원문 한 줄(meta.replyTo, 계약 3절) — "이름 · 첫 줄", 누르면 그 말풍선으로(같은 방). 이름은 지금 방 cast 로, 모르면 자리 이름. */
+function quoteLine(r, team = active) {
+  const q = el('button', 'bub__quote'); q.type = 'button';
+  const nm = r.actor === NARAE ? (who('system').cliName ?? '나래') : (who(r.actor)?.name ?? r.actor);
+  q.appendChild(el('b', 'bub__quoteWho', nm));
+  q.appendChild(el('span', 'bub__quoteT', r.text ?? ''));
+  q.title = '원문으로';
+  q.addEventListener('click', () => jumpTo(team, r.event));   // 원문은 그 답이 선 방에 있다 — 로밍 답(meta.roam)·옮겨온 말(meta.from)이면 그 방(code-review)
+  return q;
+}
+
 function bubble(text, team = active) {
   const n = el('div', 'bub');
   // 올린 그림·문서 줄("그림을 올렸습니다: in/…")은 글자로 안 보이고 밑의 카드(그림 그대로)로만(대표 09-18 14:4x "이미지 말고 파일 위치랑 같이 뜬다"). 글이 그 줄뿐이면 말풍선은 카드만.
@@ -737,8 +753,16 @@ function draw(e) {
       // 다른 방에 한 답(meta.roam:'dev' — 나리·세라 로밍, callHomeElsewhere 가 원본을 집 방에 남긴다)은 집 방 화면에서 접는다: "개발 방에 답함 · 펼치기"(대표 12:59 총괄실 "왜 테라 솔라한테 한 말이 여기서 보여?").
       // C15 인용(meta.quote)도 같은 부품(foldBubble) — 방·사람·시각 한 줄 + 펼치면 원문.
       const roam = e.meta?.roam && e.meta.roam !== active ? teams.find((t) => t.id === e.meta.roam) : null;
+      // 답장(meta.replyTo, 계약 3절 · 결정 245 · J33) — 말풍선 위에 원문 한 줄, 누르면 그 말풍선으로.
+      if (e.meta?.replyTo?.event) stack.appendChild(quoteLine(e.meta.replyTo, e.meta?.roam ?? e.meta?.from ?? active));
       if (roam) stack.appendChild(foldBubble(`${roam.room ?? roam.name}에 답함`, bubble(e.text, roam.id), { team: roam.id, event: e.id }));
       else stack.appendChild(bubble(e.text));
+      // 답장 단추 — 이 말에 답하기(카카오톡 답장 꼴). 컴퓨터는 줄에 올리면, 폰은 늘 옅게(style.css .bub__reply). 대표 말풍선에도 있다(내 말에 이어 답할 때).
+      if (e.id && e.type === 'message') {
+        const rb = el('button', 'bub__reply', '답장'); rb.type = 'button'; rb.title = `${shown}의 이 말에 답장`;
+        rb.addEventListener('click', () => setReply({ event: e.id, actor: e.actor, name: shown, text: firstLineOf(e.text) }));
+        stack.appendChild(rb);
+      }
       // 비서실 카드(카드-체계 1절 "① 비서실 — 세라가 다섯 팀 카드를 올린다"): 말에 meta.cards:[팀…] 이 실리면 그 팀 카드를 말풍선 밑에 같은 부품으로(계약 3절 message).
       if (Array.isArray(e.meta?.cards) && e.meta.cards.length) {
         const wrap = el('div', 'bub__cards'); wrap.dataset.event = e.id;
@@ -847,11 +871,13 @@ function append(events) {
 }
 /* ── 미리 그리기(대표 09-18 14:4x) — 보내기를 누르면 그 자리에서 대표 말풍선을 바로 그린다(연한 상태). 진짜 사건(훅이 남긴 대표 말)이 오면 걷고, 못 보냈으면 걷고 '못 보냈어요' 줄. ── */
 const pendingEchoes = [];   // [{ text, node }]
-function pushPending(text) {
+function pushPending(text, reply = null) {
   const row = el('div', 'row me pending'); row.dataset.actor = 'boss';
   const av = withFace(el('div', 'av', who('boss').initial ?? '나'), 'hq', 'boss'); av.style.background = who('boss').color ?? FALLBACK.color;
   row.appendChild(av);
-  const stack = el('div', 'stack'); stack.appendChild(bubble(text)); row.appendChild(stack);
+  const stack = el('div', 'stack');
+  if (reply?.event) stack.appendChild(quoteLine(reply));   // 답장이면 연한 말풍선에도 원문 한 줄
+  stack.appendChild(bubble(text)); row.appendChild(stack);
   const stick = atBottom();
   stream.appendChild(row);
   if (stick) feed.scrollTop = feed.scrollHeight;
@@ -902,6 +928,7 @@ async function selectTeam(id) {
   const prev = active;
   active = id;
   unread[id] = 0;
+  if (prev !== id && replyTo) clearReply();   // 답장은 그 방 말에만 — 방을 바꾸면 뺀다
   applyFold();   // 위쪽 접힘은 방마다 기억
   // 서버가 막 뜨는 중이면 오류 JSON 이나 실패가 온다 — 그때 cast·events 를 undefined 로 덮으면 화면이 통째로 빈다(대표 13:11 총괄실 빈 화면의 한 길). 있던 것을 두고 false 로 돌아간다.
   // 그때 active 도 되돌린다 — 안 그러면 입력창은 새 방에 보내고 화면은 옛 방인 채로 갈린다(code-review 지적). 배너는 소켓이 끊겼을 때만, 아니면 짧게 한 줄.
@@ -1219,6 +1246,7 @@ input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); const p = mentionPeople(mentionQuery()?.q ?? '')[mentionSel]; if (p) pickMention(p); return; }
     if (e.key === 'Escape') { mentionPop.hidden = true; return; }
   }
+  if (e.key === 'Escape' && replyTo) { clearReply(); return; }   // 답장 띠 빼기
   if (e.key !== 'Enter' || e.isComposing || e.shiftKey) return;
   e.preventDefault();
   $('composer').requestSubmit();
@@ -1230,6 +1258,23 @@ $('composerNl').addEventListener('click', () => {
   input.selectionStart = input.selectionEnd = s + 1;
   fitInput(); input.focus();
 });
+
+/* ── 답장 (결정 245, 대표 09-18 13:52 "어떤 누군가의 말에 특정한 답변을 하고 싶은데" — 카카오톡 답장 꼴, 보드 J33) ──
+ * 말풍선의 '답장' 을 누르면 입력창 위에 "○○에게 답장 · 원문 첫 줄" 띠가 서고, 보내면 /api/say 에 replyTo(계약 3절 meta.replyTo 와 같은 꼴)가 실린다.
+ * × 나 Esc 로 뺀다. 방을 바꾸면 사라진다(다른 방 말엔 답장 못 한다). 서버가 말풍선에 meta.replyTo 를 찍고 자리 귀엔 첫 줄로 알린다(솔라). */
+let replyTo = null;   // { event, actor, name, text }
+const replyBar = el('div', 'composer__reply'); replyBar.hidden = true; $('composer').prepend(replyBar);
+function setReply(r) {
+  replyTo = r;
+  replyBar.replaceChildren();
+  replyBar.appendChild(el('span', 'composer__replyK', `${r.name}에게 답장`));
+  replyBar.appendChild(el('span', 'composer__replyT', r.text || '(그림·파일)'));
+  const x = el('button', 'composer__replyX', '×'); x.type = 'button'; x.title = '답장 빼기'; x.addEventListener('click', clearReply);
+  replyBar.appendChild(x);
+  replyBar.hidden = false;
+  input.focus();
+}
+function clearReply() { replyTo = null; replyBar.hidden = true; replyBar.replaceChildren(); }
 
 // 그림·문서 첨부 (결정 130 ② · C17 · 결정 226, 대표 09-18 11:23 "파일을 넣자마자 바로 전송되니까 지시처럼 가고 … 질문도 없이 수용") — 버튼 · 끌어다 놓기 · 붙여넣기 셋이 같은 길.
 // 넣으면 바로 안 보낸다: 입력창 위 첨부 줄에 미리보기(그림은 썸네일, 문서는 이름)로 두었다가 **보내기를 눌러야** 올라간다. 여러 개 된다. × 로 뺀다.
@@ -1361,12 +1406,13 @@ function sayFailed(text, why) {
   box.appendChild(b);
   box.hidden = false;
 }
-async function sendSay(text) {
+async function sendSay(text, reply = null) {
   // 진짜 말풍선은 훅이 남긴다(지시가 세션에 들어간 뒤) — 그때까지 몇 초가 비어 대표가 "한참 뒤에 뜬다" 하셨다(09-18 14:4x). 보내는 순간 연한 말풍선을 먼저 그리고, 진짜가 오면 걷는다.
-  pushPending(text);
+  pushPending(text, reply);
   let r;
   try {
-    r = await post('/api/say', { text, team: active });
+    // 답장이면 replyTo(계약 3절 meta.replyTo 꼴 — event·actor·text)를 같이. 서버가 모르면 그냥 말이 된다(옛 서버).
+    r = await post('/api/say', { text, team: active, ...(reply ? { replyTo: { event: reply.event, actor: reply.actor, text: reply.text } } : {}) });
   } catch {
     dropPending(text);
     return sayFailed(text, '서버 연결 실패');
@@ -1377,6 +1423,7 @@ async function sendSay(text) {
     sayFailed(text, r.data.error ?? null);
     return;
   }
+  if (reply) clearReply();   // 보내진 뒤에만 뺀다 — 못 보냈으면 띠가 남아 다시 보낼 수 있다
   say(null);
 }
 
@@ -1396,7 +1443,7 @@ $('composer').addEventListener('submit', async (e) => {
   const combined = [text, ...up.lines].filter(Boolean).join('\n\n');
   if (!combined) return;
   input.value = ''; fitInput();
-  sendSay(combined);
+  sendSay(combined, replyTo);
 });
 
 /* ── 상황판 서랍 (좁은 화면) ── */

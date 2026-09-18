@@ -356,6 +356,21 @@ body {
 .outf__fold pre { margin: 6px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; background: var(--sunk); padding: 8px; border-radius: 6px; }
 .row.me .bub { background: var(--me-bg); border-color: var(--me); color: var(--ink); border-radius: 14px 3px 14px 14px; }
 .row.me.cont .bub { border-radius: 14px; }
+/* 답장(결정 245 · J33, 카카오톡 답장 꼴) — 말풍선 위 원문 한 줄(누르면 그 말로), 말풍선 밑 작은 '답장' 단추(컴퓨터는 줄에 올리면, 손가락 화면은 늘 옅게) */
+.bub__quote { display: flex; gap: 6px; align-items: baseline; max-width: 100%; margin: 0 0 3px; padding: 4px 10px; border: 0; border-left: 2px solid var(--ink-3); background: transparent; color: var(--ink-3); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.bub__quote:hover { color: var(--ink-2); }
+.bub__quoteWho { flex: none; font-weight: 600; color: var(--ink-2); }
+.bub__quoteT { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row.me .bub__quote { border-left: 0; border-right: 2px solid var(--me); text-align: right; flex-direction: row-reverse; }
+.bub__reply { align-self: flex-start; margin-top: 2px; padding: 1px 7px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink-3); font: inherit; font-size: 11px; cursor: pointer; opacity: 0; transition: opacity .12s; }
+.row.me .bub__reply { align-self: flex-end; }
+.row:hover .bub__reply, .bub__reply:focus-visible { opacity: 1; }
+@media (hover: none), (max-width: 819px) { .bub__reply { opacity: .55; } }   /* 폰(손가락·좁은 폭)은 올릴 줄이 없어 늘 옅게 */
+.composer__reply { flex-basis: 100%; contain: inline-size; box-sizing: border-box; overflow: hidden; display: flex;   /* contain: 긴 원문 한 줄이 입력 칸 폭을 밀어 화면이 옆으로 넓어지던 것(412 실측) */ align-items: center; gap: 8px; min-width: 0; padding: 4px 10px; margin-bottom: 4px; border-left: 2px solid var(--me); background: var(--sunk); border-radius: 0 8px 8px 0; font-size: 12px; color: var(--ink-3); }
+.composer__reply[hidden] { display: none; }
+.composer__replyK { flex: none; font-weight: 600; color: var(--ink-2); }
+.composer__replyT { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.composer__replyX { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); font: 600 12px/18px 'IBM Plex Sans KR', sans-serif; cursor: pointer; padding: 0; }
 
 .tool {
   align-self: center; width: 100%; max-width: 420px;
