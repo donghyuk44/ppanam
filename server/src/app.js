@@ -232,6 +232,9 @@ function renderRail() {
     b.dataset.id = t.id;
     b.setAttribute('aria-current', String(t.id === active));
 
+    // PC 방 줄 — 팀 타일(팀 색·첫 글자, 카카오톡 꼴 시안 fig-0916-kakao-room-1280). 폰 칩에선 CSS 가 숨긴다.
+    const tile = el('span', 'team__tile', String(t.name ?? '?').slice(0, 1)); tile.style.background = teamColor(t.id);
+    b.appendChild(tile);
     const dot = el('span', 'team__dot');
     // 대표를 부른 방(bossCall)도 빨간 점 — 배지만 알고 레일은 몰랐다 (독립검수 #9).
     dot.dataset.s = s.needsBoss || s.bossCall ? 'alert' : s.phase === 'running' ? 'running' : 'idle';

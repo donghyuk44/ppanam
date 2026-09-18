@@ -79,7 +79,7 @@ body {
 
 .app {
   display: grid;
-  grid-template-columns: 224px minmax(0, 1fr) 304px;
+  grid-template-columns: 300px minmax(0, 1fr) 304px;   /* 왼쪽 300 = 아이콘 띠 64 + 방 목록 236(카카오톡 꼴 시안) */
   grid-template-rows: auto minmax(0, 1fr);   /* 첫 줄은 대표 차례(승인 대기) — 없으면 0 */
   height: 100dvh;
   max-width: 100vw; overflow-x: hidden;   /* 폰에서 순간 넓어지는 것(끊김 직후 412→469 실측, C14)이 뷰포트를 밀어 글자가 작아지지 않게 — 가로는 안쪽 띠(rail__list)만 스크롤 */
@@ -91,11 +91,15 @@ body {
 
 /* ══ 왼쪽 · 팀 레일 ══ */
 
+/* PC 왼쪽(헨리 카카오톡 꼴 시안 fig-0916-kakao-room-1280, 대표 09-18 14:2x '상단 탭'): 맨 왼쪽 세로 아이콘 띠 64(탭 다섯, 아이콘 + 작은 글자) + 방 목록 판(머리 '채팅' + 방 줄: 팀 타일·이름·한 줄). 위 가로 탭 줄은 없다. */
 .rail {
-  display: flex; flex-direction: column; min-height: 0;
+  display: grid; grid-template-columns: 64px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); min-height: 0;
   background: var(--rail); border-right: 1px solid var(--line);
 }
-.rail__head { padding: 15px 16px 12px; border-bottom: 1px solid var(--line); }
+.rail > .views { grid-column: 1; grid-row: 1 / span 2; }
+.rail > .rail__head, .rail > .rail__list { grid-column: 2; }
+.rail__head { padding: 15px 16px 12px; border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); }
+.rail__list { border-left: 1px solid var(--line); }
 .rail__mark { font-family: 'Gowun Batang', serif; font-size: 17px; letter-spacing: .02em; display: block; }
 .rail__sub { font-size: 11px; color: var(--ink-4); }
 
@@ -111,6 +115,7 @@ body {
 .team:hover { background: color-mix(in srgb, var(--panel) 60%, transparent); }
 .team[aria-current="true"] { background: var(--panel); border-color: var(--line); color: var(--ink); }
 
+.team__tile { flex: none; width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 16px; background: var(--ink-4); }   /* 방 줄 팀 타일(카카오톡 꼴 시안) */
 .team__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-4); }
 .team__dot[data-s="running"] { background: var(--live); }
 .team__dot[data-s="alert"]   { background: var(--bad); }
@@ -611,20 +616,20 @@ body {
 /* ══ 화면 전환 ══
    작전실은 팀 하나와 대화하는 곳, 관제탑은 넷을 한눈에, 분석은 하나를 깊게. */
 
+/* PC — 세로 아이콘 띠(카카오톡 꼴 시안): 탭마다 아이콘 24 위, 글자 10.5 아래. 고른 탭은 아이콘 뒤에 둥근 상자 */
 .views {
-  display: flex; gap: 2px; padding: 8px 8px 0;
+  display: flex; flex-direction: column; gap: 6px; padding: 14px 6px 8px; align-items: stretch;
 }
 .views button {
-  flex: 1; font: inherit; font-size: 11.5px; color: var(--ink-3);
-  background: transparent; border: 1px solid transparent; border-radius: 7px;
-  padding: 5px 4px; cursor: pointer; white-space: nowrap;
+  flex: none; display: flex; flex-direction: column; align-items: center; gap: 3px; font: inherit; font-size: 10.5px; color: var(--ink-4);
+  background: transparent; border: 0; border-radius: 10px;
+  padding: 6px 2px; cursor: pointer; white-space: nowrap;
 }
-.views button svg { display: none; }   /* 아이콘은 폰 아래 줄에서만(819 이하) */
+.views button svg { display: block; width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; padding: 4px 8px; box-sizing: content-box; border-radius: 10px; }
+.views button[hidden] { display: none; }
 .views button:hover { color: var(--ink); }
-.views button[aria-current="true"] {
-  color: var(--ink); background: var(--panel); border-color: var(--line);
-  font-weight: 500;
-}
+.views button[aria-current="true"] { color: var(--ink); font-weight: 500; }
+.views button[aria-current="true"] svg { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
 
 .tower, .analysis, .dashboard, .report, .settings { display: none; flex-direction: column; min-height: 0; background: var(--ground); }
 .app[data-view="tower"] .tower,
@@ -637,7 +642,7 @@ body {
 .app[data-view="report"] .room, .app[data-view="report"] .side,
 .app[data-view="settings"] .room, .app[data-view="settings"] .side,
 .app[data-view="dashboard"] .room, .app[data-view="dashboard"] .side { display: none; }
-.app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"], .app[data-view="report"], .app[data-view="settings"] { grid-template-columns: 224px minmax(0, 1fr); }
+.app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"], .app[data-view="report"], .app[data-view="settings"] { grid-template-columns: 300px minmax(0, 1fr); }
 /* 리포트 둘째 탭(분석)과 설정 — 서브탭 줄은 현황 탭(.tabs)과 같은 부품. 설정 본문은 표 하나·접힘 둘·목록 하나 */
 .report .tabs, .analysis .tabs { margin: 0 20px 6px; }
 .set__k { font-size: 12px; color: var(--ink-3); margin: 14px 0 6px; }
@@ -1221,8 +1226,8 @@ button.dash__row:hover b { text-decoration: underline; }
 .bars__n { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-4); text-align: right; }
 
 @media (max-width: 1179px) {
-  .app { grid-template-columns: 210px minmax(0, 1fr); }
-  .app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"], .app[data-view="report"], .app[data-view="settings"] { grid-template-columns: 210px minmax(0, 1fr); }
+  .app { grid-template-columns: 272px minmax(0, 1fr); }
+  .app[data-view="tower"], .app[data-view="analysis"], .app[data-view="dashboard"], .app[data-view="report"], .app[data-view="settings"] { grid-template-columns: 272px minmax(0, 1fr); }
   .iconbtn { display: grid; }
   .side {
     position: fixed; top: 0; right: 0; bottom: 0; width: min(320px, 86vw);
@@ -1243,15 +1248,17 @@ button.dash__row:hover b { text-decoration: underline; }
   .room, .tower, .dashboard, .report, .analysis, .settings, .world { grid-row: 3; }   /* 대시보드(결정 128)·보고서도 — 컴퓨터 86줄과 같은 빠짐이 폰에서 또 나지 않게 */
   .approvals { margin: 8px 10px 0; padding: 10px 12px; }
   /* 폰 윗줄(폴드 QA 1 — 닫힘 411 에서 큰 글꼴이면 탭 다섯만으로 줄이 넘쳐 방 칩·종이 잘렸다): 탭 띠와 방 칩 띠가 각각 가로 스크롤, 방 칩 띠는 96px 은 지킨다. 종은 뷰포트에 고정 */
-  .rail { flex-direction: row; border-right: none; border-bottom: 1px solid var(--line); min-width: 0; overflow: hidden; }
+  .rail { display: flex; flex-direction: row; border-right: none; border-bottom: 1px solid var(--line); min-width: 0; overflow: hidden; }   /* PC 격자(아이콘 띠 + 목록 판)를 폰에선 한 줄로 */
   .rail__head { display: none; }
+  .rail__list { border-left: 0; }
+  .team__tile { display: none; }   /* 폰 칩엔 타일 없음 — 글자만 */
 
   /* 폰 — 탭 다섯은 아래 줄(헨리 카카오톡 꼴 시안 fig-0916-kakao-room-412: 아이콘 + 글자, 화면 아래 고정). 위 줄엔 방 칩 띠와 종만 남아 좁지 않다(대표 09-18 14:2x). */
   .app { padding-bottom: calc(56px + env(safe-area-inset-bottom)); box-sizing: border-box; }
   .views {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; height: calc(56px + env(safe-area-inset-bottom));
     padding: 4px 0 env(safe-area-inset-bottom); gap: 0; background: var(--panel); border-top: 1px solid var(--line);
-    display: flex; align-items: stretch;
+    display: flex; flex-direction: row; align-items: stretch;   /* PC 는 세로 띠 — 폰은 가로 한 줄 */
   }
   .views button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 4px 2px; border: 0; border-radius: 0; background: transparent; font-size: 10.5px; color: var(--ink-4); }
   .views button[hidden] { display: none; }   /* 분석·마을은 숨김 그대로(display:flex 가 hidden 을 이기지 않게) */
