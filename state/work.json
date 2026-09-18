@@ -620,12 +620,30 @@
       "after": [],
       "bottleneck": null,
       "status": "진행",
-      "note": "대표 08:4x '사용성 검수 배정은 안젤에게'. 사진은 node tools/screen-shot.mjs — 허용 줄 고쳐져 안젤이 직접 찍음",
+      "note": "대표 08:4x '사용성 검수 배정은 안젤에게'. 사진은 node tools/screen-shot.mjs — 허용 줄 고쳐져 안젤이 직접 찍음 | 09-18 12:1x 나리: '상시' 가 아니라 지금 칸 — 타임라인 -d 판이 오늘 첫 실물이니 안젤 '지금' = 타임라인 사용성 한 장(usability-0918-R<회차>.md). '상시' 낱말이 안젤이 이틀 논 이유",
       "milestone": {
         "team": "marketing",
         "n": 7
       },
       "owner": "하영"
+    },
+    {
+      "id": "J25",
+      "stream": "순서 목록",
+      "what": "외부 감사 대체 모델 값 대조 — 다섯 팀 cast.json 의 gemini·codex 갈아타기 값이 실제 도는 모델과 같은지(A2 뒤, 오늘 제리 503·코덱스 한도 뒤 다시)",
+      "team": "finance",
+      "seat": "review",
+      "after": [
+        "A2"
+      ],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "경영 순서 목록 밖 '그 뒤' 줄 — 230 잊힌 일(나리 12:1x). 12:1x 톰이 번호 세움",
+      "milestone": {
+        "team": "finance",
+        "n": 4
+      },
+      "owner": "유진"
     },
     {
       "id": "TL1",
