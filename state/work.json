@@ -1389,6 +1389,70 @@
       "owner": "톰"
     },
     {
+      "id": "J26",
+      "stream": "순서 목록",
+      "what": "화면 글자 넷 — 팀 이름 하나로 '마케팅' · 정할 것 N 하나로 · 멤버 탭 진행 중은 차례 도는 사람만 · 자에 손·결·폴백(req_d82aaf90, 사전 1절 101~107행)",
+      "team": "dev",
+      "seat": "guide",
+      "after": [
+        "J2"
+      ],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "K5·K9·K10 의 화면 몫. 인수인계 청소(나래 12:2x) 접수. 순서: 타임라인 뒤(나리)",
+      "milestone": {
+        "team": "dev",
+        "n": 10
+      },
+      "owner": "테라"
+    },
+    {
+      "id": "J27",
+      "stream": "순서 목록",
+      "what": "설정 탭·상황판(현황) 탭 실물이 시안과 같은지 대보기 — 헨리 '같다'",
+      "team": "design",
+      "seat": "guide",
+      "after": [
+        "U1"
+      ],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "인수인계 청소(나래 12:2x) 접수. 대시보드·타임라인은 J7",
+      "milestone": {
+        "team": "design",
+        "n": 7
+      },
+      "owner": "헨리"
+    },
+    {
+      "id": "J28",
+      "stream": "순서 목록",
+      "what": "연결고리 네 칸 시험 — 타임라인 새 판에서 다섯 팀 중 둘을 골라 끝낸 일 → 결과물 → 지금 일 → 다음이 읽히나(204 ②)",
+      "team": "sera",
+      "seat": "secretary",
+      "after": [
+        "J2"
+      ],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "sera/order.md 5 · 인수인계 청소(나래 12:2x) 접수",
+      "milestone": null,
+      "owner": "세라"
+    },
+    {
+      "id": "J29",
+      "stream": "순서 목록",
+      "what": "세라 저녁 보고 꼴 — 오늘 쓴 양을 달러 대신 주간 한도 남은 % 로(대표 18:10 '갑자기 달러??')",
+      "team": "sera",
+      "seat": "secretary",
+      "after": [],
+      "bottleneck": "server(솔라) — 한도 % 는 서버가 못 읽음(나리 09-16 18:1x), 읽을 길부터",
+      "status": "대기",
+      "note": "인수인계 청소(나래 12:2x) 접수. 09-16 나리: 한도 % 는 클로드 계정 화면에만 있어 서버가 못 읽음 — 길이 생기기 전엔 달러 꼬리 빼고 숫자 없이",
+      "milestone": null,
+      "owner": "세라"
+    },
+    {
       "id": "J20",
       "stream": "운영",
       "what": "공용 사진 도구 tools/screen-shot.mjs — 같은 이름이 있으면 안 쓰고 멈추는 세 줄(171·178). 담기 전까지 사진 한 장도 안 찍는다",
