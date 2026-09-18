@@ -760,6 +760,13 @@ html[data-font="large"] { zoom: 1.12; }
 .mcard__line { font-size: 12.5px; color: var(--ink-2); }
 .mcard__intro { font-size: 12.5px; line-height: 16px; color: var(--ink); overflow-wrap: anywhere; }
 .mcard__more { display: inline; border: 0; background: transparent; padding: 0; font: inherit; color: var(--ink-3); cursor: pointer; }
+.mcard__file { align-self: flex-start; border: 0; background: transparent; padding: 0; font: inherit; font-size: 12px; color: var(--seal); cursor: pointer; }
+/* 인격 파일 팝업(9절 '인격 파일 →') — 제목 · 누구인가 한 줄 · '너라는 사람' 절, 밑에 파일 경로 */
+.pop--persona { width: min(92vw, 560px); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 34px 18px 14px; box-shadow: 0 12px 40px rgba(20, 16, 10, .35); }
+.pop__h { font-family: 'Gowun Batang', serif; font-weight: 400; font-size: 17px; margin: 0 0 6px; }
+.pop__p { font-size: 13px; color: var(--ink-2); margin: 0 0 10px; }
+.pop__md p { font-size: 13px; line-height: 1.55; color: var(--ink); margin: 0 0 8px; }
+.pop--persona .pop__foot { margin-top: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
 @media (min-width: 820px) {
   /* PC: 왼쪽 묶음 목록이 방 목록 자리(.rail 둘째 기둥 300)에 서고 오른쪽이 안쪽 화면 — 노션·슬랙 PC 설정 꼴 */
   .app[data-view="settings"] .rail > .rail__head, .app[data-view="settings"] .rail > .rail__list, .app[data-view="settings"] .rail > .rail__more { display: none; }

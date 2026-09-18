@@ -1806,6 +1806,25 @@ function memberCard({ team, teamWord, id, a, intro, door }) {
     }
     card.appendChild(p);
   }
+  // 인격 파일 → (9절 표 다섯째 줄, 대표 09-18 16:1x "17명의 캐릭터 설정집 어디서 보나") — 누르면 그 자리 인격 파일의 '누구인가' 절(/api/actor persona)이 팝업으로. 대표·나리·나래는 파일이 없다(서버 404).
+  if (id !== 'boss' && id !== 'system' && id !== NARAE) {
+    const home = id === 'secretary' && teams.some((x) => x.id === 'sera') ? 'sera' : team;   // 세라의 파일은 teams/sera/ 밑
+    const link = el('button', 'mcard__file', '인격 파일 →'); link.type = 'button';
+    link.addEventListener('click', async () => {
+      let r = null; try { const x = await fetch(`/api/actor?team=${encodeURIComponent(home)}&actor=${encodeURIComponent(id)}`); if (x.ok) r = await x.json(); } catch { /* 없음 */ }
+      if (!r?.persona) return say('인격 파일이 없어요');
+      closePop();
+      const scrim = el('div', 'scrim pop__scrim'); scrim.addEventListener('click', closePop);
+      const pop = el('div', 'pop pop--persona'); pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', `${a.name} 인격 파일`);
+      const x = el('button', 'pop__x', '×'); x.type = 'button'; x.title = '닫기'; x.addEventListener('click', closePop); pop.appendChild(x);
+      pop.appendChild(el('h2', 'pop__h', r.persona.title || a.name));
+      if (r.persona.identity) pop.appendChild(el('p', 'pop__p', r.persona.identity));
+      if (r.persona.who) { const md = mdLite(r.persona.who); md.classList.add('pop__md'); pop.appendChild(md); }
+      pop.appendChild(el('p', 'pop__foot', `teams/${home}/${id}.md`));
+      document.body.append(scrim, pop); x.focus();
+    });
+    card.appendChild(link);
+  }
   return card;
 }
 
