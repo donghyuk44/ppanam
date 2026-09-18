@@ -136,8 +136,8 @@ body {
   min-width: 0; min-height: 0;
   border-right: 1px solid var(--line);
 }
-.room > .bar { grid-row: 1; }
-.room > .statline { grid-row: 2; }
+.room > .statline { grid-row: 1; }   /* 띠는 윗줄(탭 줄) 바로 밑·방 머리 위 — 어느 방이든 같은 숫자라 방 이름보다 위(헨리 diff 11절, 시안 12절) */
+.room > .bar { grid-row: 2; }
 .room > .roundbar { grid-row: 3; }
 .room > .roundopen { grid-row: 4; }
 .room > .roomcard { grid-row: 5; }
@@ -1039,8 +1039,9 @@ button.dash__row:hover b { text-decoration: underline; }
 .stats__n { font-size: 28px; font-weight: 700; line-height: 1.1; color: var(--ink); }
 .stats__item[data-k="mine"][data-n] { border-color: var(--me-line); box-shadow: inset 3px 0 0 var(--me-line); }
 .stats__item[data-k="teams"][data-n] { border-color: var(--bad-line); box-shadow: inset 3px 0 0 var(--bad-line); }
-.stats--line { gap: 0; height: 37px; padding: 0 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
-.stats--line .stats__item { flex-direction: row; align-items: center; gap: 6px; height: auto; padding: 0; border: 0; border-radius: 0; background: none; }
+.stats--line { gap: 0; height: 37px; padding: 0 16px; background: var(--panel); border-bottom: 1px solid var(--line); }   /* 안여백 16(헨리 diff 11절) */
+.stats--line .stats__item { flex-direction: row; align-items: center; gap: 6px; height: auto; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }   /* 큰 띠의 왼쪽 색 띠(inset)가 한 줄 띠에선 첫 글자를 가렸다(헨리 "정할 것이 잘려 보인다") */
+.stats--line .stats__item[data-n] { box-shadow: none; }   /* 위 [data-k][data-n] 규칙과 같은 세기라 뒤에 둬야 이긴다(실측: 인셋 띠가 첫 글자 위에 그려졌다) */
 .stats--line .stats__k { font-weight: 500; }
 .stats--line .stats__n { font-size: 15px; }
 .statline:empty { display: none; }
