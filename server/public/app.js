@@ -51,6 +51,10 @@ let lastDay = null;
 
 // 이 방에 없는 자리는 총괄실 것이다 — 총괄실에서 옮겨온 발언(meta.from)의 화자 톰.
 const who = (id) => cast.agents?.[id] ?? summaries.hq?.cast?.[id] ?? { ...FALLBACK, name: id };
+// 나래(관리 창) — 나리와 다른 사람(결정 208·218, 대표 09-18 10:58). 대화록·훅의 자리 열쇠는 system 그대로(손 표시 meta.hand 'cli')이고 화면 열쇠만 갈라 쓴다:
+// 얼굴은 hq-system-cli.png(없으면 머리글자), 사람 카드는 세션 없이 이름·직책만, 엔진·모델 줄 없음(관리 창 모델은 서버가 못 고친다).
+const NARAE = 'system:cli';
+const naraeOf = (a) => (a?.cliName ? { ...a, name: a.cliName, initial: a.cliName.slice(0, 1), model: null, cli: true } : null);
 
 /** 이 말이 대표를 불렀나 — 첫머리나 문단 첫머리의 "대표님·대표·댄" 또는 대표 이름. 서버(bus.callsBoss)와 같은 규칙. */
 function callsBoss(text) {
@@ -65,7 +69,7 @@ function callsBoss(text) {
  * 이름표(.av 32×32)·칩(.chip)·사람 카드 머리에 <img> 를 얹고 머리글자는 밑에 남긴다 — 그림이 없거나 못 읽으면 img 가 빠져 머리글자만 보인다(헨리 ①). 크기·둥글기는 CSS(.chip img, 클레멘타인 d61339a). */
 // 결정 197(대표 18:28 "내가 고른 게 아닌데") — 도트(faces/)가 아니라 대표가 고른 초상(portraits/picks-0916.json). 칩엔 128px 판(portraits/chip128, 장당 35KB 아래 — 394px chip/ 은 장당 25만 바이트라 방 하나에 4MB, 나리 apr_654ef2a7).
 const FACE_DIR = '/out/design/portraits/chip128/';
-const faceFile = (team, id) => (id === 'boss' ? 'boss.png' : id === 'system' ? 'hq-system.png' : `${team === 'sera' ? 'hq' : team}-${id}.png`);
+const faceFile = (team, id) => (id === 'boss' ? 'boss.png' : id === 'system' ? 'hq-system.png' : id === NARAE ? 'hq-system-cli.png' : `${team === 'sera' ? 'hq' : team}-${id}.png`);
 function withFace(node, team, id) {
   if (!team || !id) return node;
   const img = document.createElement('img');
@@ -665,23 +669,28 @@ function draw(e) {
       const me = e.actor === 'boss';
       if (me && /올렸습니다: in\//.test(e.text ?? '')) lastUpload = { key: '' };   // 올린 파일이 방에 떴다 — 같은 파일 다시 올리기 막음을 푼다(결정 188: 60초가 아니라 '떴으면')
       const called = !me && e.actor !== 'system' && callsBoss(e.text);
-      const cont = lastActor === e.actor && !called;
-      lastActor = e.actor;
+      const actorKey = e.actor === 'system' ? `system:${e.meta?.hand ?? ''}` : e.actor;   // 나리 말 뒤 나래 말은 이어진 말이 아니다 — 이름 줄을 다시 낸다(결정 208)
+      const cont = lastActor === actorKey && !called;
+      lastActor = actorKey;
       const row = el('div', `row${me ? ' me' : ''}${cont ? ' cont' : ''}${called ? ' calls-boss' : ''}`);
       row.dataset.actor = e.actor;   // 멘션 "받았나"(markMentions) — 뒤에 이 사람 말이 있으면 답한 것
       // C16(대표 09-16 11:0x "서버 나리는 노랑, 너는 파랑 박스 안에 이름") — 나리(system) 말은 어느 손인지 meta.hand 로: 'server'(총괄실 세션) 노랑 · 'cli'(say.mjs --as system) 파랑. 서버가 아직 안 찍으면 색 없음
       if (e.actor === 'system' && e.meta?.hand) row.dataset.hand = e.meta.hand;
-      const av = withFace(el('div', 'av', a.initial ?? '?'), e.meta?.from ?? active, e.actor);   // 이름표 32×32 r9 — 200px 얼굴을 cover 로(헨리 ①)
+      // 나래(결정 208·218, 계약 2절) — 관리 창 손(hand 'cli')의 말풍선은 다른 사람: 이름 cliName(나래), 얼굴은 나래 것(없으면 머리글자), 문은 나래 카드. 서버 자리·손 없음은 나리 그대로.
+      const narae = e.actor === 'system' && e.meta?.hand === 'cli' && a.cliName;
+      const shown = narae ? a.cliName : a.name;
+      const doorId = narae ? NARAE : e.actor;
+      const av = withFace(el('div', 'av', narae ? a.cliName.slice(0, 1) : (a.initial ?? '?')), e.meta?.from ?? active, doorId);   // 이름표 32×32 r9 — 200px 얼굴을 cover 로(헨리 ①)
       av.style.background = a.color ?? FALLBACK.color;
       // 얼굴·이름은 문이다(결정 130 ① · 화면이-답하는-질문 "카드는 문") — 누르면 관제탑 사람 카드가 그 자리에 뜬다. 대표·system 은 카드가 없다(마을과 같다).
       // 나리(system 자리)도 문이 있다 — 결정 129 로 사람이 됐다. 세션이 없어 상태·일지는 비고 이름·직책만(나리 R25 "사람인데 문이 없는 자리").
-      const door = (node) => { if (me) return; node.classList.add('door'); node.title = `${a.name} 카드`; node.addEventListener('click', () => openPersonPop(e.meta?.from ?? active, e.actor)); };
+      const door = (node) => { if (me) return; node.classList.add('door'); node.title = `${shown} 카드`; node.addEventListener('click', () => openPersonPop(e.meta?.from ?? active, doorId)); };
       door(av);
       row.appendChild(av);
       const stack = el('div', 'stack');
       if (!cont && !me) {
         const name = el('div', 'name');
-        const nb = el('b', null, a.name); door(nb); name.appendChild(nb);
+        const nb = el('b', null, shown); door(nb); name.appendChild(nb);
         name.append(' ' + hhmm(e.ts));
         // 총괄실에서 옮겨온 말 — 톰이 이 방 사람을 불렀다 (결정 21).
         if (e.meta?.from) name.appendChild(el('span', 'fromtag', `${teams.find((t) => t.id === e.meta.from)?.room ?? e.meta.from}에서`));
@@ -2072,6 +2081,8 @@ function renderTowerPeople(grid) {
       const p = hq.people?.system ?? s.people?.system ?? { state: ss?.busy ? 'working' : 'waiting', alive: !!ss?.alive, doing: null, lastSignal: null };
       const i = people.findIndex(([id]) => id === 'system');
       if (i >= 0) people[i] = ['system', p]; else people.push(['system', p]);
+      // 나래(관리 창) — 나리와 다른 사람이라 카드 하나 더(결정 218, 톰 10:59 "프로필 카드도 나래 따로"). 세션이 없어 상태 줄 없이 이름·직책만.
+      if (cast.system.cliName) { cast[NARAE] = naraeOf(cast.system); people.push([NARAE, { state: 'waiting', alive: null, doing: null, lastSignal: null }]); }
     }
     if (!people.length) continue;
     const box = el('details', 'pgroup');
@@ -2130,7 +2141,7 @@ const WORK_PILL = { working: ['진행 중', 'live'], bossCall: ['답변 대기',
 function openPersonPop(teamId, id) {
   const t = teams.find((x) => x.id === teamId); if (!t || id === 'boss') return;
   const s = summaries[teamId] ?? {};
-  const a = s.cast?.[id] ?? (teamId === active ? cast.agents?.[id] : null); if (!a) return;
+  const a = id === NARAE ? naraeOf(s.cast?.system ?? cast.agents?.system) : (s.cast?.[id] ?? (teamId === active ? cast.agents?.[id] : null)); if (!a) return;   // 나래 문은 나래 카드(결정 218)
   closePop();
   const scrim = el('div', 'scrim pop__scrim'); scrim.addEventListener('click', closePop);
   const pop = el('div', 'pop'); pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', `${a.name} 카드`);
@@ -2149,9 +2160,11 @@ document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closePop
 function personCard(t, id, a, p) {
   const card = el('div', 'pcard'); card.dataset.actor = `${t.id}:${id}`;
   if (id === 'system' && a?.model) card.dataset.hand = 'server';   // 서버 나리 — 이름 박스 노랑(C16, 대표 12:13 "카드 색은 C16 대로")
+  if (a?.cli) card.dataset.hand = 'cli';   // 나래 — 관리 창 손 파랑(C16), 카드는 이름·직책·알약뿐(세션 없음, 결정 218)
   const st = WORK_PILL[p.state] ?? WORK_PILL.waiting;
   if (p.bossCall) card.dataset.alert = '1';
   card.appendChild(pcardTop(a, pill(st[0], st[1]), { team: a?.from ?? t.id, id }));
+  if (a?.cli) return card;
   const why = whyStopped(t, p);   // "왜 멈췄나" — 하영 사전 3-1 그대로(대표 "왜 모두 멈춰있니? 대답해봐")
   const idle = p.state === 'waiting' || p.state === 'resting';
   if (idle) {

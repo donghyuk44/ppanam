@@ -413,6 +413,8 @@ body {
 .row[data-hand="cli"] .name b { background: #dbe9ff; border-color: #9dbdf5; color: #123a7a; }
 /* 멤버 카드의 서버 나리(hq:system) — 같은 노랑 박스(C16, 대표 12:13) */
 .pcard[data-hand="server"] .pcard__who b { display: inline-block; padding: 0 6px; border-radius: 5px; background: var(--me); border: 1px solid var(--me-line); color: var(--me-ink); }
+/* 멤버 카드의 나래(관리 창, system:cli) — 말풍선 cli 와 같은 파랑 박스(결정 208·218) */
+.pcard[data-hand="cli"] .pcard__who b { display: inline-block; padding: 0 6px; border-radius: 5px; background: #dbe9ff; border: 1px solid #9dbdf5; color: #123a7a; }
 /* 여러 줄. Enter 는 보내기, Shift+Enter 는 줄바꿈 — 폰은 ↵ 버튼 (대표 원문 09-13, 결정 19). 높이는 app.js 가 내용에 맞춘다. */
 .composer__in {
   flex: 1; min-width: 0; font: inherit; font-size: 13.5px; line-height: 1.45; color: var(--ink);

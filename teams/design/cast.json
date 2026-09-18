@@ -38,6 +38,7 @@
     },
     "system": {
       "name": "나리",
+      "cliName": "나래",
       "initial": "나",
       "color": "#8a8175",
       "title": "사장",
