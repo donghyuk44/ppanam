@@ -247,6 +247,14 @@ function giveTurn(team, actor, kind, tries = 1) {
   (r.lastGiven ??= new Map()).set(actor, kind);   // 이 자리의 다음 말이 어떤 차례에서 나왔나 — 잡담 브레이크(결정 121)가 본다
 
   if (isOutside(team, actor)) {
+    // 중단(suspended)된 바깥눈 자리는 이름으로 불려도 띄우지 않는다 — 판정 흐름(491행)만 건너뛰고 부름·순찰은 여전히 gemini 를 띄워
+    // 502·503 만 남기던 것(대표 09-18 14:2x "외부감사쪽 없애, 지금 막기만하고 세션은 죽고 일은 안되고있고", 세라 한 줄 — 솔라 확인).
+    const sus = readCast(team).agents?.[actor]?.suspended;
+    if (sus) {
+      r.inflight.delete(actor); persist(team);
+      note(team, `${nameOf(team, actor)}은 중단 중이라 부르지 않습니다(${sus} 복귀 예정) — 팀 안 감사가 봅니다.`);
+      return;
+    }
     // codex 는 프로세스가 턴마다 뜬다. outside.mjs 가 자기 커서(lastSeen)로 못 들은 말을 붙이므로 여기선 종류만 넘긴다.
     r.outsideBusy = true;
     r.inflight.set(actor, { kind, cursor: null, tries }); persist(team);   // codex 도 서버의 자식이라 같이 죽는다 — 되살릴 수 있게 적어 둔다
