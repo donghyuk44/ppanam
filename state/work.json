@@ -542,8 +542,8 @@
       "after": [
         "O4"
       ],
-      "bottleneck": "server(솔라)",
-      "status": "막힘",
+      "bottleneck": null,
+      "status": "통과",
       "note": "09-18 11:0x 나리 대리(세라 통과): 솔라가 nightly.mjs 한 커밋에 여섯을 닫은 뒤 서버가 낸 새 장 하나로만 한 번 잰다. 11:3x 나래: 경영 셋이 30분째 기다림, 솔라는 파일에 손 안 댐 — 기다림은 '막힘'으로(톰). 기다리는 동안은 순서 목록 다음 줄",
       "milestone": {
         "team": "finance",
@@ -551,7 +551,8 @@
       },
       "owner": "유진",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": "teams/finance/out/daily-first-check.md 4판(65619d7) — 유진 여섯 0 · 노라 30초 · 빅터 검토 통과"
     },
     {
       "id": "O4",
@@ -560,8 +561,8 @@
       "team": "dev",
       "seat": "ops",
       "after": [],
-      "bottleneck": "server(솔라) — 경영 셋(유진·노라·빅터)이 여섯 한 커밋을 기다림(09-18 11:0x부터, 파일은 아직)",
-      "status": "진행",
+      "bottleneck": null,
+      "status": "통과",
       "note": "(옛 이름) 아침 한 장 자동 생성 — 회차 닫힘·결정 때 다시 만듦(187, 06:30 아님) | 레오 16:52 PASS 의 O4 반박('c7dd8ba·80b7a97 로 상태 기반 개편')은 틀림 — 그 둘은 경영 문서·계약 문단이고 server/nightly.mjs 130행 MORNING_OFFSET 06:30 그대로(솔라 실측 17:1x). O4 는 통과 아님: 188 대로 '회차 닫힘·결정 나면 다시 만드는 한 장' 으로 nightly.mjs 고친 뒤 다시 판정. 세라 조건 둘(대리 결정 --boss 줄 없으면 ✗ · 된 것은 물건)과 유진 0판 넷(요일 우리 시각·대리 결정 줄·총괄 줄·경영 겹침)도 같이 | 유진 틀 나옴 — 노라·빅터 판정 대기(F1)",
       "milestone": {
         "team": "dev",
@@ -569,7 +570,8 @@
       },
       "owner": "테라",
       "importance": "매우",
-      "urgency": "긴급"
+      "urgency": "긴급",
+      "deliverable": "솔라 f4ccdaf·e93dd89 — 서버 12:42 판 teams/hq/out/daily/2026-09-18.md, 유진 기준 여섯 0(daily-first-check.md 4판 65619d7), 노라 30초, 빅터 검토 통과. 부탁 req_e27af3c5 닫힘 14:1x"
     },
     {
       "id": "W1",
