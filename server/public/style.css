@@ -162,7 +162,10 @@ body {
 .who { font-size: 11.5px; color: var(--ink-3); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bar__right { display: flex; align-items: center; gap: 10px; flex: none; }
 
-.crew { display: flex; gap: 5px; align-items: center; }
+.crew { display: flex; gap: 8px; align-items: flex-start; }
+/* 방 머리 얼굴 밑 이름(대표 09-18 14:5x) — 얼굴 32 + 이름 10.5, 누르면 사람 카드 */
+.crew__one { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; }
+.crew__name { font-size: 10.5px; color: var(--ink-3); white-space: nowrap; }
 .chip {
   width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
   font-family: 'Gowun Batang', serif; font-size: 13px; color: #fdfbf7;

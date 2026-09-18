@@ -155,7 +155,8 @@ export function teamCard(d, { onOpen, onDecide } = {}) {
   const three = d.three ?? {};
   // 서버(/api/card)가 자에 안 맞는 줄을 NOT_YET("요약 없음") 글자로 바꿔 보내기도 한다 — 그 글자는 자를 지나지만 읽을 글이 아니라 빈 줄로 친다(R34 실측: 마케팅 카드 승인 대기에 "요약 없음").
   const ok = (s) => { const v = String(s ?? '').trim(); return v !== NOT_YET && bossOk(v); };
-  if (three.now && ok(three.now)) card.appendChild(block('now', [el('span', 'card__text', three.now)]));
+  // '진행 중' 줄엔 하는 사람 이름을 앞에(대표 09-18 14:5x "이름 없이 누가 뭐 하는지 어떻게 아냐") — 세 줄 정본엔 사람이 없어 상황판 doing 의 사람(d.doing.who)을 빌린다. 없으면 글만.
+  if (three.now && ok(three.now)) card.appendChild(block('now', [d.doing?.who ? personLine(d.doing.who, el('span', 'card__text', three.now)) : el('span', 'card__text', three.now)]));
   else if (d.doing?.text && ok(d.doing.text)) card.appendChild(block('doing', [personLine(d.doing.who, said(d.doing.text))]));
   if (three.next && ok(three.next)) card.appendChild(block('next', [el('span', 'card__text', three.next)]));
   if (three.later && ok(three.later)) card.appendChild(block('later', [el('span', 'card__text', three.later)]));

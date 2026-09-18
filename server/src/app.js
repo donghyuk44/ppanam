@@ -449,12 +449,17 @@ function renderHead() {
   const crew = $('crew');
   crew.replaceChildren();
   for (const [id, a] of roomAgents()) {
+    // 얼굴 밑에 이름 한 줄(대표 09-18 14:5x "이름 없이 누가 뭐 하는지 어떻게 아냐") — 얼굴만으론 열일곱을 못 가른다
+    const wrap = el('div', 'crew__one');
     const c = withFace(el('div', 'chip', a.initial ?? '?'), a.from ?? active, id);
     c.style.background = a.color ?? FALLBACK.color;
     const st = stateOf(id);
     c.dataset.state = st;
     c.title = `${a.name} — ${a.title ?? ''} · ${STATE_LABEL[st]}`;   // 직책(title)만 — 하는 일(does)은 화면에 안 띄운다 (req_94013782)
-    crew.appendChild(c);
+    wrap.appendChild(c);
+    wrap.appendChild(el('span', 'crew__name', a.name));
+    wrap.addEventListener('click', () => openPersonPop(a.from ?? active, id));
+    crew.appendChild(wrap);
   }
 }
 
