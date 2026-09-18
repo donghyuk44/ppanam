@@ -710,10 +710,18 @@ body {
 .tl__ggoal { font-size: 13px; color: var(--ink-3); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }   /* 팀 목표는 두 줄까지, 넘치면 줄임(14절 폰 · 나리: 길이 자 대신 화면이 접는다) */
 .tl__gnow { font-size: 13px; font-weight: 500; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; border-bottom: 1px solid var(--line-2); }   /* '지금' 줄도 두 줄까지 줄임(헨리 14절 보탬 — 표가 카드 반을 먹어서). 접는 상자엔 안여백 없음 — 다음 줄이 여백에 비친다(412 -e 실측), 줄 사이는 격자 gap */
 .tl__gteams > .tl__gnow:last-child { border-bottom: 0; }
+/* 폰 팀별 접힘 줄(14절 3판-e) — 카드 꼴 38, 오른쪽 '더보기'/'접기'(사전 1절), 펼치면 밑에 팀 카드 여섯 */
+.tl__gfold { margin-bottom: 8px; }
+.tl__gfold > .tl__gfold__row { display: flex; flex-direction: row; align-items: center; justify-content: space-between; min-height: 38px; padding: 8px 14px; box-sizing: border-box; cursor: pointer; list-style: none; margin-bottom: 8px; }   /* .dash__card 의 column 을 이긴다 */
+.tl__gfold__row::-webkit-details-marker { display: none; }
+.tl__gfold__row .dash__k { padding-bottom: 0; }
+.tl__gfold__k { font-size: 12px; font-weight: 600; color: var(--ink); }
+.tl__gfold__k::after { content: '더보기'; } .tl__gfold[open] .tl__gfold__k::after { content: '접기'; }
+.tl__gfold > .tl__goal--team { margin-bottom: 8px; }
 .tl__whatStack { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 .tl__after { font-size: 11px; color: var(--ink-4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* "뒤에: ○○" */
 .tl__cell--stack { flex-direction: column; align-items: stretch; gap: 2px; padding: 2px; }
-.tl__cell--stack .tl__bar { flex: none; }
+.tl__cell--stack .tl__bar { flex: none; max-width: 100%; box-sizing: border-box; }   /* 한 줄 줄임 칩이 칸 밖으로 새지 않게(총괄 '그 뒤' 실측) */
 @media (min-width: 700px) {
   .tl__slogan { font-size: 20px; }
   .tl__gteams { grid-template-columns: 120px minmax(0, 1fr) minmax(0, 1fr); align-items: start; }

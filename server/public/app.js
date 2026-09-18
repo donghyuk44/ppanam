@@ -2656,8 +2656,12 @@ function goalCards(g, wide) {
     for (const x of teamsG) teamRow(x, table);
     top.appendChild(table); return [top];
   }
-  // 폰 — 팀마다 카드 하나(14절 폰 칸, 반 화면 안 · 나리 대리, 헨리 12절): 이름 줄 / 팀 목표 / 지금
-  return [...first, ...teamsG.map((x) => { const c = el('section', 'dash__card tl__goal tl__goal--team'); const t = el('div', 'tl__gteams'); teamRow(x, t); c.appendChild(t); return c; })];
+  // 폰(14절 3판-e, 나리 대리) — 슬로건 + 이번 달성 목표만 펼치고, 팀별은 '팀별 · 팀 목표 · 지금 — 더보기' 접힌 줄 하나(카드 꼴 38). 누르면 팀마다 카드 하나 여섯 장이 그 자리에, 글자는 '접기'(사전 1절 더보기·접기). 그래야 주 칸이 첫 화면에 든다.
+  const fold = el('details', 'tl__gfold');
+  const sum = el('summary', 'dash__card tl__gfold__row'); sum.append(el('span', 'dash__k', '팀별 · 팀 목표 · 지금'), el('span', 'tl__gfold__k'));   // '더보기'/'접기' 글자는 CSS ::after(열림 상태 따라)
+  fold.appendChild(sum);
+  for (const x of teamsG) { const c = el('section', 'dash__card tl__goal tl__goal--team'); const t = el('div', 'tl__gteams'); teamRow(x, t); c.appendChild(t); fold.appendChild(c); }
+  return [...first, fold];
 }
 /** 팀 머리 — 팀 타일 · 이름 · 팀 목표 한 줄(order.md 첫 줄, 자 통과분) · 이번 주 요약 칩 셋(끝난 초록 · 막힘 · 담당자 없음 — 0 은 회색, 1 이상은 빨강). 폰·PC 같은 부품. */
 function timelineHead(t) {
