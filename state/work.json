@@ -2490,6 +2490,28 @@
       "urgency": "여유",
       "deliverable": "커밋 + 설정 정보 줄 사진(번호 보임)",
       "doneCheck": "설정 정보 줄에 커밋 번호가 보인다"
+    },
+    {
+      "id": "J54",
+      "stream": "화면",
+      "what": "멤버 카드에서 나래 줄이 자기 직책·설명(cast.json cliTitle·cliDoes)을 읽게 — 나리 줄과 갈라서",
+      "team": "dev",
+      "seat": "guide",
+      "after": [
+        "J46"
+      ],
+      "bottleneck": null,
+      "status": "대기",
+      "note": "하영 카드 apr_ea7798ca(16:3x) — 설정 멤버 화면에서 나래 카드가 \"사장 · 전체\", 설명 줄이 나리와 같음(cast.json system 자리 하나를 둘이 씀). 톰이 cast.json 에 cliTitle \"시스템 관리자\"·cliDoes(나래 자기소개 글자) 칸을 두었고 does 는 나리 글자로(\"손\" 뺌). 화면 코드가 cliName 줄엔 그 두 칸을 읽으면 끝(218 두 사람·208)",
+      "milestone": {
+        "team": "dev",
+        "n": 10
+      },
+      "owner": "테라",
+      "importance": "보통",
+      "urgency": "보통",
+      "deliverable": "커밋 + 멤버 화면 사진 새 이름(나래 카드 \"시스템 관리자\", 설명 둘이 다름)",
+      "doneCheck": "사진에서 나래 카드 직책이 시스템 관리자, 설명 줄이 나리와 다르다"
     }
   ]
 }
