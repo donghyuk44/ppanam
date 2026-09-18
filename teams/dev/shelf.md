@@ -1,9 +1,7 @@
 # 책장 — 개발
 
 결정 116 ①: 대화록을 통째로 붓는 대신 읽을 것을 경로로 준다. 여기 없는 건
-`node tools/library.mjs find <낱말>` — 단, 이 명령이 맨 명령으로 막혀 있다(P2,
-teams/dev/out/p2-tools-permission.md). settings.json 이 고쳐지기 전까지는 "안 되면
-grep 으로 직접 찾는다" 로 대신한다.
+`node tools/library.mjs find <낱말>` — 개발 자리에서 돈다(09-18 14:38 실측, `find 관제탑 탭 --limit=3` → 본문 읽음 0바이트 · 목차 1장 · 색인 496/496장, 유진 req_f5e1a898). 목차는 `toc`, 절·줄은 `show <경로>`. 옛 "맨 명령으로 막힘(P2)" 줄은 낡아 지웠다.
 
 ## 읽을 것 (경로만 먼저 보고, 필요한 절만)
 
