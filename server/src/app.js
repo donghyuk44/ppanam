@@ -419,21 +419,23 @@ function renderHead() {
   // "R14 · 라운드 닫기 · 입력 가능" 으로 보이고 보내면 409, 닫으면 두 번 닫힌다 (Fable 재점검, 2026-09-12).
   const open = office || summary.phase === 'running' || summary.phase === 'blocked';
   const blocked = !office && summary.phase === 'blocked';
-  document.title = open && !office ? `${summary.round}회차 · ${t?.name ?? '채팅'}` : (t?.room ?? '채팅');
+  // 회차 번호는 대표 화면에서 뺀다(결정 207 · 대표 09-18 15:3x "회차 막 20개 30개 40회까지 쌓이는 거 고치라고 줬는데") — 머리·탭 제목은 단계로.
+  const stageLabel = summary.milestone ? `${summary.milestone}단계` : '';
+  document.title = open && !office ? `${stageLabel || '채팅'} · ${t?.name ?? '채팅'}` : (t?.room ?? '채팅');
   const turns = bossTurns().n;
   if (turns) document.title = `(${turns}) ` + document.title;   // 탭 제목에도 — 다른 창에 있어도 보이게
 
   // 글자는 하영 사전 3-2 그대로. 표에 없는 두 줄(멈춤 띠·회차 없음 안내)은 1절 낱말(회차·답·멈춤)로만 조립 — 하영에게 표에 더해 달라고 부탁함(R25).
   // office 방의 주인은 teams.json 의 owner — 총괄실은 톰, 비서실(결정 132)은 세라. 비서실 줄 글자는 하영 확정 전 임시.
   const owner = t?.owner ?? 'chief';
-  $('rnum').textContent = office ? `대표님과 ${who(owner).name}` : open ? `${summary.round}회차` : '—';
+  $('rnum').textContent = office ? `대표님과 ${who(owner).name}` : open ? (stageLabel || t?.name || '—') : '—';
   $('rtitle').textContent = office
     ? (owner === 'chief' ? '여기서 한 말을 톰이 팀에 나눠요' : `${who(owner).name}가 다섯 팀 상황을 요약해서 알려 드려요`)
     : blocked
-      ? `대표님 답을 기다려요 — 검토에서 멈춤이 났어요. 여기에 답을 적으면 ${summary.round}회차가 이어져요`
+      ? '대표님 답을 기다려요 — 검토에서 멈춤이 났어요. 여기에 답을 적으면 이어져요'
       : open
-        ? (summary.topic ? `${summary.milestone}단계 — ${summary.topic}` : `${summary.milestone}단계`)
-        : '진행 중인 회차 없음';
+        ? (summary.topic ? summary.topic : (stageLabel || ''))
+        : '진행 중인 일 없음';
   const c = summary.conductor ?? {};
   const turnNote = c.flow ? `검토 중 · ${who(c.flow.waiting ?? c.flow.step).name} 차례` : c.pending?.length ? `차례: ${c.pending.map((p) => who(p.split(':')[0]).name).join(', ')}` : '';
   $('rprog').textContent = [turnNote, open && summary.attempt > 0 ? `반려 ${summary.attempt}회` : ''].filter(Boolean).join(' · ');
@@ -568,9 +570,9 @@ function renderSide() {
   // 이번 라운드
   const r = $('cardRound');
   r.replaceChildren();
-  r.appendChild(el('div', 'card__k', '이번 회차'));
+  r.appendChild(el('div', 'card__k', '지금 단계'));
   if (summary.phase === 'running' || summary.phase === 'blocked') {
-    r.appendChild(el('div', 'card__big', `${summary.round}회차`));
+    r.appendChild(el('div', 'card__big', summary.milestone ? `${summary.milestone}단계` : '진행 중'));   // 회차 번호 대신 단계(결정 207, 대표 09-18 15:3x)
     if (summary.topic) r.appendChild(el('div', 'card__note', summary.topic));
     const dl = el('dl');
     for (const [k, v] of [
@@ -2576,7 +2578,7 @@ function renderTowerTeams(grid) {
     }
 
     // 이 회차 — 상황판 네 칸 글자 그대로(progress.json: 하는 것 · 막힌 것 · 대표님이 보실 것 · 다음). 현황 ④ 펼친 줄과 같은 넷. 없으면 "없어요"
-    card.appendChild(el('div', 'tcard__k', '이번 회차'));
+    card.appendChild(el('div', 'tcard__k', '지금 하는 일'));   // "이번 회차" 글자도 뺌(결정 207, 대표 09-18 15:3x)
     const p = s.progress;
     if (!p) card.appendChild(el('div', 'tcard__quiet', office ? '총괄실 — 상황판 없음(승인·요청·리포트)' : '상황판 없음'));
     else {
