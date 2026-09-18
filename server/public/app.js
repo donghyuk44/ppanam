@@ -2644,16 +2644,20 @@ function goalCards(g, wide) {
     if (slogan) top.appendChild(el('div', 'tl__slogan', slogan));
     if (goalNow) { top.appendChild(el('div', 'dash__k tl__goalk', '이번 달성 목표')); top.appendChild(el('div', 'tl__goalNow', goalNow)); }
   }
-  const table = el('div', 'tl__gteams');
-  if (wide) for (const h of ['팀', '팀 목표', '지금']) table.appendChild(el('span', 'tl__gh', h));
-  for (const x of teamsG) {
+  const teamRow = (x, into) => {
     const name = el('span', 'tl__gteam'); const tile = el('span', 'card__tile', String(x.name ?? '?').slice(0, 1)); tile.style.background = teamColor(x.id); name.append(tile, el('b', null, x.name));
-    table.append(name, el('span', 'tl__ggoal', x.goal ?? ''), el('span', 'tl__gnow', x.now ?? ''));
+    into.append(name, el('span', 'tl__ggoal', x.goal ?? ''), el('span', 'tl__gnow', x.now ?? ''));
+  };
+  const first = slogan || goalNow ? [top] : [];
+  if (!teamsG.length) return first;
+  if (wide) {
+    const table = el('div', 'tl__gteams');
+    for (const h of ['팀', '팀 목표', '지금']) table.appendChild(el('span', 'tl__gh', h));
+    for (const x of teamsG) teamRow(x, table);
+    top.appendChild(table); return [top];
   }
-  if (!teamsG.length) return [top];
-  if (wide) { top.appendChild(table); return [top]; }
-  const second = el('section', 'dash__card tl__goal tl__goal--teams'); second.appendChild(el('div', 'dash__k', '팀별 · 팀 목표 · 지금')); second.appendChild(table);
-  return slogan || goalNow ? [top, second] : [second];
+  // 폰 — 팀마다 카드 하나(14절 폰 칸, 반 화면 안 · 나리 대리, 헨리 12절): 이름 줄 / 팀 목표 / 지금
+  return [...first, ...teamsG.map((x) => { const c = el('section', 'dash__card tl__goal tl__goal--team'); const t = el('div', 'tl__gteams'); teamRow(x, t); c.appendChild(t); return c; })];
 }
 /** 팀 머리 — 팀 타일 · 이름 · 팀 목표 한 줄(order.md 첫 줄, 자 통과분) · 이번 주 요약 칩 셋(끝난 초록 · 막힘 · 담당자 없음 — 0 은 회색, 1 이상은 빨강). 폰·PC 같은 부품. */
 function timelineHead(t) {
