@@ -175,7 +175,7 @@ codex 가 된 자리는 사회자가 `outside.mjs --team <방> --actor <자리>`
   막지 않는다, 화면이 그 말풍선 밑에 "쉬운 말로 다시" 한 줄을 붙이는 재료만(대표 화면 자 `bossOk` 와 같은 원칙, 다른 자리). 낱말표는
   `teams/marketing/out/plain-words.md`(하영, 한 줄에 하나 — 파일이 없으면 아무것도 안 걸린다). 순수 함수는 `server/public/roomwords.js`.
 
-- `meta.hand: 'server' | 'cli'` — **나리(`system`) 말이 어느 손에서 왔나**. `server` = 총괄실 서버 세션(`hq:system`) → 이름 박스 노랑 · `cli` = `say.mjs --as system`(관리 창 나리) → 파랑. 찍는 건 서버, 화면은 `.row[data-hand]`. 없으면 색 없음.
+- `meta.hand: 'server' | 'cli'` — **나리(`system`) 말이 어느 손에서 왔나**. `server` = 총괄실 서버 세션(`hq:system`) → 이름 박스 노랑 · `cli` = `say.mjs --as system`(관리 창 나래) → 파랑. 찍는 건 서버, 화면은 `.row[data-hand]`. 없으면 색 없음.
 - `meta.roam: '<팀 id>'` — **다른 방에 한 답의 원본**(나리·세라 로밍, `callHomeElsewhere` 가 집 방 기록에 원본을 남기고 그 방엔 사본 `meta.via`). 집 방 화면에선 **접힌 말풍선**(`app.js foldBubble` — "개발 방에 답함 · 펼치기", 펼치면 원문 + 그 방 열기)로만. 찍는 건 서버. 인용(`meta.quote`)도 같은 부품.
 - **호명 칩**: 첫머리 `@이름`·`이름,`(mention.js)은 그 사람 색 박스(`.mention.mchip` — `.chip` 은 얼굴 칩이라 다른 이름)로, 옆에 읽음 표시 한 마디 — 칩 뒤에 그 사람 말풍선이 있거나 그 사람이 일하는 중이면 `@테라 · 읽음`(카카오톡·라인·슬랙 읽음 표시), 아니면 이름만 `@테라`(`app.js markMentions`, 화면에 있는 것만 본다). "받았어요" 문구는 안 쓴다. 입력창에서 `@` 를 치면 그 방 사람 목록(`.mpop`, 위아래·Enter·클릭)이 뜨고 고르면 `@이름, ` 이 들어간다 — 서버 판별은 그대로(글자만 넣는다).
 
