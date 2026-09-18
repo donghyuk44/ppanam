@@ -389,11 +389,17 @@ body {
   padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
   background: var(--panel); border-top: 1px solid var(--line);
 }
-.composer { align-items: flex-end; position: relative; }
-/* 그림 끌어다 놓기·붙여넣기(C17) — 놓는 동안 입력창 테두리, 올리는 동안 입력창 위 미리보기 한 장 */
+.composer { align-items: flex-end; position: relative; flex-wrap: wrap; }
+/* 그림 끌어다 놓기·붙여넣기(C17) — 놓는 동안 입력창 테두리 */
 .app[data-drop="1"] .composer { outline: 2px dashed var(--me-line); outline-offset: -6px; }
-.composer__pv { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-3); }
-.composer__pv img { height: 44px; max-width: 120px; border-radius: 6px; border: 1px solid var(--line); object-fit: cover; }
+/* 첨부 줄(결정 226 ①·③) — 입력창 위 한 줄, 썸네일 56 · 문서는 이름 칩, × 로 빼기. 올리는 동안 흐림 */
+.composer__att { flex-basis: 100%; display: flex; gap: 8px; flex-wrap: wrap; padding-bottom: 2px; }
+.composer__att[hidden] { display: none; }
+.composer__att[data-busy="1"] { opacity: .55; pointer-events: none; }
+.composer__attItem { position: relative; display: flex; align-items: center; }
+.composer__attItem img { height: 56px; max-width: 120px; border-radius: 8px; border: 1px solid var(--line); object-fit: cover; display: block; }
+.composer__attDoc { display: inline-block; max-width: 180px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--sunk); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.composer__attX { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); font: 600 12px/16px 'IBM Plex Sans KR', sans-serif; cursor: pointer; padding: 0; }
 .mpop--slash { min-width: 260px; }
 .mpop__k { font-size: 10.5px; color: var(--ink-4); padding: 4px 8px 2px; }
 /* @ 멘션 목록(C13) — 입력창 위에 뜨는 작은 목록. 위아래·Enter·클릭 */
@@ -419,7 +425,7 @@ body {
 .composer__in {
   flex: 1; min-width: 0; font: inherit; font-size: 13.5px; line-height: 1.45; color: var(--ink);
   background: var(--sunk); border: 1px solid var(--line-2);
-  border-radius: 18px; padding: 8px 14px; resize: none; max-height: 40vh; overflow-y: auto;
+  border-radius: 18px; padding: 8px 14px; resize: none; max-height: 40vh; overflow-y: hidden;   /* 결정 226 ② — 스크롤바는 40vh 를 넘을 때만(app.js fitInput 이 auto 로 바꾼다) */
 }
 .composer__in::placeholder { color: var(--ink-4); }
 .composer__in:focus { outline: 2px solid color-mix(in srgb, var(--seal) 50%, transparent); outline-offset: -1px; }

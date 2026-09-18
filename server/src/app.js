@@ -667,7 +667,6 @@ function draw(e) {
 
     default: {
       const me = e.actor === 'boss';
-      if (me && /올렸습니다: in\//.test(e.text ?? '')) lastUpload = { key: '' };   // 올린 파일이 방에 떴다 — 같은 파일 다시 올리기 막음을 푼다(결정 188: 60초가 아니라 '떴으면')
       const called = !me && e.actor !== 'system' && callsBoss(e.text);
       const actorKey = e.actor === 'system' ? `system:${e.meta?.hand ?? ''}` : e.actor;   // 나리 말 뒤 나래 말은 이어진 말이 아니다 — 이름 줄을 다시 낸다(결정 208)
       const cont = lastActor === actorKey && !called;
@@ -1102,7 +1101,9 @@ const input = $('input');
 /** 여러 줄 입력창의 높이를 내용에 맞춘다 (한 줄 ~ 화면의 40%). */
 function fitInput() {
   input.style.height = 'auto';
-  input.style.height = Math.min(input.scrollHeight, window.innerHeight * 0.4) + 'px';
+  const max = window.innerHeight * 0.4;
+  input.style.height = Math.min(input.scrollHeight, max) + 'px';
+  input.style.overflowY = input.scrollHeight > max ? 'auto' : 'hidden';   // 결정 226 ② — 내용이 다 보이는 동안엔 스크롤바를 안 낸다(대표 "쓸모없는데 자꾸 거슬림")
 }
 input.addEventListener('input', fitInput);
 
@@ -1170,61 +1171,74 @@ $('composerNl').addEventListener('click', () => {
   fitInput(); input.focus();
 });
 
-// 그림 올리기 (결정 130 ② — 대표가 방에 그림을 올릴 수 있어야 한다). 버튼 · 끌어다 놓기 · 붙여넣기 셋이 같은 길(C17, 대표 09-16 11:07 "채팅창에 바로 이미지 드랍해서 첨부하는 것").
-// 올리는 동안 입력창 위에 미리보기 한 장 — 올라가면 방에 말풍선으로 뜬다(서버).
-// 문서도 된다(C17 둘째, 대표 09-16 11:10 "pdf 같은 문서 첨부도 되야겠다") — pdf·md·txt·csv·docx·xlsx·pptx. 서버가 teams/<팀>/in/ 에 두고 "파일을 올렸습니다: in/…" 로 말하면 화면은 파일 카드(outFileNode). 서버 쪽 형식 허용은 솔라(/api/upload UPLOAD_MIME).
+// 그림·문서 첨부 (결정 130 ② · C17 · 결정 226, 대표 09-18 11:23 "파일을 넣자마자 바로 전송되니까 지시처럼 가고 … 질문도 없이 수용") — 버튼 · 끌어다 놓기 · 붙여넣기 셋이 같은 길.
+// 넣으면 바로 안 보낸다: 입력창 위 첨부 줄에 미리보기(그림은 썸네일, 문서는 이름)로 두었다가 **보내기를 눌러야** 올라간다. 여러 개 된다. × 로 뺀다.
+// 보낼 때 첨부부터 차례로 올리고(서버가 "파일을 올렸습니다: in/…" 로 말한다 — /api/upload, 솔라) 글은 맨 뒤에 — 팀이 글을 읽을 때 파일이 이미 방에 있게.
+// 문서도 된다(대표 09-16 11:10) — pdf·md·txt·csv·docx·xlsx·pptx. 서버 쪽 형식 허용은 솔라(/api/upload UPLOAD_MIME).
 const UPLOAD_OK = /^(image\/(png|jpe?g|gif|webp)|application\/pdf|text\/(plain|markdown|csv)|application\/(vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)))$/;
-const uploadKind = (f) => /^image\//.test(f.type) ? '그림' : '파일';
-let uploading = false, lastUpload = { key: '' };   // 같은 그림이 잇달아 세 번(대표 폰 14:11 — 올린 뒤 바로 안 보여 다시 누름, 나리): 올리는 중엔 막고, 같은 이름·크기는 **방에 뜰 때까지** 하나만(결정 188 — 60초가 아니라 '떴으면'). 뜨면 말풍선 그리는 쪽이 푼다.
-async function uploadImage(f, { force = false } = {}) {
+const EXT_MIME = { md: 'text/markdown', txt: 'text/plain', csv: 'text/csv', pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' };
+const uploadKind = (mime) => (/^image\//.test(mime) ? '그림' : '파일');
+const attachments = [];   // [{ file, mime, key, url }] — 보내기 전까지 여기 머문다
+const attachBar = el('div', 'composer__att'); attachBar.hidden = true; $('composer').prepend(attachBar);
+function renderAttachments() {
+  attachBar.replaceChildren();
+  attachBar.hidden = !attachments.length;
+  for (const a of attachments) {
+    const item = el('div', 'composer__attItem');
+    if (uploadKind(a.mime) === '그림') { const img = el('img'); img.alt = a.file.name || '그림'; img.src = a.url; item.appendChild(img); }
+    else item.appendChild(el('span', 'composer__attDoc', a.file.name || '문서'));
+    const x = el('button', 'composer__attX', '×'); x.type = 'button'; x.title = '빼기';
+    x.addEventListener('click', () => { attachments.splice(attachments.indexOf(a), 1); if (a.url) URL.revokeObjectURL(a.url); renderAttachments(); });
+    item.appendChild(x);
+    attachBar.appendChild(item);
+  }
+}
+/** 파일 하나를 첨부 줄에 둔다 — 형식 검사만, 올리지는 않는다. 같은 이름·크기·형식이 이미 있으면 한 번만. */
+function stageFile(f) {
   if (!f || !active) return;
-  // 브라우저가 type 을 비워 주는 것(md·txt·csv·docx·xlsx·pptx 가 OS 에 따라 그렇다)은 확장자로 채운다 — code-review 지적: 고르기 목록엔 있는데 여기서 거절되던 것
-  const EXT_MIME = { md: 'text/markdown', txt: 'text/plain', csv: 'text/csv', pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' };
+  // 브라우저가 type 을 비워 주는 것(md·txt·csv·docx·xlsx·pptx 가 OS 에 따라 그렇다)은 확장자로 채운다
   const mime = f.type || EXT_MIME[(f.name ?? '').split('.').pop()?.toLowerCase()] || '';
   if (!UPLOAD_OK.test(mime)) return say('그림(png·jpg·gif·webp)이나 문서(pdf·md·txt·csv·docx·xlsx·pptx)만');
-  if (uploading) return say('올리는 중이에요 — 잠시만요', 0);
   const key = `${f.name ?? ''}|${f.size ?? 0}|${mime}`;
-  if (key === lastUpload.key && !force) {   // 아직 방에 안 뜬 같은 파일 — 막되 길은 남긴다(대표가 일부러 두 번 올릴 수도 있다)
-    const box = $('composerMsg'); clearTimeout(msgTimer); box.replaceChildren();
-    box.append('방금 올린 파일이에요 — 곧 방에 떠요 · ');
-    const b = el('button', 'composer__retry', '그래도 올리기'); b.type = 'button';
-    b.addEventListener('click', () => uploadImage(f, { force: true }));
-    box.appendChild(b); box.hidden = false;
-    return;
-  }
-  uploading = true;
-  const box = $('composerMsg');
-  const pv = el('div', 'composer__pv');
-  if (uploadKind(f) === '그림') { const img = el('img'); img.alt = f.name || '그림'; img.src = URL.createObjectURL(f); pv.appendChild(img); pv.dataset.url = img.src; }
-  else pv.appendChild(el('b', null, f.name || '문서'));
-  pv.appendChild(el('span', null, '업로드 중'));
-  box.replaceChildren(pv); box.hidden = false;
-  const data = await new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(f);
-  }).catch(() => null);
-  const done = () => { uploading = false; if (pv.dataset.url) URL.revokeObjectURL(pv.dataset.url); };
-  if (!data) { done(); return say(`${uploadKind(f)} 로딩 실패`); }
-  lastUpload = { key };   // 보내기 **전에** 건다 — 방 말풍선이 응답보다 먼저 와서 풀리는 수가 있다(code-review): 뒤에 걸면 다시 잠긴다
-  const r = await post('/api/upload', { team: active, mime, name: f.name || null, data }).catch(() => null);   // name — 서버가 원래 파일 이름을 카드에 쓸 수 있게(지금은 안 봐도 됨)
-  done();
-  if (!r?.ok) { lastUpload = { key: '' }; return say(r?.data?.error ?? `${uploadKind(f)} 업로드 실패`); }
-  say('업로드 완료 — 곧 방에 떠요');
+  if (attachments.some((a) => a.key === key)) return say('이미 첨부한 파일이에요');
+  attachments.push({ file: f, mime, key, url: uploadKind(mime) === '그림' ? URL.createObjectURL(f) : null });
+  renderAttachments(); say(null); input.focus();
+}
+/** 첨부 하나를 올린다 — 서버가 방에 말풍선으로 띄운다. 실패하면 false(그 파일은 첨부 줄에 남는다). */
+async function uploadOne(a) {
+  const data = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(r.error); r.readAsDataURL(a.file); }).catch(() => null);
+  if (!data) { say(`${uploadKind(a.mime)} 로딩 실패 — ${a.file.name ?? ''}`); return false; }
+  const r = await post('/api/upload', { team: active, mime: a.mime, name: a.file.name || null, data }).catch(() => null);
+  if (!r?.ok) { say(r?.data?.error ?? `${uploadKind(a.mime)} 업로드 실패 — ${a.file.name ?? ''}`); return false; }
+  return true;
+}
+/** 첨부 전부 차례로 올린다 — 올라간 것은 첨부 줄에서 빠지고, 실패한 것은 남는다. 전부 올라갔으면 true. */
+let uploading = false;
+async function flushAttachments() {
+  if (!attachments.length) return true;
+  if (uploading) { say('올리는 중이에요 — 잠시만요', 0); return false; }
+  uploading = true; attachBar.dataset.busy = '1';
+  try {
+    for (const a of [...attachments]) {
+      if (!(await uploadOne(a))) continue;
+      attachments.splice(attachments.indexOf(a), 1); if (a.url) URL.revokeObjectURL(a.url);
+      renderAttachments();
+    }
+  } finally { uploading = false; delete attachBar.dataset.busy; }
+  return !attachments.length;
 }
 $('uploadBtn').addEventListener('click', () => $('uploadFile').click());
-$('uploadFile').addEventListener('change', () => { const f = $('uploadFile').files?.[0]; $('uploadFile').value = ''; uploadImage(f); });   // 같은 파일 다시 골라도 change 가 나게
-// 끌어다 놓기 — 대화 창·입력창 어디든. 붙여넣기 — 클립보드의 그림(스크린샷 Cmd+V).
+$('uploadFile').addEventListener('change', () => { for (const f of [...($('uploadFile').files ?? [])]) stageFile(f); $('uploadFile').value = ''; });   // 같은 파일 다시 골라도 change 가 나게
+// 끌어다 놓기 — 대화 창·입력창 어디든, 여러 개. 붙여넣기 — 클립보드의 그림(스크린샷 Cmd+V).
 for (const zone of [$('feed'), $('composer')]) {
   zone.addEventListener('dragover', (e) => { if ([...(e.dataTransfer?.types ?? [])].includes('Files')) { e.preventDefault(); app.dataset.drop = '1'; } });
   zone.addEventListener('dragleave', () => { app.dataset.drop = '0'; });
-  zone.addEventListener('drop', (e) => { const f = e.dataTransfer?.files?.[0]; if (!f) return; e.preventDefault(); app.dataset.drop = '0'; uploadImage(f); });
+  zone.addEventListener('drop', (e) => { const fs = [...(e.dataTransfer?.files ?? [])]; if (!fs.length) return; e.preventDefault(); app.dataset.drop = '0'; for (const f of fs) stageFile(f); });
 }
 input.addEventListener('paste', (e) => {
-  const item = [...(e.clipboardData?.items ?? [])].find((it) => it.kind === 'file');   // 그림이든 문서든 — 형식은 uploadImage 가 가른다
-  if (!item) return;
-  e.preventDefault(); uploadImage(item.getAsFile());
+  const items = [...(e.clipboardData?.items ?? [])].filter((it) => it.kind === 'file');   // 그림이든 문서든 — 형식은 stageFile 이 가른다
+  if (!items.length) return;
+  e.preventDefault(); for (const it of items) stageFile(it.getAsFile());
 });
 
 /* ── / 명령 (C13 — 대표 09-16 그림: 입력창 "/ 입력 시 명령어" 자리, 오르카 모양·구조 참고만). "/" 를 치면 명령 목록이 뜨고 고르면 그대로 실행.
@@ -1302,13 +1316,16 @@ async function sendSay(text) {
 $('composer').addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = input.value.trim();
-  if (!text || !active) return;
-  input.value = ''; fitInput();
+  if ((!text && !attachments.length) || !active) return;
   say(null);
   const office = teams.find((x) => x.id === active)?.kind === 'office';
   const open = office || summary.phase === 'running' || summary.phase === 'blocked';
-  // 라운드 밖이다 — 보내지 않고, 첫 줄을 주제로 채운 열기 폼을 띄운다. 열리면 이 말이 첫 지시가 된다 (결정 19).
-  if (!open) { pendingSay = text; input.value = text; fitInput(); showOpen(true, { topic: text.split('\n')[0].slice(0, 80) }); return; }
+  // 라운드 밖이다 — 보내지 않고, 첫 줄을 주제로 채운 열기 폼을 띄운다. 열리면 이 말이 첫 지시가 된다 (결정 19). 첨부는 첨부 줄에 그대로.
+  if (!open) { if (!text) return say('회차가 안 열려 있어요 — 글 한 줄을 같이 적어 주세요, 그 말로 열어요'); pendingSay = text; showOpen(true, { topic: text.split('\n')[0].slice(0, 80) }); return; }   // 첨부만으론 못 연다(code-review — 빈 주제로 열기 폼이 뜨던 것)
+  // 결정 226 — 첨부부터 차례로 올리고(방에 파일 말풍선) 글은 맨 뒤에. 하나라도 못 올리면 글은 안 보내고 입력창에 남긴다(파일은 첨부 줄에 남아 다시 보내기).
+  if (!(await flushAttachments())) return;
+  if (!text) return;
+  input.value = ''; fitInput();
   sendSay(text);
 });
 
