@@ -708,7 +708,7 @@ body {
 .tl__gteam { display: flex; align-items: center; gap: 6px; font-size: 14px; }
 .tl__gteam .card__tile { width: 24px; height: 24px; font-size: 12px; border-radius: 6px; }
 .tl__ggoal { font-size: 13px; color: var(--ink-3); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }   /* 팀 목표는 두 줄까지, 넘치면 줄임(14절 폰 · 나리: 길이 자 대신 화면이 접는다) */
-.tl__gnow { font-size: 13px; font-weight: 500; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; border-bottom: 1px solid var(--line-2); }   /* '지금' 줄은 세 줄까지(비서실 줄이 문단이라 실측). 접는 상자엔 안여백 없음 — 넷째 줄이 여백에 비친다(412 -e 실측), 줄 사이는 격자 gap */
+.tl__gnow { font-size: 13px; font-weight: 500; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; border-bottom: 1px solid var(--line-2); }   /* '지금' 줄도 두 줄까지 줄임(헨리 14절 보탬 — 표가 카드 반을 먹어서). 접는 상자엔 안여백 없음 — 다음 줄이 여백에 비친다(412 -e 실측), 줄 사이는 격자 gap */
 .tl__gteams > .tl__gnow:last-child { border-bottom: 0; }
 .tl__whatStack { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 .tl__after { font-size: 11px; color: var(--ink-4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* "뒤에: ○○" */
@@ -751,6 +751,7 @@ body {
 .tl__bar--pass { background: var(--good-bg); color: var(--good); border: 1px solid var(--good-line); }
 .tl__bar--now { background: var(--ink); color: var(--panel); }
 .tl__bar--next, .tl__bar--after { background: transparent; border: 1px dashed var(--ink-4); color: var(--ink-3); }
+.tl__bar--after { white-space: nowrap; text-overflow: ellipsis; }   /* '그 뒤' 칸 칩(걸린 작업 이름)은 한 줄 줄임(헨리) */
 .tl__bar--bad { background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad-line); }
 .tl__bar--wait { background: color-mix(in srgb, var(--seal) 18%, transparent); color: var(--seal); border: 1px solid var(--seal); }   /* 감사 대기 — 놋쇠(13절). 글자도 놋쇠 — seal-ink 는 어두운 바탕에서 안 읽힘(750 실측) */
 /* PC 1280(13절) — 기둥 머리 한 줄 + 팀 카드 하나에 왼쪽 나무 480 · 오른쪽 칸 넷. 줄마다 칸이 붙는다 */
