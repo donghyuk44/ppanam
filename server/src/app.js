@@ -243,11 +243,17 @@ function renderRail() {
     b.appendChild(dot);
 
     const body = el('span', 'team__body');
-    body.appendChild(el('span', 'team__name', t.name));
-    // 왼쪽 팀 줄 — "31회차 · 9단계" 는 대표님께 뜻이 없다(사용성-0916 표 4, 34회차): 지금 하는 일 한 줄(사람 말) — 팀별 세 줄 정본의 '지금', 없으면 상황판 하는 것 첫 줄, 둘 다 자에 안 맞으면 상태 말 하나
-    // 사무실 방(총괄실·비서실)은 회차가 없어 phase 로 보면 늘 '대기'(대표 09-18 오후 "비서실 무한 대기") — 순서 목록 '지금' 줄, 없으면 일하는 사람 "세라 진행 중"
-    const nowLine = [three.byTeam[t.id]?.now, s.progress?.doing?.[0], goalNow.byTeam[t.id]].map((v) => String(v ?? '').trim()).find((v) => bossOk(v));
-    const sub = nowLine ?? (t.kind === 'office' ? officeDoer(t.id) : null) ?? (s.phase === 'running' ? '진행 중' : s.logCount ? '대기' : '시작 전');
+    const nameRow = el('span', 'team__nameRow');
+    nameRow.appendChild(el('span', 'team__name', t.name));
+    // 사람 수(카카오톡 꼴 시안 — 방 이름 옆 작은 수): 이 방 사람(대표·빌려 온 총괄 뺌)
+    const n = Object.entries(s.cast ?? {}).filter(([id, a]) => id !== 'boss' && !a?.from).length;
+    if (n) nameRow.appendChild(el('span', 'team__n', String(n)));
+    body.appendChild(nameRow);
+    // 방 줄 한 줄 — 마지막 말(누가 · 첫 문장, 카카오톡 꼴 시안 req_f8a12066 ③). 지금 하는 일은 방 위 팀 카드가 말한다.
+    // 사무실 방(총괄실·비서실)도 같은 줄 — 회차가 없어 phase 로 보면 늘 '대기' 였던 것(대표 09-18 오후)은 이 줄로 사라진다. 말이 없으면 상태 말 하나.
+    const who = s.lastActor ? (s.cast?.[s.lastActor]?.name ?? summaries.hq?.cast?.[s.lastActor]?.name ?? (s.lastActor === 'boss' ? '대표님' : s.lastActor)) : null;
+    const lastLine = s.lastText ? `${who ? who + ' · ' : ''}${oneLine(s.lastText).slice(0, 60)}` : null;
+    const sub = lastLine ?? (t.kind === 'office' ? officeDoer(t.id) : null) ?? (s.phase === 'running' ? '진행 중' : s.logCount ? '대기' : '시작 전');
     const subEl = el('span', 'team__sub', sub); subEl.title = sub;
     body.appendChild(subEl);
     b.appendChild(body);
@@ -1414,9 +1420,15 @@ function setView(v) {
   if (v === 'world') World.open({ teams, jump: jumpTo }).catch(() => {}); else World.close();
 }
 
-for (const b of document.querySelectorAll('#views button, #repTabs button, #anTabs button')) {
+for (const b of document.querySelectorAll('#views button:not(.views__bell), #repTabs button, #anTabs button')) {
   b.addEventListener('click', () => setView(b.dataset.view));
 }
+// PC 띠 아래 '알림' — 종 목록을 연다(시안 '알림 끄기' 자리, 끄기는 아직 없음). 얼굴 40 원은 대표 초상.
+$('viewsBell').addEventListener('click', (e) => { e.stopPropagation(); $('bossBadge').click(); });
+withFace($('viewsMe'), 'hq', 'boss');
+// 폰 윗줄 오른쪽 — 찾기(준비 중) · +(그림·문서 첨부)
+$('phoneSearch').addEventListener('click', () => say('찾기는 준비 중이에요'));
+$('phonePlus').addEventListener('click', () => $('uploadFile').click());
 // 폰 '‹ 목록' — 방 목록(rail__list)을 윗줄 밑에 펼친다. 방을 고르면 닫힌다(selectTeam 뒤 setView 가 list 를 0 으로).
 $('phoneList').addEventListener('click', () => { app.dataset.list = app.dataset.list === '1' ? '0' : '1'; });
 $('teams').addEventListener('click', (e) => { if (e.target.closest('.team')) app.dataset.list = '0'; });
@@ -3210,4 +3222,4 @@ renderApprovals();
 // 부팅 — 주소에 화면이 없으면 **현황 한 장**(관제탑 '전체' 탭 — 누르실 것·고르실 것·이 회차 된 것)이 첫 화면, 방은 두 번째(나리 usability-0916 U2:
 // 총괄실 대화 벽이 첫 화면이라 대표가 30초 안에 할 일을 못 봤다, 결정 92). 전엔 대표 차례가 있을 때만 관제탑이었다(G-UX). 보던 방으로 돌아오는 건 주소(#팀/room)가 한다.
 if (hashView == null) towerTab = 'all';
-setView(hashView ?? 'tower');
+setView(hashView ?? 'room');   // 첫 화면은 채팅(대표 답 ② · 헨리 req_f8a12066 ④) — 전엔 대시보드였다(결정 92)
